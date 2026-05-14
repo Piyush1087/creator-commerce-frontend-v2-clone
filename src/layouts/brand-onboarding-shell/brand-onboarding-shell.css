@@ -1,0 +1,336 @@
+/* Brand onboarding marketing chrome — uses Aurora tokens only. */
+
+.bons-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-page);
+  color: var(--text-high);
+}
+
+.bons-shell__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--height-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  gap: var(--space-sm);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-default);
+}
+
+@media (min-width: 1024px) {
+  .bons-shell__header {
+    padding: 0 64px;
+  }
+}
+
+.bons-shell__left,
+.bons-shell__actions {
+  display: flex;
+  align-items: center;
+}
+
+.bons-shell__left {
+  gap: var(--space-xl);
+}
+
+.bons-shell__actions {
+  gap: var(--space-sm);
+}
+
+.bons-shell__brand {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-secondary);
+  text-decoration: none;
+}
+
+.bons-shell__nav {
+  display: none;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 900px) {
+  .bons-shell__nav {
+    display: flex;
+  }
+}
+
+.bons-shell__nav a {
+  font-size: var(--size-body);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.bons-shell__nav a:hover {
+  color: var(--color-primary);
+}
+
+.bons-shell__login {
+  display: none;
+  margin-right: var(--space-sm);
+  color: var(--text-high);
+  font-weight: 600;
+  font-size: var(--size-body);
+  text-decoration: none;
+}
+
+.bons-shell__cta {
+  display: none;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border: none;
+  border-radius: var(--radius-button);
+  background: #065f46;
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--size-body);
+  cursor: pointer;
+}
+
+.bons-shell__cta:hover {
+  background: #047857;
+}
+
+@media (min-width: 900px) {
+  .bons-shell__login,
+  .bons-shell__cta {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.bons-shell__menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-high);
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .bons-shell__menu-btn {
+    display: none;
+  }
+}
+
+.bons-shell__main {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-bottom: var(--height-bottom-nav);
+}
+
+@media (min-width: 900px) {
+  .bons-shell__main {
+    padding-bottom: 0;
+  }
+}
+
+.bons-shell__drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 31, 35, 0.45);
+  z-index: var(--z-modal-overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.bons-shell__drawer-backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.bons-shell__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(90vw, 390px);
+  background: var(--color-secondary);
+  color: #fff;
+  z-index: var(--z-modal-content);
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  box-shadow: var(--shadow-premium);
+}
+
+.bons-shell__drawer--open {
+  transform: translateX(0);
+}
+
+.bons-shell__drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+}
+
+.bons-shell__drawer-title {
+  font-family: var(--font-heading);
+  font-size: var(--size-h2);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.bons-shell__drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.bons-shell__drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.bons-shell__drawer-list a,
+.bons-shell__drawer-logout {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  min-height: 48px;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 500;
+  padding: var(--space-sm);
+  border-radius: var(--radius-button);
+}
+
+.bons-shell__drawer-list a svg:first-child,
+.bons-shell__drawer-logout svg {
+  color: var(--color-primary);
+}
+
+.bons-shell__drawer-list a svg:last-child {
+  opacity: 0.3;
+}
+
+.bons-shell__drawer-list a:hover,
+.bons-shell__drawer-logout:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bons-shell__drawer-logout {
+  margin-top: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Scan funnel variant (dark hero) */
+.bons-shell--scan {
+  background: var(--color-secondary);
+  color: #fff;
+}
+
+.bons-shell__header--scan {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .bons-shell__header--scan {
+    padding: 0 var(--space-xl);
+  }
+}
+
+.bons-shell__header--scan .bons-shell__brand {
+  color: var(--color-primary);
+}
+
+.bons-shell__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  border-radius: var(--radius-button);
+}
+
+.bons-shell__icon-btn:hover {
+  color: #fff;
+}
+
+.bons-shell__scan-title {
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.bons-shell__bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-bottom-nav);
+  height: var(--height-bottom-nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-card);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.bons-shell__bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.bons-shell__bottom-nav a.bons-shell__bottom-link--active {
+  color: var(--color-primary);
+}
+
+@media (min-width: 900px) {
+  .bons-shell__bottom-nav {
+    display: none;
+  }
+}
+
+.bons-shell--scan .bons-shell__bottom-nav {
+  display: none;
+}

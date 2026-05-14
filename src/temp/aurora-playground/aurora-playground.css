@@ -1,0 +1,210 @@
+.aurora-playground {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  gap: var(--space-md);
+}
+
+.aurora-playground__hero {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(52, 211, 153, 0.2), transparent 32%),
+    var(--surface-card);
+  box-shadow: var(--shadow-premium);
+  padding: var(--space-lg);
+}
+
+.aurora-playground__eyebrow {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.aurora-playground h1 {
+  max-width: 620px;
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--text-high);
+  font-family: var(--font-heading);
+  font-size: var(--size-h1);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.aurora-playground p {
+  color: var(--text-muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.aurora-playground__hero p {
+  max-width: 680px;
+  margin: var(--space-sm) 0 0;
+}
+
+.aurora-playground__hero-actions,
+.aurora-playground__row {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.aurora-playground__grid {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.aurora-playground__grid--stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.aurora-playground__metric {
+  margin: 0 0 var(--space-sm);
+  color: var(--text-high) !important;
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.aurora-playground__stack {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-sm);
+}
+
+.aurora-playground__form-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.aurora-playground__selection-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.aurora-playground__table {
+  display: grid;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0;
+}
+
+.aurora-playground__table-head,
+.aurora-playground__table-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr 160px 120px;
+  gap: var(--space-sm);
+  align-items: center;
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-sm) 0;
+}
+
+.aurora-playground__table-head {
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.aurora-playground__table-row span:last-child,
+.aurora-playground__table-head span:last-child {
+  text-align: right;
+}
+
+@media (max-width: 1280px) {
+  .aurora-playground__grid,
+  .aurora-playground__grid--stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .aurora-playground__hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .aurora-playground__hero {
+    padding: var(--space-md);
+  }
+
+  .aurora-playground__hero-actions,
+  .aurora-playground__grid,
+  .aurora-playground__grid--stats,
+  .aurora-playground__form-grid,
+  .aurora-playground__selection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aurora-playground__hero-actions {
+    display: grid;
+    width: 100%;
+  }
+
+  .aurora-playground__table-head {
+    display: none;
+  }
+
+  .aurora-playground__table {
+    gap: var(--space-sm);
+  }
+
+  .aurora-playground__table-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card-standard);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-md);
+  }
+
+  .aurora-playground__table-row span {
+    display: flex;
+    min-width: 0;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .aurora-playground__table-row span::before {
+    color: var(--text-muted);
+    content: attr(data-label);
+    font-family: var(--font-heading);
+    font-size: var(--size-caption);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .aurora-playground__table-row span:last-child {
+    text-align: left;
+  }
+}

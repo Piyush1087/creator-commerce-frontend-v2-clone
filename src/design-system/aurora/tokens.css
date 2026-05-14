@@ -1,0 +1,71 @@
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap");
+
+:root {
+  --color-primary: #34d399;
+  --color-secondary: #061f23;
+  --color-tertiary: #f5926e;
+
+  --surface-workflow: #f0fdf4;
+  --surface-page: #f8f8f8;
+  --surface-card: #ffffff;
+
+  --border-default: #e5e7eb;
+
+  --text-high: #0e1214;
+  --text-muted: #6b7280;
+
+  --status-error: #ca0f1c;
+  --status-warning: #fff6f6;
+
+  --disabled-bg: #f3f4f6;
+  --disabled-text: #6b7280;
+
+  --font-heading: "Satoshi", sans-serif;
+  --font-body: "Source Sans 3", sans-serif;
+
+  --size-h1-desktop: 32px;
+  --size-h2-desktop: 24px;
+  --size-h1-mobile: 26px;
+  --size-h2-mobile: 20px;
+  --size-body: 14px;
+  --size-caption: 12px;
+
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-badge: 8px;
+  --radius-card-standard: 12px;
+  --radius-card-compact: 8px;
+  --radius-pill: 9999px;
+
+  --height-header: 72px;
+  --height-bottom-nav: 64px;
+  --height-input: 48px;
+  --height-button: 48px;
+
+  --shadow-card: 0 4px 20px rgba(6, 31, 35, 0.05);
+  --shadow-premium: 0 18px 55px rgba(6, 31, 35, 0.08);
+  --shadow-ai: 0 0 15px rgba(52, 211, 153, 0.4);
+
+  --z-sidebar: 100;
+  --z-header: 200;
+  --z-modal-overlay: 900;
+  --z-modal-content: 901;
+  --z-bottom-nav: 1000;
+
+  --size-h1: var(--size-h1-desktop);
+  --size-h2: var(--size-h2-desktop);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --size-h1: var(--size-h1-mobile);
+    --size-h2: var(--size-h2-mobile);
+  }
+}
