@@ -71,8 +71,8 @@ export function LandingUrlCapture({
 
   return (
     <form className="bob-url-form" onSubmit={handleSubmit}>
-      <div className={rowClass}>
-        <Link2 size={20} color="var(--color-primary)" aria-hidden />
+      <div className={`${rowClass} items-center`} style={{ display: "flex", alignItems: "center" }}>
+        <Link2 size={20} color="var(--color-primary)" aria-hidden style={{ alignSelf: "center" }} />
         <input
           className="bob-url-input"
           name="brandUrl"
