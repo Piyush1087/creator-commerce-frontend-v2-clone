@@ -6,7 +6,7 @@ type SetupVerificationModalProps = {
   open: boolean;
   onClose: () => void;
   onBack: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 };
 
 export function SetupVerificationModal({
@@ -104,7 +104,13 @@ export function SetupVerificationModal({
           </div>
         </div>
         <div className="bob-modal__footer bob-setup-footer">
-          <Button type="button" variant="primary" onClick={() => onConfirm()}>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => {
+              void Promise.resolve(onConfirm());
+            }}
+          >
             Verify &amp; Continue Setup →
           </Button>
           <div className="bob-setup-footer__row">

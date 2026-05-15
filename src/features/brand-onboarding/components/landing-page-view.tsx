@@ -18,8 +18,14 @@ import {
 
 import { Button } from "../../../design-system/aurora";
 
+import { postDiscoveryResolve, postDiscoveryValidate } from "../api/discovery-client";
+import type {
+  DiscoverValidateOrgClaimed,
+  ExistingBrandProfileSummary,
+} from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import { LandingUrlCapture } from "./landing-url-capture";
+import { OrgClaimedModal } from "./org-claimed-modal";
 import { ProcessPreviewModal } from "./process-preview-modal";
 import { SetupVerificationModal } from "./setup-verification-modal";
 
@@ -94,8 +100,69 @@ export function LandingPageView() {
   const [modalStep, setModalStep] = useState<"none" | "preview" | "setup">(
     "none",
   );
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [resumeProfilePreview, setResumeProfilePreview] =
+    useState<ExistingBrandProfileSummary | null>(null);
   const [scannedUrl, setScannedUrl] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [waitlistNotice, setWaitlistNotice] = useState<string | null>(null);
+  const [orgClaimed, setOrgClaimed] = useState<DiscoverValidateOrgClaimed | null>(
+    null,
+  );
+
+  const handleSubmitUrl = async (nextUrl: string) => {
+    setApiError(null);
+    setWaitlistNotice(null);
+    setOrgClaimed(null);
+    setLeadId(null);
+    setResumeProfilePreview(null);
+    setIsVerifying(true);
+    try {
+      const resolved = await postDiscoveryResolve({ url: nextUrl });
+      if (resolved.outcome === "blocked") {
+        setApiError(resolved.message);
+        return;
+      }
+      if (resolved.outcome === "org_claimed") {
+        setOrgClaimed(resolved);
+        return;
+      }
+      if (resolved.outcome === "resume") {
+        setScannedUrl(resolved.normalizedUrl);
+        setLeadId(resolved.leadId);
+        setResumeProfilePreview(resolved.existingBrandProfile ?? null);
+        setModalStep("preview");
+        return;
+      }
+
+      const validated = await postDiscoveryValidate({ url: nextUrl });
+      if (validated.outcome === "blocked") {
+        setApiError(validated.message);
+        return;
+      }
+      if (validated.outcome === "org_claimed") {
+        setOrgClaimed(validated);
+        return;
+      }
+      if (validated.outcome === "waitlist") {
+        setWaitlistNotice(
+          `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+        );
+        return;
+      }
+      setScannedUrl(validated.normalizedUrl);
+      setLeadId(validated.leadId);
+      setResumeProfilePreview(null);
+      setModalStep("preview");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setApiError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <div className="bob-landing">
@@ -109,14 +176,9 @@ export function LandingPageView() {
           </p>
           <LandingUrlCapture
             isBusy={isVerifying}
-            onSubmitUrl={(nextUrl) => {
-              setScannedUrl(nextUrl);
-              setIsVerifying(true);
-              window.setTimeout(() => {
-                setIsVerifying(false);
-                setModalStep("preview");
-              }, 2000);
-            }}
+            remoteError={apiError}
+            waitlistNotice={waitlistNotice}
+            onSubmitUrl={handleSubmitUrl}
           />
           {isVerifying ? (
             <div className="bob-verifying" aria-live="polite">
@@ -236,19 +298,13 @@ export function LandingPageView() {
               ))}
             </div>
           </div>
-          <div className="bob-terminal" aria-label="Mock security console">
+          <div className="bob-terminal" aria-label="Security overview">
             <div style={{ opacity: 0.85, lineHeight: 1.7 }}>
-              &gt; Initializing Meta Graph Handshake...
-              <br />
-              &gt; Requesting Read-Only Permissions (v25.0)
-              <br />
-              &gt; Encryption Key: AES-256-GCM Verified
-              <br />
-              &gt; SOC2 Compliance Check: PASS
-              <br />
-              &gt; User ID: **********
-              <br />
-              &gt; Connection Established. Security Handshake Complete.
+              <p style={{ margin: 0 }}>
+                Production integrations (Meta Graph, escrow, and compliance attestations) are
+                wired per environment. This page does not simulate live security handshakes or
+                fake audit output.
+              </p>
             </div>
             <div className="bob-terminal__lock">
               <Lock size={48} aria-hidden />
@@ -317,18 +373,60 @@ export function LandingPageView() {
         </div>
       </footer>
 
+      <OrgClaimedModal
+        open={orgClaimed !== null}
+        domain={orgClaimed?.domain ?? ""}
+        adminEmail={orgClaimed?.adminEmail ?? ""}
+        message={orgClaimed?.message ?? ""}
+        onClose={() => setOrgClaimed(null)}
+      />
       <ProcessPreviewModal
         open={modalStep === "preview"}
         onClose={() => setModalStep("none")}
         onContinue={() => setModalStep("setup")}
+        existingBrandProfile={resumeProfilePreview}
       />
       <SetupVerificationModal
         open={modalStep === "setup"}
         onClose={() => setModalStep("none")}
         onBack={() => setModalStep("preview")}
-        onConfirm={() => {
+        onConfirm={async () => {
           setModalStep("none");
-          navigate(ONBOARDING_ROUTES.scan, { state: { url: scannedUrl } });
+          setIsVerifying(true);
+          setApiError(null);
+          try {
+            let nextLeadId = leadId;
+            if (!nextLeadId) {
+              const validated = await postDiscoveryValidate({ url: scannedUrl });
+              if (validated.outcome === "blocked") {
+                setApiError(validated.message);
+                return;
+              }
+              if (validated.outcome === "org_claimed") {
+                setOrgClaimed(validated);
+                return;
+              }
+              if (validated.outcome === "waitlist") {
+                setWaitlistNotice(
+                  `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+                );
+                return;
+              }
+              nextLeadId = validated.leadId;
+              setLeadId(validated.leadId);
+            }
+            navigate(ONBOARDING_ROUTES.scan, {
+              state: { url: scannedUrl, leadId: nextLeadId },
+            });
+          } catch (err) {
+            const message =
+              err instanceof Error
+                ? err.message
+                : "Something went wrong. Please try again.";
+            setApiError(message);
+          } finally {
+            setIsVerifying(false);
+          }
         }}
       />
     </div>

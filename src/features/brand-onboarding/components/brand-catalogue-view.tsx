@@ -1,26 +1,55 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink, Package, Plus, Undo2, X } from "lucide-react";
 
 import { Alert, Badge, Button, Card, TextField } from "../../../design-system/aurora";
 
+import { getBrandProfile } from "../api/brand-client";
+import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
-import {
-  CATALOGUE_ROOT_DOMAIN,
-  INITIAL_CATALOGUE_OFFERS,
-  INITIAL_CATALOGUE_PRODUCTS,
-} from "../mock-data/catalogue-mock";
+import { mapOfferingsToCatalogue, parseHostnameFromUrl } from "../mappers/map-brand-profile";
+import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import type { CatalogueProduct } from "../types";
 
 export function BrandCatalogueView() {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<CatalogueProduct[]>(
-    INITIAL_CATALOGUE_PRODUCTS,
-  );
+  const [profile, setProfile] = useState<BrandProfileResponseBody | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [products, setProducts] = useState<CatalogueProduct[]>([]);
   const [removed, setRemoved] = useState<CatalogueProduct | null>(null);
   const [adding, setAdding] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const session = loadBrandOnboardingSession();
+    if (!session) {
+      setLoadError("Missing onboarding session. Go back and run a scan.");
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    void getBrandProfile(session.brandProfileId)
+      .then((p) => {
+        setProfile(p);
+        setProducts(mapOfferingsToCatalogue(p.offerings));
+        setLoadError(null);
+      })
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Unable to load catalogue data.";
+        setLoadError(message);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const rootDomain = useMemo(() => {
+    const session = loadBrandOnboardingSession();
+    const host = session ? parseHostnameFromUrl(session.normalizedUrl) : "";
+    return host.length > 0 ? host : profile?.domain ?? "your-domain.com";
+  }, [profile?.domain]);
 
   const visibleProducts = products.filter((product) => product.category !== "Collection");
 
@@ -36,14 +65,14 @@ export function BrandCatalogueView() {
     try {
       const parsed = new URL(newUrl);
       const host = parsed.hostname.replace(/^www\./, "");
-      if (!host.includes(CATALOGUE_ROOT_DOMAIN)) {
-        setError(`You can only add products from ${CATALOGUE_ROOT_DOMAIN}.`);
+      if (!host.includes(rootDomain)) {
+        setError(`You can only add products from ${rootDomain}.`);
         return;
       }
       const next: CatalogueProduct = {
         id: `manual-${Date.now()}`,
         name: "Preview & Edit Product",
-        description: "Mock mini-scan result. Confirming would save this later.",
+        description: "Manual add (not persisted yet).",
         category: "Top Seller",
         url: newUrl,
       };
@@ -63,8 +92,9 @@ export function BrandCatalogueView() {
             Product catalogue
           </h1>
           <p className="bob-muted">
-            Mock products locked to{" "}
-            <strong>{CATALOGUE_ROOT_DOMAIN}</strong> (prototype sample).
+            {isLoading
+              ? "Loading offerings from your latest scan…"
+              : `Products are locked to your scanned domain: ${rootDomain}`}
           </p>
         </div>
         <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
@@ -72,11 +102,17 @@ export function BrandCatalogueView() {
         </Button>
       </div>
 
+      {loadError ? (
+        <Alert title="Couldn’t load catalogue" tone="error">
+          {loadError}
+        </Alert>
+      ) : null}
+
       <div className="bob-inline" style={{ marginBottom: 16 }}>
         <Button type="button" variant="primary" onClick={() => setAdding(true)}>
           <Plus size={16} aria-hidden /> Add product URL
         </Button>
-        <Badge tone="pending">D2C product cards</Badge>
+        <Badge tone="pending">API-backed offerings</Badge>
       </div>
 
       {error ? (
@@ -117,6 +153,7 @@ export function BrandCatalogueView() {
               {product.url}
             </p>
             {product.description ? <p>{product.description}</p> : null}
+            {product.price ? <p className="bob-muted">Price: {product.price}</p> : null}
             <div className="bob-inline" style={{ marginTop: 12 }}>
               <Button type="button" variant="ghost">
                 <ExternalLink size={14} aria-hidden /> View URL
@@ -133,18 +170,10 @@ export function BrandCatalogueView() {
         <h2 className="aurora-card__title" style={{ fontSize: "var(--size-h2)" }}>
           Offers &amp; promos
         </h2>
-        <div className="bob-stack" style={{ marginTop: 12 }}>
-          {INITIAL_CATALOGUE_OFFERS.map((offer) => (
-            <Card
-              key={offer.id}
-              title={offer.title}
-              eyebrow={offer.type}
-              action={<Badge tone="success">{offer.code}</Badge>}
-            >
-              <p className="bob-muted">{offer.description}</p>
-            </Card>
-          ))}
-        </div>
+        <p className="bob-muted" style={{ marginTop: 8 }}>
+          Promotional bundles are not returned by the surface-scan API yet. This section is
+          reserved for a future catalogue extension.
+        </p>
       </section>
 
       <div className="bob-inline" style={{ marginTop: 24 }}>
@@ -174,13 +203,13 @@ export function BrandCatalogueView() {
             <div className="bob-inline" style={{ marginBottom: 12 }}>
               <Package size={18} color="var(--color-primary)" aria-hidden />
               <p className="bob-muted" style={{ margin: 0 }}>
-                Root domain gate is locked to {CATALOGUE_ROOT_DOMAIN}.
+                Root domain gate is locked to {rootDomain}.
               </p>
             </div>
             <TextField
               label="Offering URL"
               value={newUrl}
-              placeholder={`https://${CATALOGUE_ROOT_DOMAIN}/products/...`}
+              placeholder={`https://${rootDomain}/products/...`}
               onChange={(event) => setNewUrl(event.target.value)}
             />
             <div className="bob-inline" style={{ marginTop: 16 }}>

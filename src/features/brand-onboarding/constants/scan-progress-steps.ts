@@ -1,6 +1,7 @@
 import type { ScanStep } from "../types";
 
-export const SCAN_STEPS: ScanStep[] = [
+/** UI-only labels for the surface-scan progress animation (not sample brand data). */
+export const SCAN_PROGRESS_STEPS: ScanStep[] = [
   {
     id: "signals",
     label: "Reading brand signals",

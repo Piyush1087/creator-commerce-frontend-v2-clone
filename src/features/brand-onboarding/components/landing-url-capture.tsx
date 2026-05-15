@@ -7,7 +7,9 @@ import { urlSchema } from "../schemas/url-schema";
 
 type LandingUrlCaptureProps = {
   isBusy: boolean;
-  onSubmitUrl: (url: string) => void;
+  remoteError?: string | null;
+  waitlistNotice?: string | null;
+  onSubmitUrl: (url: string) => void | Promise<void>;
 };
 
 const LISTENING_MESSAGES = [
@@ -19,6 +21,8 @@ const LISTENING_MESSAGES = [
 
 export function LandingUrlCapture({
   isBusy,
+  remoteError,
+  waitlistNotice,
   onSubmitUrl,
 }: LandingUrlCaptureProps) {
   const [url, setUrl] = useState("");
@@ -41,7 +45,7 @@ export function LandingUrlCapture({
     return () => window.clearInterval(id);
   }, [listening]);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsed = urlSchema.safeParse(url);
     if (!parsed.success) {
@@ -50,10 +54,11 @@ export function LandingUrlCapture({
     }
     setError(null);
     setListening(true);
-    window.setTimeout(() => {
-      onSubmitUrl(parsed.data);
+    try {
+      await Promise.resolve(onSubmitUrl(parsed.data));
+    } finally {
       setListening(false);
-    }, 3000);
+    }
   };
 
   const rowClass = [
@@ -106,6 +111,16 @@ export function LandingUrlCapture({
       {error ? (
         <p className="bob-url-feedback bob-url-feedback--error">
           {error}
+        </p>
+      ) : null}
+      {remoteError ? (
+        <p className="bob-url-feedback bob-url-feedback--error" style={{ marginTop: 8 }}>
+          {remoteError}
+        </p>
+      ) : null}
+      {waitlistNotice ? (
+        <p className="aurora-field__helper" style={{ marginTop: 8, color: "var(--text-high)" }}>
+          {waitlistNotice}
         </p>
       ) : null}
       {listening ? (

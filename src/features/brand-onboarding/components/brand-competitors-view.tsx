@@ -1,22 +1,63 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ExternalLink, Globe, Plus, Undo2, X } from "lucide-react";
 
 import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 
-import { COMPETITORS_ROOT_DOMAIN, INITIAL_COMPETITORS } from "../mock-data/competitors-mock";
+import { getBrandProfile } from "../api/brand-client";
+import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
+import { mapCompetitorsToRows, parseHostnameFromUrl } from "../mappers/map-brand-profile";
+import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import type { CompetitorRow } from "../types";
 
 export function BrandCompetitorsView() {
   const navigate = useNavigate();
-  const [competitors, setCompetitors] = useState<CompetitorRow[]>(INITIAL_COMPETITORS);
-  const [activeId, setActiveId] = useState(INITIAL_COMPETITORS[0]?.id ?? "");
+  const [profile, setProfile] = useState<BrandProfileResponseBody | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [competitors, setCompetitors] = useState<CompetitorRow[]>([]);
+  const [activeId, setActiveId] = useState("");
   const [adding, setAdding] = useState(false);
   const [newUrl, setNewUrl] = useState("");
   const [narrative, setNarrative] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [removed, setRemoved] = useState<CompetitorRow | null>(null);
-  const active = competitors.find((row) => row.id === activeId) ?? competitors[0];
+
+  useEffect(() => {
+    const session = loadBrandOnboardingSession();
+    if (!session) {
+      setLoadError("Missing onboarding session. Go back and run a scan.");
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    void getBrandProfile(session.brandProfileId)
+      .then((p) => {
+        setProfile(p);
+        const rows = mapCompetitorsToRows(p.competitors);
+        setCompetitors(rows);
+        setActiveId(rows[0]?.id ?? "");
+        setLoadError(null);
+      })
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Unable to load competitor data.";
+        setLoadError(message);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const active = useMemo(
+    () => competitors.find((row) => row.id === activeId) ?? competitors[0],
+    [activeId, competitors],
+  );
+
+  const rootDomain = useMemo(() => {
+    const session = loadBrandOnboardingSession();
+    const host = session ? parseHostnameFromUrl(session.normalizedUrl) : "";
+    return host.length > 0 ? host : profile?.domain ?? "your-domain.com";
+  }, [profile?.domain]);
 
   const addCompetitor = () => {
     setError(null);
@@ -32,7 +73,9 @@ export function BrandCompetitorsView() {
       ];
       const host = url.hostname.replace(/^www\./, "");
       if (blacklist.includes(host)) {
-        setError("Please provide a direct brand website rather than a marketplace or social platform.");
+        setError(
+          "Please provide a direct brand website rather than a marketplace or social platform.",
+        );
         return;
       }
       if (narrative.trim().length < 60) {
@@ -57,9 +100,12 @@ export function BrandCompetitorsView() {
   };
 
   const removeCompetitor = (row: CompetitorRow) => {
-    setCompetitors((prev) => prev.filter((item) => item.id !== row.id));
+    setCompetitors((prev) => {
+      const next = prev.filter((item) => item.id !== row.id);
+      setActiveId((current) => (current === row.id ? next[0]?.id ?? "" : current));
+      return next;
+    });
     setRemoved(row);
-    setActiveId((prev) => (prev === row.id ? competitors[0]?.id ?? "" : prev));
   };
 
   return (
@@ -70,8 +116,9 @@ export function BrandCompetitorsView() {
             Competitor intelligence
           </h1>
           <p className="bob-muted">
-            Mock competitors for <strong>{COMPETITORS_ROOT_DOMAIN}</strong>. Add
-            flows can be layered after backend contracts land.
+            {isLoading
+              ? "Loading competitors from your latest scan…"
+              : `Root brand domain: ${rootDomain}`}
           </p>
         </div>
         <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
@@ -79,12 +126,18 @@ export function BrandCompetitorsView() {
         </Button>
       </div>
 
+      {loadError ? (
+        <Alert title="Couldn’t load competitors" tone="error">
+          {loadError}
+        </Alert>
+      ) : null}
+
       <div className="bob-inline" style={{ marginBottom: 16 }}>
         <Button type="button" variant="primary" onClick={() => setAdding(true)}>
           <Plus size={16} aria-hidden /> Add competitor
         </Button>
         <p className="bob-muted" style={{ margin: 0 }}>
-          Root brand: {COMPETITORS_ROOT_DOMAIN}
+          {profile?.name ? `Brand: ${profile.name}` : null}
         </p>
       </div>
 
@@ -182,24 +235,22 @@ export function BrandCompetitorsView() {
                 <X size={18} aria-hidden />
               </button>
             </div>
-            <div className="bob-stack">
-              <TextField
-                label="Competitor website"
-                value={newUrl}
-                placeholder="https://competitor.com"
-                onChange={(event) => setNewUrl(event.target.value)}
-              />
-              <TextField
-                label="Why this competitor matters"
-                multiline
-                rows={4}
-                value={narrative}
-                onChange={(event) => setNarrative(event.target.value)}
-              />
-            </div>
+            <TextField
+              label="Competitor website"
+              value={newUrl}
+              placeholder="https://competitor.com"
+              onChange={(event) => setNewUrl(event.target.value)}
+            />
+            <TextField
+              label="Why they compete (min 60 chars)"
+              multiline
+              rows={4}
+              value={narrative}
+              onChange={(event) => setNarrative(event.target.value)}
+            />
             <div className="bob-inline" style={{ marginTop: 16 }}>
               <Button type="button" variant="primary" onClick={addCompetitor}>
-                Add competitor
+                Save competitor
               </Button>
               <Button type="button" variant="secondary" onClick={() => setAdding(false)}>
                 Cancel

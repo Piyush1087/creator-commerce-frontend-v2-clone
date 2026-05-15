@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Brain, Check, Database, Shield, Target, Users, Zap } from "lucide-react";
+import { Check, Shield, Zap } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { Button } from "../../../design-system/aurora";
+
+import { postSurfaceScan } from "../api/brand-client";
 import { ONBOARDING_ROUTES } from "../constants";
-import { SCAN_STEPS } from "../mock-data/scan-steps";
+import { SCAN_PROGRESS_STEPS } from "../constants/scan-progress-steps";
+import { saveBrandOnboardingSession } from "../session/onboarding-session";
+
+type ScanLocationState = {
+  url?: string;
+  leadId?: string;
+};
 
 function deriveBrandName(rawUrl: string): string {
   try {
@@ -21,31 +30,92 @@ function deriveBrandName(rawUrl: string): string {
 export function BrandScanView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const brandUrl =
-    typeof location.state === "object" &&
-    location.state !== null &&
-    "url" in location.state &&
-    typeof (location.state as { url?: unknown }).url === "string"
-      ? (location.state as { url: string }).url
-      : "yourbrand.com";
+  const state = location.state as ScanLocationState | undefined;
+
+  const brandUrl = typeof state?.url === "string" ? state.url : "yourbrand.com";
+  const leadId = typeof state?.leadId === "string" ? state.leadId : "";
 
   const brandName = useMemo(() => deriveBrandName(brandUrl), [brandUrl]);
-  const [currentStep, setCurrentStep] = useState(0);
+
+  const [uiStep, setUiStep] = useState(0);
   const [completeSteps, setCompleteSteps] = useState<number[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [scanMode, setScanMode] = useState<"http" | "cached" | null>(null);
 
   useEffect(() => {
-    if (currentStep < SCAN_STEPS.length) {
-      const timer = window.setTimeout(() => {
-        setCompleteSteps((prev) => [...prev, currentStep]);
-        setCurrentStep((prev) => prev + 1);
-      }, 4000);
-      return () => window.clearTimeout(timer);
+    if (!leadId) {
+      setError("Missing discovery session. Go back to the landing page and start again.");
+      return;
     }
-    const done = window.setTimeout(() => {
-      navigate(ONBOARDING_ROUTES.dna, { state: { url: brandUrl } });
-    }, 2500);
-    return () => window.clearTimeout(done);
-  }, [brandUrl, currentStep, navigate]);
+
+    let cancelled = false;
+    let intervalId: number | undefined;
+
+    intervalId = window.setInterval(() => {
+      setUiStep((prev) => {
+        if (prev >= SCAN_PROGRESS_STEPS.length) {
+          if (intervalId) {
+            window.clearInterval(intervalId);
+          }
+          return prev;
+        }
+        const mark = Math.min(prev, SCAN_PROGRESS_STEPS.length - 1);
+        setCompleteSteps((done) => (done.includes(mark) ? done : [...done, mark]));
+        const next = prev + 1;
+        if (next >= SCAN_PROGRESS_STEPS.length && intervalId) {
+          window.clearInterval(intervalId);
+        }
+        return next;
+      });
+    }, 1400);
+
+    void (async () => {
+      try {
+        const result = await postSurfaceScan({ leadId });
+        if (cancelled) {
+          return;
+        }
+        setScanMode(result.mode);
+        saveBrandOnboardingSession({
+          leadId,
+          brandProfileId: result.brandProfileId,
+          normalizedUrl: brandUrl,
+        });
+        window.setTimeout(() => {
+          if (cancelled) {
+            return;
+          }
+          navigate(ONBOARDING_ROUTES.dna, {
+            state: {
+              url: brandUrl,
+              leadId,
+              brandProfileId: result.brandProfileId,
+              scanMode: result.mode,
+            },
+          });
+        }, Math.max(900, SCAN_PROGRESS_STEPS.length * 1400 - 500));
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        if (intervalId) {
+          window.clearInterval(intervalId);
+        }
+        const message =
+          err instanceof Error ? err.message : "Surface scan failed. Please try again.";
+        setError(message);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [brandUrl, leadId, navigate]);
+
+  const scanComplete = uiStep >= SCAN_PROGRESS_STEPS.length;
 
   return (
     <div className="bob-scan">
@@ -65,13 +135,33 @@ export function BrandScanView() {
           </p>
           <h1>{brandName}</h1>
           <p style={{ color: "rgba(255,255,255,0.65)", marginTop: 8 }}>
-            This takes a few seconds.
+            {error
+              ? "We couldn’t finish the scan."
+              : "This may take a little longer while we extract and synthesize public pages."}
           </p>
+          {scanMode ? (
+            <p style={{ color: "rgba(255,255,255,0.55)", marginTop: 8 }}>
+              Mode:{" "}
+              <strong style={{ color: "rgba(255,255,255,0.85)" }}>
+                {scanMode === "http"
+                  ? "Live extraction (Parallel + Gemini)"
+                  : "Cached profile (no vendor re-run)"}
+              </strong>
+            </p>
+          ) : null}
+          {error ? (
+            <div style={{ marginTop: 16 }}>
+              <p style={{ color: "#ffb4b4", marginBottom: 12 }}>{error}</p>
+              <Button type="button" variant="secondary" onClick={() => navigate("/")}>
+                Back to landing
+              </Button>
+            </div>
+          ) : null}
           <div className="bob-scan__steps" style={{ marginTop: 24 }}>
-            {SCAN_STEPS.map((step, index) => {
-              const isActive = currentStep === index;
+            {SCAN_PROGRESS_STEPS.map((step, index) => {
+              const isActive = uiStep === index;
               const isDone = completeSteps.includes(index);
-              const isPending = index > currentStep;
+              const isPending = index > uiStep;
               const dotClass = [
                 "bob-scan-step__dot",
                 isDone ? "bob-scan-step__dot--done" : "",
@@ -123,11 +213,28 @@ export function BrandScanView() {
             })}
           </div>
         </div>
-        <div className="bob-scan-visual" aria-label="Mock scan console">
-          <div className="bob-scan-orb">
-            <div className="bob-scan-orb__ring" />
-            <div className="bob-scan-orb__core">
-              <Zap size={44} aria-hidden />
+        <div className="bob-scan-visual" aria-label="Scan console">
+          <div className="bob-scan-orb-stage">
+            <div className="bob-scan-burst bob-scan-burst--1" aria-hidden />
+            <div className="bob-scan-burst bob-scan-burst--2" aria-hidden />
+            <div className="bob-scan-burst bob-scan-burst--3" aria-hidden />
+            <div className="bob-scan-orb-halo" aria-hidden />
+            <div
+              className={[
+                "bob-scan-orb-core",
+                scanComplete ? "bob-scan-orb-core--complete" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {scanComplete ? (
+                <Check size={56} strokeWidth={3} className="bob-scan-orb-check" aria-hidden />
+              ) : (
+                <Zap size={48} className="bob-scan-orb-zap" aria-hidden />
+              )}
+              <p className="bob-scan-orb-status">
+                {scanComplete ? "COMPLETE" : "EXTRACT + SYNTH"}
+              </p>
             </div>
           </div>
           <div className="bob-scan-console">
@@ -137,26 +244,20 @@ export function BrandScanView() {
               <span />
             </div>
             <p>&gt; public_domain: {brandUrl}</p>
-            <p>&gt; signal_map: visual_identity, products, audience</p>
-            <p>&gt; model_state: surface_scan_mock</p>
-            <p>&gt; output_target: Brand DNA</p>
+            <p>&gt; pipeline: parallel_extract → gemini_json → prisma_upsert</p>
+            <p>&gt; lead_id: {leadId ? `${leadId.slice(0, 8)}…` : "missing"}</p>
+            <p>&gt; output_target: BrandProfile + offerings + competitors + locations</p>
           </div>
           <div className="bob-scan-ai-card">
             <Shield size={18} color="var(--color-primary)" aria-hidden />
             <div>
               <strong>Aurora AI Active</strong>
               <p>
-                Our engine is non-intrusive. We are performing a read-only scan
-                of your public infrastructure.
+                Read-only extraction of public pages via Parallel and synthesis via Gemini.
+                If the server returns an error, confirm PARALLEL_API_KEY and GEMINI_API_KEY
+                are set on the API.
               </p>
             </div>
-          </div>
-          <div className="bob-scan-signal-grid" aria-hidden>
-            {[Brain, Database, Target, Users].map((Icon, index) => (
-              <span key={index}>
-                <Icon size={20} />
-              </span>
-            ))}
           </div>
         </div>
       </div>
