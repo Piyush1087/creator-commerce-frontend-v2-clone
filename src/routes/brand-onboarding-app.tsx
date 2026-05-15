@@ -6,6 +6,7 @@ import { BrandOnboardingCompetitorsPage } from "../pages/brand/onboarding/brand-
 import { BrandOnboardingDnaPage } from "../pages/brand/onboarding/brand-onboarding-dna-page";
 import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onboarding-landing-page";
 import { BrandOnboardingScanPage } from "../pages/brand/onboarding/brand-onboarding-scan-page";
+import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
 
 export function BrandOnboardingAppRoutes() {
   return (
@@ -24,6 +25,10 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/competitors"
           element={<BrandOnboardingCompetitorsPage />}
+        />
+        <Route
+          path="brand/onboarding/verification"
+          element={<BrandOnboardingVerificationPage />}
         />
       </Route>
     </Routes>

@@ -5,6 +5,7 @@ import { ExternalLink, Globe, Plus, Undo2, X } from "lucide-react";
 import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 
 import { getBrandProfile } from "../api/brand-client";
+import { ONBOARDING_ROUTES } from "../constants";
 import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { mapCompetitorsToRows, parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
@@ -216,8 +217,12 @@ export function BrandCompetitorsView() {
       </div>
 
       <div className="bob-inline" style={{ marginTop: 24 }}>
-        <Button type="button" variant="primary" onClick={() => navigate("/")}>
-          Finish onboarding preview
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => navigate(ONBOARDING_ROUTES.verification)}
+        >
+          Continue to verification
         </Button>
       </div>
 
