@@ -84,6 +84,18 @@ export type BrandProfileResponseBody = {
   locations: BrandProfileLocationResponse[];
 };
 
+export type SendBrandVerificationResponseBody = {
+  sent: boolean;
+  expiresInMinutes: number;
+  expiresAt: string;
+};
+
+export type VerifyBrandVerificationResponseBody = {
+  verified: boolean;
+  brandProfileId: string;
+  domain: string;
+};
+
 export type PatchBrandProfileRequestBody = {
   name?: string;
   tagline?: string | null;

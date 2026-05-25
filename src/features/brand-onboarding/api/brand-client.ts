@@ -1,17 +1,43 @@
 import { env } from "../../../shared/config/env";
+import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import type {
+  DiscoverValidateBrandActive,
+  DiscoverValidateOrgClaimed,
+  DiscoverValidateVerificationRequired,
+} from "../contracts/discovery.contracts";
 import type {
   BrandProfileResponseBody,
   PatchBrandProfileRequestBody,
+  SendBrandVerificationResponseBody,
   SurfaceScanResponseBody,
+  VerifyBrandVerificationResponseBody,
 } from "../contracts/brand.contracts";
 import {
   isBrandProfileResponse,
   isSurfaceScanResponse,
 } from "../contracts/brand.contracts";
 
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-} as const;
+function jsonHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    ...authAuthorizationHeader(),
+  };
+}
+
+export type SurfaceScanGatePayload =
+  | DiscoverValidateVerificationRequired
+  | DiscoverValidateBrandActive
+  | DiscoverValidateOrgClaimed;
+
+export class SurfaceScanGateError extends Error {
+  readonly gate: SurfaceScanGatePayload;
+
+  constructor(gate: SurfaceScanGatePayload) {
+    super(gate.message);
+    this.name = "SurfaceScanGateError";
+    this.gate = gate;
+  }
+}
 
 function nestHttpMessage(body: unknown): string | undefined {
   if (typeof body !== "object" || body === null) {
@@ -46,20 +72,50 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   return body;
 }
 
+function parseSurfaceScanGate(body: unknown): SurfaceScanGatePayload | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+  const outcome = (body as { outcome?: unknown }).outcome;
+  if (
+    outcome === "verification_required" ||
+    outcome === "brand_active" ||
+    outcome === "org_claimed"
+  ) {
+    return body as SurfaceScanGatePayload;
+  }
+  return null;
+}
+
 export async function postSurfaceScan(body: {
   leadId: string;
   force?: boolean;
 }): Promise<SurfaceScanResponseBody> {
   const response = await fetch(`${env.apiUrl}/api/v1/brand/surface-scan`, {
     method: "POST",
-    headers: JSON_HEADERS,
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
-  const json = await readJsonOrThrow(response);
-  if (!isSurfaceScanResponse(json)) {
+  const text = await response.text();
+  let parsed: unknown = undefined;
+  try {
+    parsed = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
+  } catch {
+    throw new Error("The server returned an invalid response. Please try again.");
+  }
+  if (!response.ok) {
+    const gate = parseSurfaceScanGate(parsed);
+    if (gate) {
+      throw new SurfaceScanGateError(gate);
+    }
+    const message =
+      nestHttpMessage(parsed) ?? `Request failed (${response.status}).`;
+    throw new Error(message);
+  }
+  if (!isSurfaceScanResponse(parsed)) {
     throw new Error("Unexpected response from surface scan.");
   }
-  return json;
+  return parsed;
 }
 
 export async function getBrandProfile(
@@ -76,6 +132,53 @@ export async function getBrandProfile(
   return json;
 }
 
+export async function sendBrandVerificationOtp(
+  brandProfileId: string,
+  email: string,
+): Promise<SendBrandVerificationResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/send`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ email }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { sent?: unknown }).sent !== "boolean" ||
+    typeof (json as { expiresAt?: unknown }).expiresAt !== "string"
+  ) {
+    throw new Error("Unexpected response from verification send.");
+  }
+  return json as SendBrandVerificationResponseBody;
+}
+
+export async function verifyBrandVerificationOtp(
+  brandProfileId: string,
+  body: { email: string; otp: string },
+): Promise<VerifyBrandVerificationResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/verify`,
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { verified?: unknown }).verified !== "boolean"
+  ) {
+    throw new Error("Unexpected response from verification verify.");
+  }
+  return json as VerifyBrandVerificationResponseBody;
+}
+
 export async function patchBrandProfile(
   brandProfileId: string,
   body: PatchBrandProfileRequestBody,
@@ -84,7 +187,7 @@ export async function patchBrandProfile(
     `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}`,
     {
       method: "PATCH",
-      headers: JSON_HEADERS,
+      headers: jsonHeaders(),
       body: JSON.stringify(body),
     },
   );

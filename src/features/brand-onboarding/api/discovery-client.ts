@@ -1,4 +1,5 @@
 import { env } from "../../../shared/config/env";
+import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   DiscoverValidateRequestBody,
   DiscoverValidateResponse,
@@ -9,9 +10,12 @@ import {
   isDiscoveryResolveResponse,
 } from "../contracts/discovery.contracts";
 
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-} as const;
+function jsonHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    ...authAuthorizationHeader(),
+  };
+}
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -39,7 +43,7 @@ export async function postDiscoveryResolve(
 ): Promise<DiscoveryResolveResponse> {
   const response = await fetch(`${env.apiUrl}/api/v1/discovery/resolve`, {
     method: "POST",
-    headers: JSON_HEADERS,
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
   const json = await readJsonOrThrow(response);
@@ -54,7 +58,7 @@ export async function postDiscoveryValidate(
 ): Promise<DiscoverValidateResponse> {
   const response = await fetch(`${env.apiUrl}/api/v1/discovery/validate`, {
     method: "POST",
-    headers: JSON_HEADERS,
+    headers: jsonHeaders(),
     body: JSON.stringify(body),
   });
   const json = await readJsonOrThrow(response);

@@ -62,29 +62,35 @@ export type DiscoverValidateOrgClaimed = {
   adminEmail: string;
 };
 
+export type DiscoverValidateBrandActive = {
+  outcome: "brand_active";
+  message: string;
+  domain: string;
+};
+
+export type DiscoverValidateVerificationRequired = {
+  outcome: "verification_required";
+  message: string;
+  domain: string;
+  brandProfileId: string;
+  reason: "DOMAIN_LIMIT" | "IP_LIMIT";
+};
+
 export type DiscoverValidateResponse =
   | DiscoverValidateSuccess
   | DiscoverValidateWaitlist
   | DiscoverValidateBlocked
-  | DiscoverValidateOrgClaimed;
-
-export type ExistingBrandProfileSummary = {
-  brandProfileId: string;
-  name: string;
-  scanStatus: string;
-  tagline: string | null;
-  descriptionPreview: string | null;
-  offerings: number;
-  competitors: number;
-  locations: number;
-};
+  | DiscoverValidateOrgClaimed
+  | DiscoverValidateBrandActive
+  | DiscoverValidateVerificationRequired;
 
 export type DiscoveryResolveResume = {
   outcome: "resume";
   leadId: string;
   normalizedUrl: string;
   industry: IndustryVertical;
-  existingBrandProfile?: ExistingBrandProfileSummary;
+  brandProfileId: string;
+  domain: string;
 };
 
 export type DiscoveryResolveProceed = {
@@ -98,7 +104,9 @@ export type DiscoveryResolveResponse =
   | DiscoveryResolveResume
   | DiscoveryResolveProceed
   | DiscoverValidateBlocked
-  | DiscoverValidateOrgClaimed;
+  | DiscoverValidateOrgClaimed
+  | DiscoverValidateBrandActive
+  | DiscoverValidateVerificationRequired;
 
 export type DiscoverWaitlistRequestBody = {
   email: string;
@@ -124,7 +132,9 @@ export function isDiscoverValidateResponse(
     outcome === "success" ||
     outcome === "waitlist" ||
     outcome === "blocked" ||
-    outcome === "org_claimed"
+    outcome === "org_claimed" ||
+    outcome === "brand_active" ||
+    outcome === "verification_required"
   );
 }
 
@@ -139,7 +149,9 @@ export function isDiscoveryResolveResponse(
     outcome === "resume" ||
     outcome === "proceed" ||
     outcome === "blocked" ||
-    outcome === "org_claimed"
+    outcome === "org_claimed" ||
+    outcome === "brand_active" ||
+    outcome === "verification_required"
   );
 }
 

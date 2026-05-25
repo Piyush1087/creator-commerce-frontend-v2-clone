@@ -7,23 +7,20 @@ import {
   X,
 } from "lucide-react";
 
-import { Button, Card } from "../../../design-system/aurora";
+import { Button } from "../../../design-system/aurora";
 
-import type { ExistingBrandProfileSummary } from "../contracts/discovery.contracts";
 import { PROCESS_JOURNEY_STEPS } from "../constants/process-journey-steps";
 
 type ProcessPreviewModalProps = {
   open: boolean;
   onClose: () => void;
   onContinue: () => void;
-  existingBrandProfile?: ExistingBrandProfileSummary | null;
 };
 
 export function ProcessPreviewModal({
   open,
   onClose,
   onContinue,
-  existingBrandProfile,
 }: ProcessPreviewModalProps) {
   if (!open) {
     return null;
@@ -62,34 +59,6 @@ export function ProcessPreviewModal({
             brand identity, audience, positioning, and growth goals. Here&apos;s
             what happens next:
           </p>
-
-          {existingBrandProfile ? (
-            <Card title="Saved brand profile (preview)" eyebrow="Already on file">
-              <p className="bob-muted" style={{ marginTop: 0 }}>
-                We found an existing surface scan for this domain. You can continue
-                to review it in the funnel, or start a fresh scan later with a forced
-                refresh from the API.
-              </p>
-              <p style={{ marginBottom: 6 }}>
-                <strong>{existingBrandProfile.name}</strong>
-              </p>
-              <p className="bob-muted" style={{ marginTop: 0 }}>
-                Status: <strong>{existingBrandProfile.scanStatus}</strong> ·
-                Offerings: <strong>{existingBrandProfile.offerings}</strong> ·
-                Competitors: <strong>{existingBrandProfile.competitors}</strong> ·
-                Locations: <strong>{existingBrandProfile.locations}</strong>
-              </p>
-              {existingBrandProfile.tagline ? (
-                <p style={{ marginTop: 8 }}>{existingBrandProfile.tagline}</p>
-              ) : null}
-              {existingBrandProfile.descriptionPreview ? (
-                <p className="bob-muted" style={{ marginTop: 8, lineHeight: 1.5 }}>
-                  {existingBrandProfile.descriptionPreview}
-                  {existingBrandProfile.descriptionPreview.length >= 280 ? "…" : null}
-                </p>
-              ) : null}
-            </Card>
-          ) : null}
 
           <div className="bob-journey">
             {PROCESS_JOURNEY_STEPS.map((step, index) => {

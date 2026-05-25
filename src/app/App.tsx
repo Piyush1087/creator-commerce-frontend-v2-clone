@@ -1,11 +1,11 @@
 import { BrowserRouter } from "react-router-dom";
 
-import { BrandOnboardingAppRoutes } from "../routes/brand-onboarding-app";
+import { AppRoutes } from "../routes/app-routes";
 
 export function App() {
   return (
     <BrowserRouter>
-      <BrandOnboardingAppRoutes />
+      <AppRoutes />
     </BrowserRouter>
   );
 }

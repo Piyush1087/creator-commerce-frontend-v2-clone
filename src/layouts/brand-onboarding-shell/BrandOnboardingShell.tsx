@@ -157,21 +157,6 @@ export function BrandOnboardingShell() {
       <main className="bons-shell__main">
         <Outlet />
       </main>
-
-      <nav className="bons-shell__bottom-nav" aria-label="Mobile quick nav">
-        {MOBILE_NAV.map((item) => (
-          <Link
-            key={item.label}
-            to={item.path}
-            className={
-              location.pathname === item.path ? "bons-shell__bottom-link--active" : ""
-            }
-          >
-            <item.Icon size={20} aria-hidden />
-            <span>{item.label}</span>
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }

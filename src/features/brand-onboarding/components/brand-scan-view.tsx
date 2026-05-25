@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../../../design-system/aurora";
 
-import { postSurfaceScan } from "../api/brand-client";
+import { postSurfaceScan, SurfaceScanGateError } from "../api/brand-client";
 import { ONBOARDING_ROUTES } from "../constants";
 import { SCAN_PROGRESS_STEPS } from "../constants/scan-progress-steps";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
@@ -96,6 +96,23 @@ export function BrandScanView() {
         }, Math.max(900, SCAN_PROGRESS_STEPS.length * 1400 - 500));
       } catch (err) {
         if (cancelled) {
+          return;
+        }
+        if (err instanceof SurfaceScanGateError) {
+          if (err.gate.outcome === "verification_required") {
+            saveBrandOnboardingSession({
+              leadId,
+              brandProfileId: err.gate.brandProfileId,
+              normalizedUrl: brandUrl,
+            });
+            navigate(ONBOARDING_ROUTES.verification);
+            return;
+          }
+          if (err.gate.outcome === "brand_active") {
+            navigate("/login");
+            return;
+          }
+          setError(err.gate.message);
           return;
         }
         if (intervalId) {
