@@ -1,3 +1,4 @@
+/** Modal copy describing the funnel (product messaging, not scraped brand data). */
 export const PROCESS_JOURNEY_STEPS = [
   {
     number: "01",
