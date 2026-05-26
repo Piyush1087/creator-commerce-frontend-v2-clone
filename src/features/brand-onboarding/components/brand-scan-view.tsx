@@ -5,7 +5,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../../design-system/aurora";
 
 import { postSurfaceScan, SurfaceScanGateError } from "../api/brand-client";
+import { isHttpApiError } from "../api/http-api-error";
 import { ONBOARDING_ROUTES } from "../constants";
+import { landingStateFromScanGate } from "../landing-gate-redirect";
 import { SCAN_PROGRESS_STEPS } from "../constants/scan-progress-steps";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
 
@@ -98,25 +100,29 @@ export function BrandScanView() {
         if (cancelled) {
           return;
         }
-        if (err instanceof SurfaceScanGateError) {
-          if (err.gate.outcome === "verification_required") {
-            saveBrandOnboardingSession({
-              leadId,
-              brandProfileId: err.gate.brandProfileId,
-              normalizedUrl: brandUrl,
-            });
-            navigate(ONBOARDING_ROUTES.verification);
-            return;
-          }
-          if (err.gate.outcome === "brand_active") {
-            navigate("/login");
-            return;
-          }
-          setError(err.gate.message);
-          return;
-        }
         if (intervalId) {
           window.clearInterval(intervalId);
+        }
+        if (err instanceof SurfaceScanGateError) {
+          navigate(ONBOARDING_ROUTES.landing, {
+            replace: true,
+            state: {
+              gate: landingStateFromScanGate(err.gate, {
+                leadId,
+                normalizedUrl: brandUrl,
+              }),
+            },
+          });
+          return;
+        }
+        if (isHttpApiError(err) && err.isRateLimited) {
+          navigate(ONBOARDING_ROUTES.landing, {
+            replace: true,
+            state: {
+              gate: { kind: "rate_limit", message: err.message },
+            },
+          });
+          return;
         }
         const message =
           err instanceof Error ? err.message : "Surface scan failed. Please try again.";

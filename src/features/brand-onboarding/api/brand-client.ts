@@ -16,6 +16,7 @@ import {
   isBrandProfileResponse,
   isSurfaceScanResponse,
 } from "../contracts/brand.contracts";
+import { httpErrorFromResponse, nestHttpMessage } from "./http-api-error";
 
 function jsonHeaders(): Record<string, string> {
   return {
@@ -39,23 +40,6 @@ export class SurfaceScanGateError extends Error {
   }
 }
 
-function nestHttpMessage(body: unknown): string | undefined {
-  if (typeof body !== "object" || body === null) {
-    return undefined;
-  }
-  const raw = (body as { message?: unknown }).message;
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw;
-  }
-  if (Array.isArray(raw)) {
-    const parts = raw.filter((item): item is string => typeof item === "string");
-    if (parts.length > 0) {
-      return parts.join(" ");
-    }
-  }
-  return undefined;
-}
-
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
   let body: unknown = undefined;
@@ -65,9 +49,7 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
     throw new Error("The server returned an invalid response. Please try again.");
   }
   if (!response.ok) {
-    const message =
-      nestHttpMessage(body) ?? `Request failed (${response.status}).`;
-    throw new Error(message);
+    throw httpErrorFromResponse(response, body);
   }
   return body;
 }
@@ -108,9 +90,7 @@ export async function postSurfaceScan(body: {
     if (gate) {
       throw new SurfaceScanGateError(gate);
     }
-    const message =
-      nestHttpMessage(parsed) ?? `Request failed (${response.status}).`;
-    throw new Error(message);
+    throw httpErrorFromResponse(response, parsed);
   }
   if (!isSurfaceScanResponse(parsed)) {
     throw new Error("Unexpected response from surface scan.");

@@ -91,8 +91,9 @@ export function buildPatchFromDna(
 
   return {
     name: data.brandName,
-    tagline: data.tagline,
-    description: data.description,
+    tagline: data.tagline.trim().length > 0 ? data.tagline.trim() : null,
+    description:
+      data.description.trim().length > 0 ? data.description.trim() : null,
     logoUrl: data.logo.trim().length > 0 ? data.logo : null,
     industry,
     visualIdentity: {
@@ -107,7 +108,10 @@ export function buildPatchFromDna(
     brandValues: baseline.brandValues,
     policyFlags: baseline.policyFlags,
     targetAudience: {
-      personaName: data.persona.name,
+      personaName:
+        data.persona.name.trim().length > 0
+          ? data.persona.name.trim()
+          : "General audience",
       countries,
       ageRange: [ageMin, ageMax],
       affluence: data.persona.affluence,

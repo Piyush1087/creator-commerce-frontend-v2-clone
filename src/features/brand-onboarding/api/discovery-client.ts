@@ -9,6 +9,7 @@ import {
   isDiscoverValidateResponse,
   isDiscoveryResolveResponse,
 } from "../contracts/discovery.contracts";
+import { httpErrorFromResponse } from "./http-api-error";
 
 function jsonHeaders(): Record<string, string> {
   return {
@@ -26,14 +27,7 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
     throw new Error("The server returned an invalid response. Please try again.");
   }
   if (!response.ok) {
-    const message =
-      typeof body === "object" &&
-      body !== null &&
-      "message" in body &&
-      typeof (body as { message: unknown }).message === "string"
-        ? (body as { message: string }).message
-        : `Request failed (${response.status}).`;
-    throw new Error(message);
+    throw httpErrorFromResponse(response, body);
   }
   return body;
 }

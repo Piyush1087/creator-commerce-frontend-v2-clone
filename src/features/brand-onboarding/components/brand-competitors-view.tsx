@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, Globe, Plus, Undo2, X } from "lucide-react";
+import { ExternalLink, Plus, Undo2, X } from "lucide-react";
 
 import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 
 import { getBrandProfile } from "../api/brand-client";
+import { BrandImageAvatar } from "./brand-image-avatar";
 import { ONBOARDING_ROUTES } from "../constants";
 import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { mapCompetitorsToRows, parseHostnameFromUrl } from "../mappers/map-brand-profile";
@@ -176,7 +177,12 @@ export function BrandCompetitorsView() {
               }
               onClick={() => setActiveId(row.id)}
             >
-              {row.logo ? <img src={row.logo} alt="" /> : <Globe size={22} />}
+              <BrandImageAvatar
+                className="bob-competitor-pill__avatar"
+                src={row.logo}
+                label={row.name}
+                size={44}
+              />
               <span>{row.name}</span>
             </button>
           ))}

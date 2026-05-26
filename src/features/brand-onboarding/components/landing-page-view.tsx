@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Calendar,
@@ -19,14 +19,17 @@ import {
 import { Button } from "../../../design-system/aurora";
 
 import { postDiscoveryResolve, postDiscoveryValidate } from "../api/discovery-client";
+import { isHttpApiError } from "../api/http-api-error";
 import type {
   DiscoverValidateBrandActive,
   DiscoverValidateOrgClaimed,
   DiscoverValidateVerificationRequired,
 } from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
+import type { LandingGateRedirect, LandingGateRedirectState } from "../landing-gate-redirect";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
 import { BrandActiveModal } from "./brand-active-modal";
+import { RateLimitModal } from "./rate-limit-modal";
 import { LandingUrlCapture } from "./landing-url-capture";
 import { OrgClaimedModal } from "./org-claimed-modal";
 import { ProcessPreviewModal } from "./process-preview-modal";
@@ -100,8 +103,51 @@ const CAPABILITIES = [
   },
 ] as const;
 
+function applyLandingGateRedirect(
+  gate: LandingGateRedirect,
+  handlers: {
+    setRateLimitModal: (value: { message?: string } | null) => void;
+    setVerificationRequired: (v: DiscoverValidateVerificationRequired | null) => void;
+    setBrandActive: (v: DiscoverValidateBrandActive | null) => void;
+    setOrgClaimed: (v: DiscoverValidateOrgClaimed | null) => void;
+    setBrandProfileId: (id: string | null) => void;
+    setLeadId: (id: string | null) => void;
+    setScannedUrl: (url: string) => void;
+  },
+): void {
+  handlers.setRateLimitModal(null);
+  handlers.setVerificationRequired(null);
+  handlers.setBrandActive(null);
+  handlers.setOrgClaimed(null);
+
+  switch (gate.kind) {
+    case "rate_limit":
+      handlers.setRateLimitModal({ message: gate.message });
+      break;
+    case "verification_required":
+      handlers.setVerificationRequired(gate.payload);
+      handlers.setBrandProfileId(gate.payload.brandProfileId);
+      if (gate.leadId) {
+        handlers.setLeadId(gate.leadId);
+      }
+      if (gate.normalizedUrl) {
+        handlers.setScannedUrl(gate.normalizedUrl);
+      }
+      break;
+    case "brand_active":
+      handlers.setBrandActive(gate.payload);
+      break;
+    case "org_claimed":
+      handlers.setOrgClaimed(gate.payload);
+      break;
+    default:
+      break;
+  }
+}
+
 export function LandingPageView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [modalStep, setModalStep] = useState<"none" | "preview" | "setup">(
     "none",
   );
@@ -121,6 +167,27 @@ export function LandingPageView() {
   );
   const [verificationRequired, setVerificationRequired] =
     useState<DiscoverValidateVerificationRequired | null>(null);
+  const [rateLimitModal, setRateLimitModal] = useState<{ message?: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const state = location.state as LandingGateRedirectState | null;
+    const gate = state?.gate;
+    if (!gate) {
+      return;
+    }
+    applyLandingGateRedirect(gate, {
+      setRateLimitModal,
+      setVerificationRequired,
+      setBrandActive,
+      setOrgClaimed,
+      setBrandProfileId,
+      setLeadId,
+      setScannedUrl,
+    });
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
 
   const ensureLeadForUrl = async (url: string): Promise<string | null> => {
     const validated = await postDiscoveryValidate({ url });
@@ -136,6 +203,7 @@ export function LandingPageView() {
     setOrgClaimed(null);
     setBrandActive(null);
     setVerificationRequired(null);
+    setRateLimitModal(null);
     setShowResumeModal(false);
     setLeadId(null);
     setBrandProfileId(null);
@@ -213,6 +281,10 @@ export function LandingPageView() {
       setLeadId(validated.leadId);
       setModalStep("preview");
     } catch (err) {
+      if (isHttpApiError(err) && err.isRateLimited) {
+        setRateLimitModal({ message: err.message });
+        return;
+      }
       const message =
         err instanceof Error ? err.message : "Something went wrong. Please try again.";
       setApiError(message);
@@ -430,6 +502,11 @@ export function LandingPageView() {
         </div>
       </footer>
 
+      <RateLimitModal
+        open={rateLimitModal !== null}
+        message={rateLimitModal?.message}
+        onClose={() => setRateLimitModal(null)}
+      />
       <OrgClaimedModal
         open={orgClaimed !== null}
         domain={orgClaimed?.domain ?? ""}
@@ -446,7 +523,7 @@ export function LandingPageView() {
       <VerificationRequiredModal
         open={verificationRequired !== null}
         domain={verificationRequired?.domain ?? ""}
-        message={verificationRequired?.message ?? ""}
+        reason={verificationRequired?.reason}
         brandProfileId={verificationRequired?.brandProfileId ?? brandProfileId ?? ""}
         leadId={leadId}
         normalizedUrl={scannedUrl}
@@ -486,6 +563,15 @@ export function LandingPageView() {
                 setOrgClaimed(validated);
                 return;
               }
+              if (validated.outcome === "brand_active") {
+                setBrandActive(validated);
+                return;
+              }
+              if (validated.outcome === "verification_required") {
+                setVerificationRequired(validated);
+                setBrandProfileId(validated.brandProfileId);
+                return;
+              }
               if (validated.outcome === "waitlist") {
                 setWaitlistNotice(
                   `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
@@ -497,10 +583,22 @@ export function LandingPageView() {
                 setLeadId(validated.leadId);
               }
             }
+            if (!nextLeadId) {
+              setApiError("Could not start a scan session. Please try your URL again.");
+              return;
+            }
             navigate(ONBOARDING_ROUTES.scan, {
               state: { url: scannedUrl, leadId: nextLeadId },
             });
           } catch (err) {
+            if (isHttpApiError(err) && err.isRateLimited) {
+              setRateLimitModal({ message: err.message });
+              return;
+            }
+            if (err instanceof Error && err.message.includes("ThrottlerException")) {
+              setRateLimitModal({});
+              return;
+            }
             const message =
               err instanceof Error
                 ? err.message

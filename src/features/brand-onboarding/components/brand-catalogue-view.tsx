@@ -5,6 +5,7 @@ import { ExternalLink, Package, Plus, Undo2, X } from "lucide-react";
 import { Alert, Badge, Button, Card, TextField } from "../../../design-system/aurora";
 
 import { getBrandProfile } from "../api/brand-client";
+import { BrandImageAvatar } from "./brand-image-avatar";
 import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import { mapOfferingsToCatalogue, parseHostnameFromUrl } from "../mappers/map-brand-profile";
@@ -138,17 +139,13 @@ export function BrandCatalogueView() {
       <div className="bob-grid-cap">
         {visibleProducts.map((product) => (
           <Card key={product.id} title={product.name} eyebrow={product.category}>
-            {product.image ? (
-              <img
-                src={product.image}
-                alt=""
-                style={{
-                  width: "100%",
-                  borderRadius: "var(--radius-card-compact)",
-                  marginBottom: 12,
-                }}
-              />
-            ) : null}
+            <BrandImageAvatar
+              className="bob-catalogue-card__image"
+              src={product.image}
+              label={product.name}
+              alt={product.name}
+              size={120}
+            />
             <p className="bob-muted" style={{ fontSize: "var(--size-caption)" }}>
               {product.url}
             </p>

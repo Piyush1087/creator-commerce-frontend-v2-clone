@@ -1,14 +1,18 @@
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { ShieldAlert, X } from "lucide-react";
 
 import { Button } from "../../../design-system/aurora";
 import { ONBOARDING_ROUTES } from "../constants";
+import {
+  scanLimitVerificationCopy,
+  type ScanLimitReason,
+} from "../scan-limit-messages";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
 
 type VerificationRequiredModalProps = {
   open: boolean;
   domain: string;
-  message: string;
+  reason?: ScanLimitReason;
   brandProfileId: string;
   leadId: string | null;
   normalizedUrl: string;
@@ -18,7 +22,7 @@ type VerificationRequiredModalProps = {
 export function VerificationRequiredModal({
   open,
   domain,
-  message,
+  reason = "DOMAIN_LIMIT",
   brandProfileId,
   leadId,
   normalizedUrl,
@@ -29,6 +33,8 @@ export function VerificationRequiredModal({
   if (!open) {
     return null;
   }
+
+  const copy = scanLimitVerificationCopy(reason, domain);
 
   const goVerify = () => {
     if (leadId) {
@@ -57,7 +63,7 @@ export function VerificationRequiredModal({
       >
         <div className="bob-funnel-page__header">
           <h2 id="bob-verify-required-title" className="aurora-card__title">
-            Verification required
+            {copy.title}
           </h2>
           <button
             type="button"
@@ -68,11 +74,25 @@ export function VerificationRequiredModal({
             <X size={18} aria-hidden />
           </button>
         </div>
-        <p className="bob-muted" style={{ marginBottom: 16 }}>
-          {message}
+        <p
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "flex-start",
+            marginBottom: 16,
+            color: "var(--text-high)",
+          }}
+        >
+          <ShieldAlert
+            size={20}
+            aria-hidden
+            style={{ flexShrink: 0, marginTop: 2, color: "var(--color-primary)" }}
+          />
+          <span>{copy.body}</span>
         </p>
         <p style={{ marginBottom: 16, fontWeight: 600 }}>
-          Domain: <span style={{ fontFamily: "ui-monospace, monospace" }}>{domain}</span>
+          Domain:{" "}
+          <span style={{ fontFamily: "ui-monospace, monospace" }}>{domain}</span>
         </p>
         <Button
           type="button"

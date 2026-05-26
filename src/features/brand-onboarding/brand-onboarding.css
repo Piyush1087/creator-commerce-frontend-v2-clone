@@ -1369,17 +1369,76 @@
   height: 64px;
   border-radius: var(--radius-card-compact);
   border: 1px solid var(--border-default);
-  background: var(--color-secondary);
   padding: var(--space-xs);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.bob-dna-logo img {
+.bob-dna-logo img,
+.bob-image-avatar img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.bob-image-avatar {
+  flex-shrink: 0;
+  border-radius: var(--radius-card-compact);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card, #fff);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bob-image-avatar--fallback {
+  background: linear-gradient(
+    145deg,
+    rgba(52, 211, 153, 0.18) 0%,
+    var(--surface-workflow, #f3f4f6) 55%
+  );
+}
+
+.bob-image-avatar__letter {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: var(--color-primary, #006c4b);
+  line-height: 1;
+  user-select: none;
+}
+
+.bob-dna-logo.bob-image-avatar--fallback .bob-image-avatar__letter {
+  font-size: 1.5rem;
+}
+
+.bob-catalogue-card__image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 12px;
+  border-radius: var(--radius-card-compact);
+}
+
+.bob-catalogue-card__image.bob-image-avatar {
+  width: 100%;
+  height: auto;
+  min-height: 120px;
+}
+
+.bob-catalogue-card__image.bob-image-avatar--fallback .bob-image-avatar__letter {
+  font-size: 2rem;
+}
+
+.bob-competitor-pill__avatar {
+  border-radius: 50%;
+}
+
+.bob-competitor-pill__avatar.bob-image-avatar--fallback .bob-image-avatar__letter {
+  font-size: 1rem;
 }
 
 .bob-dna-logo-row h2 {

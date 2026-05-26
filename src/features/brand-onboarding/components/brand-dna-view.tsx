@@ -5,6 +5,7 @@ import { Pencil, Plus, X } from "lucide-react";
 import { Alert, Button, Card, Chip, TextField } from "../../../design-system/aurora";
 
 import { getBrandProfile, patchBrandProfile } from "../api/brand-client";
+import { BrandImageAvatar } from "./brand-image-avatar";
 import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import { EMPTY_BRAND_DNA } from "../constants/empty-brand-dna";
@@ -144,7 +145,14 @@ export function BrandDnaView() {
       setError("Briefs work best with concise descriptions. Please trim this down.");
       return;
     }
-    if (draft.trim().length === 0) {
+    const optionalWhenEmpty: EditableTarget["field"][] = [
+      "tagline",
+      "description",
+    ];
+    if (
+      draft.trim().length === 0 &&
+      !optionalWhenEmpty.includes(editTarget.field)
+    ) {
       setError(`${editTarget.label} is required.`);
       return;
     }
@@ -273,18 +281,18 @@ export function BrandDnaView() {
 
           <Card title="Visual identity" eyebrow="AI extracted">
             <div className="bob-dna-logo-row">
-              <div className="bob-dna-logo">
-                {data.logo.trim().length > 0 ? (
-                  <img src={data.logo} alt={`${data.brandName} logo`} />
-                ) : (
-                  <div className="bob-muted" style={{ padding: 16 }}>
-                    No logo URL yet
-                  </div>
-                )}
-              </div>
+              <BrandImageAvatar
+                className="bob-dna-logo"
+                src={data.logo}
+                label={data.brandName}
+                alt={`${data.brandName} logo`}
+                size={64}
+              />
               <div>
                 <h2>{data.brandName}</h2>
-                <p>{data.tagline}</p>
+                <p className={data.tagline.trim() ? undefined : "bob-muted"}>
+                  {data.tagline.trim() || "No tagline from scan — edit to add one"}
+                </p>
               </div>
             </div>
             <TagGroup
