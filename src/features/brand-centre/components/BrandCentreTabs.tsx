@@ -1,35 +1,104 @@
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-export function BrandCentreTabs() {
-  const tabs = [
-    { id: 'dna', label: 'Tab 1: Brand DNA', active: true },
-    { id: 'intelligence', label: 'Tab 2: Intelligence & Gaps' },
-    { id: 'planner', label: 'Tab 3: Campaign Planner', badge: '3 Pending' },
-  ];
+import {
+  BRAND_CENTRE_TABS,
+  type BrandCentreTabId,
+  getBrandCentreTabById,
+} from "../constants/brand-centre-tabs";
+
+type BrandCentreTabsProps = {
+  activeTabId: BrandCentreTabId;
+  onTabChange?: (tabId: BrandCentreTabId) => void;
+};
+
+export function BrandCentreTabs({ activeTabId, onTabChange }: BrandCentreTabsProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const activeTab = getBrandCentreTabById(activeTabId);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isMobileMenuOpen]);
+
+  const selectTab = (tabId: BrandCentreTabId) => {
+    onTabChange?.(tabId);
+    setIsMobileMenuOpen(false);
+  };
 
   return (
-    <div className="aurora-brand-tabs">
-      {/* Desktop Tabs */}
+    <div className="aurora-brand-tabs" ref={rootRef}>
       <div className="aurora-brand-tabs__desktop">
-        {tabs.map((tab) => (
+        {BRAND_CENTRE_TABS.map((tab) => (
           <button
             key={tab.id}
-            className={`aurora-brand-tabs__item ${tab.active ? 'aurora-brand-tabs__item--active' : ''}`}
+            type="button"
+            className={`aurora-brand-tabs__item ${tab.id === activeTabId ? "aurora-brand-tabs__item--active" : ""}`}
+            onClick={() => selectTab(tab.id)}
           >
             {tab.label}
-            {tab.badge && (
+            {tab.badge ? (
               <span className="aurora-brand-tabs__badge">{tab.badge}</span>
-            )}
+            ) : null}
           </button>
         ))}
       </div>
 
-      {/* Mobile Tabs (Dropdown style as per reference) */}
       <div className="aurora-brand-tabs__mobile">
-        <button className="aurora-brand-tabs__trigger">
-          <span>Tab 1: Brand DNA</span>
-          <ChevronDown size={18} />
+        <button
+          type="button"
+          className="aurora-brand-tabs__trigger"
+          aria-expanded={isMobileMenuOpen}
+          aria-controls={menuId}
+          onClick={() => setIsMobileMenuOpen((open) => !open)}
+        >
+          <span>{activeTab.label}</span>
+          <ChevronDown
+            size={18}
+            className={isMobileMenuOpen ? "aurora-brand-tabs__chevron--open" : undefined}
+          />
         </button>
+
+        {isMobileMenuOpen ? (
+          <div id={menuId} className="aurora-brand-tabs__dropdown" role="menu">
+            {BRAND_CENTRE_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="menuitem"
+                className={`aurora-brand-tabs__dropdown-item ${tab.id === activeTabId ? "aurora-brand-tabs__dropdown-item--active" : ""}`}
+                onClick={() => selectTab(tab.id)}
+              >
+                <span>{tab.label}</span>
+                {tab.badge ? (
+                  <span className="aurora-brand-tabs__badge">{tab.badge}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

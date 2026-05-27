@@ -110,6 +110,20 @@
   white-space: nowrap;
 }
 
+button.aurora-sidebar__link {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+button.aurora-sidebar__link:hover {
+  background: var(--bg-sidebar-hover);
+  color: white;
+}
+
 .aurora-sidebar__link:hover {
   background: var(--bg-sidebar-hover);
   color: white;
@@ -230,7 +244,7 @@
   justify-content: center;
   height: 100%;
   padding-top: 1px;
-  color: var(--border-default);
+  color: inherit;
 }
 
 .aurora-header__current {
@@ -291,6 +305,11 @@
   display: none;
 }
 
+/* Mobile-only breadcrumb strip below header */
+.aurora-mobile-shell-nav {
+  display: none;
+}
+
 /* Main Page Content Area */
 .aurora-shell__main {
   flex: 1;
@@ -298,6 +317,11 @@
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
+}
+
+.aurora-shell__main--flush {
+  padding: 0;
+  max-width: none;
 }
 
 /* Mobile Drawer (Sidebar from Right) */
@@ -362,11 +386,18 @@
 .aurora-drawer__link {
   display: flex;
   align-items: center;
+  gap: 12px;
   padding: 12px 16px;
   border-radius: 12px;
   color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
   font-family: var(--font-heading);
+  border: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  font-size: inherit;
+  text-align: left;
 }
 
 .aurora-drawer__link--active {
@@ -374,9 +405,24 @@
   color: var(--color-primary);
 }
 
-/* Mobile Footer - Removed in favor of non-sticky bottom nav */
+/* Mobile Footer - Removed in favor of fixed bottom nav */
 .aurora-footer {
   display: none !important;
+}
+
+/* Mobile Bottom Navigation - Hidden by default on desktop */
+.aurora-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border-top: 1px solid var(--border-default);
+  justify-content: space-around;
+  font-family: var(--font-heading);
+  height: var(--height-bottom-nav);
 }
 
 /* Responsive Overrides - Changed from 1024px to 768px */
@@ -393,36 +439,57 @@
     position: relative; /* Non-sticky as per request */
     padding: 0 16px;
   }
-  
+
   .aurora-header__logo {
     display: flex;
   }
-  
+
   .aurora-header__menu-trigger {
     display: grid;
   }
-  
+
   .aurora-header__breadcrumbs {
     display: none;
+  }
+
+  .aurora-mobile-shell-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    background: white;
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .aurora-mobile-shell-nav__separator {
+    flex-shrink: 0;
+    color: inherit;
+  }
+
+  .aurora-mobile-shell-nav__current {
+    color: var(--text-high);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   
   .aurora-shell__main {
     padding: 24px 16px;
     padding-bottom: calc(var(--height-bottom-nav) + 32px); /* Space for fixed nav */
   }
+
+  .aurora-shell__main--flush {
+    padding: 0;
+    padding-bottom: var(--height-bottom-nav);
+  }
   
   .aurora-bottom-nav {
     display: flex;
-    position: fixed; /* Fixed to screen bottom */
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: white;
-    border-top: 1px solid var(--border-default);
-    justify-content: space-around;
-    font-family: var(--font-heading);
-    height: var(--height-bottom-nav);
   }
 }
 
@@ -438,6 +505,12 @@
   cursor: pointer;
   padding: 8px;
   text-decoration: none;
+  font: inherit;
+}
+
+.aurora-bottom-nav__item--disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .aurora-bottom-nav__item span {

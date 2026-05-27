@@ -1,5 +1,4 @@
 import { Edit2, HelpCircle } from "lucide-react";
-import { Link } from "react-router-dom";
 import type { BrandCentreData } from "../types";
 
 interface BudgetManagementProps {
@@ -43,9 +42,23 @@ export function BudgetManagement({ data }: BudgetManagementProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI-Calculated Strategic Allocation Mix</h3>
-            <Link to="/brand-centre-budget" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-primary)', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', textDecoration: 'none' }}>
+            <button
+              type="button"
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: "var(--color-primary)",
+                fontWeight: 700,
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                cursor: "pointer",
+              }}
+            >
               Know how the budget split is planned <HelpCircle size={14} />
-            </Link>
+            </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>

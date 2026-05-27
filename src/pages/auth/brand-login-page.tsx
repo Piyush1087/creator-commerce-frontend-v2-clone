@@ -25,7 +25,7 @@ export function BrandLoginPage() {
     setIsSubmitting(true);
     try {
       await loginBrand({ email: email.trim(), otp: code });
-      navigate(AUTH_ROUTES.brandDashboard, { replace: true });
+      navigate(AUTH_ROUTES.brandCentre, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
     } finally {

@@ -5,7 +5,7 @@ import "../../../features/brand-centre/brand-centre.css";
 export function BrandCentreBudgetPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <BrandCentreTabs />
+      <BrandCentreTabs activeTabId="dna" />
       
       <div style={{ padding: '32px', maxWidth: '800px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '32px' }}>
         {/* BREADCRUMBS (Content-specific) */}
