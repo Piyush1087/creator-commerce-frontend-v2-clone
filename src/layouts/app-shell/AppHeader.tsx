@@ -1,32 +1,65 @@
+import { Bell, Menu, ChevronRight } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Button } from "../../design-system/aurora";
+
 type AppHeaderProps = {
   isMenuOpen: boolean;
   onToggleMenu: () => void;
 };
 
-export function AppHeader({ isMenuOpen, onToggleMenu }: AppHeaderProps) {
+export function AppHeader({ onToggleMenu }: AppHeaderProps) {
+  const location = useLocation();
+  
+  const getPageTitle = () => {
+    if (location.pathname.includes('brand-centre-budget')) return 'Budget Alignment';
+    if (location.pathname.includes('brand-centre')) return 'Solv Skincare';
+    return 'Dashboard';
+  };
+
+  const getBreadcrumb = () => {
+    if (location.pathname.includes('brand-centre')) return 'Brand Centre';
+    return 'Home';
+  };
+
   return (
     <header className="aurora-header">
-      <div className="aurora-header__breadcrumbs" aria-label="Breadcrumb">
-        <span>TheCreatorShop</span>
-        <span>/</span>
-        <span className="aurora-header__current">Aurora Playground</span>
+      <div className="aurora-header__left">
+        <div className="aurora-header__logo">
+          <div className="aurora-header__logo-mark">T</div>
+        </div>
+        <div className="aurora-header__breadcrumbs">
+          <span>{getBreadcrumb()}</span>
+          <div className="aurora-header__separator">
+            <ChevronRight size={14} />
+          </div>
+          <span className="aurora-header__current">{getPageTitle()}</span>
+        </div>
       </div>
-      <div className="aurora-header__actions">
-        <button
-          aria-label="Notifications"
-          className="aurora-header__icon-button"
-          type="button"
+
+      <div className="aurora-header__right">
+        <Button 
+          variant="primary" 
+          style={{ height: 40, paddingInline: 24, fontSize: 13 }}
         >
-          N
+          Upgrade
+        </Button>
+        
+        <button className="aurora-header__btn" aria-label="Notifications">
+          <Bell size={18} />
         </button>
-        <button
-          aria-expanded={isMenuOpen}
-          aria-label="Open navigation menu"
-          className="aurora-header__icon-button aurora-header__menu"
+
+        <div className="aurora-header__user">
+          <div className="aurora-header__avatar">
+            B
+          </div>
+        </div>
+
+        <button 
+          className="aurora-header__btn aurora-header__menu-trigger" 
           onClick={onToggleMenu}
-          type="button"
+          aria-label="Open Menu"
         >
-          M
+          <Menu size={18} />
         </button>
       </div>
     </header>

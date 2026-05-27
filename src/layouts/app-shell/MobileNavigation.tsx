@@ -1,3 +1,5 @@
+import { X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { navigationItems } from "./navigation";
 
 type MobileNavigationProps = {
@@ -6,54 +8,59 @@ type MobileNavigationProps = {
 };
 
 export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
+  const location = useLocation();
+
   return (
     <>
-      {isOpen && (
-        <aside className="aurora-mobile-drawer" aria-label="Mobile navigation">
-          <div className="aurora-mobile-drawer__header">
-            <span className="aurora-mobile-drawer__title">Navigation</span>
-            <button
-              aria-label="Close navigation menu"
-              className="aurora-header__icon-button"
-              onClick={onClose}
-              type="button"
-            >
-              X
-            </button>
-          </div>
-          <nav className="aurora-mobile-drawer__nav">
-            {navigationItems.map((item) => (
-              <a
-                className={
-                  item.active
-                    ? "aurora-mobile-drawer__link aurora-mobile-drawer__link--active"
-                    : "aurora-mobile-drawer__link"
-                }
-                href="#"
-                key={item.label}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </a>
-            ))}
-          </nav>
-        </aside>
-      )}
-      <nav className="aurora-bottom-nav" aria-label="Mobile bottom navigation">
-        {navigationItems.slice(0, 4).map((item) => (
-          <button
-            className={
-              item.active
-                ? "aurora-bottom-nav__item aurora-bottom-nav__item--active"
-                : "aurora-bottom-nav__item"
-            }
-            key={item.label}
-            type="button"
+      <div 
+        className={`aurora-drawer-overlay ${isOpen ? "aurora-drawer-overlay--open" : ""}`} 
+        onClick={onClose} 
+      />
+      <aside className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}>
+        <div className="aurora-drawer__header">
+          <span className="aurora-drawer__title">The Creator Shop</span>
+          <button 
+            className="aurora-header__btn" 
+            onClick={onClose}
+            style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.6)' }}
           >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
+            <X size={20} />
           </button>
-        ))}
+        </div>
+
+        <nav className="aurora-drawer__nav">
+          {navigationItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.label}
+                to={item.path}
+                className={`aurora-drawer__link ${isActive ? "aurora-drawer__link--active" : ""}`}
+                onClick={onClose}
+              >
+                <item.icon size={20} style={{ marginRight: 12 }} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Mobile Bottom Navigation - Spread evenly, non-sticky */}
+      <nav className="aurora-bottom-nav">
+        {navigationItems.slice(0, 4).map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={`aurora-bottom-nav__item ${isActive ? "aurora-bottom-nav__item--active" : ""}`}
+            >
+              <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </>
   );
