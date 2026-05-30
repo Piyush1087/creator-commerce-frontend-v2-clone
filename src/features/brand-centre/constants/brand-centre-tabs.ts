@@ -19,7 +19,6 @@ export const BRAND_CENTRE_TABS: BrandCentreTabDefinition[] = [
     id: "planner",
     label: "Campaign Planner",
     headerTitle: "Campaign Planner",
-    badge: "3 Pending",
   },
 ];
 

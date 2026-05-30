@@ -1,6 +1,7 @@
 import { env } from "../../../shared/config/env";
 import {
   authAuthorizationHeader,
+  loadAuthSession,
   saveAuthSession,
   type AuthSessionV1,
 } from "../../../shared/auth/auth-session";
@@ -73,7 +74,21 @@ export async function loginBrand(body: {
     throw new Error("Unexpected login response.");
   }
   persistAuthResponse(json);
+  try {
+    await refreshAuthSessionFromServer();
+  } catch {
+    // keep login token + user from login response
+  }
   return json;
+}
+
+export async function refreshAuthSessionFromServer(): Promise<void> {
+  const session = loadAuthSession();
+  if (!session?.accessToken) {
+    return;
+  }
+  const user = await fetchAuthMe();
+  saveAuthSession({ accessToken: session.accessToken, user });
 }
 
 export async function completeBrandRegistration(body: {
@@ -92,6 +107,11 @@ export async function completeBrandRegistration(body: {
     throw new Error("Unexpected registration response.");
   }
   persistAuthResponse(json);
+  try {
+    await refreshAuthSessionFromServer();
+  } catch {
+    // keep registration token + user from response
+  }
   return json as CompleteBrandRegistrationResponseBody;
 }
 
