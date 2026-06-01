@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { AUTH_ROUTES } from "../../../features/auth/constants";
 import {
   ChevronDown,
   ChevronUp,
@@ -74,6 +76,11 @@ export function CampaignWorkspaceZone1({
 
   return (
     <div className={`uce-zone1 ${isExpanded ? "" : "uce-zone1--collapsed"}`}>
+      <nav className="uce-zone1-breadcrumb" aria-label="Breadcrumb">
+        <Link to={AUTH_ROUTES.brandUceCampaigns}>Campaigns</Link>
+        <span aria-hidden="true">›</span>
+        <span className="uce-zone1-breadcrumb-current">{campaignName}</span>
+      </nav>
       <section className="uce-glass-card uce-zone1-hero">
         <div className="uce-zone1-hero-inner">
           <div className="uce-zone1-hero-main">

@@ -7,6 +7,9 @@ export const MOCK_CAMPAIGNS: CampaignSummary[] = [
     objective: "Awareness",
     status: "LIVE",
     influencerCount: 42,
+    productsConnected: 2,
+    timelineRule: "Fixed Duration",
+    pipelineBar: [70, 20, 10],
     budget: {
       consumed: 8400,
       total: 12000,
@@ -19,6 +22,9 @@ export const MOCK_CAMPAIGNS: CampaignSummary[] = [
     objective: "Sales",
     status: "LIVE",
     influencerCount: 15,
+    productsConnected: 1,
+    timelineRule: "Ongoing Pipeline",
+    pipelineBar: [100, 0, 0],
     budget: {
       consumed: 15000,
       total: 50000,
@@ -31,6 +37,9 @@ export const MOCK_CAMPAIGNS: CampaignSummary[] = [
     objective: "Traffic",
     status: "DRAFT",
     influencerCount: 0,
+    productsConnected: 0,
+    timelineRule: "Fixed Duration",
+    pipelineBar: [0, 0, 0],
     budget: {
       consumed: 0,
       total: 25000,

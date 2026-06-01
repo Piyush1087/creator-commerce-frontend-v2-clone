@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, Eye, Edit2, Download, PlusCircle } from "lucide-react";
+import { Search, Filter, Eye, Edit2, Download, PlusCircle, Archive } from "lucide-react";
 import { Button } from "../../../design-system/aurora/components/Button";
 import { Card } from "../../../design-system/aurora/components/Card";
 import { Badge } from "../../../design-system/aurora/components/Badge";
@@ -46,95 +46,211 @@ export function CampaignListTabs() {
 function OperationsTab() {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState(MOCK_CAMPAIGNS);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
+
+  const visibleCampaigns = campaigns.filter((c) =>
+    showArchived ? c.status === "ARCHIVED" : c.status !== "ARCHIVED",
+  );
 
   const toggleStatus = (id: string) => {
-    setCampaigns(prev => prev.map(c => 
-      c.id === id ? { ...c, status: c.status === "LIVE" ? "PAUSED" : "LIVE" } : c
-    ));
+    setCampaigns((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, status: c.status === "LIVE" ? "PAUSED" : "LIVE" }
+          : c,
+      ),
+    );
   };
+
+  const toggleRowSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === visibleCampaigns.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleCampaigns.map((c) => c.id)));
+    }
+  };
+
+  const budgetPct = (consumed: number, total: number) =>
+    total > 0 ? Math.round((consumed / total) * 100) : 0;
 
   return (
     <div className="operations-tab">
       <div className="operations-tab__filters">
         <div className="search-box">
           <Search size={18} className="text-muted" />
-          <input type="text" placeholder="Search campaigns..." />
+          <input type="text" placeholder="Search campaigns by name or ID..." />
         </div>
         <div className="filter-group">
-          <select className="aurora-select">
-            <option>All Objectives</option>
+          <select className="aurora-select" defaultValue="">
+            <option value="">All Objectives</option>
+            <option value="awareness">Awareness</option>
+            <option value="sales">Sales</option>
+            <option value="traffic">Traffic</option>
           </select>
-          <select className="aurora-select">
-            <option>All Timeline Rules</option>
+          <select className="aurora-select" defaultValue="">
+            <option value="">All Timeline Rules</option>
+            <option value="fixed">Fixed Duration</option>
+            <option value="ongoing">Ongoing Pipeline</option>
           </select>
           <Button variant="outline" className="filter-btn">
             <Filter size={16} />
             More Filters
           </Button>
+          <button
+            type="button"
+            className={`operations-archived-btn ${showArchived ? "is-active" : ""}`}
+            onClick={() => setShowArchived((v) => !v)}
+          >
+            <Archive size={16} />
+            {showArchived ? "Back to Active List" : "View Archived"}
+          </button>
         </div>
       </div>
 
       <Card className="operations-tab__table-card">
         <div className="uce-table-scroll">
-        <table className="performance-matrix">
-          <thead>
-            <tr>
-              <th>Campaign Context</th>
-              <th>Status Toggle</th>
-              <th>Influencer Pipeline</th>
-              <th>Budget Consumption</th>
-              <th>Launch Timeline</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {campaigns.map((campaign) => (
-              <tr
-                key={campaign.id}
-                className="campaign-row-clickable"
-                onClick={() => navigate(buildCampaignDetailPath(campaign.id))}
-              >
-                <td className="campaign-name">
-                  <div>
-                    <strong>{campaign.name}</strong>
-                    <span>
-                      {campaign.id} • {campaign.objective}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="status-toggle-cell">
-                    <Toggle 
-                      checked={campaign.status === "LIVE"} 
-                      onChange={() => toggleStatus(campaign.id)} 
-                      label={campaign.status}
-                    />
-                  </div>
-                </td>
-                <td>{campaign.influencerCount} Creators</td>
-                <td>
-                  <div className="budget-cell">
-                    <span>${(campaign.budget.consumed / 1000).toFixed(1)}k / ${(campaign.budget.total / 1000).toFixed(1)}k</span>
-                    <small>({Math.round((campaign.budget.consumed / campaign.budget.total) * 100)}%)</small>
-                  </div>
-                </td>
-                <td>Ends {campaign.endDate}</td>
-                <td className="actions" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    title="Open campaign workspace"
-                    onClick={() => navigate(buildCampaignDetailPath(campaign.id))}
-                  >
-                    <Eye size={18} />
-                  </button>
-                  <button type="button" title="Edit campaign">
-                    <Edit2 size={18} />
-                  </button>
-                </td>
+          <table className="performance-matrix">
+            <thead>
+              <tr>
+                <th className="ops-th-check">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all campaigns"
+                    checked={
+                      visibleCampaigns.length > 0 &&
+                      selectedIds.size === visibleCampaigns.length
+                    }
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th>Campaign Context</th>
+                <th>Status Toggle</th>
+                <th>Influencer Pipeline</th>
+                <th>Budget Consumption</th>
+                <th>Launch Timeline</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibleCampaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="operations-empty-row">
+                    No {showArchived ? "archived" : "active"} campaigns in this view.
+                  </td>
+                </tr>
+              ) : (
+                visibleCampaigns.map((campaign) => {
+                  const pct = budgetPct(
+                    campaign.budget.consumed,
+                    campaign.budget.total,
+                  );
+                  const [p1, p2, p3] = campaign.pipelineBar;
+                  return (
+                    <tr
+                      key={campaign.id}
+                      className={`campaign-row-clickable ${selectedIds.has(campaign.id) ? "is-selected" : ""}`}
+                      onClick={() => navigate(buildCampaignDetailPath(campaign.id))}
+                    >
+                      <td className="ops-td-check" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${campaign.name}`}
+                          checked={selectedIds.has(campaign.id)}
+                          onChange={() => toggleRowSelected(campaign.id)}
+                        />
+                      </td>
+                      <td className="campaign-name">
+                        <div className="campaign-context-cell">
+                          <div>
+                            <strong>{campaign.name}</strong>
+                            <span className="campaign-id-line">{campaign.id}</span>
+                          </div>
+                          <div className="campaign-context-chips">
+                            <span className="uce-objective-pill">{campaign.objective}</span>
+                            <span className="uce-products-chip">
+                              {campaign.productsConnected} Product
+                              {campaign.productsConnected === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <div className="status-toggle-cell">
+                          <Toggle
+                            checked={campaign.status === "LIVE"}
+                            onChange={() => toggleStatus(campaign.id)}
+                            label={campaign.status}
+                          />
+                        </div>
+                      </td>
+                      <td>
+                        <div className="ops-pipeline-cell">
+                          <div
+                            className="ops-mini-bar ops-mini-bar--pipeline"
+                            role="img"
+                            aria-label={`Pipeline: ${campaign.influencerCount} creators`}
+                          >
+                            {p1 > 0 && (
+                              <span style={{ width: `${p1}%` }} className="seg-prospects" />
+                            )}
+                            {p2 > 0 && (
+                              <span style={{ width: `${p2}%` }} className="seg-applicants" />
+                            )}
+                            {p3 > 0 && (
+                              <span style={{ width: `${p3}%` }} className="seg-active" />
+                            )}
+                          </div>
+                          <span className="ops-mini-label">
+                            {campaign.influencerCount} Creators
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="ops-budget-cell">
+                          <div className="ops-mini-bar ops-mini-bar--budget">
+                            <span style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="ops-budget-text">
+                            ${(campaign.budget.consumed / 1000).toFixed(1)}k / $
+                            {(campaign.budget.total / 1000).toFixed(1)}k
+                          </span>
+                          <small>({pct}%)</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="ops-timeline-cell">
+                          <span className="ops-timeline-rule">{campaign.timelineRule}</span>
+                          <span className="ops-timeline-date">Ends {campaign.endDate}</span>
+                        </div>
+                      </td>
+                      <td className="actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          title="Open campaign workspace"
+                          onClick={() => navigate(buildCampaignDetailPath(campaign.id))}
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button type="button" title="Edit campaign">
+                          <Edit2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

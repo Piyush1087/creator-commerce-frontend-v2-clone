@@ -1,4 +1,9 @@
-export type CampaignStatus = "LIVE" | "PAUSED" | "DRAFT" | "COMPLETED";
+export type CampaignStatus =
+  | "LIVE"
+  | "PAUSED"
+  | "DRAFT"
+  | "COMPLETED"
+  | "ARCHIVED";
 
 export interface CampaignSummary {
   id: string;
@@ -6,6 +11,11 @@ export interface CampaignSummary {
   objective: string;
   status: CampaignStatus;
   influencerCount: number;
+  productsConnected: number;
+  /** e.g. Fixed Duration, Ongoing Pipeline */
+  timelineRule: string;
+  /** Segment widths for mini pipeline bar (prospects %, applicants %, active %) */
+  pipelineBar: [number, number, number];
   budget: {
     consumed: number;
     total: number;

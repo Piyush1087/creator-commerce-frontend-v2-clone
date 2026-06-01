@@ -1143,6 +1143,66 @@
   flex: 1;
 }
 
+.uce-hide-on-mobile {
+  display: block;
+}
+
+.uce-show-on-mobile {
+  display: none;
+}
+
+.uce-prospect-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uce-prospect-card {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.uce-prospect-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.uce-prospect-card-head strong {
+  display: block;
+  font-size: 14px;
+}
+
+.uce-prospect-card-head span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.uce-prospect-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.uce-prospect-card-audience {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.uce-prospect-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
 @media (max-width: 767px) {
   .uce-pipeline-workspace {
     margin: 0 16px 24px;
@@ -1157,5 +1217,13 @@
   .uce-hide-sm,
   .uce-hide-md {
     display: none !important;
+  }
+
+  .uce-hide-on-mobile {
+    display: none !important;
+  }
+
+  .uce-show-on-mobile {
+    display: flex !important;
   }
 }

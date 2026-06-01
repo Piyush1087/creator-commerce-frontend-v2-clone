@@ -164,7 +164,9 @@ export function BrandUceCampaignDetailPage() {
       <CampaignShareRouterModal
         isOpen={isShareRouterOpen}
         onClose={() => setIsShareRouterOpen(false)}
+        campaignName={campaign.name}
         campaignSlug={campaignSlug}
+        products={enrichedProducts.map((p) => ({ id: p.id, name: p.name }))}
       />
     </div>
   );

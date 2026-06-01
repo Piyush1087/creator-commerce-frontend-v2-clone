@@ -31,5 +31,12 @@ export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
     };
   }
 
+  if (location.pathname === AUTH_ROUTES.brandUceCampaignCreate) {
+    return {
+      breadcrumb: "Campaigns",
+      title: "Create Campaign",
+    };
+  }
+
   return baseMeta;
 }

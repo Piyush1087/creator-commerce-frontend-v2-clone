@@ -18,6 +18,31 @@ import { Button } from "../../../../design-system/aurora/components/Button";
 const CREATOR_IMG =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBhPsy4KMWgRB56itgMD0L96klzBRSqD5ud_llppR_EM57AH7qTm72xy6grORo3bbiQo2Isy8IVGvBcNCDaL641fIHvzNy1e4ttqCIcU5aidY85uAKz0qy5aKfwJUnmd3sm_5agt2prLtfsVXxQgbGk6hBWS3BFRFQNiz213M5PuYraXhjh_UXA6T5Mx6jpvw8-WDARDaBfcInPTd4b4-2qgRDiQTO_nfrHxHJn02bdJLuh37I_UvamAjHBD8ZpcMgO0CCj9TH_BQ";
 
+const PROSPECT_ROWS = [
+  {
+    handle: "@elenarose_fit",
+    brief: "Summer Skin Routine",
+    source: "META_MARKETPLACE",
+    sourceTone: "emerald" as const,
+    audience: "42.5k – 120k",
+    match: "94% Match",
+    status: "No Outreach",
+    statusTone: null,
+    cta: "Priority DM",
+  },
+  {
+    handle: "@clara_vibe",
+    brief: "Summer Skin Routine",
+    source: "MANUAL_IMPORT",
+    sourceTone: "slate" as const,
+    audience: "18k – 55k",
+    match: "88% Match",
+    status: "INVITE_SENT",
+    statusTone: "blue" as const,
+    cta: "Priority DM",
+  },
+];
+
 type ProspectsView = "onboarding" | "grid";
 
 export function ProspectsTabPanel() {
@@ -134,7 +159,7 @@ export function ProspectsTabPanel() {
         </button>
       </div>
 
-      <div className="uce-table-wrap">
+      <div className="uce-table-wrap uce-hide-on-mobile">
         <table className="uce-data-table">
           <thead>
             <tr>
@@ -150,68 +175,81 @@ export function ProspectsTabPanel() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>
-                <input type="checkbox" aria-label="Select row" />
-              </td>
-              <td>
-                <div className="uce-creator-cell">
-                  <img src={CREATOR_IMG} alt="" className="uce-creator-avatar" />
-                  <div>
-                    <strong>@elenarose_fit</strong>
-                    <span>Assigned Brief: Summer Skin Routine</span>
+            {PROSPECT_ROWS.map((row) => (
+              <tr key={row.handle}>
+                <td>
+                  <input type="checkbox" aria-label={`Select ${row.handle}`} />
+                </td>
+                <td>
+                  <div className="uce-creator-cell">
+                    <img src={CREATOR_IMG} alt="" className="uce-creator-avatar" />
+                    <div>
+                      <strong>{row.handle}</strong>
+                      <span>Assigned Brief: {row.brief}</span>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td>
-                <span className="uce-pill uce-pill--emerald">META_MARKETPLACE</span>
-              </td>
-              <td className="uce-hide-sm">42.5k – 120k</td>
-              <td>
-                <span className="uce-match-grade">
-                  <span className="uce-match-dot" /> 94% Match
-                </span>
-              </td>
-              <td className="uce-text-muted">No Outreach</td>
-              <td>
-                <Button variant="outline" size="sm">
-                  Priority DM
-                </Button>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <input type="checkbox" />
-              </td>
-              <td>
-                <div className="uce-creator-cell">
-                  <img src={CREATOR_IMG} alt="" className="uce-creator-avatar" />
-                  <div>
-                    <strong>@clara_vibe</strong>
-                    <span>Assigned Brief: Summer Skin Routine</span>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <span className="uce-pill uce-pill--slate">MANUAL_IMPORT</span>
-              </td>
-              <td className="uce-hide-sm">18k – 55k</td>
-              <td>
-                <span className="uce-match-grade">
-                  <span className="uce-match-dot" /> 88% Match
-                </span>
-              </td>
-              <td>
-                <span className="uce-pill uce-pill--blue">INVITE_SENT</span>
-              </td>
-              <td>
-                <Button variant="outline" size="sm">
-                  Priority DM
-                </Button>
-              </td>
-            </tr>
+                </td>
+                <td>
+                  <span className={`uce-pill uce-pill--${row.sourceTone}`}>
+                    {row.source}
+                  </span>
+                </td>
+                <td className="uce-hide-sm">{row.audience}</td>
+                <td>
+                  <span className="uce-match-grade">
+                    <span className="uce-match-dot" /> {row.match}
+                  </span>
+                </td>
+                <td>
+                  {row.statusTone ? (
+                    <span className={`uce-pill uce-pill--${row.statusTone}`}>
+                      {row.status}
+                    </span>
+                  ) : (
+                    <span className="uce-text-muted">{row.status}</span>
+                  )}
+                </td>
+                <td>
+                  <Button variant="outline" size="sm">
+                    {row.cta}
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="uce-prospect-cards uce-show-on-mobile">
+        {PROSPECT_ROWS.map((row) => (
+          <article key={row.handle} className="uce-prospect-card">
+            <div className="uce-prospect-card-head">
+              <input type="checkbox" aria-label={`Select ${row.handle}`} />
+              <img src={CREATOR_IMG} alt="" className="uce-creator-avatar" />
+              <div>
+                <strong>{row.handle}</strong>
+                <span>Brief: {row.brief}</span>
+              </div>
+            </div>
+            <div className="uce-prospect-card-meta">
+              <span className={`uce-pill uce-pill--${row.sourceTone}`}>{row.source}</span>
+              <span className="uce-match-grade">
+                <span className="uce-match-dot" /> {row.match}
+              </span>
+            </div>
+            <p className="uce-prospect-card-audience">{row.audience}</p>
+            <div className="uce-prospect-card-foot">
+              {row.statusTone ? (
+                <span className={`uce-pill uce-pill--${row.statusTone}`}>{row.status}</span>
+              ) : (
+                <span className="uce-text-muted">{row.status}</span>
+              )}
+              <Button variant="outline" size="sm">
+                {row.cta}
+              </Button>
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );

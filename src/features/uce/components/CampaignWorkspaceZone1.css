@@ -5,6 +5,29 @@
   padding: 24px 60px 0;
 }
 
+.uce-zone1-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.uce-zone1-breadcrumb a {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.uce-zone1-breadcrumb a:hover {
+  color: #0f172a;
+}
+
+.uce-zone1-breadcrumb-current {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 .uce-glass-card {
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);

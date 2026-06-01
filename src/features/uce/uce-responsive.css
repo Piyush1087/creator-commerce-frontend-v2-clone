@@ -311,90 +311,64 @@
   }
 
   /* —— Create campaign wizard —— */
-  .create-wizard-layout {
-    grid-template-columns: 1fr;
+  .create-wizard {
     min-height: auto;
   }
 
-  .wizard-main {
-    padding: 24px 16px;
+  .create-wizard-form {
+    padding: 24px 16px 100px;
   }
 
-  .wizard-header {
-    margin-bottom: 32px;
+  .create-wizard-step-head h1 {
+    font-size: 1.5rem;
   }
 
-  .wizard-progress-track {
-    flex-wrap: wrap;
-    gap: 10px;
-    max-width: none;
+  .create-wizard-step-head p {
+    font-size: 1rem;
   }
 
-  .step-line {
-    display: none;
-  }
-
-  .step-label {
-    font-size: 10px;
-  }
-
-  .step-title {
-    font-size: 26px;
-  }
-
-  .step-desc {
-    font-size: 14px;
-    margin-bottom: 32px;
-  }
-
-  .wizard-ledger {
-    border-left: none;
-    border-top: 1px solid var(--border-default);
-    padding: 24px 16px 32px;
-  }
-
-  .ledger-sticky {
-    position: static;
-  }
-
-  .selection-grid-3,
-  .selection-grid-4,
-  .usage-grid-hd {
+  .create-wizard-fields--grid {
     grid-template-columns: 1fr;
   }
 
-  .selection-grid-2,
-  .demo-grid-hardened {
-    grid-template-columns: 1fr;
+  .cw-radio-row {
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .wizard-footer {
-    flex-direction: column-reverse;
-    gap: 16px;
-    margin-top: 48px;
-    padding-top: 24px;
+  .cw-date-row {
+    flex-direction: column;
   }
 
-  .footer-actions {
+  .cw-segmented--wide {
+    width: 100%;
+  }
+
+  .cw-segmented--wide button {
+    padding: 10px 8px;
+    font-size: 11px;
+  }
+
+  .create-wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .create-wizard-footer-hint {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .create-wizard-footer-actions {
     flex-direction: column;
     width: 100%;
+    margin-left: 0;
   }
 
-  .footer-actions > * {
+  .create-wizard-footer-actions > * {
     width: 100%;
-  }
-
-  .budget-input-card {
-    padding: 24px 20px;
-  }
-
-  .currency-field span,
-  .currency-field input {
-    font-size: 36px;
-  }
-
-  .term-btn {
-    min-height: 44px;
+    justify-content: center;
   }
 
   /* —— Drawers & modals (stack footers) —— */
@@ -461,6 +435,42 @@
     width: 100%;
     text-align: center;
     min-height: 44px;
+  }
+
+  /* Bottom-sheet drawers (Stitch mobile) */
+  .aurora-sidedrawer-overlay {
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+
+  .aurora-sidedrawer {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto;
+  }
+
+  .uce-repo-pill--desktop {
+    display: none;
+  }
+
+  .uce-repo-add-btn--header {
+    display: none;
+  }
+
+  .uce-repo-dashed-add {
+    font-size: 12px;
+    padding: 16px 12px;
+  }
+
+  .performance-matrix {
+    min-width: 900px;
+  }
+
+  .operations-archived-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

@@ -1,39 +1,83 @@
 import { useMemo, useState } from "react";
-import { Copy, X } from "lucide-react";
+import {
+  Copy,
+  ExternalLink,
+  Globe,
+  Mail,
+  MessageCircle,
+  Camera,
+  X,
+} from "lucide-react";
+
+type ShareChannel = "whatsapp" | "instagram" | "email";
+
+type ShareProductOption = {
+  id: string;
+  name: string;
+};
 
 type CampaignShareRouterModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  campaignName?: string;
   campaignSlug?: string;
+  products?: ShareProductOption[];
 };
 
-const BASE_URL = "https://app.aura.io/c/spring_glow_2024";
+const CHANNEL_LABELS: Record<ShareChannel, string> = {
+  whatsapp: "WhatsApp Channel",
+  instagram: "Instagram Direct",
+  email: "Corporate Email",
+};
 
 export function CampaignShareRouterModal({
   isOpen,
   onClose,
+  campaignName = "Spring Glow 2024",
   campaignSlug = "spring_glow_2024",
+  products = [],
 }: CampaignShareRouterModalProps) {
+  const [productScope, setProductScope] = useState("all");
+  const [briefScope, setBriefScope] = useState("all");
   const [utmSource, setUtmSource] = useState("");
+  const [channel, setChannel] = useState<ShareChannel>("whatsapp");
 
   const shareUrl = useMemo(() => {
-    const base = BASE_URL.replace("spring_glow_2024", campaignSlug);
-    if (!utmSource.trim()) {
-      return base;
-    }
+    const base = `https://app.aura.io/c/${campaignSlug}`;
+    if (!utmSource.trim()) return base;
     const param = encodeURIComponent(utmSource.trim());
-    return `${base}${base.includes("?") ? "&" : "?"}utm_source=${param}`;
+    return `${base}?utm_source=${param}`;
   }, [campaignSlug, utmSource]);
 
-  const messagePreview = useMemo(
-    () =>
-      `Hey! I'm Sarah from Aurora Beauty. We're launching our 'Spring Glow 2024' campaign and love your content. Check details at: ${shareUrl}`,
-    [shareUrl],
-  );
+  const messagePreview = useMemo(() => {
+    const productLine =
+      productScope === "all"
+        ? "our open briefs"
+        : products.find((p) => p.id === productScope)?.name ?? "this product";
+    return `Hey! I'm Sarah from Aurora Beauty. We're launching our '${campaignName}' campaign and love your content. Check out ${productLine} here: ${shareUrl}`;
+  }, [campaignName, productScope, products, shareUrl]);
 
-  if (!isOpen) {
-    return null;
-  }
+  const briefSelectDisabled = productScope === "all" && products.length > 0;
+
+  const copyLaunch = () => {
+    void navigator.clipboard.writeText(messagePreview);
+    if (channel === "whatsapp") {
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(messagePreview)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }
+  };
+
+  const resetScopes = () => {
+    setProductScope("all");
+    setBriefScope("all");
+    setUtmSource("");
+    setChannel("whatsapp");
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="uce-share-router" role="dialog" aria-modal="true">
@@ -47,7 +91,10 @@ export function CampaignShareRouterModal({
         <header className="uce-share-router-header">
           <div>
             <h2>Universal Campaign Share Router</h2>
-            <p>Generate deep-links or recruitment portals.</p>
+            <p>
+              Generate customized deep-links or universal recruitment portals to onboard
+              external creators into your execution pipeline.
+            </p>
           </div>
           <button
             type="button"
@@ -62,19 +109,45 @@ export function CampaignShareRouterModal({
         <div className="uce-share-router-body">
           <div className="uce-share-router-columns">
             <div className="uce-share-router-col">
-              <h3 className="uce-field-label">Opportunity Scoping</h3>
+              <h3 className="uce-field-label uce-field-label--block">Opportunity Scoping</h3>
               <div className="uce-share-form-stack">
                 <label className="uce-share-field">
                   <span>Select Target Product</span>
-                  <select defaultValue="all">
-                    <option value="all">All Connected Products (Master Hub)</option>
-                    <option value="serum">Hydration Boost Serum</option>
-                  </select>
+                  <div className="uce-share-select-wrap">
+                    <Globe size={16} className="uce-share-select-icon" />
+                    <select
+                      value={productScope}
+                      onChange={(e) => setProductScope(e.target.value)}
+                    >
+                      <option value="all">
+                        All Connected Products (Master Campaign Hub Link)
+                      </option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </label>
+                <label
+                  className={`uce-share-field ${briefSelectDisabled ? "uce-share-field--disabled" : ""}`}
+                >
+                  <span>Select Associated Strategy Brief</span>
+                  <div className="uce-share-select-wrap">
+                    <MessageCircle size={16} className="uce-share-select-icon" />
+                    <select
+                      value={briefScope}
+                      disabled={briefSelectDisabled}
+                      onChange={(e) => setBriefScope(e.target.value)}
+                    >
+                      <option value="all">All Active Briefs Linked to All Products</option>
+                      <option value="summer">Summer Skin Routine</option>
+                    </select>
+                  </div>
                 </label>
                 <label className="uce-share-field">
-                  <span>
-                    Custom UTM Source Reference Channel ID (Optional)
-                  </span>
+                  <span>Custom UTM Source Reference Channel ID (Optional)</span>
                   <input
                     type="text"
                     value={utmSource}
@@ -86,7 +159,7 @@ export function CampaignShareRouterModal({
             </div>
 
             <div className="uce-share-router-col">
-              <h3 className="uce-field-label">Messaging Preview</h3>
+              <h3 className="uce-field-label uce-field-label--block">Messaging Preview</h3>
               <div className="uce-share-form-stack">
                 <div className="uce-share-url-row">
                   <code>{shareUrl}</code>
@@ -99,25 +172,66 @@ export function CampaignShareRouterModal({
                     <Copy size={16} />
                   </button>
                 </div>
+
+                <div className="uce-share-channel-strip" role="tablist">
+                  {(
+                    [
+                      { id: "whatsapp" as const, icon: MessageCircle, short: "WA" },
+                      { id: "instagram" as const, icon: Camera, short: "IG" },
+                      { id: "email" as const, icon: Mail, short: "Mail" },
+                    ] as const
+                  ).map(({ id, icon: Icon, short }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={channel === id}
+                      className={`uce-share-channel-btn ${channel === id ? "is-active" : ""}`}
+                      onClick={() => setChannel(id)}
+                    >
+                      <Icon size={16} />
+                      <span className="uce-share-channel-label-full">{CHANNEL_LABELS[id]}</span>
+                      <span className="uce-share-channel-label-short">{short}</span>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="uce-share-message-preview">{messagePreview}</div>
+
+                <button type="button" className="uce-share-whatsapp-btn" onClick={copyLaunch}>
+                  Copy Text &amp; Launch {channel === "whatsapp" ? "WhatsApp Chat Web" : CHANNEL_LABELS[channel]}
+                  <ExternalLink size={14} />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         <footer className="uce-share-router-footer">
-          <button
-            type="button"
-            className="uce-share-btn-secondary"
-            onClick={() => {
-              setUtmSource("");
-              onClose();
-            }}
-          >
-            Clear &amp; Close Panel
+          <button type="button" className="uce-share-reset-btn" onClick={resetScopes}>
+            Reset Dropdown Scopes
           </button>
-          <button type="button" className="uce-share-btn-primary">
-            Master Copy &amp; Inject Tab Route
+          <div className="uce-share-footer-actions">
+            <button
+              type="button"
+              className="uce-share-btn-secondary"
+              onClick={() => {
+                resetScopes();
+                onClose();
+              }}
+            >
+              Clear &amp; Close Panel
+            </button>
+            <button
+              type="button"
+              className="uce-share-btn-primary"
+              onClick={() => void navigator.clipboard.writeText(messagePreview)}
+            >
+              Master Copy &amp; Inject Tab Route
+            </button>
+          </div>
+          <button type="button" className="uce-share-mobile-launch" onClick={copyLaunch}>
+            Copy Message &amp; Open App Platform
           </button>
         </footer>
       </div>

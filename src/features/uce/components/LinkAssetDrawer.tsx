@@ -46,7 +46,7 @@ export function LinkAssetDrawer({
     <SideDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Link Campaign Asset"
+      title="Link Asset to Pipeline"
       subtitle={`Attach a product portfolio to ${campaignName}`}
       width="680px"
       footer={
@@ -55,7 +55,7 @@ export function LinkAssetDrawer({
             Discard Selection
           </Button>
           <Button variant="primary" disabled={!selectedId} onClick={handleLink}>
-            Link to Campaign
+            Link Asset to Pipeline
           </Button>
         </div>
       }
@@ -75,8 +75,11 @@ export function LinkAssetDrawer({
           </p>
         ) : (
           <>
-            <section className="remix-field-group">
-              <label className="remix-label">Select product portfolio</label>
+            <details className="uce-link-accordion" open>
+              <summary>
+                Select product portfolio
+                <ChevronDown size={18} className="uce-link-accordion-chevron" />
+              </summary>
               <div className="uce-brief-product-select-wrap">
                 <select
                   className="uce-brief-product-select"
@@ -92,7 +95,7 @@ export function LinkAssetDrawer({
                 </select>
                 <ChevronDown size={18} className="uce-brief-product-select-chevron" />
               </div>
-            </section>
+            </details>
 
             {selected && (
               <>
@@ -104,8 +107,11 @@ export function LinkAssetDrawer({
                   </div>
                 </div>
 
-                <section className="remix-field-group">
-                  <label className="remix-label">Product specifications</label>
+                <details className="uce-link-accordion" open>
+                  <summary>
+                    Product specifications
+                    <ChevronDown size={18} className="uce-link-accordion-chevron" />
+                  </summary>
                   <Card className="remix-card-hd" compact>
                     <div style={{ display: "flex", gap: 16 }}>
                       <div className="uce-link-asset-thumb">
@@ -126,46 +132,37 @@ export function LinkAssetDrawer({
                       </div>
                     </div>
                   </Card>
-                </section>
+                </details>
 
-                <section className="remix-field-group">
-                  <label className="remix-label">Marketing USPs</label>
+                <details className="uce-link-accordion">
+                  <summary>
+                    Marketing USPs
+                    <ChevronDown size={18} className="uce-link-accordion-chevron" />
+                  </summary>
                   <ul className="uce-link-asset-usps">
                     {selected.usps.map((usp) => (
                       <li key={usp}>{usp}</li>
                     ))}
                   </ul>
-                </section>
+                </details>
 
-                <section className="remix-field-group">
-                  <label className="remix-label">Share router preview</label>
-                  <div
-                    style={{
-                      background: "#0f172a",
-                      padding: 20,
-                      borderRadius: 12,
-                      color: "white",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                      <Link size={16} color="#34d399" />
-                      <code style={{ fontSize: 12, color: "#94a3b8" }}>
+                <details className="uce-link-accordion">
+                  <summary>
+                    Share router preview
+                    <ChevronDown size={18} className="uce-link-accordion-chevron" />
+                  </summary>
+                  <div className="uce-link-share-preview">
+                    <div className="uce-link-share-preview-row">
+                      <Link size={16} />
+                      <code>
                         app.creator.shop/c/{campaignSlug}?src={utmSource}
                       </code>
                     </div>
-                    <Button
-                      variant="outline"
-                      style={{
-                        background: "rgba(255,255,255,0.1)",
-                        borderColor: "rgba(255,255,255,0.2)",
-                        color: "white",
-                        width: "100%",
-                      }}
-                    >
+                    <Button variant="outline" className="uce-link-share-copy">
                       <Copy size={14} /> Copy share path
                     </Button>
                   </div>
-                </section>
+                </details>
               </>
             )}
           </>

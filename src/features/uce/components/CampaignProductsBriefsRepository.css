@@ -54,6 +54,47 @@
   color: #64748b;
 }
 
+.uce-repo-dashed-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 20px 16px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background: rgba(52, 211, 153, 0.04);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.uce-repo-dashed-add:hover {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.uce-product-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  color: #047857;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.uce-brief-toggle {
+  flex-shrink: 0;
+}
+
 .uce-repo-header-actions {
   display: flex;
   align-items: center;
@@ -160,6 +201,69 @@
   font-size: 13px;
   color: #475569;
   line-height: 1.5;
+}
+
+.uce-link-accordion {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.uce-link-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  list-style: none;
+  background: #f8fafc;
+}
+
+.uce-link-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.uce-link-accordion[open] .uce-link-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.uce-link-accordion-chevron {
+  transition: transform 0.2s;
+  color: #94a3b8;
+}
+
+.uce-link-accordion > :not(summary) {
+  padding: 16px;
+}
+
+.uce-link-share-preview {
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.uce-link-share-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.uce-link-share-preview code {
+  font-size: 12px;
+  color: #94a3b8;
+  word-break: break-all;
+}
+
+.uce-link-share-copy {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
 }
 
 .uce-repo-body {

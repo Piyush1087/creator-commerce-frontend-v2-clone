@@ -1,358 +1,1095 @@
-import { useState } from "react";
-import { 
-  ChevronRight, 
-  ArrowLeft, 
+import {
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  Cloud,
   Eye,
-  Instagram,
-  Video,
-  Youtube,
-  CheckCircle2,
+  Info,
   Users,
-  Target,
-  DollarSign,
-  AlertCircle,
-  Clock,
-  Layers,
-  Search,
-  Check,
-  TrendingUp,
-  Globe,
-  Smile,
-  Megaphone,
   X,
-  Zap,
-  FileText
 } from "lucide-react";
+import { Alert } from "../../../design-system/aurora";
 import { Button } from "../../../design-system/aurora/components/Button";
-import { Card } from "../../../design-system/aurora/components/Card";
-import { Badge } from "../../../design-system/aurora/components/Badge";
-import { TextField } from "../../../design-system/aurora/components/TextField";
-import { SelectionCard } from "../../../design-system/aurora/components/SelectionCard";
+import { AUTH_ROUTES } from "../../auth/constants";
+import type {
+  WizardData,
+  WizardFieldErrors,
+  WizardFieldKey,
+} from "../types/campaign-wizard";
+import {
+  getFieldError,
+  validateCampaignWizardStep,
+  validateFullCampaignWizard,
+} from "../utils/validate-campaign-wizard";
 import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 
+const OBJECTIVES = ["Brand Awareness", "Traffic & Clicks", "Sales & Conversions"];
+const INDUSTRIES = [
+  { value: "fashion", label: "Fashion & Apparel" },
+  { value: "beauty", label: "Beauty & Cosmetics" },
+  { value: "tech", label: "Tech & Consumer Electronics" },
+  { value: "fitness", label: "Health & Fitness" },
+  { value: "food", label: "Food & Beverage" },
+];
+const FOLLOWER_TIERS = [
+  "Nano (1k-10k)",
+  "Micro (10k-50k)",
+  "Mid-Tier (50k-250k)",
+  "Macro (250k+)",
+];
+const ARCHETYPE_OPTIONS = [
+  "Aesthetic",
+  "Comedy",
+  "Tech",
+  "Educational",
+  "Lifestyle",
+  "Fitness",
+  "Beauty",
+];
+const PAYOUT_OPTIONS = [
+  "Immediate (Upon Approval)",
+  "Net 7",
+  "Net 15",
+  "Net 30",
+];
+
+const STEP_LABELS = [
+  "Core Strategy",
+  "Creator Targeting",
+  "Commercial Terms",
+] as const;
+
+const INITIAL_DATA: WizardData = {
+  name: "",
+  objective: "",
+  timeline: "fixed",
+  startDate: "",
+  endDate: "",
+  milestoneDays: "30",
+  platforms: {
+    instagram: { enabled: true, formats: ["Reel"] },
+    tiktok: { enabled: false, formats: [] },
+    youtube: { enabled: false, formats: [] },
+  },
+  industry: "",
+  followerTiers: ["Micro (10k-50k)", "Mid-Tier (50k-250k)"],
+  archetypes: ["Aesthetic", "Comedy"],
+  targetLocations: ["United States", "United Kingdom"],
+  disqualifyingKeywords: ["Gambling", "Controversial"],
+  ageMin: 18,
+  ageMax: 34,
+  genderFocus: "Female-Skewing",
+  compensationType: "fixed",
+  flatRatePerCreator: 0,
+  negotiableMinFee: 0,
+  negotiableMaxFee: 0,
+  budget: 0,
+  advancePercent: 30,
+  payoutTerms: "Immediate (Upon Approval)",
+};
+
+const PLATFORM_CONFIG = [
+  {
+    key: "instagram" as const,
+    label: "Instagram",
+    formats: ["Reel", "Story", "Static Post"],
+  },
+  {
+    key: "tiktok" as const,
+    label: "TikTok",
+    formats: ["Video", "Story"],
+  },
+  {
+    key: "youtube" as const,
+    label: "YouTube",
+    formats: ["Long-form Video", "Short"],
+  },
+];
+
 export function CreateCampaignWizard() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [data, setData] = useState({
-    name: "Spring Glow 2024 Launch",
-    objective: "Brand Awareness",
-    timeline: "Fixed Date Range",
-    platforms: ["Instagram", "TikTok"],
-    industries: ["Beauty & Cosmetics"],
-    archetype: "Aesthetic",
-    budget: 25000,
-    payoutTerms: "Net 15"
-  });
+  const [data, setData] = useState<WizardData>(INITIAL_DATA);
+  const [archetypeInput, setArchetypeInput] = useState("");
+  const [keywordInput, setKeywordInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const nextStep = () => setStep(s => Math.min(3, s + 1));
-  const prevStep = () => setStep(s => Math.max(1, s - 1));
+  const clearFieldError = (key: WizardFieldKey) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    if (formError) setFormError(null);
+  };
 
-  return (
-    <div className="create-wizard-layout">
-      <main className="wizard-main">
-        <header className="wizard-header">
-          <div className="wizard-progress-track">
-            <div className={`step-unit ${step >= 1 ? 'active' : ''}`}>
-              <span className="step-num">{step > 1 ? <Check size={14} /> : 1}</span>
-              <span className="step-label">Strategy</span>
-            </div>
-            <div className="step-line"></div>
-            <div className={`step-unit ${step >= 2 ? 'active' : ''}`}>
-              <span className="step-num">{step > 2 ? <Check size={14} /> : 2}</span>
-              <span className="step-label">Targeting</span>
-            </div>
-            <div className="step-line"></div>
-            <div className={`step-unit ${step >= 3 ? 'active' : ''}`}>
-              <span className="step-num">3</span>
-              <span className="step-label">Commercials</span>
-            </div>
-          </div>
-        </header>
+  const patchData = (patch: Partial<WizardData>, touched?: WizardFieldKey) => {
+    setData((prev) => ({ ...prev, ...patch }));
+    if (touched) clearFieldError(touched);
+  };
 
-        <div className="wizard-content">
-          {step === 1 && <Step1Strategy data={data} setData={setData} />}
-          {step === 2 && <Step2Targeting data={data} setData={setData} />}
-          {step === 3 && <Step3Commercials data={data} setData={setData} />}
-        </div>
+  const prevStep = () => {
+    setFieldErrors({});
+    setFormError(null);
+    setStep((s) => Math.max(1, s - 1));
+  };
 
-        <footer className="wizard-footer">
-          <Button variant="ghost" onClick={() => {}}>Cancel & Exit</Button>
-          <div className="footer-actions">
-            {step > 1 && <Button variant="outline" onClick={prevStep}><ArrowLeft size={18} /> Back</Button>}
-            <Button variant="primary" onClick={nextStep}>
-              {step === 3 ? "Save & Publish Campaign" : `Next Step: ${step === 1 ? "Creator Targeting" : "Commercials & Terms"}`}
-              {step < 3 && <ArrowRight size={18} />}
-            </Button>
-          </div>
-        </footer>
-      </main>
+  const handleContinue = () => {
+    if (step < 3) {
+      const result = validateCampaignWizardStep(step as 1 | 2 | 3, data);
+      if (!result.success) {
+        setFieldErrors(result.fieldErrors);
+        setFormError(result.formError);
+        return;
+      }
+      setFieldErrors({});
+      setFormError(null);
+      setStep((s) => s + 1);
+      return;
+    }
 
-      <aside className="wizard-ledger">
-        <div className="ledger-sticky">
-          <h3 className="ledger-title">Campaign Snapshot</h3>
-          
-          <div className="ledger-section">
-            <label>Current Progress</label>
-            <div className="ledger-row">
-              <strong>{data.name}</strong>
-              <Badge tone="success">Draft</Badge>
-            </div>
-            <div className="ledger-row">
-              <span className="text-muted">Vertical:</span>
-              <span>{data.industries.join(", ")}</span>
-            </div>
-          </div>
+    const result = validateFullCampaignWizard(data);
+    if (!result.success) {
+      setFieldErrors(result.fieldErrors);
+      setFormError(result.formError);
+      return;
+    }
+    setFieldErrors({});
+    setFormError(null);
+    navigate(AUTH_ROUTES.brandUceCampaigns);
+  };
 
-          <div className="ledger-section">
-            <label>Audience Architecture</label>
-            <div className="ledger-row">
-              <Users size={14} />
-              <span>10k - 250k (Micro/Mid)</span>
-            </div>
-            <div className="ledger-row">
-              <Globe size={14} />
-              <span>US, UK, Western Europe</span>
-            </div>
-          </div>
+  const industryLabel =
+    INDUSTRIES.find((i) => i.value === data.industry)?.label ?? "Not specified";
 
-          <div className="ledger-section">
-            <label>Real-time Reach Est.</label>
-            <div className="ledger-row">
-              <TrendingUp size={14} className="text-primary" />
-              <strong>2.4M - 4.1M Reach</strong>
-            </div>
-            <div className="ledger-row">
-              <Target size={14} className="text-primary" />
-              <strong>4.2% Match Index</strong>
-            </div>
-          </div>
+  const timelineLabel =
+    data.timeline === "fixed"
+      ? data.startDate && data.endDate
+        ? `${data.startDate} – ${data.endDate}`
+        : "Fixed Date Range"
+      : `Milestone · ${data.milestoneDays} days`;
 
-          <div className="ledger-footer">
-            <div className="budget-stack">
-              <span>Planned Allocation</span>
-              <strong>${data.budget.toLocaleString()}</strong>
-            </div>
-            <div className="escrow-note">
-              <AlertCircle size={12} />
-              <span>30% Advance Escrow Required</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </div>
+  const enabledPlatforms = useMemo(
+    () =>
+      PLATFORM_CONFIG.filter((p) => data.platforms[p.key].enabled).map((p) => ({
+        label: p.label,
+        formats: data.platforms[p.key].formats,
+      })),
+    [data.platforms],
   );
-}
 
-function Step1Strategy({ data, setData }: any) {
   return (
-    <div className="step-view">
-      <h1 className="step-title">Campaign Strategy</h1>
-      <p className="step-desc">Establish core metadata, timelines, and primary objectives for this activation.</p>
-
-      <div className="form-grid">
-        <TextField 
-          label="Operational Campaign Name" 
-          value={data.name} 
-          onChange={(e) => setData({ ...data, name: e.target.value })} 
-          placeholder="e.g. Summer Skincare Routine"
-        />
-
-        <div className="field-group">
-          <label className="aurora-label">Core Objectives</label>
-          <div className="selection-grid-3">
-            {["Brand Awareness", "Traffic & Clicks", "Sales & Conversions"].map(obj => (
-              <SelectionCard
-                key={obj}
-                title={obj}
-                selected={data.objective === obj}
-                onClick={() => setData({ ...data, objective: obj })}
-                icon={obj === "Brand Awareness" ? <Eye size={18} /> : obj === "Traffic" ? <TrendingUp size={18} /> : <Target size={18} />}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="field-group">
-          <label className="aurora-label">Timeline Structure</label>
-          <div className="selection-grid-2">
-            <SelectionCard
-              title="Fixed Date Range"
-              description="Specific start/end dates for launches."
-              selected={data.timeline === "Fixed Date Range"}
-              onClick={() => setData({ ...data, timeline: "Fixed Date Range" })}
-              icon={<Clock size={18} />}
-            />
-            <SelectionCard
-              title="Dynamic Milestone Track"
-              description="Evergreen flow based on duration."
-              selected={data.timeline === "Dynamic Milestone Track"}
-              onClick={() => setData({ ...data, timeline: "Dynamic Milestone Track" })}
-              icon={<Layers size={18} />}
-            />
-          </div>
-        </div>
-
-        <div className="field-group">
-          <label className="aurora-label">Platform Matrix</label>
-          <div className="platform-matrix">
-            <div className="platform-item active">
-              <Instagram size={20} color="#E1306C" />
-              <span>Instagram</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <Badge tone="success">Reels</Badge>
-                <Badge tone="success">Stories</Badge>
+    <div className="create-wizard">
+      <div className="create-wizard-workspace">
+        <section className="create-wizard-form">
+          <div className="create-wizard-form-inner">
+            {formError ? (
+              <div className="create-wizard-form-alert">
+                <Alert tone="error" title="Check required fields">
+                  {formError}
+                </Alert>
               </div>
-            </div>
-            <div className="platform-item active">
-              <Video size={20} color="#000" />
-              <span>TikTok</span>
-              <Badge tone="success">Videos</Badge>
-            </div>
-            <div className="platform-item">
-              <Youtube size={20} color="#FF0000" />
-              <span>YouTube</span>
-              <Badge tone="neutral">Shorts</Badge>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Step2Targeting({ data, setData }: any) {
-  return (
-    <div className="step-view">
-      <h1 className="step-title">Creator Targeting</h1>
-      <p className="step-desc">Define the creator persona and demographic reach for the matching engine.</p>
-
-      <div className="form-grid">
-        <div className="field-group">
-          <label className="aurora-label">Industry Verticals</label>
-          <div className="chip-cloud">
-            {["Fashion", "Beauty & Cosmetics", "Tech", "Fitness", "Lifestyle"].map(ind => (
-              <Badge 
-                key={ind} 
-                tone={data.industries.includes(ind) ? "selected" : "neutral"}
-                onClick={() => {
-                  const current = data.industries;
-                  setData({ ...data, industries: current.includes(ind) ? current.filter((i: string) => i !== ind) : [...current, ind] });
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                {ind}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="field-group">
-          <label className="aurora-label">Creator Archetype</label>
-          <div className="selection-grid-3">
-            {["Aesthetic", "Comedy", "Educational"].map(arch => (
-              <SelectionCard
-                key={arch}
-                title={arch}
-                selected={data.archetype === arch}
-                onClick={() => setData({ ...data, archetype: arch })}
-                icon={arch === "Aesthetic" ? <Smile size={18} /> : arch === "Comedy" ? <Zap size={18} /> : <FileText size={18} />}
+            ) : null}
+            {step === 1 && (
+              <Step1Strategy
+                data={data}
+                patchData={patchData}
+                setData={setData}
+                errors={fieldErrors}
+                clearFieldError={clearFieldError}
               />
+            )}
+            {step === 2 && (
+              <Step2Targeting
+                data={data}
+                patchData={patchData}
+                setData={setData}
+                errors={fieldErrors}
+                clearFieldError={clearFieldError}
+                archetypeInput={archetypeInput}
+                setArchetypeInput={setArchetypeInput}
+                keywordInput={keywordInput}
+                setKeywordInput={setKeywordInput}
+                locationInput={locationInput}
+                setLocationInput={setLocationInput}
+              />
+            )}
+            {step === 3 && (
+              <Step3Commercials
+                data={data}
+                patchData={patchData}
+                errors={fieldErrors}
+              />
+            )}
+          </div>
+        </section>
+
+        <ContextLedger
+          step={step}
+          data={data}
+          industryLabel={industryLabel}
+          timelineLabel={timelineLabel}
+          enabledPlatforms={enabledPlatforms}
+        />
+      </div>
+
+      <footer className="create-wizard-footer">
+        <div className="create-wizard-footer-hint">
+          <Info size={18} className="text-primary" />
+          <span>
+            Step {step} of 3: {STEP_LABELS[step - 1]}
+          </span>
+        </div>
+        <div className="create-wizard-footer-actions">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(AUTH_ROUTES.brandUceCampaigns)}
+          >
+            Cancel &amp; Exit
+          </Button>
+          {step > 1 && (
+            <Button variant="outline" onClick={prevStep}>
+              <ArrowLeft size={18} />
+              Back to Previous Step
+            </Button>
+          )}
+          <Button variant="primary" onClick={handleContinue}>
+            {step === 3 ? (
+              "Save & Publish Campaign"
+            ) : (
+              <>
+                {step === 1 ? "Next Step: Creator Targeting" : "Next Step: Commercial Terms"}
+                <ArrowRight size={18} />
+              </>
+            )}
+          </Button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function WizardField({
+  label,
+  error,
+  className,
+  children,
+}: {
+  label?: string;
+  error?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={`cw-field ${error ? "cw-field--error" : ""} ${className ?? ""}`}>
+      {label ? <span className="cw-label">{label}</span> : null}
+      {children}
+      {error ? (
+        <p className="cw-field-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Step1Strategy({
+  data,
+  setData,
+  patchData,
+  errors,
+  clearFieldError,
+}: {
+  data: WizardData;
+  setData: Dispatch<SetStateAction<WizardData>>;
+  patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
+  errors: WizardFieldErrors;
+  clearFieldError: (key: WizardFieldKey) => void;
+}) {
+  const togglePlatform = (key: keyof WizardData["platforms"], enabled: boolean) => {
+    clearFieldError("platforms");
+    setData((prev) => ({
+      ...prev,
+      platforms: {
+        ...prev.platforms,
+        [key]: {
+          ...prev.platforms[key],
+          enabled,
+          formats: enabled && prev.platforms[key].formats.length === 0
+            ? [PLATFORM_CONFIG.find((p) => p.key === key)!.formats[0]]
+            : prev.platforms[key].formats,
+        },
+      },
+    }));
+  };
+
+  const toggleFormat = (key: keyof WizardData["platforms"], format: string) => {
+    clearFieldError("platforms");
+    setData((prev) => {
+      const current = prev.platforms[key].formats;
+      const next = current.includes(format)
+        ? current.filter((f) => f !== format)
+        : [...current, format];
+      return {
+        ...prev,
+        platforms: {
+          ...prev.platforms,
+          [key]: { ...prev.platforms[key], formats: next },
+        },
+      };
+    });
+  };
+
+  return (
+    <div className="create-wizard-step">
+      <header className="create-wizard-step-head">
+        <h1>Campaign Strategy</h1>
+        <p>
+          Establish the core metadata, timeline, and primary objectives for your
+          activation.
+        </p>
+      </header>
+
+      <div className="create-wizard-fields">
+        <WizardField label="Campaign Name" error={getFieldError(errors, "name")}>
+          <input
+            type="text"
+            className="cw-input"
+            placeholder="e.g., Summer Launch 2026"
+            value={data.name}
+            onChange={(e) => patchData({ name: e.target.value }, "name")}
+          />
+        </WizardField>
+
+        <WizardField label="Core Objective" error={getFieldError(errors, "objective")}>
+          <select
+            className="cw-input cw-select"
+            value={data.objective}
+            onChange={(e) => patchData({ objective: e.target.value }, "objective")}
+          >
+            <option value="">Select an objective</option>
+            {OBJECTIVES.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
             ))}
-          </div>
-        </div>
+          </select>
+        </WizardField>
 
-        <div className="field-group">
-          <label className="aurora-label">Disqualifying Keywords</label>
-          <div className="keyword-input-wrap">
-            <div className="keyword-chips">
-              <Badge tone="error">Gambling <X size={10} /></Badge>
-              <Badge tone="error">Controversial <X size={10} /></Badge>
+        <WizardField label="Timeline Structure">
+          <div
+            className={`cw-timeline-panel ${getFieldError(errors, "startDate") || getFieldError(errors, "endDate") || getFieldError(errors, "milestoneDays") ? "cw-field--error-inline" : ""}`}
+          >
+            <div className="cw-radio-row">
+              <label className="cw-radio">
+                <input
+                  type="radio"
+                  name="timeline"
+                  checked={data.timeline === "fixed"}
+                  onChange={() => patchData({ timeline: "fixed" }, "startDate")}
+                />
+                <span>Fixed Date Range</span>
+              </label>
+              <label className="cw-radio">
+                <input
+                  type="radio"
+                  name="timeline"
+                  checked={data.timeline === "milestone"}
+                  onChange={() => patchData({ timeline: "milestone" }, "milestoneDays")}
+                />
+                <span>Dynamic Milestone Track</span>
+              </label>
             </div>
-            <input type="text" placeholder="Add keywords to exclude..." />
+            {data.timeline === "fixed" ? (
+              <div className="cw-date-row">
+                <label className="cw-date-field">
+                  <span>Start Date</span>
+                  <input
+                    type="date"
+                    className="cw-input cw-input--sm"
+                    value={data.startDate}
+                    onChange={(e) => patchData({ startDate: e.target.value }, "startDate")}
+                  />
+                  {getFieldError(errors, "startDate") ? (
+                    <p className="cw-field-error" role="alert">
+                      {getFieldError(errors, "startDate")}
+                    </p>
+                  ) : null}
+                </label>
+                <label className="cw-date-field">
+                  <span>End Date</span>
+                  <input
+                    type="date"
+                    className="cw-input cw-input--sm"
+                    value={data.endDate}
+                    onChange={(e) => patchData({ endDate: e.target.value }, "endDate")}
+                  />
+                  {getFieldError(errors, "endDate") ? (
+                    <p className="cw-field-error" role="alert">
+                      {getFieldError(errors, "endDate")}
+                    </p>
+                  ) : null}
+                </label>
+              </div>
+            ) : (
+              <label className="cw-date-field cw-date-field--narrow">
+                <span>Days-to-Complete</span>
+                <input
+                  type="number"
+                  className="cw-input cw-input--sm"
+                  placeholder="30"
+                  value={data.milestoneDays}
+                  onChange={(e) =>
+                    patchData({ milestoneDays: e.target.value }, "milestoneDays")
+                  }
+                />
+                {getFieldError(errors, "milestoneDays") ? (
+                  <p className="cw-field-error" role="alert">
+                    {getFieldError(errors, "milestoneDays")}
+                  </p>
+                ) : null}
+              </label>
+            )}
           </div>
-        </div>
+        </WizardField>
 
-        <div className="demo-grid-hardened">
-          <Card title="Age Range" compact>
-            <div className="age-track">
-              <div className="age-fill"></div>
-              <span>18 - 34 Years</span>
-            </div>
-          </Card>
-          <Card title="Gender Focus" compact>
-            <div className="gender-split">
-              <strong>82% Female</strong>
-              <div className="split-bar"><div style={{ width: '82%' }}></div></div>
-            </div>
-          </Card>
-        </div>
+        <WizardField error={getFieldError(errors, "platforms")}>
+          <span className="cw-label cw-label--section">Platform &amp; Format Matrix</span>
+          <div className="cw-platform-matrix">
+            {PLATFORM_CONFIG.map(({ key, label, formats }) => {
+              const platform = data.platforms[key];
+              return (
+                <div key={key} className="cw-platform-block">
+                  <label className="cw-platform-check">
+                    <input
+                      type="checkbox"
+                      checked={platform.enabled}
+                      onChange={(e) => togglePlatform(key, e.target.checked)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                  {platform.enabled && (
+                    <div className="cw-format-chips">
+                      {formats.map((format) => (
+                        <button
+                          key={format}
+                          type="button"
+                          className={`cw-format-chip ${platform.formats.includes(format) ? "is-active" : ""}`}
+                          onClick={() => toggleFormat(key, format)}
+                        >
+                          {format}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </WizardField>
       </div>
     </div>
   );
 }
 
-function Step3Commercials({ data, setData }: any) {
+function Step2Targeting({
+  data,
+  setData,
+  patchData,
+  errors,
+  clearFieldError,
+  archetypeInput,
+  setArchetypeInput,
+  keywordInput,
+  setKeywordInput,
+  locationInput,
+  setLocationInput,
+}: {
+  data: WizardData;
+  setData: Dispatch<SetStateAction<WizardData>>;
+  patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
+  errors: WizardFieldErrors;
+  clearFieldError: (key: WizardFieldKey) => void;
+  archetypeInput: string;
+  setArchetypeInput: (v: string) => void;
+  keywordInput: string;
+  setKeywordInput: (v: string) => void;
+  locationInput: string;
+  setLocationInput: (v: string) => void;
+}) {
+  const toggleTier = (tier: string) => {
+    clearFieldError("followerTiers");
+    setData((prev) => ({
+      ...prev,
+      followerTiers: prev.followerTiers.includes(tier)
+        ? prev.followerTiers.filter((t) => t !== tier)
+        : [...prev.followerTiers, tier],
+    }));
+  };
+
+  const addArchetype = () => {
+    const value = archetypeInput.trim();
+    if (!value || data.archetypes.includes(value)) return;
+    clearFieldError("archetypes");
+    setData((prev) => ({ ...prev, archetypes: [...prev.archetypes, value] }));
+    setArchetypeInput("");
+  };
+
+  const removeArchetype = (value: string) => {
+    clearFieldError("archetypes");
+    setData((prev) => ({
+      ...prev,
+      archetypes: prev.archetypes.filter((a) => a !== value),
+    }));
+  };
+
+  const addLocation = () => {
+    const value = locationInput.trim();
+    if (!value || data.targetLocations.includes(value)) return;
+    clearFieldError("targetLocations");
+    setData((prev) => ({
+      ...prev,
+      targetLocations: [...prev.targetLocations, value],
+    }));
+    setLocationInput("");
+  };
+
+  const removeLocation = (value: string) => {
+    clearFieldError("targetLocations");
+    setData((prev) => ({
+      ...prev,
+      targetLocations: prev.targetLocations.filter((l) => l !== value),
+    }));
+  };
+
+  const addKeyword = () => {
+    const value = keywordInput.trim();
+    if (!value || data.disqualifyingKeywords.includes(value)) return;
+    setData((prev) => ({
+      ...prev,
+      disqualifyingKeywords: [...prev.disqualifyingKeywords, value],
+    }));
+    setKeywordInput("");
+  };
+
+  const removeKeyword = (value: string) => {
+    setData((prev) => ({
+      ...prev,
+      disqualifyingKeywords: prev.disqualifyingKeywords.filter((k) => k !== value),
+    }));
+  };
+
   return (
-    <div className="step-view">
-      <h1 className="step-title">Commercial Terms</h1>
-      <p className="step-desc">Configure compensation frameworks and payout schedules.</p>
+    <div className="create-wizard-step">
+      <header className="create-wizard-step-head">
+        <h1>Creator Targeting</h1>
+        <p>
+          Define the exact persona, audience demographics, and geographic reach you
+          need.
+        </p>
+      </header>
 
-      <div className="form-grid">
-        <div className="field-group">
-          <label className="aurora-label">Compensation Model</label>
-          <div className="selection-grid-2">
-            <SelectionCard
-              title="Fixed Fee"
-              description="A set flat rate for every creator."
-              selected={true}
-              icon={<DollarSign size={18} />}
-            />
-            <SelectionCard
-              title="Negotiable Offers"
-              description="Propose ranges and negotiate individually."
-              selected={false}
-              icon={<Megaphone size={18} />}
-            />
-          </div>
-        </div>
+      <div className="create-wizard-fields create-wizard-fields--grid">
+        <WizardField label="Industry Vertical" error={getFieldError(errors, "industry")}>
+          <select
+            className="cw-input cw-select"
+            value={data.industry}
+            onChange={(e) => patchData({ industry: e.target.value }, "industry")}
+          >
+            <option value="">Select your brand&apos;s core industry...</option>
+            {INDUSTRIES.map((ind) => (
+              <option key={ind.value} value={ind.value}>
+                {ind.label}
+              </option>
+            ))}
+          </select>
+        </WizardField>
 
-        <div className="budget-input-card">
-          <label>TOTAL CAMPAIGN CEILING</label>
-          <div className="currency-field">
-            <span>$</span>
-            <input 
-              type="number" 
-              value={data.budget} 
-              onChange={(e) => setData({ ...data, budget: parseInt(e.target.value) })}
-            />
-          </div>
-          <p className="budget-helper">Min. 30% Advance Escrow: ${(data.budget * 0.3).toLocaleString()}</p>
-        </div>
-
-        <div className="field-group">
-          <label className="aurora-label">Balance Payout Terms</label>
-          <div className="selection-grid-4">
-            {["Immediate", "Net 7", "Net 15", "Net 30"].map(term => (
-              <button 
-                key={term}
-                className={`term-btn ${data.payoutTerms === term ? 'active' : ''}`}
-                onClick={() => setData({ ...data, payoutTerms: term })}
+        <WizardField label="Follower Tiers" error={getFieldError(errors, "followerTiers")}>
+          <div className="cw-tier-chips">
+            {FOLLOWER_TIERS.map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                className={`cw-tier-chip ${data.followerTiers.includes(tier) ? "is-active" : ""}`}
+                onClick={() => toggleTier(tier)}
               >
-                {term}
+                {tier}
               </button>
             ))}
           </div>
+        </WizardField>
+
+        <WizardField
+          label="Creator Archetypes"
+          error={getFieldError(errors, "archetypes")}
+          className="cw-field--full"
+        >
+          <TokenInput
+            tokens={data.archetypes}
+            inputValue={archetypeInput}
+            onInputChange={setArchetypeInput}
+            onAdd={addArchetype}
+            onRemove={removeArchetype}
+            placeholder="Add archetype..."
+          />
+        </WizardField>
+
+        <WizardField
+          label="Target Locations"
+          error={getFieldError(errors, "targetLocations")}
+          className="cw-field--full"
+        >
+          <TokenInput
+            tokens={data.targetLocations}
+            inputValue={locationInput}
+            onInputChange={setLocationInput}
+            onAdd={addLocation}
+            onRemove={removeLocation}
+            placeholder="Add country or region..."
+          />
+          <p className="cw-hint">Press Enter to add a territory (e.g. United States).</p>
+        </WizardField>
+
+        <div className="cw-audience-panel cw-field--full">
+          <h3>
+            <Users size={20} />
+            Target Audience
+          </h3>
+          <div className="cw-audience-grid">
+            <WizardField label="Age Range" error={getFieldError(errors, "ageMin")}>
+              <div className="cw-range-head">
+                <span className="cw-range-value">
+                  {data.ageMin} — {data.ageMax}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={13}
+                max={data.ageMax}
+                value={data.ageMin}
+                className="cw-range"
+                onChange={(e) =>
+                  patchData({ ageMin: Number(e.target.value) }, "ageMin")
+                }
+              />
+            </WizardField>
+            <WizardField label="Gender Focus" error={getFieldError(errors, "genderFocus")}>
+              <div className="cw-segmented">
+                {["All", "Female-Skewing", "Male-Skewing"].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={data.genderFocus === g ? "is-active" : ""}
+                    onClick={() => patchData({ genderFocus: g }, "genderFocus")}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </WizardField>
+          </div>
         </div>
 
-        <Card title="Usage Rights Summary" compact>
-          <div className="usage-grid-hd">
-            <div className="u-item"><label>BIO-LINK</label><span>30 Days</span></div>
-            <div className="u-item"><label>WHITELISTING</label><span>90 Days</span></div>
-            <div className="u-item"><label>REPOSTING</label><span>Indefinite</span></div>
-          </div>
-        </Card>
+        <div className="cw-field cw-field--full">
+          <span className="cw-label">Disqualifying Keywords</span>
+          <TokenInput
+            tokens={data.disqualifyingKeywords}
+            inputValue={keywordInput}
+            onInputChange={setKeywordInput}
+            onAdd={addKeyword}
+            onRemove={removeKeyword}
+            placeholder="Add keyword to exclude..."
+          />
+          <p className="cw-hint">Press Enter to add a keyword token.</p>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Step3Commercials({
+  data,
+  patchData,
+  errors,
+}: {
+  data: WizardData;
+  patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
+  errors: WizardFieldErrors;
+}) {
+  const escrowMin = Math.round(data.budget * (data.advancePercent / 100));
+  const isFixed = data.compensationType === "fixed";
+
+  return (
+    <div className="create-wizard-step">
+      <header className="create-wizard-step-head">
+        <h1>Commercial Terms</h1>
+        <p>
+          Set the baseline compensation limits, escrow advances, and payout
+          structures.
+        </p>
+      </header>
+
+      <div className="create-wizard-fields create-wizard-fields--grid">
+        <WizardField label="Compensation Type" className="cw-field--full">
+          <div className="cw-segmented cw-segmented--wide">
+            <button
+              type="button"
+              className={isFixed ? "is-active" : ""}
+              onClick={() => patchData({ compensationType: "fixed" }, "compensationType")}
+            >
+              Fixed Fee
+            </button>
+            <button
+              type="button"
+              className={!isFixed ? "is-active" : ""}
+              onClick={() =>
+                patchData({ compensationType: "negotiable" }, "compensationType")
+              }
+            >
+              Negotiable Offer
+            </button>
+          </div>
+        </WizardField>
+
+        {isFixed ? (
+          <WizardField
+            label="Flat Rate Per Creator"
+            error={getFieldError(errors, "flatRatePerCreator")}
+          >
+            <div className="cw-currency-wrap">
+              <span>$</span>
+              <input
+                type="number"
+                className="cw-input"
+                placeholder="0.00"
+                value={data.flatRatePerCreator || ""}
+                onChange={(e) =>
+                  patchData(
+                    { flatRatePerCreator: Number(e.target.value) || 0 },
+                    "flatRatePerCreator",
+                  )
+                }
+              />
+            </div>
+            <p className="cw-hint">
+              Creators will see: &quot;Fixed Fee: $
+              {data.flatRatePerCreator.toLocaleString()}&quot;
+            </p>
+          </WizardField>
+        ) : (
+          <>
+            <WizardField
+              label="Negotiable Minimum Fee"
+              error={getFieldError(errors, "negotiableMinFee")}
+            >
+              <div className="cw-currency-wrap">
+                <span>$</span>
+                <input
+                  type="number"
+                  className="cw-input"
+                  placeholder="0.00"
+                  value={data.negotiableMinFee || ""}
+                  onChange={(e) =>
+                    patchData(
+                      { negotiableMinFee: Number(e.target.value) || 0 },
+                      "negotiableMinFee",
+                    )
+                  }
+                />
+              </div>
+            </WizardField>
+            <WizardField
+              label="Negotiable Maximum Fee"
+              error={getFieldError(errors, "negotiableMaxFee")}
+            >
+              <div className="cw-currency-wrap">
+                <span>$</span>
+                <input
+                  type="number"
+                  className="cw-input"
+                  placeholder="0.00"
+                  value={data.negotiableMaxFee || ""}
+                  onChange={(e) =>
+                    patchData(
+                      { negotiableMaxFee: Number(e.target.value) || 0 },
+                      "negotiableMaxFee",
+                    )
+                  }
+                />
+              </div>
+            </WizardField>
+          </>
+        )}
+
+        <WizardField error={getFieldError(errors, "budget")} className="cw-field--full">
+          <span className="cw-label cw-label--with-icon">
+            Total Campaign Budget Pool
+            <Info
+              size={16}
+              aria-label="Maximum total spend authorized for this campaign across all creators"
+            />
+          </span>
+          <div className="cw-currency-wrap cw-currency-wrap--narrow">
+            <span>$</span>
+            <input
+              type="number"
+              className="cw-input"
+              placeholder="0"
+              value={data.budget || ""}
+              onChange={(e) =>
+                patchData({ budget: Number(e.target.value) || 0 }, "budget")
+              }
+            />
+          </div>
+        </WizardField>
+
+        <WizardField
+          label="Advance Payment Percentage"
+          error={getFieldError(errors, "advancePercent")}
+        >
+          <div className="cw-advance-row">
+            <div className="cw-percent-wrap">
+              <input
+                type="number"
+                className="cw-input"
+                min={30}
+                max={100}
+                value={data.advancePercent}
+                onChange={(e) =>
+                  patchData(
+                    {
+                      advancePercent: Math.max(30, Number(e.target.value) || 30),
+                    },
+                    "advancePercent",
+                  )
+                }
+              />
+              <span>%</span>
+            </div>
+            <div className="cw-advance-warning">
+              <Info size={16} />
+              <span>30% minimum required</span>
+            </div>
+          </div>
+          {data.budget > 0 && (
+            <p className="cw-hint">
+              Escrow hold: ${escrowMin.toLocaleString()} ({data.advancePercent}% of
+              pool)
+            </p>
+          )}
+        </WizardField>
+
+        <WizardField
+          label="Final Balance Due Date"
+          error={getFieldError(errors, "payoutTerms")}
+        >
+          <select
+            className="cw-input cw-select"
+            value={data.payoutTerms}
+            onChange={(e) => patchData({ payoutTerms: e.target.value }, "payoutTerms")}
+          >
+            {PAYOUT_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </WizardField>
+      </div>
+    </div>
+  );
+}
+
+function TokenInput({
+  tokens,
+  inputValue,
+  onInputChange,
+  onAdd,
+  onRemove,
+  placeholder,
+}: {
+  tokens: string[];
+  inputValue: string;
+  onInputChange: (v: string) => void;
+  onAdd: () => void;
+  onRemove: (token: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="cw-token-input">
+      {tokens.map((token) => (
+        <span key={token} className="cw-token">
+          {token}
+          <button type="button" onClick={() => onRemove(token)} aria-label={`Remove ${token}`}>
+            <X size={14} />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={inputValue}
+        placeholder={placeholder}
+        onChange={(e) => onInputChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onAdd();
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function ContextLedger({
+  step,
+  data,
+  industryLabel,
+  timelineLabel,
+  enabledPlatforms,
+}: {
+  step: number;
+  data: WizardData;
+  industryLabel: string;
+  timelineLabel: string;
+  enabledPlatforms: { label: string; formats: string[] }[];
+}) {
+  return (
+    <aside className="create-wizard-ledger">
+      <div className="create-wizard-ledger-head">
+        <Eye size={20} className="text-primary" />
+        <h2>Live Context Ledger</h2>
+      </div>
+
+      <div className="cw-ledger-accordions">
+        <LedgerAccordion title="Strategy" isActive={step === 1}>
+          <LedgerRow label="Name" value={data.name || "Not specified"} />
+          <LedgerRow label="Objective" value={data.objective || "Not specified"} />
+          <LedgerRow label="Timeline" value={timelineLabel} />
+          <div className="cw-ledger-row">
+            <span className="cw-ledger-key">Platform/Format</span>
+            <div className="cw-ledger-tags">
+              {enabledPlatforms.length === 0 ? (
+                <span className="cw-ledger-tag">None selected</span>
+              ) : (
+                enabledPlatforms.map((p) => (
+                  <span key={p.label}>
+                    <span className="cw-ledger-tag cw-ledger-tag--primary">
+                      {p.label}
+                    </span>
+                    {p.formats.map((f) => (
+                      <span key={f} className="cw-ledger-tag">
+                        {f}
+                      </span>
+                    ))}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
+        </LedgerAccordion>
+
+        <LedgerAccordion title="Targeting" isActive={step === 2}>
+          <LedgerRow label="Vertical" value={industryLabel} />
+          <LedgerRow
+            label="Audience"
+            value={`${data.ageMin} - ${data.ageMax} Years`}
+          />
+          <LedgerRow label="Gender" value={data.genderFocus} />
+          <div className="cw-ledger-row">
+            <span className="cw-ledger-key">Follower Tiers</span>
+            <div className="cw-ledger-tags">
+              {data.followerTiers.map((t) => (
+                <span key={t} className="cw-ledger-tag cw-ledger-tag--primary">
+                  {t.split(" ")[0]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </LedgerAccordion>
+
+        <LedgerAccordion title="Commercials" isActive={step === 3}>
+          <LedgerRow
+            label="Offer Type"
+            value={
+              data.compensationType === "fixed" ? "Fixed Fee" : "Negotiable Offer"
+            }
+          />
+          <LedgerRow label="Advance" value={`${data.advancePercent}% Upfront`} />
+          <LedgerRow label="Terms" value={data.payoutTerms} />
+        </LedgerAccordion>
+      </div>
+
+      <div className="create-wizard-ledger-foot">
+        <div className="cw-ledger-saved">
+          <Cloud size={14} />
+          <span>Last auto-saved: just now</span>
+        </div>
+        <div className="cw-ledger-snapshot">
+          <p>Campaign Snapshot</p>
+          <div className="cw-ledger-snapshot-rows">
+            <div>
+              <span>Target Creators</span>
+              <strong>24 Active Picks</strong>
+            </div>
+            <div>
+              <span>Estimated Reach</span>
+              <strong>2.4M - 4.1M</strong>
+            </div>
+            {data.budget > 0 && (
+              <div>
+                <span>Budget Pool</span>
+                <strong>${data.budget.toLocaleString()}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function LedgerAccordion({
+  title,
+  isActive,
+  children,
+}: {
+  title: string;
+  isActive: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`cw-ledger-accordion ${isActive ? "is-active" : ""}`}>
+      <div className="cw-ledger-accordion-trigger" aria-current={isActive ? "step" : undefined}>
+        <span>{title}</span>
+        {isActive ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+      </div>
+      {isActive && (
+        <div className="cw-ledger-accordion-body">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function LedgerRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="cw-ledger-row">
+      <span className="cw-ledger-key">{label}:</span>
+      <span className="cw-ledger-val">{value}</span>
     </div>
   );
 }
