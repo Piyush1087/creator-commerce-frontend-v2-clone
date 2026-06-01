@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from "react";
 
 type CardProps = PropsWithChildren<{
   action?: ReactNode;
@@ -6,6 +6,8 @@ type CardProps = PropsWithChildren<{
   compact?: boolean;
   eyebrow?: string;
   title?: string;
+  onClick?: () => void;
+  style?: HTMLAttributes<HTMLElement>["style"];
 }>;
 
 export function Card({
@@ -15,6 +17,8 @@ export function Card({
   compact = false,
   eyebrow,
   title,
+  onClick,
+  style,
 }: CardProps) {
   const classes = [
     "aurora-card",
@@ -25,7 +29,7 @@ export function Card({
     .join(" ");
 
   return (
-    <section className={classes}>
+    <section className={classes} onClick={onClick} style={style}>
       {(eyebrow || title || action) && (
         <header className="aurora-card__header">
           <div>

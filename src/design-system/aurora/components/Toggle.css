@@ -1,0 +1,52 @@
+.aurora-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.aurora-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.aurora-toggle__slider {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  background-color: var(--border-default);
+  border-radius: var(--radius-pill);
+  transition: background-color 0.2s;
+}
+
+.aurora-toggle__slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.aurora-toggle input:checked + .aurora-toggle__slider {
+  background-color: var(--color-primary);
+}
+
+.aurora-toggle input:checked + .aurora-toggle__slider::before {
+  transform: translateX(20px);
+}
+
+.aurora-toggle__label {
+  font-family: var(--font-heading);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  color: var(--text-high);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

@@ -84,6 +84,24 @@
   box-shadow: var(--shadow-ai);
 }
 
+.aurora-button--sm {
+  min-height: 32px;
+  padding: 6px var(--space-sm);
+  font-size: var(--size-caption);
+}
+
+.aurora-button--md {
+  min-height: var(--height-button);
+  padding: 12px var(--space-md);
+  font-size: var(--size-body);
+}
+
+.aurora-button--lg {
+  min-height: 56px;
+  padding: 16px var(--space-lg);
+  font-size: var(--size-body);
+}
+
 .aurora-button--secondary {
   background: var(--surface-card);
   color: #000000;
@@ -394,12 +412,89 @@
   font-size: var(--size-caption);
 }
 
-@media (max-width: 768px) {
-  .aurora-button--form-action {
-    width: 100%;
-  }
+/* SideDrawer */
+.aurora-sidedrawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
 
-  .aurora-tabs {
-    gap: var(--space-md);
+.aurora-sidedrawer {
+  height: 100%;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ai);
+  display: flex;
+  flex-direction: column;
+  animation: drawerSlideIn 0.3s ease-out;
+}
+
+@keyframes drawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.aurora-sidedrawer__header {
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.aurora-sidedrawer__header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aurora-sidedrawer__title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.aurora-sidedrawer__subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.aurora-sidedrawer__close {
+  padding: 8px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.aurora-sidedrawer__close:hover {
+  background: var(--disabled-bg);
+}
+
+.aurora-sidedrawer__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+.aurora-sidedrawer__footer {
+  padding: var(--space-lg) var(--space-xl);
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  background: var(--surface-page);
+}
+
+@media (max-width: 768px) {
+  .aurora-sidedrawer {
+    width: 100% !important;
   }
 }
+

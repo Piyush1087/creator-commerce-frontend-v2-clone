@@ -1,0 +1,425 @@
+.campaign-list-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.campaign-list-tabs__header {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.operations-tab__filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  gap: var(--space-md);
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.search-box input {
+  width: 100%;
+  height: var(--height-input);
+  padding: 0 12px 0 40px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+}
+
+.filter-group {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.aurora-select {
+  height: var(--height-input);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+}
+
+.performance-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.performance-matrix th {
+  text-align: left;
+  padding: var(--space-sm);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.performance-matrix td {
+  padding: var(--space-md) var(--space-sm);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.campaign-row-clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.campaign-row-clickable:hover {
+  background: var(--surface-muted, #f8fafc);
+}
+
+.status-toggle-cell {
+  min-width: 120px;
+}
+
+.campaign-name strong {
+  display: block;
+  font-size: var(--size-body);
+}
+
+.campaign-name span {
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+
+.budget-cell span {
+  display: block;
+  font-weight: 600;
+}
+
+.budget-cell small {
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.actions button {
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.actions button:hover {
+  color: var(--color-primary);
+}
+
+/* HIGH FIDELITY FINANCIAL TAB */
+.financial-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding-top: var(--space-md);
+}
+
+.financial-control-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.period-toggle {
+  display: flex;
+  background: var(--surface-page);
+  padding: 4px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-default);
+}
+
+.period-btn {
+  padding: 6px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.period-btn.active {
+  background: var(--color-primary);
+  color: var(--color-secondary);
+}
+
+/* Insights Grid */
+.financial-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.insight-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* Donut Chart Simulation */
+.donut-chart-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.donut-chart {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 12px solid var(--color-primary);
+  border-top-color: var(--color-tertiary);
+  border-right-color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-value {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.insight-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+
+.legend-item span { display: flex; align-items: center; gap: 6px; }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-primary { background: var(--color-primary); }
+.dot-fixed-dim { background: #10B981; }
+.dot-container { background: var(--surface-workflow); }
+
+/* Logistics Metrics */
+.logistics-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-unit span { font-size: 11px; color: var(--text-muted); }
+.metric-unit strong { font-size: 14px; }
+
+.alert-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amber-alert {
+  font-size: 9px;
+  background: #FEF3C7;
+  color: #B45309;
+  border: none;
+}
+
+/* Reach Metrics */
+.reach-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reach-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.unit-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.unit-bar {
+  height: 6px;
+  background: var(--surface-page);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.unit-bar div {
+  height: 100%;
+  background: var(--color-primary);
+}
+
+/* Velocity Stack */
+.velocity-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.velocity-item {
+  padding: 10px;
+  background: var(--surface-page);
+  border-radius: 8px;
+}
+
+.v-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 2px;
+}
+
+.velocity-item strong { font-size: 12px; }
+
+/* Table Section */
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ledger-table th {
+  text-align: left;
+  padding: 12px 24px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.ledger-table td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.creator-cell-modern {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-js { width: 32px; height: 32px; border-radius: 50%; background: var(--surface-workflow); color: var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+.avatar-am { width: 32px; height: 32px; border-radius: 50%; background: var(--surface-page); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+
+/* Protection Ledger */
+.protection-ledger-final {
+  background: white;
+  border-color: var(--border-default);
+}
+
+.protection-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+}
+
+.protection-grid-final {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  align-items: center;
+}
+
+.p-unit {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-val { font-size: 18px; font-weight: 800; font-family: monospace; }
+.p-desc { font-size: 11px; color: var(--text-muted); }
+
+.p-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-left: auto;
+}
+
+.status-indicator { width: 8px; height: 8px; background: var(--color-primary); border-radius: 50%; }
+
+/* Quick Draft Zone */
+.quick-draft-zone {
+  height: 120px;
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-card-standard);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(52, 211, 153, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-draft-zone:hover { background: rgba(52, 211, 153, 0.1); }
+.quick-draft-zone strong { font-size: 14px; color: var(--color-primary); }
+.quick-draft-zone span { font-size: 10px; font-weight: 700; color: var(--color-primary); opacity: 0.7; text-transform: uppercase; }
+
+@media (max-width: 1200px) {
+  .financial-insights-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .financial-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .protection-grid-final {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .operations-tab__table-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .campaign-name strong {
+    font-size: 14px;
+  }
+
+  .actions button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

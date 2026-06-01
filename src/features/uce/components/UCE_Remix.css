@@ -1,0 +1,124 @@
+/* UCE REMIX DEFINITIVE STYLES */
+:root {
+  --remix-primary: #0f172a;
+  --remix-accent: #34d399;
+  --remix-bg: #f8fafc;
+  --remix-border: #e2e8f0;
+  --remix-text-muted: #64748b;
+}
+
+.remix-canvas {
+  min-height: 100vh;
+  background: var(--remix-bg);
+  color: var(--remix-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* WIZARD & DRAWER SHARED */
+.remix-drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.remix-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.remix-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--remix-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* BRIEF WIZARD STEPS */
+.brief-step-indicator {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.dot-step {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--remix-border);
+}
+
+.dot-step.active {
+  background: var(--remix-accent);
+  box-shadow: 0 0 8px var(--remix-accent);
+}
+
+/* DATA GRIDS */
+.remix-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.remix-table th {
+  text-align: left;
+  padding: 16px 20px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--remix-text-muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--remix-border);
+}
+
+.remix-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--remix-border);
+  vertical-align: middle;
+}
+
+/* COMPONENT: MILESTONE TRACK */
+.milestone-track-6 {
+  display: flex;
+  gap: 6px;
+}
+
+.m-dot-hd {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--remix-border);
+}
+
+.m-dot-hd.done { background: #10b981; }
+.m-dot-hd.active { background: var(--remix-accent); box-shadow: 0 0 8px var(--remix-accent); }
+
+/* COMPONENT: AI GRADE PILL */
+.remix-grade-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border-radius: 20px;
+}
+
+.remix-grade-pill strong { color: #10b981; font-size: 14px; }
+.remix-grade-pill span { color: var(--remix-text-muted); font-size: 11px; font-weight: 700; }
+
+/* UTILS */
+.remix-card-hd {
+  background: white !important;
+  border: 1px solid var(--remix-border) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+.remix-alert-banner {
+  padding: 16px;
+  background: #f0fdfa;
+  border: 1px solid var(--remix-accent);
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
