@@ -121,7 +121,7 @@ export function SocialSyncView() {
                 type="button" 
                 className="bob-link" 
                 style={{ fontWeight: 700 }}
-                onClick={() => navigate(AUTH_ROUTES.brandDashboard)}
+                onClick={() => navigate(AUTH_ROUTES.brandCentre)}
               >
                 Skip for now
               </button>

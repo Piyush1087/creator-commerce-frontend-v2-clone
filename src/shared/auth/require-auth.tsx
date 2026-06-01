@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
 
-import { AUTH_ROUTES } from "../../features/auth/constants";
 import { getAccessToken } from "./auth-session";
 
 type RequireAuthProps = {
@@ -13,11 +12,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   if (!token) {
     return (
-      <Navigate
-        to={AUTH_ROUTES.login}
-        replace
-        state={{ from: location.pathname }}
-      />
+      <Navigate to="/" replace state={{ from: location.pathname }} />
     );
   }
 
