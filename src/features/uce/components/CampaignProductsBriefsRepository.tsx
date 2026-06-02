@@ -7,28 +7,27 @@ import {
   Package,
   Plus,
 } from "lucide-react";
-import type { EnrichedCampaignProduct } from "../mock-data/campaign-workspace";
-import type { CampaignBrief } from "../mock-data/campaign-workspace";
+import type { RepositoryBrief, RepositoryProduct } from "../types/repository";
+import { EMPTY_FIELD } from "../utils/display-field";
 
 type CampaignProductsBriefsRepositoryProps = {
-  products: EnrichedCampaignProduct[];
+  products: RepositoryProduct[];
+  briefs: RepositoryBrief[];
   onAddProduct: () => void;
   onViewProduct: (productId: string) => void;
-  onViewBrief: (brief: CampaignBrief) => void;
+  onViewBrief: (brief: RepositoryBrief) => void;
   onCreateBrief: (productId: string) => void;
-  onToggleProductActive: (productId: string, isActive: boolean) => void;
 };
 
 export function CampaignProductsBriefsRepository({
   products,
+  briefs,
   onAddProduct,
   onViewProduct,
   onViewBrief,
   onCreateBrief,
-  onToggleProductActive,
 }: CampaignProductsBriefsRepositoryProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const totalBriefs = products.reduce((n, p) => n + p.briefs.length, 0);
 
   return (
     <section className="uce-repo glass-card">
@@ -36,8 +35,8 @@ export function CampaignProductsBriefsRepository({
         <div className="uce-repo-header-left">
           <h2>Products &amp; Briefs Repository</h2>
           <span className="uce-repo-pill uce-repo-pill--desktop">
-            {products.length} Product{products.length === 1 ? "" : "s"} | {totalBriefs}{" "}
-            Strategic Brief{totalBriefs === 1 ? "" : "s"}
+            {products.length} Product{products.length === 1 ? "" : "s"} | {briefs.length}{" "}
+            Strategic Brief{briefs.length === 1 ? "" : "s"}
           </span>
         </div>
         <div className="uce-repo-header-actions">
@@ -78,9 +77,7 @@ export function CampaignProductsBriefsRepository({
                   key={product.id}
                   product={product}
                   onViewProduct={onViewProduct}
-                  onViewBrief={onViewBrief}
                   onCreateBrief={onCreateBrief}
-                  onToggleProductActive={onToggleProductActive}
                 />
               ))}
               <button
@@ -93,6 +90,41 @@ export function CampaignProductsBriefsRepository({
               </button>
             </>
           )}
+
+          <section className="uce-repo-campaign-briefs">
+            <h3 className="uce-repo-campaign-briefs-title">Campaign briefs (API)</h3>
+            <p className="uce-repo-campaign-briefs-note">
+              Briefs are campaign-scoped in the API (not nested under products).
+            </p>
+            {briefs.length === 0 ? (
+              <p className="uce-no-briefs-hint">No briefs yet — {EMPTY_FIELD}</p>
+            ) : (
+              briefs.map((brief) => (
+                <div key={brief.id} className="uce-brief-item">
+                  <div className="uce-brief-item-main">
+                    <span className="uce-field-label">Brief active toggle</span>
+                    <span className="uce-field-value">{EMPTY_FIELD}</span>
+                    <div className="uce-brief-doc-icon">
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <span className="uce-brief-title">{brief.name}</span>
+                      <span className="uce-brief-format-pill">{brief.formatType}</span>
+                      <span className="uce-brief-format-pill">{brief.platformsLabel}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="uce-text-action-btn"
+                    onClick={() => onViewBrief(brief)}
+                  >
+                    <Eye size={16} />
+                    View Brief
+                  </button>
+                </div>
+              ))
+            )}
+          </section>
         </div>
       )}
     </section>
@@ -102,20 +134,12 @@ export function CampaignProductsBriefsRepository({
 function ProductBlock({
   product,
   onViewProduct,
-  onViewBrief,
   onCreateBrief,
-  onToggleProductActive,
 }: {
-  product: EnrichedCampaignProduct;
+  product: RepositoryProduct;
   onViewProduct: (productId: string) => void;
-  onViewBrief: (brief: CampaignBrief) => void;
   onCreateBrief: (productId: string) => void;
-  onToggleProductActive: (productId: string, isActive: boolean) => void;
 }) {
-  const [briefActive, setBriefActive] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(product.briefs.map((b) => [b.id, true])),
-  );
-
   const productInitials = product.name
     .split(" ")
     .map((w) => w[0])
@@ -124,7 +148,7 @@ function ProductBlock({
     .toUpperCase();
 
   return (
-    <div className={`uce-product-block ${product.isActive ? "is-active" : ""}`}>
+    <div className={`uce-product-block ${product.outOfStock ? "" : "is-active"}`}>
       <div className="uce-product-row">
         <div className="uce-product-row-main">
           <div className="uce-product-thumb" aria-hidden="true">
@@ -133,22 +157,17 @@ function ProductBlock({
           <div>
             <h3>{product.name}</h3>
             <p>
-              Base Price: {product.basePrice} •{" "}
-              <span className="uce-brief-count">
-                {product.briefs.length} Brief{product.briefs.length === 1 ? "" : "s"} Allocated
-              </span>
+              SKU: {product.skuCode} • Base Price: {product.basePrice} • Inventory:{" "}
+              {product.inventoryCount}
+              {product.outOfStock ? " (out of stock)" : ""}
+            </p>
+            <p>
+              <span className="uce-field-label">Product active toggle: </span>
+              <span className="uce-field-value">{EMPTY_FIELD}</span>
             </p>
           </div>
         </div>
         <div className="uce-product-row-actions">
-          <label className="uce-active-toggle uce-active-toggle--sm">
-            <input
-              type="checkbox"
-              checked={product.isActive}
-              onChange={(e) => onToggleProductActive(product.id, e.target.checked)}
-            />
-            <span className="uce-active-toggle-track" />
-          </label>
           <button
             type="button"
             className="uce-text-action-btn"
@@ -160,61 +179,13 @@ function ProductBlock({
         </div>
       </div>
 
-      <div className={`uce-briefs-nested ${product.isActive ? "" : "is-dimmed"}`}>
-        {!product.isActive && (
-          <p className="uce-inactive-brief-label">
-            Parent Product Inactive — Incoming Applications Locked
-          </p>
-        )}
-        {product.briefs.length === 0 ? (
-          <p className="uce-no-briefs-hint">No briefs yet — create one below.</p>
-        ) : (
-          product.briefs.map((brief) => (
-            <div key={brief.id} className="uce-brief-item">
-              <div className="uce-brief-item-main">
-                <label className="uce-active-toggle uce-active-toggle--sm uce-brief-toggle">
-                  <input
-                    type="checkbox"
-                    checked={briefActive[brief.id] ?? true}
-                    disabled={!product.isActive}
-                    onChange={(e) =>
-                      setBriefActive((prev) => ({
-                        ...prev,
-                        [brief.id]: e.target.checked,
-                      }))
-                    }
-                  />
-                  <span className="uce-active-toggle-track" />
-                </label>
-                <div className="uce-brief-doc-icon">
-                  <FileText size={18} />
-                </div>
-                <div>
-                  <span className="uce-brief-title">{brief.name}</span>
-                  <span className="uce-brief-format-pill">{brief.formatType}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="uce-text-action-btn"
-                onClick={() => onViewBrief(brief)}
-              >
-                <Eye size={16} />
-                View Brief
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
       <button
         type="button"
         className="uce-add-brief-btn"
         onClick={() => onCreateBrief(product.id)}
-        disabled={!product.isActive}
       >
         <Plus size={18} />
-        Create &amp; Add Strategic Brief to {product.name}
+        Create campaign brief (linked context: {product.name})
       </button>
     </div>
   );

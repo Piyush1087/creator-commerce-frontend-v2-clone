@@ -14,11 +14,15 @@ const TABS: { id: PipelineTab; label: string }[] = [
 ];
 
 type CampaignPipelineWorkspaceProps = {
+  campaignId: string;
+  campaignName: string;
   activeTab: PipelineTab;
   onTabChange: (tab: PipelineTab) => void;
 };
 
 export function CampaignPipelineWorkspace({
+  campaignId,
+  campaignName,
   activeTab,
   onTabChange,
 }: CampaignPipelineWorkspaceProps) {
@@ -40,10 +44,18 @@ export function CampaignPipelineWorkspace({
       </div>
 
       <div className="uce-pipeline-canvas">
-        {activeTab === "prospects" && <ProspectsTabPanel />}
-        {activeTab === "applicants" && <ApplicantsTabPanel />}
-        {activeTab === "active" && <ActiveCollabsTabPanel />}
-        {activeTab === "reporting" && <ReportingTabPanel />}
+        {activeTab === "prospects" && (
+          <ProspectsTabPanel campaignId={campaignId} campaignName={campaignName} />
+        )}
+        {activeTab === "applicants" && (
+          <ApplicantsTabPanel campaignId={campaignId} campaignName={campaignName} />
+        )}
+        {activeTab === "active" && (
+          <ActiveCollabsTabPanel campaignId={campaignId} campaignName={campaignName} />
+        )}
+        {activeTab === "reporting" && (
+          <ReportingTabPanel campaignId={campaignId} campaignName={campaignName} />
+        )}
       </div>
     </section>
   );

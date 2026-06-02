@@ -17,11 +17,15 @@ import { Button } from "../../../design-system/aurora/components/Button";
 import { Card } from "../../../design-system/aurora/components/Card";
 import { TextField } from "../../../design-system/aurora/components/TextField";
 import { SelectionCard } from "../../../design-system/aurora/components/SelectionCard";
-import {
-  getCampaignProduct,
-  PRODUCT_CATALOG,
-  type CampaignProduct,
-} from "../mock-data/campaign-products";
+import type { CreateCampaignBriefBody } from "../contracts/brand-uce.contracts";
+import { EMPTY_FIELD } from "../utils/display-field";
+
+export type BriefWizardProductOption = {
+  id: string;
+  name: string;
+  sku: string;
+};
+
 import "./BriefingWizardDrawer.css";
 import "./UCE_Remix.css";
 
@@ -30,9 +34,9 @@ type BriefingWizardDrawerProps = {
   onClose: () => void;
   campaignName?: string;
   initialProductId?: string | null;
-  onBriefCreated?: (catalogProductId: string, briefName: string) => void;
-  /** When set, parent-product dropdown only lists these catalogue IDs (campaign-linked SKUs) */
-  linkedProductIds?: string[];
+  campaignProducts: BriefWizardProductOption[];
+  onSubmitBrief: (body: CreateCampaignBriefBody) => Promise<void>;
+  isSubmitting?: boolean;
 };
 
 export function BriefingWizardDrawer({
@@ -40,18 +44,16 @@ export function BriefingWizardDrawer({
   onClose,
   campaignName = "Spring Glow 2024",
   initialProductId = null,
-  onBriefCreated,
-  linkedProductIds,
+  campaignProducts,
+  onSubmitBrief,
+  isSubmitting = false,
 }: BriefingWizardDrawerProps) {
   const [step, setStep] = useState(1);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [briefName, setBriefName] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const productOptions = linkedProductIds?.length
-    ? PRODUCT_CATALOG.filter((p) => linkedProductIds.includes(p.id))
-    : PRODUCT_CATALOG;
-
-  const selectedProduct = getCampaignProduct(selectedProductId);
+  const selectedProduct = campaignProducts.find((p) => p.id === selectedProductId);
   const hasProduct = Boolean(selectedProduct);
 
   useEffect(() => {
@@ -62,14 +64,26 @@ export function BriefingWizardDrawer({
     }
   }, [isOpen, initialProductId]);
 
-  const handleFinalize = () => {
-    if (selectedProductId && onBriefCreated) {
-      const name =
-        briefName.trim() ||
-        `Strategic Brief — ${selectedProduct?.name ?? "Product"}`;
-      onBriefCreated(selectedProductId, name);
+  const handleFinalize = async () => {
+    setSubmitError(null);
+    const title =
+      briefName.trim() ||
+      `Strategic Brief — ${selectedProduct?.name ?? "Campaign"}`;
+    const guidelines =
+      `Creative guidelines for ${title}. Align with ${selectedProduct?.name ?? "campaign"} SKU ${selectedProduct?.sku ?? EMPTY_FIELD} and brand voice.`;
+    try {
+      await onSubmitBrief({
+        internal_title: title,
+        creative_guidelines: guidelines,
+        required_platforms: ["INSTAGRAM"],
+        deliverable_format_tags: ["Video Reel"],
+      });
+      handleClose();
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Could not create brief.",
+      );
     }
-    handleClose();
   };
 
   const handleClose = () => {
@@ -102,16 +116,27 @@ export function BriefingWizardDrawer({
             )}
             <Button
               variant="primary"
-              disabled={step < 3 && !canAdvance}
-              onClick={() => (step < 3 ? setStep(step + 1) : handleFinalize())}
+              disabled={(step < 3 && !canAdvance) || isSubmitting}
+              onClick={() =>
+                step < 3 ? setStep(step + 1) : void handleFinalize()
+              }
             >
-              {step === 3 ? "Finalize & Dispatch Brief" : "Build Creative Strategy"}
+              {step === 3
+                ? isSubmitting
+                  ? "Saving…"
+                  : "Finalize & Dispatch Brief"
+                : "Build Creative Strategy"}
               {step < 3 && <ArrowRight size={18} />}
             </Button>
           </div>
         </div>
       }
     >
+      {submitError ? (
+        <p className="uce-drawer-error" style={{ marginBottom: 12 }}>
+          {submitError}
+        </p>
+      ) : null}
       <div className="uce-brief-wizard-layout">
         <div className="uce-brief-product-picker">
           <label htmlFor="uce-brief-parent-product">Parent Product Portfolio</label>
@@ -123,7 +148,7 @@ export function BriefingWizardDrawer({
               onChange={(e) => setSelectedProductId(e.target.value)}
             >
               <option value="">Select product to attach this brief…</option>
-              {productOptions.map((product) => (
+              {campaignProducts.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name} ({product.sku})
                 </option>
@@ -175,7 +200,7 @@ function BriefLivePreview({
   product,
 }: {
   campaignName: string;
-  product?: CampaignProduct;
+  product?: BriefWizardProductOption;
 }) {
   return (
     <aside className="uce-brief-preview-panel">
@@ -216,16 +241,10 @@ function BriefLivePreview({
                 </div>
               </div>
               <p style={{ margin: "12px 0 0", fontSize: 12, color: "#64748b" }}>
-                Base price: {product.basePrice} • {product.briefCount} brief
-                {product.briefCount === 1 ? "" : "s"} allocated
+                Base price: {EMPTY_FIELD} • USPs: {EMPTY_FIELD}
               </p>
-              <ul className="uce-brief-preview-usps" style={{ marginTop: 12 }}>
-                {product.usps.map((usp) => (
-                  <li key={usp}>{usp}</li>
-                ))}
-              </ul>
               <p style={{ margin: "12px 0 0", fontSize: 12, color: "#64748b" }}>
-                {product.shipping} • {product.stockStatus}
+                Logistics: {EMPTY_FIELD}
               </p>
             </>
           ) : (
@@ -245,7 +264,7 @@ function Step1Strategy({
   briefName,
   onBriefNameChange,
 }: {
-  product?: CampaignProduct;
+  product?: BriefWizardProductOption;
   disabled: boolean;
   briefName: string;
   onBriefNameChange: (value: string) => void;
@@ -283,7 +302,9 @@ function Step1Strategy({
         <div className="remix-field-group">
           <label className="remix-label">Product context (from portfolio)</label>
           <Card className="remix-card-hd" compact>
-            <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>{product.tagline}</p>
+            <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
+              SKU {product.sku} — extended catalogue fields: {EMPTY_FIELD}
+            </p>
           </Card>
         </div>
       )}
@@ -309,7 +330,7 @@ function Step1Strategy({
         <textarea
           placeholder={
             product
-              ? `Mention ${product.name} within the first 3 seconds. Highlight: ${product.usps[0]}`
+              ? `Mention ${product.name} within the first 3 seconds.`
               : "List any non-negotiable mentions or visual cues..."
           }
           style={{
@@ -327,7 +348,7 @@ function Step1Strategy({
   );
 }
 
-function Step2Creative({ product }: { product?: CampaignProduct }) {
+function Step2Creative({ product }: { product?: BriefWizardProductOption }) {
   return (
     <div className="remix-drawer-content">
       <section className="remix-field-group">
@@ -370,8 +391,8 @@ function Step2Creative({ product }: { product?: CampaignProduct }) {
   );
 }
 
-function Step3Commercials({ product }: { product?: CampaignProduct }) {
-  const budgetLabel = product?.basePrice ?? "$45.00";
+function Step3Commercials({ product: _product }: { product?: BriefWizardProductOption }) {
+  const budgetLabel = EMPTY_FIELD;
 
   return (
     <div className="remix-drawer-content">
@@ -401,9 +422,9 @@ function Step3Commercials({ product }: { product?: CampaignProduct }) {
           <strong style={{ fontSize: 40 }}>$15,000</strong>
           <strong style={{ fontSize: 24 }}>30% ($4,500)</strong>
         </div>
-        {product && (
+        {_product && (
           <p style={{ margin: "16px 0 0", fontSize: 12, color: "#94a3b8" }}>
-            Anchored to {product.name} retail ({budgetLabel})
+            Anchored to {_product.name} retail ({budgetLabel})
           </p>
         )}
       </section>

@@ -6,6 +6,9 @@ import {
   type SetStateAction,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { createCampaignFromWizard } from "../api/brand-uce-client";
+import { mapWizardToIntegratedPayload } from "../mappers/map-wizard-to-payload";
+import { buildCampaignDetailPath } from "../utils/uce-format";
 import {
   ArrowLeft,
   ArrowRight,
@@ -125,6 +128,7 @@ export function CreateCampaignWizard() {
   const [locationInput, setLocationInput] = useState("");
   const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const clearFieldError = (key: WizardFieldKey) => {
     setFieldErrors((prev) => {
@@ -147,7 +151,7 @@ export function CreateCampaignWizard() {
     setStep((s) => Math.max(1, s - 1));
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (step < 3) {
       const result = validateCampaignWizardStep(step as 1 | 2 | 3, data);
       if (!result.success) {
@@ -169,7 +173,17 @@ export function CreateCampaignWizard() {
     }
     setFieldErrors({});
     setFormError(null);
-    navigate(AUTH_ROUTES.brandUceCampaigns);
+    setIsPublishing(true);
+    try {
+      const shell = await createCampaignFromWizard(mapWizardToIntegratedPayload(data));
+      navigate(buildCampaignDetailPath(shell.campaign_id));
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Could not create campaign.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const industryLabel =
@@ -266,9 +280,9 @@ export function CreateCampaignWizard() {
               Back to Previous Step
             </Button>
           )}
-          <Button variant="primary" onClick={handleContinue}>
+          <Button variant="primary" onClick={() => void handleContinue()} disabled={isPublishing}>
             {step === 3 ? (
-              "Save & Publish Campaign"
+              isPublishing ? "Creating campaign…" : "Save & Publish Campaign"
             ) : (
               <>
                 {step === 1 ? "Next Step: Creator Targeting" : "Next Step: Commercial Terms"}

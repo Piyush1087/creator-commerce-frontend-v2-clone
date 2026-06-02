@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Alert } from "../../../design-system/aurora";
 import { BriefingWizardDrawer } from "../../../features/uce/components/BriefingWizardDrawer";
 import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
 import {
@@ -11,17 +12,19 @@ import { CampaignShareRouterModal } from "../../../features/uce/components/Campa
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
 import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
-import { getCampaignById } from "../../../features/uce/mock-data/campaigns";
 import {
-  addBriefToProduct,
-  enrichWorkspaceProducts,
-  getCatalogProductsNotInCampaign,
-  getInitialCampaignWorkspace,
-  linkProductToCampaign,
-  setProductActive,
-  type CampaignBrief,
-  type CampaignWorkspace,
-} from "../../../features/uce/mock-data/campaign-workspace";
+  createCampaignBrief,
+  createCampaignProduct,
+  fetchCampaignShell,
+  patchCampaignStatus,
+} from "../../../features/uce/api/brand-uce-client";
+import type { UceCampaignStatus } from "../../../features/uce/contracts/brand-uce.contracts";
+import { useUceApiJson } from "../../../features/uce/hooks/use-uce-api-json";
+import {
+  mapShellToRepositoryBriefs,
+  mapShellToRepositoryProducts,
+} from "../../../features/uce/mappers/map-shell-to-repository";
+import type { RepositoryBrief } from "../../../features/uce/types/repository";
 import { AUTH_ROUTES } from "../../../features/auth/constants";
 import "../../../features/uce/components/CampaignProductsBriefsRepository.css";
 import "../../../features/uce/components/CampaignShareRouterModal.css";
@@ -30,33 +33,22 @@ import "./BrandUceCampaignDetailPage.css";
 import "../../../features/uce/uce-responsive.css";
 
 export function BrandUceCampaignDetailPage() {
-  const { id: rawId } = useParams();
-  const campaign = getCampaignById(rawId);
-  const campaignId = campaign?.id ?? rawId ?? "";
+  const { id: campaignId = "" } = useParams();
 
-  const [workspace, setWorkspace] = useState<CampaignWorkspace>(() =>
-    getInitialCampaignWorkspace(campaignId),
+  const shellFetcher = useCallback(
+    () => fetchCampaignShell(campaignId),
+    [campaignId],
   );
+  const { state, reload } = useUceApiJson(Boolean(campaignId), shellFetcher);
 
-  useEffect(() => {
-    if (campaignId) {
-      setWorkspace(getInitialCampaignWorkspace(campaignId));
-    }
-  }, [campaignId]);
-
-  const enrichedProducts = useMemo(
-    () => enrichWorkspaceProducts(workspace),
-    [workspace],
+  const shell = state.status === "ready" ? state.data : null;
+  const products = useMemo(
+    () => (shell ? mapShellToRepositoryProducts(shell) : []),
+    [shell],
   );
-
-  const availableCatalogProducts = useMemo(
-    () => getCatalogProductsNotInCampaign(workspace),
-    [workspace],
-  );
-
-  const linkedProductIds = useMemo(
-    () => workspace.products.map((p) => p.catalogProductId),
-    [workspace],
+  const briefs = useMemo(
+    () => (shell ? mapShellToRepositoryBriefs(shell) : []),
+    [shell],
   );
 
   const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
@@ -66,14 +58,47 @@ export function BrandUceCampaignDetailPage() {
   const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
   const [briefWizardProductId, setBriefWizardProductId] = useState<string | null>(null);
   const [viewProductId, setViewProductId] = useState<string | null>(null);
-  const [viewBrief, setViewBrief] = useState<CampaignBrief | null>(null);
+  const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
-  if (!campaign) {
+  const viewProduct = products.find((p) => p.id === viewProductId) ?? null;
+
+  const briefWizardProducts = useMemo(
+    () =>
+      products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.skuCode,
+      })),
+    [products],
+  );
+
+  const handleStatusChange = async (nextActive: boolean) => {
+    if (!shell) return;
+    setStatusError(null);
+    setStatusUpdating(true);
+    const next: UceCampaignStatus = nextActive ? "ACTIVE" : "PAUSED";
+    try {
+      await patchCampaignStatus(shell.campaign_id, next);
+      await reload({ silent: true });
+    } catch (err) {
+      setStatusError(
+        err instanceof Error ? err.message : "Could not update campaign status.",
+      );
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
+  if (!campaignId) {
     return (
       <div className="campaign-workspace-canvas campaign-workspace-canvas--missing">
         <h1>Campaign not found</h1>
-        <p>We couldn&apos;t find a campaign with id &quot;{rawId}&quot;.</p>
+        <p>Missing campaign id in URL.</p>
         <Link to={AUTH_ROUTES.brandUceCampaigns} className="uce-back-to-list-link">
           Back to campaigns
         </Link>
@@ -81,17 +106,54 @@ export function BrandUceCampaignDetailPage() {
     );
   }
 
-  const campaignSlug = campaign.id.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  if (state.status === "loading" || state.status === "idle") {
+    return (
+      <div className="campaign-workspace-canvas campaign-workspace-canvas--missing">
+        <p>Loading campaign workspace…</p>
+      </div>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <div className="campaign-workspace-canvas campaign-workspace-canvas--missing">
+        <h1>Campaign not found</h1>
+        <Alert tone="error" title="Could not load campaign">
+          {state.message}
+        </Alert>
+        <Link to={AUTH_ROUTES.brandUceCampaigns} className="uce-back-to-list-link">
+          Back to campaigns
+        </Link>
+      </div>
+    );
+  }
+
+  if (state.status !== "ready") {
+    return null;
+  }
+  const loadedShell = state.data;
+  const campaignSlug = loadedShell.campaign_name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_");
 
   return (
     <div className="campaign-workspace-canvas">
+      {statusError ? (
+        <Alert tone="error" title="Status update failed">
+          {statusError}
+        </Alert>
+      ) : null}
+
       <CampaignWorkspaceZone1
-        campaignName={campaign.name}
+        shell={loadedShell}
         onOpenShareRouter={() => setIsShareRouterOpen(true)}
+        onStatusChange={(active) => void handleStatusChange(active)}
+        statusUpdating={statusUpdating}
       />
 
       <CampaignProductsBriefsRepository
-        products={enrichedProducts}
+        products={products}
+        briefs={briefs}
         onAddProduct={() => setIsLinkAssetOpen(true)}
         onViewProduct={(productId) => {
           setViewProductId(productId);
@@ -105,12 +167,11 @@ export function BrandUceCampaignDetailPage() {
           setBriefWizardProductId(productId);
           setIsBriefWizardOpen(true);
         }}
-        onToggleProductActive={(productId, isActive) => {
-          setWorkspace((prev) => setProductActive(prev, productId, isActive));
-        }}
       />
 
       <CampaignPipelineWorkspace
+        campaignId={loadedShell.campaign_id}
+        campaignName={loadedShell.campaign_name}
         activeTab={activeWorkspaceTab}
         onTabChange={setWorkspaceTab}
       />
@@ -118,18 +179,23 @@ export function BrandUceCampaignDetailPage() {
       <LinkAssetDrawer
         isOpen={isLinkAssetOpen}
         onClose={() => setIsLinkAssetOpen(false)}
-        campaignName={campaign.name}
-        campaignSlug={campaignSlug}
-        availableProducts={availableCatalogProducts}
-        onLinkProduct={(catalogProductId) => {
-          setWorkspace((prev) => linkProductToCampaign(prev, catalogProductId));
+        campaignName={loadedShell.campaign_name}
+        isSubmitting={isSavingProduct}
+        onCreateProduct={async (body) => {
+          setIsSavingProduct(true);
+          try {
+            await createCampaignProduct(loadedShell.campaign_id, body);
+            await reload({ silent: true });
+          } finally {
+            setIsSavingProduct(false);
+          }
         }}
       />
 
       <ProductDetailDrawer
         isOpen={isProductDetailOpen}
         onClose={() => setIsProductDetailOpen(false)}
-        productId={viewProductId}
+        product={viewProduct}
       />
 
       <BriefSnapshotDrawer
@@ -138,8 +204,7 @@ export function BrandUceCampaignDetailPage() {
           setIsBriefSnapshotOpen(false);
           setViewBrief(null);
         }}
-        briefTitle={viewBrief?.name}
-        formatType={viewBrief?.formatType}
+        brief={viewBrief}
       />
 
       <BriefingWizardDrawer
@@ -148,25 +213,27 @@ export function BrandUceCampaignDetailPage() {
           setIsBriefWizardOpen(false);
           setBriefWizardProductId(null);
         }}
-        campaignName={campaign.name}
+        campaignName={loadedShell.campaign_name}
         initialProductId={briefWizardProductId}
-        linkedProductIds={linkedProductIds}
-        onBriefCreated={(catalogProductId, briefName) => {
-          setWorkspace((prev) =>
-            addBriefToProduct(prev, catalogProductId, {
-              name: briefName,
-              formatType: "Video Reel",
-            }),
-          );
+        campaignProducts={briefWizardProducts}
+        isSubmitting={isSavingBrief}
+        onSubmitBrief={async (body) => {
+          setIsSavingBrief(true);
+          try {
+            await createCampaignBrief(loadedShell.campaign_id, body);
+            await reload({ silent: true });
+          } finally {
+            setIsSavingBrief(false);
+          }
         }}
       />
 
       <CampaignShareRouterModal
         isOpen={isShareRouterOpen}
         onClose={() => setIsShareRouterOpen(false)}
-        campaignName={campaign.name}
+        campaignName={loadedShell.campaign_name}
         campaignSlug={campaignSlug}
-        products={enrichedProducts.map((p) => ({ id: p.id, name: p.name }))}
+        products={products.map((p) => ({ id: p.id, name: p.name }))}
       />
     </div>
   );

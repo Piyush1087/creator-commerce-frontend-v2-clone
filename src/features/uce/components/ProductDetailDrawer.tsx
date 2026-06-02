@@ -1,32 +1,33 @@
-import { CheckCircle, XCircle } from "lucide-react";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
 import { Button } from "../../../design-system/aurora/components/Button";
-import { getCampaignProduct } from "../mock-data/campaign-products";
+import type { RepositoryProduct } from "../types/repository";
+import { displayField, EMPTY_FIELD } from "../utils/display-field";
 
 type ProductDetailDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
-  productId?: string | null;
+  product: RepositoryProduct | null;
 };
 
 export function ProductDetailDrawer({
   isOpen,
   onClose,
-  productId,
+  product,
 }: ProductDetailDrawerProps) {
-  const product =
-    getCampaignProduct(productId) ?? getCampaignProduct("hydration_boost_serum")!;
+  const title = product
+    ? `Product Portfolio Detail: ${product.name}`
+    : `Product Portfolio Detail: ${EMPTY_FIELD}`;
 
   return (
     <SideDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title={`Product Portfolio Detail: ${product.name}`}
+      title={title}
       width="400px"
       footer={
         <div className="uce-drawer-footer-stack">
-          <Button variant="primary" className="uce-drawer-footer-full">
-            Edit Product Attributes
+          <Button variant="primary" className="uce-drawer-footer-full" disabled>
+            Edit Product Attributes ({EMPTY_FIELD} PATCH wired in UI)
           </Button>
           <Button variant="outline" className="uce-drawer-footer-full" onClick={onClose}>
             Close Detail Canvas
@@ -37,58 +38,29 @@ export function ProductDetailDrawer({
       <div className="uce-product-detail">
         <div className="uce-product-detail-grid">
           <div className="uce-product-detail-stat">
-            <p className="uce-field-label">Retail Price Mapping</p>
-            <p className="uce-field-value">Base Price: {product.basePrice}</p>
+            <p className="uce-field-label">SKU</p>
+            <p className="uce-field-value">{displayField(product?.skuCode)}</p>
           </div>
           <div className="uce-product-detail-stat">
-            <p className="uce-field-label">Associated Briefs</p>
-            <p className="uce-field-value">{product.briefCount} Active</p>
+            <p className="uce-field-label">Cost per unit</p>
+            <p className="uce-field-value">{displayField(product?.basePrice)}</p>
           </div>
-        </div>
-
-        <section>
-          <p className="uce-field-label uce-field-label--block">Marketing Assets &amp; USPs</p>
-          <ul className="uce-check-list">
-            {product.usps.map((usp) => (
-              <li key={usp}>
-                <CheckCircle size={16} className="uce-check-icon" />
-                {usp}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section>
-          <p className="uce-field-label uce-field-label--block">
-            Fulfillment &amp; Inventory Ledger
-          </p>
-          <div className="uce-ledger-box">
-            <div className="uce-kv-row">
-              <span>Warehouse Status:</span>
-              <strong className="uce-kv-row--success">{product.stockStatus}</strong>
-            </div>
-            <div className="uce-kv-row">
-              <span>Shipping:</span>
-              <strong>{product.shipping}</strong>
-            </div>
-            <div className="uce-kv-row">
-              <span>SKU:</span>
-              <strong>{product.sku}</strong>
-            </div>
+          <div className="uce-product-detail-stat">
+            <p className="uce-field-label">Inventory</p>
+            <p className="uce-field-value">
+              {product != null ? String(product.inventoryCount) : EMPTY_FIELD}
+            </p>
           </div>
-        </section>
-
-        <div className="uce-guidance-box uce-guidance-box--ok">
-          <CheckCircle size={18} />
-          <span>
-            Present {product.name} clearly within the opening 3 seconds of content.
-          </span>
-        </div>
-        <div className="uce-guidance-box uce-guidance-box--bad">
-          <XCircle size={18} />
-          <span>
-            Do not mismatch SKU {product.sku} tracking variants or display damaged packaging.
-          </span>
+          <div className="uce-product-detail-stat">
+            <p className="uce-field-label">Out of stock</p>
+            <p className="uce-field-value">
+              {product != null ? (product.outOfStock ? "Yes" : "No") : EMPTY_FIELD}
+            </p>
+          </div>
+          <div className="uce-product-detail-stat">
+            <p className="uce-field-label">Marketing USPs</p>
+            <p className="uce-field-value">{EMPTY_FIELD}</p>
+          </div>
         </div>
       </div>
     </SideDrawer>

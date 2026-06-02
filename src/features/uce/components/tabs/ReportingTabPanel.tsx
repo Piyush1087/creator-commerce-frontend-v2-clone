@@ -1,17 +1,46 @@
-import { ChevronRight, RefreshCw, Shield, TrendingDown, TrendingUp } from "lucide-react";
+import { useCallback, useState } from "react";
+import { ChevronRight, RefreshCw } from "lucide-react";
+import { Alert } from "../../../../design-system/aurora";
 import { Button } from "../../../../design-system/aurora/components/Button";
+import {
+  fetchCampaignReporting,
+  refreshCampaignReportingSync,
+} from "../../api/brand-uce-client";
+import { useUceApiJson } from "../../hooks/use-uce-api-json";
+import { displayField, EMPTY_FIELD } from "../../utils/display-field";
+import { formatCurrency, formatNumber } from "../../utils/uce-format";
 
-const CREATOR_IMG =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBhPsy4KMWgRB56itgMD0L96klzBRSqD5ud_llppR_EM57AH7qTm72xy6grORo3bbiQo2Isy8IVGvBcNCDaL641fIHvzNy1e4ttqCIcU5aidY85uAKz0qy5aKfwJUnmd3sm_5agt2prLtfsVXxQgbGk6hBWS3BFRFQNiz213M5PuYraXhjh_UXA6T5Mx6jpvw8-WDARDaBfcInPTd4b4-2qgRDiQTO_nfrHxHJn02bdJLuh37I_UvamAjHBD8ZpcMgO0CCj9TH_BQ";
+type ReportingTabPanelProps = {
+  campaignId: string;
+  campaignName: string;
+};
 
-const GALLERY = [
-  { handle: "@elenarose_fit", views: "124k", emv: "$4.2k" },
-  { handle: "@clara_vibe", views: "89k", emv: "$2.8k" },
-  { handle: "@marcus_vlogs", views: "210k", emv: "$6.1k" },
-  { handle: "@sophia_creates", views: "56k", emv: "$1.9k" },
-];
+export function ReportingTabPanel({
+  campaignId,
+  campaignName,
+}: ReportingTabPanelProps) {
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const fetcher = useCallback(
+    () => fetchCampaignReporting(campaignId),
+    [campaignId],
+  );
+  const { state, reload } = useUceApiJson(Boolean(campaignId), fetcher);
 
-export function ReportingTabPanel() {
+  const handleRefresh = async () => {
+    setSyncError(null);
+    try {
+      await refreshCampaignReportingSync(campaignId);
+      await reload({ silent: true });
+    } catch (err) {
+      setSyncError(
+        err instanceof Error ? err.message : "Could not refresh reporting sync.",
+      );
+    }
+  };
+
+  const roi =
+    state.status === "ready" ? state.data.roi_summary_strip_payload : null;
+
   return (
     <div className="uce-tab-panel">
       <div className="uce-tab-intro uce-tab-intro--row">
@@ -19,159 +48,105 @@ export function ReportingTabPanel() {
           <nav className="uce-tab-crumb">
             <span>Campaigns</span>
             <ChevronRight size={12} />
-            <span>Spring Glow 2024</span>
+            <span>{displayField(campaignName)}</span>
             <ChevronRight size={12} />
             <span className="uce-tab-crumb-active">Reporting</span>
           </nav>
           <h2>Reporting &amp; Performance Intelligence</h2>
           <p>
-            AI-verified reach, EMV, and conversion telemetry synced from authenticated
-            creator APIs.
+            {state.status === "ready"
+              ? state.data.elapsed_time_string
+              : EMPTY_FIELD}
           </p>
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => void handleRefresh()}>
           <RefreshCw size={16} />
           Refresh API Sync
         </Button>
       </div>
 
+      {syncError ? (
+        <Alert tone="error" title="Sync failed">
+          {syncError}
+        </Alert>
+      ) : null}
+      {state.status === "error" ? (
+        <Alert tone="error" title="Could not load reporting">
+          {state.message}
+        </Alert>
+      ) : null}
+
       <div className="uce-reporting-metrics">
         <MetricCard
-          label="Total Reach"
-          value="1.2M"
-          delta="+14%"
-          deltaUp
-          footnote="AI VERIFIED"
+          label="Total spend allocated"
+          value={formatCurrency(roi?.total_spend_allocated)}
         />
         <MetricCard
-          label="Est. EMV"
-          value="$84.5k"
-          delta="+8.1%"
-          deltaUp
-          footnote="API SYNCED"
+          label="Earned media value"
+          value={formatCurrency(roi?.total_earned_media_value)}
         />
         <MetricCard
-          label="Conversion Value"
-          value="$12,400"
-          delta="-2.4%"
-          footnote="OAUTH ACTIVE"
+          label="Verified impressions"
+          value={formatNumber(
+            typeof roi?.total_verified_impressions === "number"
+              ? roi.total_verified_impressions
+              : null,
+          )}
         />
       </div>
 
-      <div className="uce-reporting-grid">
-        <div className="uce-reporting-card">
-          <h3>Capital Burn Allocation</h3>
-          <p className="uce-reporting-eyebrow">Financial Exposure</p>
-          <div className="uce-donut">
-            <div className="uce-donut-inner">
-              <strong>$20k</strong>
-              <span>Settled</span>
-            </div>
-          </div>
-          <ul className="uce-legend">
-            <li>
-              <span className="uce-legend-dot uce-legend-dot--primary" />
-              Settled Payouts <strong>$12.4k</strong>
-            </li>
-            <li>
-              <span className="uce-legend-dot uce-legend-dot--secondary" />
-              Committed Escrow <strong>$6.1k</strong>
-            </li>
-            <li>
-              <span className="uce-legend-dot uce-legend-dot--muted" />
-              Unallocated <strong>$1.5k</strong>
-            </li>
-          </ul>
-        </div>
+      {state.status === "loading" ? <p>Loading reporting…</p> : null}
 
-        <div className="uce-reporting-card uce-reporting-card--wide">
-          <h3>Partnership Leaderboard</h3>
-          <p className="uce-reporting-eyebrow">Performance Index</p>
-          <div className="uce-table-wrap">
-            <table className="uce-data-table">
-              <thead>
-                <tr>
-                  <th>Creator</th>
-                  <th>ROI Yield</th>
-                  <th>Sync Status</th>
-                  <th>API</th>
-                </tr>
-              </thead>
-              <tbody>
-                {["4.2x", "3.8x", "2.9x"].map((roi, i) => (
-                  <tr key={roi}>
-                    <td>
-                      <div className="uce-creator-cell">
-                        <img src={CREATOR_IMG} alt="" className="uce-creator-avatar" />
-                        <strong>@creator_{i + 1}</strong>
-                      </div>
-                    </td>
-                    <td>
-                      <strong>{roi}</strong>
-                    </td>
-                    <td>
-                      <div className="uce-sync-bar">
-                        <div className="uce-sync-fill" style={{ width: `${85 - i * 10}%` }} />
-                      </div>
-                    </td>
-                    <td>
-                      <span className="uce-pill uce-pill--emerald">Active</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      {state.status === "ready" ? (
+        <>
+          <h3 className="uce-reporting-section-title">Leaderboard</h3>
+          {state.data.leaderboard_rankings.length === 0 ? (
+            <p>{EMPTY_FIELD}</p>
+          ) : (
+            <ul className="uce-reporting-leaderboard">
+              {state.data.leaderboard_rankings.map((row) => (
+                <li key={row.collaboration_id}>
+                  #{row.rank_position} {displayField(row.instagram_handle)} — fee{" "}
+                  {formatCurrency(row.assigned_fee_investment)} — impressions{" "}
+                  {formatNumber(row.delivered_impressions_count)}
+                </li>
+              ))}
+            </ul>
+          )}
 
-      <div className="uce-reporting-card">
-        <h3>Content Performance Gallery</h3>
-        <p className="uce-reporting-eyebrow">Top Performing Native Assets</p>
-        <div className="uce-gallery-grid">
-          {GALLERY.map((item) => (
-            <div key={item.handle} className="uce-gallery-tile">
-              <img src={CREATOR_IMG} alt="" />
-              <div className="uce-gallery-meta">
-                <strong>{item.handle}</strong>
-                <span>{item.views} views</span>
-                <span className="uce-gallery-emv">{item.emv} EMV</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+          <h3 className="uce-reporting-section-title">Creative gallery</h3>
+          {state.data.creative_gallery_grid.length === 0 ? (
+            <p>{EMPTY_FIELD}</p>
+          ) : (
+            <ul className="uce-reporting-gallery">
+              {state.data.creative_gallery_grid.map((asset) => (
+                <li key={asset.asset_id}>
+                  {displayField(asset.instagram_handle)} — engagement{" "}
+                  {asset.engagement_rate_percentage > 0
+                    ? `${asset.engagement_rate_percentage}%`
+                    : EMPTY_FIELD}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h3 className="uce-reporting-section-title">Hourly timeseries</h3>
+          {state.data.timeseries_hourly_feed.length === 0 ? (
+            <p>{EMPTY_FIELD}</p>
+          ) : (
+            <p>{state.data.timeseries_hourly_feed.length} hourly points loaded</p>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  delta,
-  deltaUp,
-  footnote,
-}: {
-  label: string;
-  value: string;
-  delta: string;
-  deltaUp?: boolean;
-  footnote: string;
-}) {
+function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="uce-metric-card">
-      <p className="uce-metric-label">{label}</p>
-      <div className="uce-metric-value-row">
-        <strong>{value}</strong>
-        <span className={`uce-metric-delta ${deltaUp ? "is-up" : "is-down"}`}>
-          {deltaUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-          {delta}
-        </span>
-      </div>
-      <span className="uce-metric-foot">
-        <Shield size={10} />
-        {footnote}
-      </span>
+    <div className="uce-reporting-metric-card">
+      <span className="uce-stat-label">{label}</span>
+      <strong className="uce-stat-value">{value}</strong>
     </div>
   );
 }
