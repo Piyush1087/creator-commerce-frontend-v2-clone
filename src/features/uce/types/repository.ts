@@ -12,5 +12,9 @@ export type RepositoryBrief = {
   id: string;
   name: string;
   formatType: string;
+  formatTags: string[];
+  platforms: string[];
   platformsLabel: string;
+  creativeGuidelines: string;
+  createdAt: string | null;
 };

@@ -112,8 +112,8 @@ export const Step2TargetingSchema = z
     audience_age_min: z
       .number()
       .int()
-      .min(13, "Minimum tracking limits match standard OAuth privacy definitions at 13."),
-    audience_age_max: z.number().int().max(65),
+      .min(18, "Minimum audience age is 18."),
+    audience_age_max: z.number().int().max(65, "Maximum audience age is 65."),
     audience_gender: z.string().default("ALL"),
     target_locations: z
       .array(z.string())

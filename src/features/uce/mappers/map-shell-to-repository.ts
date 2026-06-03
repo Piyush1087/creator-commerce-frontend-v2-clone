@@ -23,9 +23,13 @@ export function mapShellToRepositoryBriefs(
     id: b.brief_id,
     name: b.internal_title,
     formatType: displayField(b.deliverable_format_tags[0]),
+    formatTags: b.deliverable_format_tags,
+    platforms: b.required_platforms,
     platformsLabel:
       b.required_platforms.length > 0
         ? b.required_platforms.join(", ")
         : displayField(null),
+    creativeGuidelines: b.creative_guidelines?.trim() ?? "",
+    createdAt: b.created_at ?? null,
   }));
 }

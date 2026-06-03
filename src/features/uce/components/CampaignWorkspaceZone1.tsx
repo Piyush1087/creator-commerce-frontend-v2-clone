@@ -11,12 +11,18 @@ import {
   Wallet,
 } from "lucide-react";
 import type { CampaignShellResponse } from "../contracts/brand-uce.contracts";
-import { displayField, EMPTY_FIELD } from "../utils/display-field";
+import { EMPTY_FIELD } from "../utils/display-field";
 import {
+  formatCommercialFinancialTerms,
+  formatCommercialLogistics,
   formatCurrency,
+  formatDynamicDaysLimit,
   formatIsoDateRange,
   formatObjective,
+  formatPlatformDeliverables,
   formatStatus,
+  formatStringList,
+  formatTargetingOperationalScope,
 } from "../utils/uce-format";
 
 type CampaignWorkspaceZone1Props = {
@@ -26,29 +32,12 @@ type CampaignWorkspaceZone1Props = {
   statusUpdating?: boolean;
 };
 
-function formatPlatformDeliverables(value: unknown): string {
-  if (!value || typeof value !== "object") return EMPTY_FIELD;
-  if (!Array.isArray(value)) return EMPTY_FIELD;
-  const parts = value
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") return null;
-      const platform = (entry as { platform?: string }).platform;
-      const formats = (entry as { formats?: string[] }).formats;
-      if (!platform) return null;
-      const fmt =
-        formats && formats.length > 0 ? formats.join(", ") : EMPTY_FIELD;
-      return `${platform}: ${fmt}`;
-    })
-    .filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : EMPTY_FIELD;
-}
-
 function timelineLabel(shell: CampaignShellResponse | null): string {
   const z = shell?.zone_1_master;
   if (!z) return EMPTY_FIELD;
   if (z.timeline_type === "FIXED_DATES") return "Fixed dates";
   if (z.timeline_type === "DYNAMIC_MILESTONES") return "Dynamic milestones";
-  return displayField(z.timeline_type);
+  return z.timeline_type.replace(/_/g, " ");
 }
 
 export function CampaignWorkspaceZone1({
@@ -69,8 +58,8 @@ export function CampaignWorkspaceZone1({
   const campaignName = shell?.campaign_name ?? EMPTY_FIELD;
   const spend = shell?.performance_aggregate?.total_spend_to_date;
   const allocated = shell?.zone_1_master?.budget_pool;
-
-  const dash = EMPTY_FIELD;
+  const targeting = shell?.zone_1_targeting;
+  const commercials = shell?.zone_1_commercials;
 
   return (
     <div className={`uce-zone1 ${isExpanded ? "" : "uce-zone1--collapsed"}`}>
@@ -167,15 +156,16 @@ export function CampaignWorkspaceZone1({
                         shell.zone_1_master.fixed_start_date,
                         shell.zone_1_master.fixed_end_date,
                       )
-                    : dash}
+                    : EMPTY_FIELD}
                 </p>
               </div>
               <div>
                 <p className="uce-field-label">Dynamic days limit</p>
                 <p className="uce-field-value">
-                  {shell?.zone_1_master?.dynamic_days_limit != null
-                    ? String(shell.zone_1_master.dynamic_days_limit)
-                    : dash}
+                  {formatDynamicDaysLimit(
+                    shell?.zone_1_master?.timeline_type,
+                    shell?.zone_1_master?.dynamic_days_limit,
+                  )}
                 </p>
               </div>
               <div>
@@ -199,19 +189,22 @@ export function CampaignWorkspaceZone1({
             <div className="uce-zone1-panel-body uce-zone1-grid-3">
               <div>
                 <p className="uce-field-label">Archetype Vectors</p>
-                <p className="uce-field-value">{dash}</p>
+                <p className="uce-field-value">
+                  {formatStringList(targeting?.creator_archetypes)}
+                </p>
               </div>
               <div>
                 <p className="uce-field-label">Operational Scope</p>
-                <p className="uce-field-value">{dash}</p>
+                <p className="uce-field-value">
+                  {formatTargetingOperationalScope(targeting)}
+                </p>
               </div>
               <div>
                 <p className="uce-field-label">Geographies</p>
-                <p className="uce-field-value">{dash}</p>
+                <p className="uce-field-value">
+                  {formatStringList(targeting?.target_locations)}
+                </p>
               </div>
-              <p className="uce-field-hint">
-                Targeting is stored on create but not returned in campaign shell API yet.
-              </p>
             </div>
           </section>
 
@@ -227,17 +220,18 @@ export function CampaignWorkspaceZone1({
                 <p className="uce-field-label uce-field-label--section">
                   Logistics &amp; Inventory
                 </p>
-                <p className="uce-field-value">{dash}</p>
+                <p className="uce-field-value">
+                  {formatCommercialLogistics(commercials)}
+                </p>
               </div>
               <div className="uce-commercial-col">
                 <p className="uce-field-label uce-field-label--section">
                   Financial Terms
                 </p>
-                <p className="uce-field-value">{dash}</p>
+                <p className="uce-field-value">
+                  {formatCommercialFinancialTerms(commercials)}
+                </p>
               </div>
-              <p className="uce-field-hint">
-                Commercial breakdown not in shell API; budget pool shown in hero only.
-              </p>
             </div>
           </section>
         </div>

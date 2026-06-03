@@ -42,8 +42,31 @@ export type CampaignShellProduct = {
 export type CampaignShellBrief = {
   brief_id: string;
   internal_title: string;
+  creative_guidelines: string;
   required_platforms: string[];
   deliverable_format_tags: string[];
+  created_at: string;
+};
+
+export type CampaignShellTargeting = {
+  industry_vertical: string;
+  creator_archetypes: string[];
+  follower_tiers: string[];
+  audience_age_min: number;
+  audience_age_max: number;
+  audience_gender: string;
+  target_locations: string[];
+  disqualifying_keywords: string[];
+};
+
+export type CampaignShellCommercials = {
+  compensation_type: string;
+  fixed_fee_amount: number;
+  negotiable_min_fee: number;
+  negotiable_max_fee: number;
+  total_campaign_budget_pool: number;
+  advance_payment_percentage: number;
+  final_balance_terms: string;
 };
 
 export type CampaignShellResponse = {
@@ -60,6 +83,8 @@ export type CampaignShellResponse = {
     platform_deliverables: unknown;
     budget_pool: number;
   } | null;
+  zone_1_targeting: CampaignShellTargeting | null;
+  zone_1_commercials: CampaignShellCommercials | null;
   zone_2_tactics: {
     products: CampaignShellProduct[];
     briefs: CampaignShellBrief[];

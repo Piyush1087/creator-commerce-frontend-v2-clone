@@ -1,6 +1,6 @@
 /* Pipeline workspace shell */
 .uce-pipeline-workspace {
-  margin: 0 60px 48px;
+  margin: 24px 60px 48px;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -1205,7 +1205,7 @@
 
 @media (max-width: 767px) {
   .uce-pipeline-workspace {
-    margin: 0 16px 24px;
+    margin: 16px 16px 24px;
   }
 
   .uce-data-table th,

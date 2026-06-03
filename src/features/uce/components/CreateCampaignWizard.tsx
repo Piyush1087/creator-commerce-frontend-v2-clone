@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
   type Dispatch,
@@ -6,7 +7,10 @@ import {
   type SetStateAction,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { createCampaignFromWizard } from "../api/brand-uce-client";
+import {
+  BrandUceWizardValidationError,
+  createCampaignFromWizard,
+} from "../api/brand-uce-client";
 import { mapWizardToIntegratedPayload } from "../mappers/map-wizard-to-payload";
 import { buildCampaignDetailPath } from "../utils/uce-format";
 import {
@@ -31,10 +35,14 @@ import type {
 import {
   getFieldError,
   validateCampaignWizardStep,
+  firstWizardErrorStep,
+  firstWizardFieldError,
+  flattenIssuesToFieldErrors,
   validateFullCampaignWizard,
 } from "../utils/validate-campaign-wizard";
 import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
+import { AgeRangeSlider } from "./AgeRangeSlider";
 
 const OBJECTIVES = ["Brand Awareness", "Traffic & Clicks", "Sales & Conversions"];
 const INDUSTRIES = [
@@ -71,6 +79,14 @@ const STEP_LABELS = [
   "Creator Targeting",
   "Commercial Terms",
 ] as const;
+
+type LedgerSection = "strategy" | "targeting" | "commercials";
+
+const LEDGER_SECTION_STEP: Record<LedgerSection, number> = {
+  strategy: 1,
+  targeting: 2,
+  commercials: 3,
+};
 
 const INITIAL_DATA: WizardData = {
   name: "",
@@ -151,12 +167,23 @@ export function CreateCampaignWizard() {
     setStep((s) => Math.max(1, s - 1));
   };
 
+  const applyValidationFailure = (
+    fieldErrors: WizardFieldErrors,
+    formError: string,
+  ) => {
+    setFieldErrors(fieldErrors);
+    setFormError(formError);
+    const errorStep = firstWizardErrorStep(fieldErrors);
+    if (errorStep !== null && errorStep !== step) {
+      setStep(errorStep);
+    }
+  };
+
   const handleContinue = async () => {
     if (step < 3) {
       const result = validateCampaignWizardStep(step as 1 | 2 | 3, data);
       if (!result.success) {
-        setFieldErrors(result.fieldErrors);
-        setFormError(result.formError);
+        applyValidationFailure(result.fieldErrors, result.formError);
         return;
       }
       setFieldErrors({});
@@ -167,8 +194,7 @@ export function CreateCampaignWizard() {
 
     const result = validateFullCampaignWizard(data);
     if (!result.success) {
-      setFieldErrors(result.fieldErrors);
-      setFormError(result.formError);
+      applyValidationFailure(result.fieldErrors, result.formError);
       return;
     }
     setFieldErrors({});
@@ -178,6 +204,14 @@ export function CreateCampaignWizard() {
       const shell = await createCampaignFromWizard(mapWizardToIntegratedPayload(data));
       navigate(buildCampaignDetailPath(shell.campaign_id));
     } catch (err) {
+      if (err instanceof BrandUceWizardValidationError) {
+        const fieldErrors = flattenIssuesToFieldErrors(err.issues);
+        applyValidationFailure(
+          fieldErrors,
+          firstWizardFieldError(fieldErrors, err.message),
+        );
+        return;
+      }
       setFormError(
         err instanceof Error ? err.message : "Could not create campaign.",
       );
@@ -300,16 +334,23 @@ function WizardField({
   label,
   error,
   className,
+  required,
   children,
 }: {
   label?: string;
   error?: string;
   className?: string;
+  required?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className={`cw-field ${error ? "cw-field--error" : ""} ${className ?? ""}`}>
-      {label ? <span className="cw-label">{label}</span> : null}
+      {label ? (
+        <span className="cw-label">
+          {label}
+          {required ? <span className="cw-required">Required</span> : null}
+        </span>
+      ) : null}
       {children}
       {error ? (
         <p className="cw-field-error" role="alert">
@@ -606,6 +647,12 @@ function Step2Targeting({
     }));
   };
 
+  const patchAgeRange = (ageMin: number, ageMax: number) => {
+    setData((prev) => ({ ...prev, ageMin, ageMax }));
+    clearFieldError("ageMin");
+    clearFieldError("ageMax");
+  };
+
   return (
     <div className="create-wizard-step">
       <header className="create-wizard-step-head">
@@ -684,21 +731,14 @@ function Step2Targeting({
             Target Audience
           </h3>
           <div className="cw-audience-grid">
-            <WizardField label="Age Range" error={getFieldError(errors, "ageMin")}>
-              <div className="cw-range-head">
-                <span className="cw-range-value">
-                  {data.ageMin} — {data.ageMax}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={13}
+            <WizardField
+              label="Age Range"
+              error={getFieldError(errors, "ageMin") ?? getFieldError(errors, "ageMax")}
+            >
+              <AgeRangeSlider
+                min={data.ageMin}
                 max={data.ageMax}
-                value={data.ageMin}
-                className="cw-range"
-                onChange={(e) =>
-                  patchData({ ageMin: Number(e.target.value) }, "ageMin")
-                }
+                onChange={patchAgeRange}
               />
             </WizardField>
             <WizardField label="Gender Focus" error={getFieldError(errors, "genderFocus")}>
@@ -782,6 +822,7 @@ function Step3Commercials({
         {isFixed ? (
           <WizardField
             label="Flat Rate Per Creator"
+            required
             error={getFieldError(errors, "flatRatePerCreator")}
           >
             <div className="cw-currency-wrap">
@@ -789,6 +830,8 @@ function Step3Commercials({
               <input
                 type="number"
                 className="cw-input"
+                min={1}
+                step="0.01"
                 placeholder="0.00"
                 value={data.flatRatePerCreator || ""}
                 onChange={(e) =>
@@ -808,6 +851,7 @@ function Step3Commercials({
           <>
             <WizardField
               label="Negotiable Minimum Fee"
+              required
               error={getFieldError(errors, "negotiableMinFee")}
             >
               <div className="cw-currency-wrap">
@@ -815,6 +859,8 @@ function Step3Commercials({
                 <input
                   type="number"
                   className="cw-input"
+                  min={1}
+                  step="0.01"
                   placeholder="0.00"
                   value={data.negotiableMinFee || ""}
                   onChange={(e) =>
@@ -828,6 +874,7 @@ function Step3Commercials({
             </WizardField>
             <WizardField
               label="Negotiable Maximum Fee"
+              required
               error={getFieldError(errors, "negotiableMaxFee")}
             >
               <div className="cw-currency-wrap">
@@ -835,6 +882,8 @@ function Step3Commercials({
                 <input
                   type="number"
                   className="cw-input"
+                  min={1}
+                  step="0.01"
                   placeholder="0.00"
                   value={data.negotiableMaxFee || ""}
                   onChange={(e) =>
@@ -852,6 +901,7 @@ function Step3Commercials({
         <WizardField error={getFieldError(errors, "budget")} className="cw-field--full">
           <span className="cw-label cw-label--with-icon">
             Total Campaign Budget Pool
+            <span className="cw-required">Required</span>
             <Info
               size={16}
               aria-label="Maximum total spend authorized for this campaign across all creators"
@@ -862,6 +912,8 @@ function Step3Commercials({
             <input
               type="number"
               className="cw-input"
+              min={1}
+              step="1"
               placeholder="0"
               value={data.budget || ""}
               onChange={(e) =>
@@ -982,6 +1034,31 @@ function ContextLedger({
   timelineLabel: string;
   enabledPlatforms: { label: string; formats: string[] }[];
 }) {
+  const [expandedSections, setExpandedSections] = useState<Set<LedgerSection>>(
+    () => new Set(["strategy"]),
+  );
+
+  useEffect(() => {
+    const current: LedgerSection =
+      step === 1 ? "strategy" : step === 2 ? "targeting" : "commercials";
+    setExpandedSections(new Set([current]));
+  }, [step]);
+
+  const toggleSection = (section: LedgerSection) => {
+    if (step < LEDGER_SECTION_STEP[section]) {
+      return;
+    }
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
+      return next;
+    });
+  };
+
   return (
     <aside className="create-wizard-ledger">
       <div className="create-wizard-ledger-head">
@@ -990,7 +1067,13 @@ function ContextLedger({
       </div>
 
       <div className="cw-ledger-accordions">
-        <LedgerAccordion title="Strategy" isActive={step === 1}>
+        <LedgerAccordion
+          title="Strategy"
+          isCurrentStep={step === 1}
+          isExpanded={expandedSections.has("strategy")}
+          isLocked={false}
+          onToggle={() => toggleSection("strategy")}
+        >
           <LedgerRow label="Name" value={data.name || "Not specified"} />
           <LedgerRow label="Objective" value={data.objective || "Not specified"} />
           <LedgerRow label="Timeline" value={timelineLabel} />
@@ -1017,7 +1100,13 @@ function ContextLedger({
           </div>
         </LedgerAccordion>
 
-        <LedgerAccordion title="Targeting" isActive={step === 2}>
+        <LedgerAccordion
+          title="Targeting"
+          isCurrentStep={step === 2}
+          isExpanded={expandedSections.has("targeting")}
+          isLocked={step < 2}
+          onToggle={() => toggleSection("targeting")}
+        >
           <LedgerRow label="Vertical" value={industryLabel} />
           <LedgerRow
             label="Audience"
@@ -1036,7 +1125,13 @@ function ContextLedger({
           </div>
         </LedgerAccordion>
 
-        <LedgerAccordion title="Commercials" isActive={step === 3}>
+        <LedgerAccordion
+          title="Commercials"
+          isCurrentStep={step === 3}
+          isExpanded={expandedSections.has("commercials")}
+          isLocked={step < 3}
+          onToggle={() => toggleSection("commercials")}
+        >
           <LedgerRow
             label="Offer Type"
             value={
@@ -1079,22 +1174,44 @@ function ContextLedger({
 
 function LedgerAccordion({
   title,
-  isActive,
+  isCurrentStep,
+  isExpanded,
+  isLocked,
+  onToggle,
   children,
 }: {
   title: string;
-  isActive: boolean;
+  isCurrentStep: boolean;
+  isExpanded: boolean;
+  isLocked: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className={`cw-ledger-accordion ${isActive ? "is-active" : ""}`}>
-      <div className="cw-ledger-accordion-trigger" aria-current={isActive ? "step" : undefined}>
+    <div
+      className={[
+        "cw-ledger-accordion",
+        isCurrentStep ? "is-current" : "",
+        isExpanded ? "is-expanded" : "",
+        isLocked ? "is-locked" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <button
+        type="button"
+        className="cw-ledger-accordion-trigger"
+        onClick={onToggle}
+        disabled={isLocked}
+        aria-expanded={isExpanded}
+        aria-current={isCurrentStep ? "step" : undefined}
+      >
         <span>{title}</span>
-        {isActive ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-      </div>
-      {isActive && (
+        {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+      </button>
+      {isExpanded ? (
         <div className="cw-ledger-accordion-body">{children}</div>
-      )}
+      ) : null}
     </div>
   );
 }

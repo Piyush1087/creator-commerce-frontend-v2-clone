@@ -120,6 +120,15 @@
   gap: 6px;
 }
 
+.cw-required {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #dc2626;
+}
+
 .cw-input {
   width: 100%;
   height: 48px;
@@ -519,9 +528,13 @@
   overflow: hidden;
 }
 
-.cw-ledger-accordion.is-active {
+.cw-ledger-accordion.is-current {
   border-color: #34d399;
   background: rgba(209, 250, 229, 0.35);
+}
+
+.cw-ledger-accordion.is-locked {
+  opacity: 0.55;
 }
 
 .cw-ledger-accordion-trigger {
@@ -534,10 +547,22 @@
   font-weight: 700;
   text-transform: uppercase;
   color: #6b7280;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
 
-.cw-ledger-accordion.is-active .cw-ledger-accordion-trigger {
+.cw-ledger-accordion-trigger:disabled {
+  cursor: not-allowed;
+}
+
+.cw-ledger-accordion.is-current .cw-ledger-accordion-trigger {
   color: #065f46;
+}
+
+.cw-ledger-accordion.is-expanded:not(.is-current) .cw-ledger-accordion-trigger {
+  color: #374151;
 }
 
 .cw-ledger-accordion-body {
@@ -560,7 +585,7 @@
   color: rgba(6, 95, 70, 0.6);
 }
 
-.cw-ledger-accordion:not(.is-active) .cw-ledger-key {
+.cw-ledger-accordion:not(.is-expanded) .cw-ledger-key {
   color: #9ca3af;
 }
 

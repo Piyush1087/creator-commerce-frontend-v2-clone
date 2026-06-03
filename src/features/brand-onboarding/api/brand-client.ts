@@ -1,5 +1,4 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   DiscoverValidateBrandActive,
   DiscoverValidateOrgClaimed,
@@ -18,11 +17,9 @@ import {
 } from "../contracts/brand.contracts";
 import { httpErrorFromResponse, nestHttpMessage } from "./http-api-error";
 
-function jsonHeaders(): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
-  };
+/** Onboarding is anonymous until claim; do not attach dashboard JWT. */
+function onboardingJsonHeaders(): Record<string, string> {
+  return { "Content-Type": "application/json" };
 }
 
 export type SurfaceScanGatePayload =
@@ -75,7 +72,7 @@ export async function postSurfaceScan(body: {
 }): Promise<SurfaceScanResponseBody> {
   const response = await fetch(`${env.apiUrl}/api/v1/brand/surface-scan`, {
     method: "POST",
-    headers: jsonHeaders(),
+    headers: onboardingJsonHeaders(),
     body: JSON.stringify(body),
   });
   const text = await response.text();
@@ -120,7 +117,7 @@ export async function sendBrandVerificationOtp(
     `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/send`,
     {
       method: "POST",
-      headers: jsonHeaders(),
+      headers: onboardingJsonHeaders(),
       body: JSON.stringify({ email }),
     },
   );
@@ -144,7 +141,7 @@ export async function verifyBrandVerificationOtp(
     `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/verify`,
     {
       method: "POST",
-      headers: jsonHeaders(),
+      headers: onboardingJsonHeaders(),
       body: JSON.stringify(body),
     },
   );
@@ -167,7 +164,7 @@ export async function patchBrandProfile(
     `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}`,
     {
       method: "PATCH",
-      headers: jsonHeaders(),
+      headers: onboardingJsonHeaders(),
       body: JSON.stringify(body),
     },
   );

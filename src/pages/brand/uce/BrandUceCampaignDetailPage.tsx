@@ -180,6 +180,7 @@ export function BrandUceCampaignDetailPage() {
         isOpen={isLinkAssetOpen}
         onClose={() => setIsLinkAssetOpen(false)}
         campaignName={loadedShell.campaign_name}
+        linkedProductNames={products.map((p) => p.name)}
         isSubmitting={isSavingProduct}
         onCreateProduct={async (body) => {
           setIsSavingProduct(true);

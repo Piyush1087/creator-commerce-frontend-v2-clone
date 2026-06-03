@@ -78,6 +78,16 @@ export async function fetchCampaignList(
   return (await readJsonOrThrow(response)) as CampaignListRow[];
 }
 
+export class BrandUceWizardValidationError extends Error {
+  readonly issues: unknown;
+
+  constructor(message: string, issues: unknown) {
+    super(message);
+    this.name = "BrandUceWizardValidationError";
+    this.issues = issues;
+  }
+}
+
 export async function createCampaignFromWizard(
   payload: IntegratedCampaignWizardPayload,
 ): Promise<CampaignShellResponse> {
@@ -86,7 +96,35 @@ export async function createCampaignFromWizard(
     headers: authHeaders(),
     body: JSON.stringify(payload),
   });
-  return (await readJsonOrThrow(response)) as CampaignShellResponse;
+
+  const text = await response.text();
+  let body: unknown = undefined;
+  try {
+    body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
+  } catch {
+    throw new Error("The server returned an invalid response. Please try again.");
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof body === "object" &&
+      body !== null &&
+      typeof (body as { message?: unknown }).message === "string"
+        ? (body as { message: string }).message
+        : `Request failed (${response.status}).`;
+    const issues =
+      typeof body === "object" && body !== null && "issues" in body
+        ? (body as { issues: unknown }).issues
+        : undefined;
+
+    if (response.status === 422 && issues !== undefined) {
+      throw new BrandUceWizardValidationError(message, issues);
+    }
+
+    throw new Error(message);
+  }
+
+  return body as CampaignShellResponse;
 }
 
 export async function fetchCampaignShell(

@@ -169,6 +169,14 @@ export async function fetchBrandCentrePlanner(): Promise<BrandCentrePlannerDashb
   return json;
 }
 
+export async function postApprovePlannerCard(cardId: string): Promise<unknown> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/planner/cards/${encodeURIComponent(cardId)}/approve`,
+    { method: "POST", headers: authHeaders() },
+  );
+  return await readJsonOrThrow(response);
+}
+
 export async function postBrandCentreSessionEvict(): Promise<{ archived: number }> {
   const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/session/evict`, {
     method: "POST",

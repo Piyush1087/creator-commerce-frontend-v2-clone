@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, Eye, Edit2, Download, PlusCircle, Archive } from "lucide-react";
+import { Search, Eye, Edit2, Download, PlusCircle, Archive } from "lucide-react";
 import { Alert } from "../../../design-system/aurora";
 import { Button } from "../../../design-system/aurora/components/Button";
 import { Card } from "../../../design-system/aurora/components/Card";
@@ -68,20 +68,33 @@ function OperationsTab() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showArchived, setShowArchived] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [objectiveFilter, setObjectiveFilter] = useState("");
   const [statusError, setStatusError] = useState<string | null>(null);
   const [localRows, setLocalRows] = useState<CampaignListRow[] | null>(null);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setLocalRows(null);
+  }, [debouncedSearch, objectiveFilter, showArchived]);
+
   const listFetcher = useCallback(
     () =>
       fetchCampaignList({
-        search: search.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         objective: objectiveFilter
           ? (objectiveFilter as UceCampaignObjective)
           : undefined,
+        status: showArchived ? "COMPLETED" : undefined,
       }),
-    [search, objectiveFilter],
+    [debouncedSearch, objectiveFilter, showArchived],
   );
 
   const { state, reload } = useUceApiJson(true, listFetcher);
@@ -90,11 +103,9 @@ function OperationsTab() {
 
   const visibleCampaigns = useMemo(
     () =>
-      campaigns.filter((c) =>
-        showArchived
-          ? c.current_status === "COMPLETED"
-          : c.current_status !== "COMPLETED",
-      ),
+      showArchived
+        ? campaigns
+        : campaigns.filter((c) => c.current_status !== "COMPLETED"),
     [campaigns, showArchived],
   );
 
@@ -157,11 +168,8 @@ function OperationsTab() {
           <input
             type="text"
             placeholder="Search campaigns by name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void reload();
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
         <div className="filter-group">
@@ -175,13 +183,6 @@ function OperationsTab() {
             <option value="TRAFFIC_CLICKS">Traffic & Clicks</option>
             <option value="SALES_CONVERSIONS">Sales & Conversions</option>
           </select>
-          <select className="aurora-select" defaultValue="" disabled title="Not in list API">
-            <option value="">Timeline rule ({EMPTY_FIELD} filter)</option>
-          </select>
-          <Button variant="outline" className="filter-btn" onClick={() => void reload()}>
-            <Filter size={16} />
-            Apply Filters
-          </Button>
           <button
             type="button"
             className={`operations-archived-btn ${showArchived ? "is-active" : ""}`}
@@ -216,14 +217,13 @@ function OperationsTab() {
                   <th>Status Toggle</th>
                   <th>Influencer Pipeline</th>
                   <th>Budget Consumption</th>
-                  <th>Launch Timeline</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleCampaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="operations-empty-row">
+                    <td colSpan={6} className="operations-empty-row">
                       No {showArchived ? "completed" : "active"} campaigns in this view.
                     </td>
                   </tr>
@@ -266,9 +266,6 @@ function OperationsTab() {
                           <div className="campaign-context-cell">
                             <div>
                               <strong>{displayField(campaign.campaign_name)}</strong>
-                              <span className="campaign-id-line">
-                                {campaign.campaign_id}
-                              </span>
                             </div>
                             <div className="campaign-context-chips">
                               <span className="uce-objective-pill">
@@ -341,12 +338,6 @@ function OperationsTab() {
                             <small>
                               ({campaign.budget_pool > 0 ? `${pct}%` : EMPTY_FIELD})
                             </small>
-                          </div>
-                        </td>
-                        <td>
-                          <div className="ops-timeline-cell">
-                            <span className="ops-timeline-rule">{EMPTY_FIELD}</span>
-                            <span className="ops-timeline-date">{EMPTY_FIELD}</span>
                           </div>
                         </td>
                         <td className="actions" onClick={(e) => e.stopPropagation()}>
