@@ -1,5 +1,4 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   DiscoverValidateRequestBody,
   DiscoverValidateResponse,
@@ -11,11 +10,9 @@ import {
 } from "../contracts/discovery.contracts";
 import { httpErrorFromResponse } from "./http-api-error";
 
-function jsonHeaders(): Record<string, string> {
-  return {
-    "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
-  };
+/** Onboarding is anonymous until claim; do not attach dashboard JWT. */
+function onboardingJsonHeaders(): Record<string, string> {
+  return { "Content-Type": "application/json" };
 }
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
@@ -37,7 +34,7 @@ export async function postDiscoveryResolve(
 ): Promise<DiscoveryResolveResponse> {
   const response = await fetch(`${env.apiUrl}/api/v1/discovery/resolve`, {
     method: "POST",
-    headers: jsonHeaders(),
+    headers: onboardingJsonHeaders(),
     body: JSON.stringify(body),
   });
   const json = await readJsonOrThrow(response);
@@ -52,7 +49,7 @@ export async function postDiscoveryValidate(
 ): Promise<DiscoverValidateResponse> {
   const response = await fetch(`${env.apiUrl}/api/v1/discovery/validate`, {
     method: "POST",
-    headers: jsonHeaders(),
+    headers: onboardingJsonHeaders(),
     body: JSON.stringify(body),
   });
   const json = await readJsonOrThrow(response);

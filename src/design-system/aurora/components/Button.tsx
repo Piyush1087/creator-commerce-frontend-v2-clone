@@ -10,6 +10,7 @@ export type AuroraButtonVariant =
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   variant?: AuroraButtonVariant;
+  size?: "sm" | "md" | "lg";
   fullWidthOnMobile?: boolean;
 };
 
@@ -18,11 +19,13 @@ export function Button({
   className = "",
   fullWidthOnMobile = false,
   variant = "primary",
+  size = "md",
   ...props
 }: ButtonProps) {
   const classes = [
     "aurora-button",
     `aurora-button--${variant}`,
+    `aurora-button--${size}`,
     fullWidthOnMobile ? "aurora-button--form-action" : "",
     className,
   ]

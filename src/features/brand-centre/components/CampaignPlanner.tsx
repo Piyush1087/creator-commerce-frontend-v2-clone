@@ -17,20 +17,29 @@ import {
   Menu
 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { Alert } from "../../../design-system/aurora";
+import { Alert, useToast } from "../../../design-system/aurora";
 import type { BrandCentrePlannerDashboardResponse } from "../contracts/brand-centre.contracts";
 import type { ApiJsonLoadState } from "../hooks/use-brand-centre-api-json";
 import { displayField, EMPTY_FIELD } from "../utils/display-field";
 import { PlannerAggregateStatusBanner } from "./PlannerAggregateStatusBanner";
+import { fetchBrandCentreDna, postApprovePlannerCard } from "../api/brand-centre-client";
+import { postBridgeProcessSignal } from "../api/orchestration-bridge-client";
+import { buildCampaignDetailPath } from "../../uce/utils/uce-format";
 
 type CampaignPlannerProps = {
   state: ApiJsonLoadState<BrandCentrePlannerDashboardResponse>;
+  onReloadPlanner: (options?: { silent?: boolean }) => Promise<void>;
 };
 
-export function CampaignPlanner({ state }: CampaignPlannerProps) {
+export function CampaignPlanner({ state, onReloadPlanner }: CampaignPlannerProps) {
+  const navigate = useNavigate();
+  const toast = useToast();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [launchingCardId, setLaunchingCardId] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
   const dashboard = state.status === "ready" ? state.data : null;
   const cards = dashboard?.cards ?? [];
   const newCards = cards.filter((c) => c.cardType === "NEW_CAMPAIGN");
@@ -45,8 +54,186 @@ export function CampaignPlanner({ state }: CampaignPlannerProps) {
 
   const selectedCard = cards.find((c) => c.id === selectedCardId) ?? null;
 
+  const mapIndustryToBridgeSector = (routing: string) => {
+    const map: Record<
+      string,
+      "D2C_ECOMMERCE" | "HEALTHCARE" | "AI_SAAS" | "OFFLINE_EXPERIENCES"
+    > = {
+      D2C_SKINCARE: "D2C_ECOMMERCE",
+      D2C_ECOMMERCE: "D2C_ECOMMERCE",
+      SAAS_PRODUCT: "AI_SAAS",
+      AI_SAAS: "AI_SAAS",
+      HEALTHCARE_TREATMENT: "HEALTHCARE",
+      HEALTHCARE: "HEALTHCARE",
+      OFFLINE_EXPERIENCE: "OFFLINE_EXPERIENCES",
+      OFFLINE_EXPERIENCES: "OFFLINE_EXPERIENCES",
+    };
+    return map[routing] ?? "D2C_ECOMMERCE";
+  };
+
+  const mapObjectiveToMacro = (objective: string | null) => {
+    if (objective === "PULSE" || objective === "PRODUCTION" || objective === "PROOF_PUSH") {
+      return objective;
+    }
+    return "PRODUCTION";
+  };
+
+  const parseMaxBudget = (budget: string | undefined) => {
+    if (!budget) return null;
+    const nums = budget.match(/\\d[\\d,]*/g)?.map((n) => Number(n.replace(/,/g, ""))) ?? [];
+    if (nums.length === 0) return null;
+    return Math.max(...nums);
+  };
+
+  const handleLaunchNewCampaign = async (
+    card: BrandCentrePlannerDashboardResponse["cards"][number],
+  ) => {
+    setLaunchError(null);
+    setLaunchingCardId(card.id);
+    try {
+      toast.push({
+        tone: "info",
+        title: "Launching campaign",
+        message: "Creating UCE campaign from this planner draft…",
+        ttlMs: 3500,
+      });
+      // Keep planner semantics intact (existing API + budget circuit breaker).
+      await postApprovePlannerCard(card.id);
+
+      const dna = await fetchBrandCentreDna();
+      const brandId = dna.profile.id;
+      const industrySector = mapIndustryToBridgeSector(dna.profile.brandRoutingType);
+
+      const maxBudget = parseMaxBudget(card.strategy?.budget);
+      const creatorsCount = Math.max(1, (card.strategy?.assets?.length ?? 1) * 2);
+      const rawBudgetExpression = maxBudget
+        ? `$${maxBudget} per creator allocation for ${creatorsCount} creators`
+        : `$3500 per creator allocation for ${creatorsCount} creators`;
+      const timelineExpression =
+        card.strategy?.deadline && card.strategy.deadline !== "-"
+          ? card.strategy.deadline
+          : "evergreen";
+
+      const launch = await postBridgeProcessSignal({
+        signal_type: "LAUNCH_NEW_FRAMEWORK",
+        brand_id: brandId,
+        campaign_name: (card.aiContextHook ?? "New Campaign").slice(0, 255),
+        industry_sector: industrySector,
+        assigned_macro_objective: mapObjectiveToMacro(card.objective),
+        raw_budget_expression: rawBudgetExpression,
+        timeline_expression: timelineExpression,
+      });
+
+      const campaignId = launch.campaign_id;
+      if (!campaignId) {
+        throw new Error("Bridge did not return campaign_id.");
+      }
+
+      toast.push({
+        tone: "success",
+        title: "Campaign created",
+        message: "Redirecting to Universal Campaign Engine…",
+        ttlMs: 3500,
+      });
+
+      // Hydrate initial assets/briefs so UCE opens as a real workspace.
+      const assets = card.strategy?.assets ?? [];
+      const price = maxBudget ?? 28;
+      for (const asset of assets.slice(0, 10)) {
+        await postBridgeProcessSignal({
+          signal_type: "INJECT_ASSET_LINE",
+          campaign_id: campaignId,
+          product_name: asset.productName ?? "Product",
+          estimated_base_price: price,
+          raw_strategic_context: card.aiContextHook ?? "Planner injection",
+          creative_briefs: [
+            {
+              brief_name: asset.briefName ?? "Brief",
+              deliverable_type: "REEL_VIDEO",
+              compensation_type: "BARTER",
+            },
+          ],
+        });
+      }
+
+      await onReloadPlanner({ silent: true });
+      navigate(buildCampaignDetailPath(campaignId));
+    } catch (err) {
+      setLaunchError(
+        err instanceof Error ? err.message : "Could not launch campaign.",
+      );
+      toast.push({
+        tone: "error",
+        title: "Launch failed",
+        message: err instanceof Error ? err.message : "Could not launch campaign.",
+        ttlMs: 6000,
+      });
+    } finally {
+      setLaunchingCardId(null);
+    }
+  };
+
+  const handleInjectUpdate = async (
+    card: BrandCentrePlannerDashboardResponse["cards"][number],
+  ) => {
+    setLaunchError(null);
+    setLaunchingCardId(card.id);
+    try {
+      toast.push({
+        tone: "info",
+        title: "Applying update",
+        message: "Injecting new assets/briefs into the target UCE campaign…",
+        ttlMs: 3500,
+      });
+      await postApprovePlannerCard(card.id);
+      const campaignId = card.existingTargetCampaignId;
+      if (!campaignId) {
+        throw new Error("No existingTargetCampaignId on this update card.");
+      }
+      const maxBudget = parseMaxBudget(card.strategy?.budget) ?? 28;
+      const first = card.strategy?.assets?.[0] ?? null;
+      await postBridgeProcessSignal({
+        signal_type: "INJECT_ASSET_LINE",
+        campaign_id: campaignId,
+        product_name: first?.productName ?? card.aiContextHook ?? "Injected asset",
+        estimated_base_price: maxBudget,
+        raw_strategic_context: card.aiContextHook ?? "Planner injection",
+        creative_briefs: [
+          {
+            brief_name: first?.briefName ?? "Injected brief",
+            deliverable_type: "REEL_VIDEO",
+            compensation_type: "BARTER",
+          },
+        ],
+      });
+      await onReloadPlanner({ silent: true });
+      navigate(buildCampaignDetailPath(campaignId));
+      toast.push({
+        tone: "success",
+        title: "Update applied",
+        message: "Opening campaign workspace…",
+        ttlMs: 3500,
+      });
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : "Could not inject update.");
+      toast.push({
+        tone: "error",
+        title: "Update failed",
+        message: err instanceof Error ? err.message : "Could not inject update.",
+        ttlMs: 6000,
+      });
+    } finally {
+      setLaunchingCardId(null);
+    }
+  };
+
   return (
     <div className="campaign-planner-tab" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {launchError ? (
+        <Alert tone="error" title="Planner launch failed">
+          {launchError}
+        </Alert>
+      ) : null}
       {isPlannerAggregateRunning ? (
         <PlannerAggregateStatusBanner jobStatus={aggregateJob?.status ?? null} />
       ) : null}
@@ -203,8 +390,22 @@ export function CampaignPlanner({ state }: CampaignPlannerProps) {
                     >
                       Details 📄
                     </button>
-                    <button style={{ background: "var(--color-primary)", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
-                      Launch 🚀
+                    <button
+                      onClick={() => void handleLaunchNewCampaign(card)}
+                      disabled={launchingCardId === card.id}
+                      style={{
+                        background: "var(--color-primary)",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        cursor: launchingCardId === card.id ? "not-allowed" : "pointer",
+                        fontSize: "13px",
+                        opacity: launchingCardId === card.id ? 0.6 : 1,
+                      }}
+                    >
+                      {launchingCardId === card.id ? "Launching…" : "Launch 🚀"}
                     </button>
                   </div>
                 </div>
@@ -258,7 +459,23 @@ export function CampaignPlanner({ state }: CampaignPlannerProps) {
                   >
                     Discard ❌
                   </button>
-                  <button style={{ background: "var(--color-primary)", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>Update 🚀</button>
+                  <button
+                    onClick={() => void handleInjectUpdate(card)}
+                    disabled={launchingCardId === card.id}
+                    style={{
+                      background: "var(--color-primary)",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      cursor: launchingCardId === card.id ? "not-allowed" : "pointer",
+                      fontSize: "13px",
+                      opacity: launchingCardId === card.id ? 0.6 : 1,
+                    }}
+                  >
+                    {launchingCardId === card.id ? "Updating…" : "Update 🚀"}
+                  </button>
                 </div>
               </div>
             ))}

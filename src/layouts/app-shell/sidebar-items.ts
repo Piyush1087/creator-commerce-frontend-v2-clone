@@ -1,4 +1,11 @@
-import { LayoutDashboard, Store, HelpCircle, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Store,
+  HelpCircle,
+  LogOut,
+  Megaphone,
+  MessageCircle,
+} from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -41,6 +48,24 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     roles: ["BRAND"],
     breadcrumb: "Brand Centre",
     headerTitle: "Brand DNA",
+    mainVariant: "flush",
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.brandUceCampaigns,
+    roles: ["BRAND"],
+    breadcrumb: "Campaigns",
+    headerTitle: "UCE Campaigns",
+    mainVariant: "flush",
+  },
+  {
+    label: "Chat",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.brandAiChat,
+    roles: ["BRAND"],
+    breadcrumb: "Chat",
+    headerTitle: "AI Chat",
     mainVariant: "flush",
   },
 ];
@@ -89,7 +114,7 @@ export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUti
 }
 
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
-  if (itemPath === AUTH_ROUTES.brandCentre) {
+  if (itemPath === AUTH_ROUTES.brandCentre || itemPath === AUTH_ROUTES.brandUceCampaigns) {
     return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
   }
   return pathname === itemPath;

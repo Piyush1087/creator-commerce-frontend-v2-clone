@@ -180,5 +180,5 @@ function BrandCentreTabContent({
     );
   }
 
-  return <CampaignPlanner state={planner.state} />;
+  return <CampaignPlanner state={planner.state} onReloadPlanner={planner.reload} />;
 }
