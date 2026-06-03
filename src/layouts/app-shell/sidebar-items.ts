@@ -1,4 +1,11 @@
-import { LayoutDashboard, Store, HelpCircle, LogOut, Megaphone } from "lucide-react";
+import {
+  LayoutDashboard,
+  Store,
+  HelpCircle,
+  LogOut,
+  Megaphone,
+  MessageCircle,
+} from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -50,6 +57,15 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     roles: ["BRAND"],
     breadcrumb: "Campaigns",
     headerTitle: "UCE Campaigns",
+    mainVariant: "flush",
+  },
+  {
+    label: "Chat",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.brandAiChat,
+    roles: ["BRAND"],
+    breadcrumb: "Chat",
+    headerTitle: "AI Chat",
     mainVariant: "flush",
   },
 ];

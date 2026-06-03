@@ -7,6 +7,7 @@ import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
 import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage";
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
+import { BrandAiChatPage } from "../pages/brand/ai-chat/brand-ai-chat-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { RequireAuth } from "../shared/auth/require-auth";
 import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
@@ -27,6 +28,7 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandUceCampaigns} element={<BrandUceCampaignsPage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
+        <Route path={AUTH_ROUTES.brandAiChat} element={<BrandAiChatPage />} />
       </Route>
       <Route path="/*" element={<BrandOnboardingAppRoutes />} />
     </Routes>

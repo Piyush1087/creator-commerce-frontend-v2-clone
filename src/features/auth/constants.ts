@@ -5,4 +5,5 @@ export const AUTH_ROUTES = {
   brandUceCampaigns: "/brand/uce/campaigns",
   brandUceCampaignCreate: "/brand/uce/campaigns/create",
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
+  brandAiChat: "/brand/ai-chat",
 } as const;
