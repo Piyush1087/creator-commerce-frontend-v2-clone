@@ -322,6 +322,10 @@ button.aurora-sidebar__link:hover {
 .aurora-shell__main--flush {
   padding: 0;
   max-width: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Mobile Drawer (Sidebar from Right) */

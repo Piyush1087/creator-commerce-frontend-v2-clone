@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { Alert } from "../../../../design-system/aurora";
 import { fetchPipelineApplicants } from "../../api/brand-uce-client";
-import { PipelineDataTable } from "../PipelineDataTable";
+import { PipelineApplicantsTable } from "../PipelineApplicantsTable";
 import { useUceApiJson } from "../../hooks/use-uce-api-json";
 import { displayField, EMPTY_FIELD } from "../../utils/display-field";
 import { formatPercent } from "../../utils/uce-format";
@@ -20,7 +20,7 @@ export function ApplicantsTabPanel({
     () => fetchPipelineApplicants(campaignId),
     [campaignId],
   );
-  const { state } = useUceApiJson(Boolean(campaignId), fetcher);
+  const { state, reload } = useUceApiJson(Boolean(campaignId), fetcher);
 
   return (
     <div className="uce-tab-panel">
@@ -58,7 +58,11 @@ export function ApplicantsTabPanel({
       {state.status === "loading" ? (
         <p>Loading applicants…</p>
       ) : state.status === "ready" ? (
-        <PipelineDataTable rows={state.data.rows} />
+        <PipelineApplicantsTable
+          campaignId={campaignId}
+          rows={state.data.rows}
+          onChanged={() => void reload()}
+        />
       ) : null}
     </div>
   );

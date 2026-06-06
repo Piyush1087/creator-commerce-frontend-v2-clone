@@ -141,6 +141,8 @@ export type CreateCampaignBriefBody = {
 
 export type PipelineCollaborationRow = {
   collaboration_id: string;
+  /** Workflow thread id (`collaborations.id`) after brand approves applicant. */
+  workflow_collaboration_id: string | null;
   campaign_id: string;
   brief_id: string;
   brief_internal_title: string;

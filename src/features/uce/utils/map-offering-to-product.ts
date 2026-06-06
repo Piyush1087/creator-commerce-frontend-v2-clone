@@ -40,7 +40,7 @@ export function mapOfferingToCreateProductBody(
   return {
     sku_code: slugSku(offering.name, offering.id),
     product_name: offering.name,
-    inventory_count: 0,
+    inventory_count: 50,
     cost_per_unit: parseCostPerUnit(offering),
     image_url: offering.imageUrl,
   };

@@ -60,12 +60,33 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     mainVariant: "flush",
   },
   {
+    label: "Collaborations",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.brandCollaborations,
+    roles: ["BRAND"],
+    breadcrumb: "Collaborations",
+    headerTitle: "Collaborations",
+    mainVariant: "flush",
+  },
+];
+
+const creatorSidebarNavItems: SidebarNavItem[] = [
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    path: AUTH_ROUTES.creatorDashboard,
+    roles: ["CREATOR"],
+    breadcrumb: "Home",
+    headerTitle: "Dashboard",
+    mainVariant: "default",
+  },
+  {
     label: "Chat",
     icon: MessageCircle,
-    path: AUTH_ROUTES.brandAiChat,
-    roles: ["BRAND"],
-    breadcrumb: "Chat",
-    headerTitle: "AI Chat",
+    path: AUTH_ROUTES.creatorCollaborations,
+    roles: ["CREATOR"],
+    breadcrumb: "Collaborations",
+    headerTitle: "Collaborations",
     mainVariant: "flush",
   },
 ];
@@ -86,16 +107,31 @@ const brandSidebarUtilityItems: SidebarUtilityItem[] = [
   },
 ];
 
-/** Nav entries per role — extend when influencer/admin shells ship. */
+const creatorSidebarUtilityItems: SidebarUtilityItem[] = [
+  {
+    label: "Help",
+    icon: HelpCircle,
+    path: "/help",
+    action: "help",
+    roles: ["CREATOR"],
+  },
+  {
+    label: "Logout",
+    icon: LogOut,
+    action: "logout",
+    roles: ["CREATOR"],
+  },
+];
+
 const sidebarNavByRole: Record<UserRole, SidebarNavItem[]> = {
   BRAND: brandSidebarNavItems,
-  INFLUENCER: [],
+  CREATOR: creatorSidebarNavItems,
   ADMIN: [],
 };
 
 const sidebarUtilityByRole: Record<UserRole, SidebarUtilityItem[]> = {
   BRAND: brandSidebarUtilityItems,
-  INFLUENCER: [],
+  CREATOR: creatorSidebarUtilityItems,
   ADMIN: [],
 };
 
@@ -113,8 +149,15 @@ export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUti
   return sidebarUtilityByRole[role];
 }
 
+const PREFIX_MATCH_PATHS = [
+  AUTH_ROUTES.brandCentre,
+  AUTH_ROUTES.brandUceCampaigns,
+  AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.creatorCollaborations,
+] as const;
+
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
-  if (itemPath === AUTH_ROUTES.brandCentre || itemPath === AUTH_ROUTES.brandUceCampaigns) {
+  if (PREFIX_MATCH_PATHS.some((p) => p === itemPath)) {
     return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
   }
   return pathname === itemPath;

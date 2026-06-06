@@ -56,7 +56,8 @@ function persistAuthResponse(body: AuthTokenResponseBody): void {
   saveAuthSession(session);
 }
 
-export async function loginBrand(body: {
+/** Unified login — role is inferred from the user record (brand or creator). */
+export async function login(body: {
   email: string;
   otp: string;
 }): Promise<AuthTokenResponseBody> {
@@ -66,7 +67,6 @@ export async function loginBrand(body: {
     body: JSON.stringify({
       email: body.email,
       otp: body.otp,
-      role: "BRAND",
     }),
   });
   const json = await readJsonOrThrow(response);
@@ -81,6 +81,9 @@ export async function loginBrand(body: {
   }
   return json;
 }
+
+/** @deprecated Use `login` — kept for call-site compatibility during migration. */
+export const loginBrand = login;
 
 export async function refreshAuthSessionFromServer(): Promise<void> {
   const session = loadAuthSession();

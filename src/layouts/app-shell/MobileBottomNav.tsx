@@ -1,13 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 
-import { brandBottomNavItems, isBottomNavItemActive } from "./bottom-nav-items";
+import { loadAuthSession } from "../../shared/auth/auth-session";
+import { normalizeUserRole } from "../../shared/auth/user-role";
+import { getBottomNavItemsForRole, isBottomNavItemActive } from "./bottom-nav-items";
 
 export function MobileBottomNav() {
   const location = useLocation();
+  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const items = getBottomNavItemsForRole(role);
+
+  if (items.length === 0) {
+    return null;
+  }
 
   return (
     <nav className="aurora-bottom-nav" aria-label="Primary">
-      {brandBottomNavItems.map((item) => {
+      {items.map((item) => {
         const isActive = isBottomNavItemActive(location.pathname, item);
 
         if (item.path) {

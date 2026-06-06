@@ -102,7 +102,7 @@ export function IntelligenceGaps({
         setActionNotice({
           tone: "success",
           message:
-            "Insight approved. Open Tab 3: Campaign Planner — a draft is building (loader shown while Gemini runs).",
+            "Insight approved. Campaign Planner is open — your draft will appear when aggregation finishes.",
         });
       } catch (err) {
         setActionNotice({
