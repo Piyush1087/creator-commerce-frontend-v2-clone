@@ -43,9 +43,10 @@ export function BrandCentrePage() {
     planner.state.data.plannerAggregateJob != null;
 
   const handlePlannerJobStarted = useCallback(() => {
+    shell?.setActiveTabId("planner");
     setPlannerJobPoll(true);
     void planner.reload({ silent: planner.state.status === "ready" });
-  }, [planner.reload, planner.state.status]);
+  }, [planner.reload, planner.state.status, shell]);
 
   useEffect(() => {
     if (!plannerJobPoll && !(activeTabId === "planner" && plannerAggregateActive)) {

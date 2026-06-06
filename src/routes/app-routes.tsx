@@ -1,13 +1,15 @@
 import { Route, Routes } from "react-router-dom";
 
 import { AUTH_ROUTES } from "../features/auth/constants";
-import { BrandLoginPage } from "../pages/auth/brand-login-page";
+import { LoginPage } from "../pages/auth/login-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
+import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
 import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage";
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
-import { BrandAiChatPage } from "../pages/brand/ai-chat/brand-ai-chat-page";
+import { CreatorDashboardPage } from "../pages/creator/dashboard/creator-dashboard-page";
+import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { RequireAuth } from "../shared/auth/require-auth";
 import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
@@ -15,7 +17,7 @@ import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path={AUTH_ROUTES.login} element={<BrandLoginPage />} />
+      <Route path={AUTH_ROUTES.login} element={<LoginPage />} />
       <Route
         element={
           <RequireAuth>
@@ -28,7 +30,9 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandUceCampaigns} element={<BrandUceCampaignsPage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
-        <Route path={AUTH_ROUTES.brandAiChat} element={<BrandAiChatPage />} />
+        <Route path={AUTH_ROUTES.brandCollaborations} element={<BrandCollaborationsPage />} />
+        <Route path={AUTH_ROUTES.creatorDashboard} element={<CreatorDashboardPage />} />
+        <Route path={AUTH_ROUTES.creatorCollaborations} element={<CreatorCollaborationsPage />} />
       </Route>
       <Route path="/*" element={<BrandOnboardingAppRoutes />} />
     </Routes>

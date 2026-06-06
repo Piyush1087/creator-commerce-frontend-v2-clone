@@ -30,5 +30,17 @@ PWA
 Create campaign adds uk and usa by deafult for loaction, veirfy this, tyhis field not in ui on create  
 
 get new logo  
+
+Universla no netwrk error page?  
+
+in cneter tab 2 i see loading when already done  
+in tab 2 on click should move to tab 3  
   
-Universla no netwrk error page?
+campaiugn not active until atleat one product assigned , show error in ui  
+  
+discouss product inventory, currently set as 50 by default, is this tracking needed?  
+  
+does AI Always create escrpw?  
+  
+  
+  

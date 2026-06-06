@@ -10,6 +10,7 @@ import type {
   CreateCampaignBriefBody,
   CreateCampaignProductBody,
   PatchCampaignStatusResponse,
+  PipelineCollaborationRow,
   PipelineListResponse,
   UceCampaignObjective,
   UceCampaignStatus,
@@ -200,6 +201,38 @@ export async function fetchPipelineApplicants(
     { method: "GET", headers: authHeaders() },
   );
   return (await readJsonOrThrow(response)) as PipelineListResponse;
+}
+
+export async function postApproveApplicant(
+  campaignId: string,
+  collaborationId: string,
+  body?: { product_id?: string; total_quote?: number },
+): Promise<PipelineCollaborationRow> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/pipeline/collaborations/${encodeURIComponent(collaborationId)}/approve`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body ?? {}),
+    },
+  );
+  return (await readJsonOrThrow(response)) as PipelineCollaborationRow;
+}
+
+export async function postRejectApplicant(
+  campaignId: string,
+  collaborationId: string,
+  rejectionReason: string,
+): Promise<PipelineCollaborationRow> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/pipeline/collaborations/${encodeURIComponent(collaborationId)}/reject`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ rejection_reason: rejectionReason }),
+    },
+  );
+  return (await readJsonOrThrow(response)) as PipelineCollaborationRow;
 }
 
 export async function fetchPipelineActiveCollabs(

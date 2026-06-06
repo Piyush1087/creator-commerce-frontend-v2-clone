@@ -1,12 +1,8 @@
-import {
-  LayoutDashboard,
-  Megaphone,
-  Store,
-  Wallet,
-} from "lucide-react";
+import { LayoutDashboard, Megaphone, MessageCircle, Store } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
+import type { UserRole } from "../../shared/auth/user-role";
 
 export type BottomNavItem = {
   icon: ElementType;
@@ -14,7 +10,6 @@ export type BottomNavItem = {
   path?: string;
 };
 
-/** Mobile bottom bar — independent from desktop sidebar nav. */
 export const brandBottomNavItems: BottomNavItem[] = [
   {
     label: "Dashboard",
@@ -24,6 +19,7 @@ export const brandBottomNavItems: BottomNavItem[] = [
   {
     label: "Campaigns",
     icon: Megaphone,
+    path: AUTH_ROUTES.brandUceCampaigns,
   },
   {
     label: "Brand Centre",
@@ -31,16 +27,47 @@ export const brandBottomNavItems: BottomNavItem[] = [
     path: AUTH_ROUTES.brandCentre,
   },
   {
-    label: "Payouts",
-    icon: Wallet,
+    label: "Chat",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.brandCollaborations,
   },
 ];
+
+export const creatorBottomNavItems: BottomNavItem[] = [
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    path: AUTH_ROUTES.creatorDashboard,
+  },
+  {
+    label: "Chat",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.creatorCollaborations,
+  },
+];
+
+export function getBottomNavItemsForRole(role: UserRole | null): BottomNavItem[] {
+  if (role === "CREATOR") {
+    return creatorBottomNavItems;
+  }
+  if (role === "BRAND") {
+    return brandBottomNavItems;
+  }
+  return [];
+}
+
+const PREFIX_MATCH_PATHS = [
+  AUTH_ROUTES.brandCentre,
+  AUTH_ROUTES.brandUceCampaigns,
+  AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.creatorCollaborations,
+] as const;
 
 export function isBottomNavItemActive(pathname: string, item: BottomNavItem): boolean {
   if (!item.path) {
     return false;
   }
-  if (item.path === AUTH_ROUTES.brandCentre) {
+  if (PREFIX_MATCH_PATHS.some((p) => p === item.path)) {
     return pathname === item.path || pathname.startsWith(`${item.path}/`);
   }
   return pathname === item.path;

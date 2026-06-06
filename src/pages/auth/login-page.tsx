@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button, Card, TextField } from "../../design-system/aurora";
-import { loginBrand } from "../../features/auth/api/auth-client";
-import { AUTH_ROUTES } from "../../features/auth/constants";
+import { login } from "../../features/auth/api/auth-client";
+import { AUTH_ROUTES, getHomeRouteForRole } from "../../features/auth/constants";
 import { STUB_OTP_CODE } from "../../features/brand-onboarding/verification-otp.config";
+import { normalizeUserRole } from "../../shared/auth/user-role";
 
-export function BrandLoginPage() {
+export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -24,8 +25,9 @@ export function BrandLoginPage() {
 
     setIsSubmitting(true);
     try {
-      await loginBrand({ email: email.trim(), otp: code });
-      navigate(AUTH_ROUTES.brandCentre, { replace: true });
+      const result = await login({ email: email.trim(), otp: code });
+      const role = normalizeUserRole(result.user.role);
+      navigate(getHomeRouteForRole(role), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
     } finally {
@@ -34,18 +36,30 @@ export function BrandLoginPage() {
   };
 
   return (
-    <div className="bob-landing" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
+    <div
+      className="bob-landing"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2rem",
+      }}
+    >
       <Card className="bob-auth-card">
         <h1 className="aurora-card__title" style={{ marginBottom: 8 }}>
-          Brand sign in
+          Sign in
         </h1>
         <p className="bob-muted" style={{ marginBottom: 24 }}>
-          Placeholder login for testing. Use your work email and code{" "}
-          <strong>{STUB_OTP_CODE}</strong> after completing onboarding.
+          Use your brand work email or creator test account{" "}
+          <strong>test@creator.com</strong> with code <strong>{STUB_OTP_CODE}</strong>.
         </p>
-        <form onSubmit={(e) => void handleSubmit(e)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          style={{ display: "flex", flexDirection: "column", gap: 16 }}
+        >
           <TextField
-            label="Work email"
+            label="Email"
             type="email"
             autoComplete="email"
             value={email}
@@ -58,13 +72,18 @@ export function BrandLoginPage() {
             inputMode="numeric"
             autoComplete="one-time-code"
             value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            onChange={(e) =>
+              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
             placeholder={STUB_OTP_CODE}
             required
             maxLength={6}
           />
           {error ? (
-            <p role="alert" style={{ color: "var(--color-danger)", fontSize: 14, margin: 0 }}>
+            <p
+              role="alert"
+              style={{ color: "var(--color-danger)", fontSize: 14, margin: 0 }}
+            >
               {error}
             </p>
           ) : null}

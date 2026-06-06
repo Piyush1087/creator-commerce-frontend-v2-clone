@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { Alert } from "../../../../design-system/aurora";
 import { fetchPipelineActiveCollabs } from "../../api/brand-uce-client";
-import { PipelineDataTable } from "../PipelineDataTable";
+import { PipelineActiveCollabsTable } from "../PipelineActiveCollabsTable";
 import { useUceApiJson } from "../../hooks/use-uce-api-json";
 import { displayField, EMPTY_FIELD } from "../../utils/display-field";
 import { formatPercent } from "../../utils/uce-format";
@@ -58,7 +58,7 @@ export function ActiveCollabsTabPanel({
       {state.status === "loading" ? (
         <p>Loading active collaborations…</p>
       ) : state.status === "ready" ? (
-        <PipelineDataTable rows={state.data.rows} />
+        <PipelineActiveCollabsTable rows={state.data.rows} />
       ) : null}
     </div>
   );
