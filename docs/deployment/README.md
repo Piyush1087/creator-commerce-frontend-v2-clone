@@ -43,8 +43,33 @@ Once your AWS profiles and WSL environment are set up, and your backend is deplo
 npm install
 
 # 2. Build and Deploy to Dev
-npx sst deploy --stage dev
+export AWS_PROFILE=creator-dev
+export SST_SKIP_DEPENDENCY_CHECK=1
+aws sso login --profile creator-dev
+npx sst deploy --stage dev --print-logs
 
 # Or Deploy to Prod
-npx sst deploy --stage prod
+export AWS_PROFILE=creator-prod
+npx sst deploy --stage prod --print-logs
 ```
+
+### Pulumi path (common error)
+
+After the first successful deploy, SST stores Pulumi at `~/.config/sst/bin/pulumi` (a **binary file**).
+
+Use `SST_SKIP_DEPENDENCY_CHECK=1` to avoid re-install checks. **Do not** set:
+
+```bash
+export SST_PULUMI_PATH="$HOME/.config/sst/bin/pulumi"  # wrong — causes pulumi/bin/pulumi error
+```
+
+If deploy fails with `pulumi/bin/pulumi: not a directory`:
+
+```bash
+unset SST_PULUMI_PATH
+export SST_SKIP_DEPENDENCY_CHECK=1
+~/.config/sst/bin/pulumi version
+npx sst deploy --stage dev --print-logs
+```
+
+Run deploy as the same WSL user each time (`brian`, not `root`). See backend [deployment README](../../creator-commerce-backend-v2/docs/deployment/README.md#reuse-pulumi-skip-slow-download) for more detail.
