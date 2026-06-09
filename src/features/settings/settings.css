@@ -1,0 +1,204 @@
+/* Brand settings shell — scoped to settings routes */
+
+.brand-settings {
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.brand-settings__header {
+  margin-bottom: var(--space-lg);
+}
+
+.brand-settings__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--size-h1);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-high);
+}
+
+.brand-settings__subtitle {
+  margin: var(--space-xs) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  color: var(--text-muted);
+}
+
+.brand-settings__tabs {
+  display: flex;
+  gap: var(--space-lg);
+  border-bottom: 1px solid var(--border-default);
+  margin-bottom: var(--space-lg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.brand-settings__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-settings__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0 0 1rem;
+  border: none;
+  background: transparent;
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brand-settings__tab:hover {
+  color: var(--color-primary);
+}
+
+.brand-settings__tab--active {
+  color: var(--color-primary);
+  font-weight: 700;
+  border-bottom: 3px solid var(--color-primary);
+  margin-bottom: -1px;
+}
+
+.brand-settings__subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.brand-settings__subnav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.brand-settings__subnav-link--active {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--border-default));
+  background: var(--surface-workflow);
+  color: var(--text-high);
+}
+
+.brand-settings__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.brand-settings__collapsible {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  overflow: hidden;
+}
+
+.brand-settings__collapsible-trigger {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.brand-settings__collapsible-trigger:hover {
+  background: var(--surface-subtle);
+}
+
+.brand-settings__collapsible-title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--size-h2);
+  font-weight: 700;
+  color: var(--text-high);
+}
+
+.brand-settings__collapsible-desc {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  color: var(--text-muted);
+}
+
+.brand-settings__collapsible-body {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.brand-settings__plan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--surface-page);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-card-standard);
+}
+
+.brand-settings__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-md) 0;
+  gap: var(--space-sm);
+}
+
+.brand-settings__info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-card-standard);
+  background: var(--status-warning);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+}
+
+.brand-settings__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 767px) {
+  .brand-settings__plan-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .brand-settings__plan-row .aurora-button {
+    width: 100%;
+  }
+}

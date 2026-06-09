@@ -552,7 +552,7 @@
   background: var(--surface-page);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .aurora-sidedrawer {
     width: 100% !important;
   }

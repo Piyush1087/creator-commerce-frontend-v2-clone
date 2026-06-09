@@ -2501,7 +2501,7 @@
   font-size: 12px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .bob-pricing-card {
     padding: 2rem 1.5rem;
   }

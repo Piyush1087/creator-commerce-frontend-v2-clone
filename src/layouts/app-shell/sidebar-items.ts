@@ -5,6 +5,7 @@ import {
   LogOut,
   Megaphone,
   MessageCircle,
+  Settings,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -19,6 +20,13 @@ export type SidebarNavItem = {
   icon: ElementType;
   label: string;
   mainVariant: AppShellMainVariant;
+  path: string;
+  roles: readonly UserRole[];
+};
+
+export type SidebarFooterNavItem = {
+  icon: ElementType;
+  label: string;
   path: string;
   roles: readonly UserRole[];
 };
@@ -91,14 +99,22 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
   },
 ];
 
-const brandSidebarUtilityItems: SidebarUtilityItem[] = [
+const brandSidebarFooterNavItems: SidebarFooterNavItem[] = [
   {
-    label: "Help",
-    icon: HelpCircle,
-    path: "/help",
-    action: "help",
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.brandSettings,
     roles: ["BRAND"],
   },
+  {
+    label: "Support",
+    icon: HelpCircle,
+    path: "/help",
+    roles: ["BRAND"],
+  },
+];
+
+const brandSidebarUtilityItems: SidebarUtilityItem[] = [
   {
     label: "Logout",
     icon: LogOut,
@@ -129,6 +145,12 @@ const sidebarNavByRole: Record<UserRole, SidebarNavItem[]> = {
   ADMIN: [],
 };
 
+const sidebarFooterNavByRole: Record<UserRole, SidebarFooterNavItem[]> = {
+  BRAND: brandSidebarFooterNavItems,
+  CREATOR: [],
+  ADMIN: [],
+};
+
 const sidebarUtilityByRole: Record<UserRole, SidebarUtilityItem[]> = {
   BRAND: brandSidebarUtilityItems,
   CREATOR: creatorSidebarUtilityItems,
@@ -142,6 +164,15 @@ export function getSidebarNavItemsForRole(role: UserRole | null): SidebarNavItem
   return sidebarNavByRole[role];
 }
 
+export function getSidebarFooterNavItemsForRole(
+  role: UserRole | null,
+): SidebarFooterNavItem[] {
+  if (!role) {
+    return [];
+  }
+  return sidebarFooterNavByRole[role];
+}
+
 export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUtilityItem[] {
   if (!role) {
     return [];
@@ -153,6 +184,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCentre,
   AUTH_ROUTES.brandUceCampaigns,
   AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.brandSettings,
   AUTH_ROUTES.creatorCollaborations,
 ] as const;
 
@@ -184,6 +216,11 @@ export function resolveHeaderMeta(
   pathname: string,
   role: UserRole | null,
 ): { breadcrumb: string; title: string } {
+  if (pathname.startsWith(AUTH_ROUTES.brandSettings)) {
+    const title = pathname.includes("/escrow") ? "Secure Escrow" : "Billing";
+    return { breadcrumb: "Settings", title };
+  }
+
   const match = findSidebarNavItemByPath(pathname, role);
   if (match) {
     return {

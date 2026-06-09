@@ -67,7 +67,7 @@
   --size-h2: var(--size-h2-desktop);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   :root {
     --size-h1: var(--size-h1-mobile);
     --size-h2: var(--size-h2-mobile);

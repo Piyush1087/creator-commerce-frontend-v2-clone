@@ -1,10 +1,13 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AUTH_ROUTES } from "../features/auth/constants";
 import { LoginPage } from "../pages/auth/login-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
+import { BrandSettingsLayout } from "../pages/brand/settings/brand-settings-layout";
+import { BrandSettingsBillingPage } from "../pages/brand/settings/brand-settings-billing-page";
+import { BrandSettingsEscrowPage } from "../pages/brand/settings/brand-settings-escrow-page";
 import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage";
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
@@ -31,6 +34,11 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
         <Route path={AUTH_ROUTES.brandCollaborations} element={<BrandCollaborationsPage />} />
+        <Route path={AUTH_ROUTES.brandSettings} element={<BrandSettingsLayout />}>
+          <Route index element={<Navigate to="billing" replace />} />
+          <Route path="billing" element={<BrandSettingsBillingPage />} />
+          <Route path="escrow" element={<BrandSettingsEscrowPage />} />
+        </Route>
         <Route path={AUTH_ROUTES.creatorDashboard} element={<CreatorDashboardPage />} />
         <Route path={AUTH_ROUTES.creatorCollaborations} element={<CreatorCollaborationsPage />} />
       </Route>

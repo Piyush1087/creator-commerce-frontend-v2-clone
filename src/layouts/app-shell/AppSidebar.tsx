@@ -1,13 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { loadAuthSession } from "../../shared/auth/auth-session";
 import { useLogout } from "../../shared/auth/use-logout";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import { Button } from "../../design-system/aurora";
 import {
+  getSidebarFooterNavItemsForRole,
   getSidebarNavItemsForRole,
   getSidebarUtilityItemsForRole,
 } from "./sidebar-items";
+import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
 import { SidebarNavLink } from "./SidebarNavLink";
 
 export function AppSidebar() {
@@ -15,6 +17,7 @@ export function AppSidebar() {
   const logout = useLogout();
   const role = normalizeUserRole(loadAuthSession()?.user.role);
   const navItems = getSidebarNavItemsForRole(role);
+  const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
 
   return (
@@ -37,6 +40,13 @@ export function AppSidebar() {
       </nav>
 
       <div className="aurora-sidebar__footer">
+        {footerNavItems.map((item) => (
+          <SidebarFooterNavLink
+            key={item.path}
+            item={item}
+            pathname={location.pathname}
+          />
+        ))}
         {utilityItems.map((item) =>
           item.action === "logout" ? (
             <button
@@ -50,18 +60,7 @@ export function AppSidebar() {
               </span>
               <span className="aurora-sidebar__label">{item.label}</span>
             </button>
-          ) : (
-            <Link
-              key={item.label}
-              to={item.path ?? "#"}
-              className="aurora-sidebar__link"
-            >
-              <span className="aurora-sidebar__icon">
-                <item.icon size={20} />
-              </span>
-              <span className="aurora-sidebar__label">{item.label}</span>
-            </Link>
-          ),
+          ) : null,
         )}
         <div className="aurora-sidebar__upgrade">
           <Button style={{ width: "100%", height: 40, fontSize: 13 }}>
