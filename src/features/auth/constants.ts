@@ -8,6 +8,9 @@ export const AUTH_ROUTES = {
   brandUceCampaignCreate: "/brand/uce/campaigns/create",
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
   brandCollaborations: "/brand/collaborations",
+  brandSettings: "/brand/settings",
+  brandSettingsBilling: "/brand/settings/billing",
+  brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
   creatorCollaborations: "/creator/collaborations",
 } as const;

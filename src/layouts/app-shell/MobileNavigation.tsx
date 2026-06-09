@@ -1,13 +1,15 @@
 import { X } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { loadAuthSession } from "../../shared/auth/auth-session";
 import { useLogout } from "../../shared/auth/use-logout";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import {
+  getSidebarFooterNavItemsForRole,
   getSidebarNavItemsForRole,
   getSidebarUtilityItemsForRole,
 } from "./sidebar-items";
+import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
 import { SidebarNavLink } from "./SidebarNavLink";
 
 type MobileNavigationProps = {
@@ -20,6 +22,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
   const logout = useLogout();
   const role = normalizeUserRole(loadAuthSession()?.user.role);
   const navItems = getSidebarNavItemsForRole(role);
+  const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
 
   return (
@@ -65,6 +68,19 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
               onNavigate={onClose}
             />
           ))}
+          {footerNavItems.length > 0 ? (
+            <div className="aurora-drawer__footer-nav">
+              {footerNavItems.map((item) => (
+                <SidebarFooterNavLink
+                  key={item.path}
+                  item={item}
+                  pathname={location.pathname}
+                  variant="drawer"
+                  onNavigate={onClose}
+                />
+              ))}
+            </div>
+          ) : null}
           {utilityItems.map((item) =>
             item.action === "logout" ? (
               <button
@@ -79,17 +95,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
                 <item.icon size={20} style={{ marginRight: 12 }} />
                 <span>{item.label}</span>
               </button>
-            ) : (
-              <Link
-                key={item.label}
-                to={item.path ?? "#"}
-                className="aurora-drawer__link"
-                onClick={onClose}
-              >
-                <item.icon size={20} style={{ marginRight: 12 }} />
-                <span>{item.label}</span>
-              </Link>
-            ),
+            ) : null,
           )}
         </nav>
       </aside>

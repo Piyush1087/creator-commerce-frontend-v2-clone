@@ -20,4 +20,5 @@ export const env = {
       ? configuredApiUrl
       : LOCAL_API_ORIGIN,
   stage: import.meta.env.VITE_STAGE || "local",
+  razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID?.trim() || "",
 };
