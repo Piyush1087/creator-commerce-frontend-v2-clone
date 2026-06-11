@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Calendar,
@@ -18,10 +18,24 @@ import {
 
 import { Button } from "../../../design-system/aurora";
 
+import { postDiscoveryResolve, postDiscoveryValidate } from "../api/discovery-client";
+import { isHttpApiError } from "../api/http-api-error";
+import type {
+  DiscoverValidateBrandActive,
+  DiscoverValidateOrgClaimed,
+  DiscoverValidateVerificationRequired,
+} from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
+import type { LandingGateRedirect, LandingGateRedirectState } from "../landing-gate-redirect";
+import { saveBrandOnboardingSession } from "../session/onboarding-session";
+import { BrandActiveModal } from "./brand-active-modal";
+import { RateLimitModal } from "./rate-limit-modal";
 import { LandingUrlCapture } from "./landing-url-capture";
+import { OrgClaimedModal } from "./org-claimed-modal";
 import { ProcessPreviewModal } from "./process-preview-modal";
+import { ResumeScanModal } from "./resume-scan-modal";
 import { SetupVerificationModal } from "./setup-verification-modal";
+import { VerificationRequiredModal } from "./verification-required-modal";
 
 const PROOF_PILLARS = [
   {
@@ -89,13 +103,195 @@ const CAPABILITIES = [
   },
 ] as const;
 
+function applyLandingGateRedirect(
+  gate: LandingGateRedirect,
+  handlers: {
+    setRateLimitModal: (value: { message?: string } | null) => void;
+    setVerificationRequired: (v: DiscoverValidateVerificationRequired | null) => void;
+    setBrandActive: (v: DiscoverValidateBrandActive | null) => void;
+    setOrgClaimed: (v: DiscoverValidateOrgClaimed | null) => void;
+    setBrandProfileId: (id: string | null) => void;
+    setLeadId: (id: string | null) => void;
+    setScannedUrl: (url: string) => void;
+  },
+): void {
+  handlers.setRateLimitModal(null);
+  handlers.setVerificationRequired(null);
+  handlers.setBrandActive(null);
+  handlers.setOrgClaimed(null);
+
+  switch (gate.kind) {
+    case "rate_limit":
+      handlers.setRateLimitModal({ message: gate.message });
+      break;
+    case "verification_required":
+      handlers.setVerificationRequired(gate.payload);
+      handlers.setBrandProfileId(gate.payload.brandProfileId);
+      if (gate.leadId) {
+        handlers.setLeadId(gate.leadId);
+      }
+      if (gate.normalizedUrl) {
+        handlers.setScannedUrl(gate.normalizedUrl);
+      }
+      break;
+    case "brand_active":
+      handlers.setBrandActive(gate.payload);
+      break;
+    case "org_claimed":
+      handlers.setOrgClaimed(gate.payload);
+      break;
+    default:
+      break;
+  }
+}
+
 export function LandingPageView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [modalStep, setModalStep] = useState<"none" | "preview" | "setup">(
     "none",
   );
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [brandProfileId, setBrandProfileId] = useState<string | null>(null);
   const [scannedUrl, setScannedUrl] = useState("");
+  const [resumeDomain, setResumeDomain] = useState("");
+  const [showResumeModal, setShowResumeModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [waitlistNotice, setWaitlistNotice] = useState<string | null>(null);
+  const [orgClaimed, setOrgClaimed] = useState<DiscoverValidateOrgClaimed | null>(
+    null,
+  );
+  const [brandActive, setBrandActive] = useState<DiscoverValidateBrandActive | null>(
+    null,
+  );
+  const [verificationRequired, setVerificationRequired] =
+    useState<DiscoverValidateVerificationRequired | null>(null);
+  const [rateLimitModal, setRateLimitModal] = useState<{ message?: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const state = location.state as LandingGateRedirectState | null;
+    const gate = state?.gate;
+    if (!gate) {
+      return;
+    }
+    applyLandingGateRedirect(gate, {
+      setRateLimitModal,
+      setVerificationRequired,
+      setBrandActive,
+      setOrgClaimed,
+      setBrandProfileId,
+      setLeadId,
+      setScannedUrl,
+    });
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
+
+  const ensureLeadForUrl = async (url: string): Promise<string | null> => {
+    const validated = await postDiscoveryValidate({ url });
+    if (validated.outcome === "success") {
+      return validated.leadId;
+    }
+    return null;
+  };
+
+  const handleSubmitUrl = async (nextUrl: string) => {
+    setApiError(null);
+    setWaitlistNotice(null);
+    setOrgClaimed(null);
+    setBrandActive(null);
+    setVerificationRequired(null);
+    setRateLimitModal(null);
+    setShowResumeModal(false);
+    setLeadId(null);
+    setBrandProfileId(null);
+    setIsVerifying(true);
+    try {
+      const resolved = await postDiscoveryResolve({ url: nextUrl });
+      if (resolved.outcome === "blocked") {
+        setApiError(resolved.message);
+        return;
+      }
+      if (resolved.outcome === "org_claimed") {
+        setOrgClaimed(resolved);
+        return;
+      }
+      if (resolved.outcome === "brand_active") {
+        setBrandActive(resolved);
+        return;
+      }
+      if (resolved.outcome === "verification_required") {
+        setBrandProfileId(resolved.brandProfileId);
+        const validated = await postDiscoveryValidate({ url: nextUrl });
+        if (validated.outcome === "success") {
+          setScannedUrl(validated.normalizedUrl);
+          setLeadId(validated.leadId);
+        } else {
+          setScannedUrl(nextUrl);
+        }
+        setVerificationRequired(resolved);
+        return;
+      }
+      if (resolved.outcome === "resume") {
+        setScannedUrl(resolved.normalizedUrl);
+        setLeadId(resolved.leadId);
+        setBrandProfileId(resolved.brandProfileId);
+        setResumeDomain(resolved.domain);
+        saveBrandOnboardingSession({
+          leadId: resolved.leadId,
+          brandProfileId: resolved.brandProfileId,
+          normalizedUrl: resolved.normalizedUrl,
+        });
+        setShowResumeModal(true);
+        return;
+      }
+
+      const validated = await postDiscoveryValidate({ url: nextUrl });
+      if (validated.outcome === "blocked") {
+        setApiError(validated.message);
+        return;
+      }
+      if (validated.outcome === "org_claimed") {
+        setOrgClaimed(validated);
+        return;
+      }
+      if (validated.outcome === "brand_active") {
+        setBrandActive(validated);
+        return;
+      }
+      if (validated.outcome === "verification_required") {
+        setBrandProfileId(validated.brandProfileId);
+        setVerificationRequired(validated);
+        const lead = await ensureLeadForUrl(nextUrl);
+        if (lead) {
+          setLeadId(lead);
+        }
+        setScannedUrl(nextUrl);
+        return;
+      }
+      if (validated.outcome === "waitlist") {
+        setWaitlistNotice(
+          `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+        );
+        return;
+      }
+      setScannedUrl(validated.normalizedUrl);
+      setLeadId(validated.leadId);
+      setModalStep("preview");
+    } catch (err) {
+      if (isHttpApiError(err) && err.isRateLimited) {
+        setRateLimitModal({ message: err.message });
+        return;
+      }
+      const message =
+        err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setApiError(message);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <div className="bob-landing">
@@ -109,14 +305,9 @@ export function LandingPageView() {
           </p>
           <LandingUrlCapture
             isBusy={isVerifying}
-            onSubmitUrl={(nextUrl) => {
-              setScannedUrl(nextUrl);
-              setIsVerifying(true);
-              window.setTimeout(() => {
-                setIsVerifying(false);
-                setModalStep("preview");
-              }, 2000);
-            }}
+            remoteError={apiError}
+            waitlistNotice={waitlistNotice}
+            onSubmitUrl={handleSubmitUrl}
           />
           {isVerifying ? (
             <div className="bob-verifying" aria-live="polite">
@@ -236,19 +427,13 @@ export function LandingPageView() {
               ))}
             </div>
           </div>
-          <div className="bob-terminal" aria-label="Mock security console">
+          <div className="bob-terminal" aria-label="Security overview">
             <div style={{ opacity: 0.85, lineHeight: 1.7 }}>
-              &gt; Initializing Meta Graph Handshake...
-              <br />
-              &gt; Requesting Read-Only Permissions (v25.0)
-              <br />
-              &gt; Encryption Key: AES-256-GCM Verified
-              <br />
-              &gt; SOC2 Compliance Check: PASS
-              <br />
-              &gt; User ID: **********
-              <br />
-              &gt; Connection Established. Security Handshake Complete.
+              <p style={{ margin: 0 }}>
+                Production integrations (Meta Graph, escrow, and compliance attestations) are
+                wired per environment. This page does not simulate live security handshakes or
+                fake audit output.
+              </p>
             </div>
             <div className="bob-terminal__lock">
               <Lock size={48} aria-hidden />
@@ -317,6 +502,42 @@ export function LandingPageView() {
         </div>
       </footer>
 
+      <RateLimitModal
+        open={rateLimitModal !== null}
+        message={rateLimitModal?.message}
+        onClose={() => setRateLimitModal(null)}
+      />
+      <OrgClaimedModal
+        open={orgClaimed !== null}
+        domain={orgClaimed?.domain ?? ""}
+        adminEmail={orgClaimed?.adminEmail ?? ""}
+        message={orgClaimed?.message ?? ""}
+        onClose={() => setOrgClaimed(null)}
+      />
+      <BrandActiveModal
+        open={brandActive !== null}
+        domain={brandActive?.domain ?? ""}
+        message={brandActive?.message ?? ""}
+        onClose={() => setBrandActive(null)}
+      />
+      <VerificationRequiredModal
+        open={verificationRequired !== null}
+        domain={verificationRequired?.domain ?? ""}
+        reason={verificationRequired?.reason}
+        brandProfileId={verificationRequired?.brandProfileId ?? brandProfileId ?? ""}
+        leadId={leadId}
+        normalizedUrl={scannedUrl}
+        onClose={() => setVerificationRequired(null)}
+      />
+      <ResumeScanModal
+        open={showResumeModal}
+        domain={resumeDomain}
+        onClose={() => setShowResumeModal(false)}
+        onContinue={() => {
+          setShowResumeModal(false);
+          navigate(ONBOARDING_ROUTES.dna);
+        }}
+      />
       <ProcessPreviewModal
         open={modalStep === "preview"}
         onClose={() => setModalStep("none")}
@@ -326,9 +547,66 @@ export function LandingPageView() {
         open={modalStep === "setup"}
         onClose={() => setModalStep("none")}
         onBack={() => setModalStep("preview")}
-        onConfirm={() => {
+        onConfirm={async () => {
           setModalStep("none");
-          navigate(ONBOARDING_ROUTES.scan, { state: { url: scannedUrl } });
+          setIsVerifying(true);
+          setApiError(null);
+          try {
+            let nextLeadId = leadId;
+            if (!nextLeadId) {
+              const validated = await postDiscoveryValidate({ url: scannedUrl });
+              if (validated.outcome === "blocked") {
+                setApiError(validated.message);
+                return;
+              }
+              if (validated.outcome === "org_claimed") {
+                setOrgClaimed(validated);
+                return;
+              }
+              if (validated.outcome === "brand_active") {
+                setBrandActive(validated);
+                return;
+              }
+              if (validated.outcome === "verification_required") {
+                setVerificationRequired(validated);
+                setBrandProfileId(validated.brandProfileId);
+                return;
+              }
+              if (validated.outcome === "waitlist") {
+                setWaitlistNotice(
+                  `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+                );
+                return;
+              }
+              if (validated.outcome === "success") {
+                nextLeadId = validated.leadId;
+                setLeadId(validated.leadId);
+              }
+            }
+            if (!nextLeadId) {
+              setApiError("Could not start a scan session. Please try your URL again.");
+              return;
+            }
+            navigate(ONBOARDING_ROUTES.scan, {
+              state: { url: scannedUrl, leadId: nextLeadId },
+            });
+          } catch (err) {
+            if (isHttpApiError(err) && err.isRateLimited) {
+              setRateLimitModal({ message: err.message });
+              return;
+            }
+            if (err instanceof Error && err.message.includes("ThrottlerException")) {
+              setRateLimitModal({});
+              return;
+            }
+            const message =
+              err instanceof Error
+                ? err.message
+                : "Something went wrong. Please try again.";
+            setApiError(message);
+          } finally {
+            setIsVerifying(false);
+          }
         }}
       />
     </div>

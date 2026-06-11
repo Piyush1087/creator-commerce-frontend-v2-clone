@@ -1,0 +1,235 @@
+import {
+  LayoutDashboard,
+  Store,
+  HelpCircle,
+  LogOut,
+  Megaphone,
+  MessageCircle,
+  Settings,
+} from "lucide-react";
+import type { ElementType } from "react";
+
+import { AUTH_ROUTES } from "../../features/auth/constants";
+import type { UserRole } from "../../shared/auth/user-role";
+
+export type AppShellMainVariant = "default" | "flush";
+
+export type SidebarNavItem = {
+  breadcrumb?: string;
+  headerTitle?: string;
+  icon: ElementType;
+  label: string;
+  mainVariant: AppShellMainVariant;
+  path: string;
+  roles: readonly UserRole[];
+};
+
+export type SidebarFooterNavItem = {
+  icon: ElementType;
+  label: string;
+  path: string;
+  roles: readonly UserRole[];
+};
+
+export type SidebarUtilityItem = {
+  action: "help" | "logout";
+  icon: ElementType;
+  label: string;
+  path?: string;
+  roles: readonly UserRole[];
+};
+
+const brandSidebarNavItems: SidebarNavItem[] = [
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    path: AUTH_ROUTES.brandDashboard,
+    roles: ["BRAND"],
+    breadcrumb: "Home",
+    headerTitle: "Dashboard",
+    mainVariant: "default",
+  },
+  {
+    label: "Brand Centre",
+    icon: Store,
+    path: AUTH_ROUTES.brandCentre,
+    roles: ["BRAND"],
+    breadcrumb: "Brand Centre",
+    headerTitle: "Brand DNA",
+    mainVariant: "flush",
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.brandUceCampaigns,
+    roles: ["BRAND"],
+    breadcrumb: "Campaigns",
+    headerTitle: "UCE Campaigns",
+    mainVariant: "flush",
+  },
+  {
+    label: "Collaborations",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.brandCollaborations,
+    roles: ["BRAND"],
+    breadcrumb: "Collaborations",
+    headerTitle: "Collaborations",
+    mainVariant: "flush",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.brandSettings,
+    roles: ["BRAND"],
+    breadcrumb: "Settings",
+    headerTitle: "Settings",
+    mainVariant: "default",
+  },
+];
+
+const creatorSidebarNavItems: SidebarNavItem[] = [
+  {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    path: AUTH_ROUTES.creatorDashboard,
+    roles: ["CREATOR"],
+    breadcrumb: "Home",
+    headerTitle: "Dashboard",
+    mainVariant: "default",
+  },
+  {
+    label: "Chat",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.creatorCollaborations,
+    roles: ["CREATOR"],
+    breadcrumb: "Collaborations",
+    headerTitle: "Collaborations",
+    mainVariant: "flush",
+  },
+];
+
+const brandSidebarFooterNavItems: SidebarFooterNavItem[] = [
+  {
+    label: "Support",
+    icon: HelpCircle,
+    path: "/help",
+    roles: ["BRAND"],
+  },
+];
+
+const brandSidebarUtilityItems: SidebarUtilityItem[] = [
+  {
+    label: "Logout",
+    icon: LogOut,
+    action: "logout",
+    roles: ["BRAND"],
+  },
+];
+
+const creatorSidebarUtilityItems: SidebarUtilityItem[] = [
+  {
+    label: "Help",
+    icon: HelpCircle,
+    path: "/help",
+    action: "help",
+    roles: ["CREATOR"],
+  },
+  {
+    label: "Logout",
+    icon: LogOut,
+    action: "logout",
+    roles: ["CREATOR"],
+  },
+];
+
+const sidebarNavByRole: Record<UserRole, SidebarNavItem[]> = {
+  BRAND: brandSidebarNavItems,
+  CREATOR: creatorSidebarNavItems,
+  ADMIN: [],
+};
+
+const sidebarFooterNavByRole: Record<UserRole, SidebarFooterNavItem[]> = {
+  BRAND: brandSidebarFooterNavItems,
+  CREATOR: [],
+  ADMIN: [],
+};
+
+const sidebarUtilityByRole: Record<UserRole, SidebarUtilityItem[]> = {
+  BRAND: brandSidebarUtilityItems,
+  CREATOR: creatorSidebarUtilityItems,
+  ADMIN: [],
+};
+
+export function getSidebarNavItemsForRole(role: UserRole | null): SidebarNavItem[] {
+  if (!role) {
+    return [];
+  }
+  return sidebarNavByRole[role];
+}
+
+export function getSidebarFooterNavItemsForRole(
+  role: UserRole | null,
+): SidebarFooterNavItem[] {
+  if (!role) {
+    return [];
+  }
+  return sidebarFooterNavByRole[role];
+}
+
+export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUtilityItem[] {
+  if (!role) {
+    return [];
+  }
+  return sidebarUtilityByRole[role];
+}
+
+const PREFIX_MATCH_PATHS = [
+  AUTH_ROUTES.brandCentre,
+  AUTH_ROUTES.brandUceCampaigns,
+  AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.brandSettings,
+  AUTH_ROUTES.creatorCollaborations,
+] as const;
+
+export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
+  if (PREFIX_MATCH_PATHS.some((p) => p === itemPath)) {
+    return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+  }
+  return pathname === itemPath;
+}
+
+export function findSidebarNavItemByPath(
+  pathname: string,
+  role: UserRole | null,
+): SidebarNavItem | undefined {
+  return getSidebarNavItemsForRole(role).find((item) =>
+    isSidebarNavItemActive(pathname, item.path),
+  );
+}
+
+export function resolveAppShellMainVariant(
+  pathname: string,
+  role: UserRole | null,
+): AppShellMainVariant {
+  const match = findSidebarNavItemByPath(pathname, role);
+  return match?.mainVariant ?? "default";
+}
+
+export function resolveHeaderMeta(
+  pathname: string,
+  role: UserRole | null,
+): { breadcrumb: string; title: string } {
+  if (pathname.startsWith(AUTH_ROUTES.brandSettings)) {
+    const title = pathname.includes("/escrow") ? "Secure Escrow" : "Billing";
+    return { breadcrumb: "Settings", title };
+  }
+
+  const match = findSidebarNavItemByPath(pathname, role);
+  if (match) {
+    return {
+      breadcrumb: match.breadcrumb ?? match.label,
+      title: match.headerTitle ?? match.label,
+    };
+  }
+  return { breadcrumb: "Home", title: "Dashboard" };
+}

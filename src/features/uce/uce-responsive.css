@@ -1,0 +1,493 @@
+/**
+ * UCE campaign surfaces — mobile layout (matches brand-centre @media max-width: 767px)
+ */
+
+@media (max-width: 767px) {
+  /* —— Page shells —— */
+  .brand-uce-campaigns-page {
+    padding: 24px 16px;
+  }
+
+  .brand-uce-campaign-create-page {
+    min-height: 100%;
+  }
+
+  .campaign-workspace-canvas {
+    padding-bottom: 24px;
+  }
+
+  .campaign-list-tabs__header .aurora-tabs {
+    gap: var(--space-md);
+  }
+
+  .campaign-list-tabs__header .aurora-tab {
+    font-size: 13px;
+    padding-bottom: 10px;
+  }
+
+  /* —— Campaign list (operations) —— */
+  .operations-tab__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+    width: 100%;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-group .aurora-select,
+  .filter-group .filter-btn {
+    width: 100%;
+  }
+
+  .uce-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .performance-matrix {
+    min-width: 640px;
+  }
+
+  .ledger-table {
+    min-width: 560px;
+  }
+
+  /* —— Campaign list (financial) —— */
+  .financial-control-strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+  }
+
+  .period-toggle {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .financial-tab .download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .financial-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .protection-grid-final {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .quick-draft-zone {
+    width: 100%;
+  }
+
+  /* —— Detail: zone 1 —— */
+  .uce-zone1 {
+    padding: 16px 16px 0;
+  }
+
+  .uce-zone1-hero {
+    padding: 20px 16px;
+  }
+
+  .uce-zone1-title {
+    font-size: 1.5rem;
+    line-height: 1.2;
+  }
+
+  .uce-zone1-meta-row {
+    align-items: flex-start;
+  }
+
+  .uce-zone1-budget-line {
+    font-size: 13px;
+  }
+
+  .uce-zone1-controls {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .uce-zone1-panel {
+    padding: 20px 16px;
+  }
+
+  /* —— Detail: products & briefs repo —— */
+  .uce-repo {
+    margin: 16px 16px 0 !important;
+    border-radius: 12px;
+  }
+
+  .uce-repo-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .uce-repo-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .uce-repo-header-actions {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .uce-repo-add-btn,
+  .uce-repo-chevron-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .uce-repo-chevron-btn {
+    min-height: 44px;
+  }
+
+  .uce-product-row-actions {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .uce-briefs-nested {
+    margin-left: 8px;
+    padding-left: 12px;
+  }
+
+  .uce-brief-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .uce-add-brief-btn {
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  /* —— Detail: pipeline workspace —— */
+  .uce-pipeline-workspace {
+    margin: 0 16px 24px !important;
+    border-radius: 12px;
+  }
+
+  .uce-pipeline-tabs-bar {
+    padding: 0 12px;
+  }
+
+  .uce-pipeline-tabs {
+    gap: 16px;
+    min-height: 44px;
+  }
+
+  .uce-pipeline-tab {
+    font-size: 13px;
+    padding: 12px 0;
+  }
+
+  .uce-pipeline-canvas {
+    padding: 16px 12px;
+  }
+
+  .uce-tab-intro--row {
+    flex-direction: column;
+  }
+
+  .uce-tab-intro h2 {
+    font-size: 20px;
+  }
+
+  .uce-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .uce-stat-row--inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .uce-inline-stat {
+    width: 100%;
+  }
+
+  .uce-onboarding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .uce-sourcing-bar {
+    flex-direction: column;
+  }
+
+  .uce-sourcing-bar-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .uce-applicants-controls {
+    align-items: stretch;
+  }
+
+  .uce-applicants-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .uce-search-wrap {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .uce-applicants-bulk {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .uce-collabs-controls {
+    align-items: stretch;
+  }
+
+  .uce-collabs-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .uce-collabs-actions button {
+    width: 100%;
+  }
+
+  .uce-reporting-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .uce-reporting-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .uce-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .uce-vetting-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .uce-vetting-chip {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* —— Briefing wizard (drawer) —— */
+  .uce-brief-wizard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .uce-brief-preview-panel {
+    order: -1;
+  }
+
+  .uce-selection-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .uce-selection-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* —— Create campaign wizard —— */
+  .create-wizard {
+    min-height: auto;
+  }
+
+  .create-wizard-form {
+    padding: 24px 16px 100px;
+  }
+
+  .create-wizard-step-head h1 {
+    font-size: 1.5rem;
+  }
+
+  .create-wizard-step-head p {
+    font-size: 1rem;
+  }
+
+  .create-wizard-fields--grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cw-radio-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cw-date-row {
+    flex-direction: column;
+  }
+
+  .cw-segmented--wide {
+    width: 100%;
+  }
+
+  .cw-segmented--wide button {
+    padding: 10px 8px;
+    font-size: 11px;
+  }
+
+  .create-wizard-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .create-wizard-footer-hint {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .create-wizard-footer-actions {
+    flex-direction: column;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .create-wizard-footer-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* —— Drawers & modals (stack footers) —— */
+  .aurora-sidedrawer__header {
+    padding: var(--space-md);
+  }
+
+  .aurora-sidedrawer__title {
+    font-size: 17px;
+    padding-right: 8px;
+  }
+
+  .aurora-sidedrawer__subtitle {
+    font-size: 12px;
+  }
+
+  .aurora-sidedrawer__content {
+    padding: var(--space-md);
+  }
+
+  .aurora-sidedrawer__footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .aurora-sidedrawer__footer > div {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .uce-drawer-footer-stack {
+    width: 100%;
+  }
+
+  .uce-vetting-footer-row {
+    flex-direction: column;
+  }
+
+  .uce-share-router {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .uce-share-router-panel {
+    max-width: none;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .uce-share-router-header,
+  .uce-share-router-body {
+    padding: 16px;
+  }
+
+  .uce-share-router-footer {
+    flex-direction: column;
+  }
+
+  .uce-share-btn-secondary,
+  .uce-share-btn-primary {
+    width: 100%;
+    text-align: center;
+    min-height: 44px;
+  }
+
+  /* Bottom-sheet drawers (Stitch mobile) */
+  .aurora-sidedrawer-overlay {
+    align-items: flex-end !important;
+    justify-content: center !important;
+  }
+
+  .aurora-sidedrawer {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 92vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto;
+  }
+
+  .uce-repo-pill--desktop {
+    display: none;
+  }
+
+  .uce-repo-add-btn--header {
+    display: none;
+  }
+
+  .uce-repo-dashed-add {
+    font-size: 12px;
+    padding: 16px 12px;
+  }
+
+  .performance-matrix {
+    min-width: 900px;
+  }
+
+  .operations-archived-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .uce-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .uce-portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+}

@@ -1,12 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Pencil, Plus, X } from "lucide-react";
 
 import { Alert, Button, Card, Chip, TextField } from "../../../design-system/aurora";
 
+import { getBrandProfile, patchBrandProfile } from "../api/brand-client";
+import { BrandImageAvatar } from "./brand-image-avatar";
+import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
-import { INITIAL_BRAND_DNA } from "../mock-data/brand-dna-mock";
+import { EMPTY_BRAND_DNA } from "../constants/empty-brand-dna";
+import { buildPatchFromDna, mapProfileToBrandDna } from "../mappers/map-brand-profile";
 import { brandDnaFormSchema } from "../schemas/brand-dna-schema";
+import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import type { BrandDnaState } from "../types";
 
 const TABS = ["Brand Identity", "Campaign History", "Creative Assets"] as const;
@@ -27,22 +32,75 @@ export function BrandDnaView() {
     typeof (location.state as { url?: unknown }).url === "string"
       ? (location.state as { url: string }).url
       : undefined;
+  const scanMode =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "scanMode" in location.state &&
+    ((location.state as { scanMode?: unknown }).scanMode === "http" ||
+      (location.state as { scanMode?: unknown }).scanMode === "cached")
+      ? (location.state as { scanMode: "http" | "cached" }).scanMode
+      : undefined;
 
-  const [data, setData] = useState<BrandDnaState>(INITIAL_BRAND_DNA);
+  const [baseline, setBaseline] = useState<BrandProfileResponseBody | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [data, setData] = useState<BrandDnaState>(EMPTY_BRAND_DNA);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Brand Identity");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<EditableTarget | null>(null);
   const [draft, setDraft] = useState("");
 
-  const subtitle = useMemo(() => {
-    if (!seedUrl) {
-      return "Mock brand DNA based on the prototype sample.";
+  useEffect(() => {
+    const fromState =
+      typeof location.state === "object" &&
+      location.state !== null &&
+      "brandProfileId" in location.state &&
+      typeof (location.state as { brandProfileId?: unknown }).brandProfileId === "string"
+        ? (location.state as { brandProfileId: string }).brandProfileId
+        : undefined;
+    const session = loadBrandOnboardingSession();
+    const id = fromState ?? session?.brandProfileId;
+    if (!id) {
+      setLoadError("Missing brand profile. Run a scan from the landing page first.");
+      setIsLoading(false);
+      return;
     }
-    return `Mock DNA seeded from ${seedUrl}`;
-  }, [seedUrl]);
+    setIsLoading(true);
+    void getBrandProfile(id)
+      .then((profile) => {
+        setBaseline(profile);
+        setData(mapProfileToBrandDna(profile));
+        setLoadError(null);
+      })
+      .catch((err) => {
+        const message =
+          err instanceof Error ? err.message : "Unable to load brand profile.";
+        setLoadError(message);
+      })
+      .finally(() => setIsLoading(false));
+  }, [location.state]);
 
-  const handleSave = () => {
+  const subtitle = useMemo(() => {
+    if (loadError) {
+      return loadError;
+    }
+    if (isLoading) {
+      return "Loading your latest scan results…";
+    }
+    if (!seedUrl) {
+      return "Brand DNA loaded from your profile.";
+    }
+    return `Seeded from ${seedUrl}${scanMode ? ` • scan: ${scanMode}` : ""}`;
+  }, [isLoading, loadError, scanMode, seedUrl]);
+
+  const handleLooksGood = async () => {
+    if (!baseline) {
+      setError("Still loading your profile. Try again in a moment.");
+      return;
+    }
     const parsed = brandDnaFormSchema.safeParse({
       brandName: data.brandName,
       tagline: data.tagline,
@@ -54,7 +112,22 @@ export function BrandDnaView() {
       return;
     }
     setError(null);
-    setSuccess("Brand DNA saved successfully.");
+    setIsSaving(true);
+    try {
+      await patchBrandProfile(baseline.id, buildPatchFromDna(data, baseline));
+      setSuccess("Brand DNA saved.");
+      navigate(ONBOARDING_ROUTES.catalogue);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unable to save brand DNA. Please try again.";
+      setError(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangeLater = () => {
+    setError(null);
     navigate(ONBOARDING_ROUTES.catalogue);
   };
 
@@ -72,7 +145,14 @@ export function BrandDnaView() {
       setError("Briefs work best with concise descriptions. Please trim this down.");
       return;
     }
-    if (draft.trim().length === 0) {
+    const optionalWhenEmpty: EditableTarget["field"][] = [
+      "tagline",
+      "description",
+    ];
+    if (
+      draft.trim().length === 0 &&
+      !optionalWhenEmpty.includes(editTarget.field)
+    ) {
       setError(`${editTarget.label} is required.`);
       return;
     }
@@ -124,6 +204,11 @@ export function BrandDnaView() {
         </Button>
       </div>
 
+      {loadError ? (
+        <Alert title="Couldn’t load profile" tone="error">
+          {loadError}
+        </Alert>
+      ) : null}
       {error ? (
         <Alert title="Validation issue" tone="error">
           {error}
@@ -150,17 +235,7 @@ export function BrandDnaView() {
 
       {activeTab === "Brand Identity" ? (
         <div className="bob-dna-grid">
-          <Card title="About & visual identity" eyebrow="AI extracted">
-            <div className="bob-dna-logo-row">
-              <div className="bob-dna-logo">
-                <img src={data.logo} alt={`${data.brandName} logo`} />
-              </div>
-              <div>
-                <h2>{data.brandName}</h2>
-                <p>{data.tagline}</p>
-              </div>
-            </div>
-
+          <Card title="About" eyebrow="AI extracted">
             <EditableDisplay
               label="Brand name"
               value={data.brandName}
@@ -197,12 +272,29 @@ export function BrandDnaView() {
                 })
               }
             />
-
             <TagGroup
               label="Industry"
               values={data.industry}
               onRemove={(value) => removeTag("industry", value)}
             />
+          </Card>
+
+          <Card title="Visual identity" eyebrow="AI extracted">
+            <div className="bob-dna-logo-row">
+              <BrandImageAvatar
+                className="bob-dna-logo"
+                src={data.logo}
+                label={data.brandName}
+                alt={`${data.brandName} logo`}
+                size={64}
+              />
+              <div>
+                <h2>{data.brandName}</h2>
+                <p className={data.tagline.trim() ? undefined : "bob-muted"}>
+                  {data.tagline.trim() || "No tagline from scan — edit to add one"}
+                </p>
+              </div>
+            </div>
             <TagGroup
               label="Tone of voice"
               values={data.tones}
@@ -263,15 +355,21 @@ export function BrandDnaView() {
       )}
 
       <div className="bob-inline" style={{ marginTop: 24 }}>
-        <Button type="button" variant="primary" onClick={() => handleSave()}>
-          Save &amp; continue to catalogue
+        <Button
+          type="button"
+          variant="primary"
+          disabled={isLoading || Boolean(loadError) || isSaving}
+          onClick={() => void handleLooksGood()}
+        >
+          Looks good, next
         </Button>
         <Button
           type="button"
           variant="ghost"
-          onClick={() => navigate(ONBOARDING_ROUTES.catalogue)}
+          disabled={isSaving}
+          onClick={() => handleChangeLater()}
         >
-          Skip validation (mock)
+          I&apos;ll change later
         </Button>
       </div>
 

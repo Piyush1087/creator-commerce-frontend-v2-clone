@@ -1,11 +1,14 @@
 import { BrowserRouter } from "react-router-dom";
 
-import { BrandOnboardingAppRoutes } from "../routes/brand-onboarding-app";
+import { AppRoutes } from "../routes/app-routes";
+import { ToastProvider } from "../design-system/aurora";
 
 export function App() {
   return (
-    <BrowserRouter>
-      <BrandOnboardingAppRoutes />
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

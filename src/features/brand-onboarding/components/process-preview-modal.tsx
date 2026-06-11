@@ -9,7 +9,7 @@ import {
 
 import { Button } from "../../../design-system/aurora";
 
-import { PROCESS_JOURNEY_STEPS } from "../mock-data/process-journey-mock";
+import { PROCESS_JOURNEY_STEPS } from "../constants/process-journey-steps";
 
 type ProcessPreviewModalProps = {
   open: boolean;
@@ -59,24 +59,23 @@ export function ProcessPreviewModal({
             brand identity, audience, positioning, and growth goals. Here&apos;s
             what happens next:
           </p>
+
           <div className="bob-journey">
             {PROCESS_JOURNEY_STEPS.map((step, index) => {
               const icons = [Brain, Rocket, Target, CheckCircle2, MessageSquare];
               const Icon = icons[index] ?? Brain;
               return (
-              <div key={step.number} className="bob-journey-step">
-                <div className="bob-journey-step__icon">
-                  <Icon size={18} aria-hidden />
+                <div key={step.number} className="bob-journey-step">
+                  <div className="bob-journey-step__icon">
+                    <Icon size={18} aria-hidden />
+                  </div>
+                  <div>
+                    <h3>
+                      {step.number} — {step.title.toUpperCase()}
+                    </h3>
+                    <p>{step.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3>
-                    {step.number} — {step.title.toUpperCase()}
-                  </h3>
-                  <p>
-                    {step.description}
-                  </p>
-                </div>
-              </div>
               );
             })}
           </div>
@@ -86,7 +85,9 @@ export function ProcessPreviewModal({
             type="button"
             variant="primary"
             fullWidthOnMobile
-            onClick={() => onContinue()}
+            onClick={() => {
+              void Promise.resolve(onContinue());
+            }}
           >
             Start My AI Brand Scan
           </Button>

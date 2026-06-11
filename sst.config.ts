@@ -15,6 +15,27 @@ export default $config({
     };
   },
   async run() {
+    const path = await import("path");
+    const dotenv = await import("dotenv");
+    const fs = await import("fs");
+    const cwd = process.cwd();
+    const envPaths = [
+      path.join(cwd, ".env"),
+      path.join(cwd, "creator-commerce-frontend-v2", ".env"),
+    ];
+
+    for (const envPath of envPaths) {
+      if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath, override: true });
+        break;
+      }
+    }
+
+    const razorpayPublicKeyId =
+      process.env.VITE_RAZORPAY_KEY_ID?.trim() ||
+      process.env.RAZORPAY_API_KEY_ID?.trim() ||
+      "";
+
     new sst.aws.StaticSite("react-app", {
       transform: {
         cdn: (args) => {
@@ -45,6 +66,7 @@ export default $config({
             ? "https://api.thecreatorshop.in"
             : "https://api.dev.thecreatorshop.in",
         VITE_STAGE: $app.stage,
+        VITE_RAZORPAY_KEY_ID: razorpayPublicKeyId,
       },
       domain: {
         dns: false,

@@ -9,6 +9,10 @@
   --surface-workflow: #f0fdf4;
   --surface-page: #f8f8f8;
   --surface-card: #ffffff;
+  --surface-subtle: #f9fafb;
+
+  --text-on-secondary: #ffffff;
+  --text-on-secondary-muted: #9ca3af;
 
   --border-default: #e5e7eb;
 
@@ -63,7 +67,7 @@
   --size-h2: var(--size-h2-desktop);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   :root {
     --size-h1: var(--size-h1-mobile);
     --size-h2: var(--size-h2-mobile);

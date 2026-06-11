@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 
+import { AUTH_ROUTES } from "../../features/auth/constants";
 import "./brand-onboarding-shell.css";
 
 const MARKETING_LINKS = ["How it works", "Features", "Pricing"] as const;
@@ -85,7 +86,7 @@ export function BrandOnboardingShell() {
           </nav>
         </div>
         <div className="bons-shell__actions">
-          <Link className="bons-shell__login" to="/">
+          <Link className="bons-shell__login" to={AUTH_ROUTES.login}>
             Login
           </Link>
           <button
@@ -157,21 +158,6 @@ export function BrandOnboardingShell() {
       <main className="bons-shell__main">
         <Outlet />
       </main>
-
-      <nav className="bons-shell__bottom-nav" aria-label="Mobile quick nav">
-        {MOBILE_NAV.map((item) => (
-          <Link
-            key={item.label}
-            to={item.path}
-            className={
-              location.pathname === item.path ? "bons-shell__bottom-link--active" : ""
-            }
-          >
-            <item.Icon size={20} aria-hidden />
-            <span>{item.label}</span>
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }

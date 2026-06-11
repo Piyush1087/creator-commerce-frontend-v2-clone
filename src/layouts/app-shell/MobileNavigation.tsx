@@ -1,4 +1,16 @@
-import { navigationItems } from "./navigation";
+import { X } from "lucide-react";
+import { useLocation } from "react-router-dom";
+
+import { loadAuthSession } from "../../shared/auth/auth-session";
+import { useLogout } from "../../shared/auth/use-logout";
+import { normalizeUserRole } from "../../shared/auth/user-role";
+import {
+  getSidebarFooterNavItemsForRole,
+  getSidebarNavItemsForRole,
+  getSidebarUtilityItemsForRole,
+} from "./sidebar-items";
+import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
+import { SidebarNavLink } from "./SidebarNavLink";
 
 type MobileNavigationProps = {
   isOpen: boolean;
@@ -6,55 +18,87 @@ type MobileNavigationProps = {
 };
 
 export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
+  const location = useLocation();
+  const logout = useLogout();
+  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const navItems = getSidebarNavItemsForRole(role);
+  const footerNavItems = getSidebarFooterNavItemsForRole(role);
+  const utilityItems = getSidebarUtilityItemsForRole(role);
+
   return (
     <>
-      {isOpen && (
-        <aside className="aurora-mobile-drawer" aria-label="Mobile navigation">
-          <div className="aurora-mobile-drawer__header">
-            <span className="aurora-mobile-drawer__title">Navigation</span>
-            <button
-              aria-label="Close navigation menu"
-              className="aurora-header__icon-button"
-              onClick={onClose}
-              type="button"
-            >
-              X
-            </button>
-          </div>
-          <nav className="aurora-mobile-drawer__nav">
-            {navigationItems.map((item) => (
-              <a
-                className={
-                  item.active
-                    ? "aurora-mobile-drawer__link aurora-mobile-drawer__link--active"
-                    : "aurora-mobile-drawer__link"
-                }
-                href="#"
-                key={item.label}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </a>
-            ))}
-          </nav>
-        </aside>
-      )}
-      <nav className="aurora-bottom-nav" aria-label="Mobile bottom navigation">
-        {navigationItems.slice(0, 4).map((item) => (
+      <div
+        className={`aurora-drawer-overlay ${isOpen ? "aurora-drawer-overlay--open" : ""}`}
+        onClick={onClose}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            onClose();
+          }
+        }}
+        role="presentation"
+      />
+      <aside className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}>
+        <div className="aurora-drawer__header">
+          <span className="aurora-drawer__title">The Creator Shop</span>
           <button
-            className={
-              item.active
-                ? "aurora-bottom-nav__item aurora-bottom-nav__item--active"
-                : "aurora-bottom-nav__item"
-            }
-            key={item.label}
             type="button"
+            className="aurora-header__btn"
+            onClick={onClose}
+            aria-label="Close menu"
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "rgba(255,255,255,0.6)",
+            }}
           >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
+            <X size={20} />
           </button>
-        ))}
-      </nav>
+        </div>
+
+        <nav className="aurora-drawer__nav">
+          {navItems.map((item) => (
+            <SidebarNavLink
+              key={item.path}
+              item={item}
+              pathname={location.pathname}
+              baseClassName="aurora-drawer__link"
+              activeClassName="aurora-drawer__link--active"
+              iconClassName=""
+              labelClassName=""
+              onNavigate={onClose}
+            />
+          ))}
+          {footerNavItems.length > 0 ? (
+            <div className="aurora-drawer__footer-nav">
+              {footerNavItems.map((item) => (
+                <SidebarFooterNavLink
+                  key={item.path}
+                  item={item}
+                  pathname={location.pathname}
+                  variant="drawer"
+                  onNavigate={onClose}
+                />
+              ))}
+            </div>
+          ) : null}
+          {utilityItems.map((item) =>
+            item.action === "logout" ? (
+              <button
+                key={item.label}
+                type="button"
+                className="aurora-drawer__link"
+                onClick={() => {
+                  onClose();
+                  logout();
+                }}
+              >
+                <item.icon size={20} style={{ marginRight: 12 }} />
+                <span>{item.label}</span>
+              </button>
+            ) : null,
+          )}
+        </nav>
+      </aside>
     </>
   );
 }
