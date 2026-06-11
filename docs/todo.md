@@ -2,10 +2,14 @@
 2. Font on landing page is not satoshi
 3. Animation has not come in because ai studio didn't have it. Can you pull it from stitch directly later?
 
+product doc vs real code comparisionfe and be 
+
 Verify Brand Onboarding ttl  
 Image fetch  
-Pipeline setup    
+Pipeline setup      
   
+save login for week
+
 planner next cmapaign in ui
 
 Refresh in Tab 1 logic  
@@ -50,15 +54,15 @@ JWT login TTL
 
 razorpay all or nothing transaction, as we saw, payment top up done bu8t balcnec not chnage if 3rd webhppk fails  
 Invoice generation api  
-  
+
 monthly plan status check  
-  
+
 features prom,ised under each plan  
-  
+
 featires blocks om plan expiry  
-  
+
 razropay beneficiary  
-  
+
 **Is “all or nothing” taken care of?**
 
 **Partially, on the server — not fully in the UX.**
@@ -128,4 +132,8 @@ Razorpay does **not** update your escrow balance. **You** must, from webhooks or
 | Webhook OK                   | “Top-up complete” + show new balance                                 |
 
 
-Razorpay shows **card-level** errors in checkout. **Escrow balance** errors are **your** responsibility — Razorpay won’t say “escrow balance updated.”
+Razorpay shows **card-level** errors in checkout. **Escrow balance** errors are **your** responsibility — Razorpay won’t say “escrow balance updated.”  
+
+Check priciing docs gaps doc   
+
+razorpay webhooks for prod
