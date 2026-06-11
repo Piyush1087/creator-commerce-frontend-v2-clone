@@ -36,7 +36,15 @@ For performance, clone the repository directly into your WSL home directory (e.g
 
 ## Deployment Workflows
 
-Once your AWS profiles and WSL environment are set up, and your backend is deployed, you can deploy the frontend. Ensure your environment variables are configured properly (e.g., `VITE_STAGE`).
+Once your AWS profiles and WSL environment are set up, and your backend is deployed, you can deploy the frontend.
+
+Create `.env` in the repo root before deploy (not committed):
+
+```env
+VITE_RAZORPAY_KEY_ID=rzp_test_...   # public key — same Key Id as backend for card top-up on dev
+```
+
+`sst.config.ts` loads `.env` via `dotenv` (devDependency) and passes `VITE_RAZORPAY_KEY_ID` into the Vite build.
 
 ```bash
 # 1. Install dependencies

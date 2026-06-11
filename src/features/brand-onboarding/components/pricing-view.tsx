@@ -3,6 +3,10 @@ import { CheckCircle2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { completeBrandRegistration } from "../../auth/api/auth-client";
+import {
+  bootstrapLocalTrial,
+  PricingApiError,
+} from "../../pricing/api/pricing-client";
 import { ONBOARDING_ROUTES } from "../constants";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
 
@@ -31,9 +35,23 @@ export function PricingView() {
       await completeBrandRegistration({
         brandProfileId: session.brandProfileId,
       });
+
+      try {
+        await bootstrapLocalTrial();
+      } catch (trialError) {
+        if (
+          !(
+            trialError instanceof PricingApiError &&
+            trialError.status === 409
+          )
+        ) {
+          throw trialError;
+        }
+      }
+
       navigate(ONBOARDING_ROUTES.socialSync);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create your account.");
+      setError(err instanceof Error ? err.message : "Could not start your trial.");
     } finally {
       setIsSubmitting(false);
     }

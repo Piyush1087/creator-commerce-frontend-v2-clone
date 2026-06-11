@@ -76,6 +76,15 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     headerTitle: "Collaborations",
     mainVariant: "flush",
   },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.brandSettings,
+    roles: ["BRAND"],
+    breadcrumb: "Settings",
+    headerTitle: "Settings",
+    mainVariant: "default",
+  },
 ];
 
 const creatorSidebarNavItems: SidebarNavItem[] = [
@@ -100,12 +109,6 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
 ];
 
 const brandSidebarFooterNavItems: SidebarFooterNavItem[] = [
-  {
-    label: "Settings",
-    icon: Settings,
-    path: AUTH_ROUTES.brandSettings,
-    roles: ["BRAND"],
-  },
   {
     label: "Support",
     icon: HelpCircle,
