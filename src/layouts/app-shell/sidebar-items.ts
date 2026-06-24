@@ -47,7 +47,7 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     roles: ["BRAND"],
     breadcrumb: "Home",
     headerTitle: "Dashboard",
-    mainVariant: "default",
+    mainVariant: "flush",
   },
   {
     label: "Brand Centre",
