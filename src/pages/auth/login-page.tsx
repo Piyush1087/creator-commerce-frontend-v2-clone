@@ -1,15 +1,31 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Button, Card, TextField } from "../../design-system/aurora";
 import { login } from "../../features/auth/api/auth-client";
-import { AUTH_ROUTES, getHomeRouteForRole } from "../../features/auth/constants";
+import { AUTH_ROUTES } from "../../features/auth/constants";
+import { resolvePostLoginPath } from "../../features/auth/post-login-redirect";
 import { STUB_OTP_CODE } from "../../features/brand-onboarding/verification-otp.config";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const returnPath =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "from" in location.state &&
+    typeof (location.state as { from?: unknown }).from === "string"
+      ? (location.state as { from: string }).from
+      : undefined;
+  const prefilledEmail =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "email" in location.state &&
+    typeof (location.state as { email?: unknown }).email === "string"
+      ? (location.state as { email: string }).email
+      : "";
+  const [email, setEmail] = useState(prefilledEmail);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,7 +43,7 @@ export function LoginPage() {
     try {
       const result = await login({ email: email.trim(), otp: code });
       const role = normalizeUserRole(result.user.role);
-      navigate(getHomeRouteForRole(role), { replace: true });
+      navigate(resolvePostLoginPath(role, returnPath), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
     } finally {

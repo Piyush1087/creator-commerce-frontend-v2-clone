@@ -1,18 +1,30 @@
 import type { UserRole } from "../../shared/auth/user-role";
 
 export const AUTH_ROUTES = {
-  login: "/login",
-  brandDashboard: "/brand/dashboard",
+  login: "/login",  brandDashboard: "/brand/dashboard",
   brandCentre: "/brand-centre",
   brandUceCampaigns: "/brand/uce/campaigns",
   brandUceCampaignCreate: "/brand/uce/campaigns/create",
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
   brandCollaborations: "/brand/collaborations",
+  brandCollaborationPage: "/brand/collaboration-page",
   brandSettings: "/brand/settings",
   brandSettingsBilling: "/brand/settings/billing",
   brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
+  creatorMarketplace: "/creator/marketplace",
+  creatorMarketplaceCampaign: "/creator/marketplace/:campaignId",
+  creatorCampaigns: "/creator/campaigns",
+  creatorCampaignsHistory: "/creator/campaigns/history",
   creatorCollaborations: "/creator/collaborations",
+} as const;
+
+/** Public guest marketplace (no auth required). */
+export const PUBLIC_ROUTES = {
+  marketplace: "/marketplace",
+  marketplaceCampaign: "/marketplace/:campaignId",
+  marketplaceInvite: "/marketplace/invite/:token",
+  brandLanding: "/brand/:slug",
 } as const;
 
 export function getHomeRouteForRole(role: UserRole | null): string {

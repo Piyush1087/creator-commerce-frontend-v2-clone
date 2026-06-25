@@ -34,6 +34,7 @@ export function LinkAssetDrawer({
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState("");
+  const [inventoryCount, setInventoryCount] = useState("10");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export function LinkAssetDrawer({
       return;
     }
     setSelectedId("");
+    setInventoryCount("10");
     setError(null);
     setCatalogLoading(true);
     setCatalogError(null);
@@ -87,8 +89,14 @@ export function LinkAssetDrawer({
       setError("Select a product from your brand catalogue.");
       return;
     }
+    const parsedInventory = Number.parseInt(inventoryCount, 10);
+    if (!Number.isFinite(parsedInventory) || parsedInventory < 0) {
+      setError("Inventory allocation must be zero or greater.");
+      return;
+    }
     try {
-      await onCreateProduct(mapOfferingToCreateProductBody(selected));
+      const body = mapOfferingToCreateProductBody(selected);
+      await onCreateProduct({ ...body, inventory_count: parsedInventory });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not link product.");
@@ -180,6 +188,17 @@ export function LinkAssetDrawer({
                 </div>
               </div>
             ) : null}
+
+            <label className="uce-field-label uce-field-label--block" htmlFor="uce-link-inventory">
+              Inventory allocation (units for creator samples)
+            </label>
+            <input
+              id="uce-link-inventory"
+              className="aurora-field__control"
+              inputMode="numeric"
+              value={inventoryCount}
+              onChange={(e) => setInventoryCount(e.target.value)}
+            />
           </>
         )}
       </div>

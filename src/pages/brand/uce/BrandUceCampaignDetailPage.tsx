@@ -9,6 +9,7 @@ import {
 } from "../../../features/uce/components/CampaignPipelineWorkspace";
 import { CampaignProductsBriefsRepository } from "../../../features/uce/components/CampaignProductsBriefsRepository";
 import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
+import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
 import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
@@ -16,6 +17,7 @@ import {
   createCampaignBrief,
   createCampaignProduct,
   fetchCampaignShell,
+  patchCampaignEssentials,
   patchCampaignStatus,
 } from "../../../features/uce/api/brand-uce-client";
 import type { UceCampaignStatus } from "../../../features/uce/contracts/brand-uce.contracts";
@@ -60,6 +62,8 @@ export function BrandUceCampaignDetailPage() {
   const [viewProductId, setViewProductId] = useState<string | null>(null);
   const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
+  const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
+  const [isSavingEssentials, setIsSavingEssentials] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -147,8 +151,25 @@ export function BrandUceCampaignDetailPage() {
       <CampaignWorkspaceZone1
         shell={loadedShell}
         onOpenShareRouter={() => setIsShareRouterOpen(true)}
+        onOpenEdit={() => setIsHeroEditOpen(true)}
         onStatusChange={(active) => void handleStatusChange(active)}
         statusUpdating={statusUpdating}
+      />
+
+      <CampaignHeroEditDrawer
+        isOpen={isHeroEditOpen}
+        onClose={() => setIsHeroEditOpen(false)}
+        shell={loadedShell}
+        isSubmitting={isSavingEssentials}
+        onSubmit={async (body) => {
+          setIsSavingEssentials(true);
+          try {
+            await patchCampaignEssentials(loadedShell.campaign_id, body);
+            await reload({ silent: true });
+          } finally {
+            setIsSavingEssentials(false);
+          }
+        }}
       />
 
       <CampaignProductsBriefsRepository

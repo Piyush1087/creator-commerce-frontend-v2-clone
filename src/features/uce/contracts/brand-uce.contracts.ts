@@ -73,6 +73,8 @@ export type CampaignShellResponse = {
   campaign_id: string;
   campaign_name: string;
   current_status: UceCampaignStatus;
+  can_edit_essentials: boolean;
+  total_inventory_allocated: number;
   pause_warning: string | null;
   zone_1_master: {
     timeline_type: string;
@@ -119,6 +121,23 @@ export type CreateCampaignProductBody = {
   product_name: string;
   inventory_count: number;
   cost_per_unit: number;
+  image_url?: string | null;
+};
+
+export type PatchCampaignEssentialsBody = {
+  campaign_name?: string;
+  budget_pool?: number;
+  product_inventories?: Array<{
+    product_id: string;
+    inventory_count: number;
+  }>;
+};
+
+export type UpdateCampaignProductBody = {
+  inventory_count?: number;
+  sku_code?: string;
+  product_name?: string;
+  cost_per_unit?: number;
   image_url?: string | null;
 };
 

@@ -9,11 +9,13 @@ import type {
   CampaignShellResponse,
   CreateCampaignBriefBody,
   CreateCampaignProductBody,
+  PatchCampaignEssentialsBody,
   PatchCampaignStatusResponse,
   PipelineCollaborationRow,
   PipelineListResponse,
   UceCampaignObjective,
   UceCampaignStatus,
+  UpdateCampaignProductBody,
 } from "../contracts/brand-uce.contracts";
 import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
 
@@ -151,6 +153,37 @@ export async function patchCampaignStatus(
     },
   );
   return (await readJsonOrThrow(response)) as PatchCampaignStatusResponse;
+}
+
+export async function patchCampaignEssentials(
+  campaignId: string,
+  body: PatchCampaignEssentialsBody,
+): Promise<CampaignShellResponse> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/essentials`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  return (await readJsonOrThrow(response)) as CampaignShellResponse;
+}
+
+export async function updateCampaignProduct(
+  campaignId: string,
+  productId: string,
+  body: UpdateCampaignProductBody,
+): Promise<CampaignProductRecord> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/products/${encodeURIComponent(productId)}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  return (await readJsonOrThrow(response)) as CampaignProductRecord;
 }
 
 export async function createCampaignProduct(

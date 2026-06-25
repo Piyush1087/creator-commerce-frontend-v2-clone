@@ -7,7 +7,7 @@ product doc vs real code comparisionfe and be
 Verify Brand Onboarding ttl  
 Image fetch  
 Pipeline setup      
-  
+
 save login for week
 
 planner next cmapaign in ui
@@ -136,4 +136,7 @@ Razorpay shows **card-level** errors in checkout. **Escrow balance** errors are 
 
 Check priciing docs gaps doc   
 
-razorpay webhooks for prod
+razorpay webhooks for prod  
+  
+  
+Invetory count is alwasy 0 in uce bridge

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Megaphone, MessageCircle, Store } from "lucide-react";
+import { LayoutDashboard, Megaphone, MessageCircle, Search, Store } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -35,9 +35,19 @@ export const brandBottomNavItems: BottomNavItem[] = [
 
 export const creatorBottomNavItems: BottomNavItem[] = [
   {
-    label: "Dashboard",
+    label: "Home",
     icon: LayoutDashboard,
     path: AUTH_ROUTES.creatorDashboard,
+  },
+  {
+    label: "Marketplace",
+    icon: Search,
+    path: AUTH_ROUTES.creatorMarketplace,
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.creatorCampaigns,
   },
   {
     label: "Chat",
@@ -60,6 +70,8 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCentre,
   AUTH_ROUTES.brandUceCampaigns,
   AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.creatorMarketplace,
+  AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorCollaborations,
 ] as const;
 
