@@ -5,7 +5,9 @@ import {
   LogOut,
   Megaphone,
   MessageCircle,
+  Search,
   Settings,
+  Globe,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -47,7 +49,7 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     roles: ["BRAND"],
     breadcrumb: "Home",
     headerTitle: "Dashboard",
-    mainVariant: "default",
+    mainVariant: "flush",
   },
   {
     label: "Brand Centre",
@@ -65,6 +67,15 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     roles: ["BRAND"],
     breadcrumb: "Campaigns",
     headerTitle: "UCE Campaigns",
+    mainVariant: "flush",
+  },
+  {
+    label: "Brand page",
+    icon: Globe,
+    path: AUTH_ROUTES.brandCollaborationPage,
+    roles: ["BRAND"],
+    breadcrumb: "Brand page",
+    headerTitle: "Brand page",
     mainVariant: "flush",
   },
   {
@@ -96,6 +107,24 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Home",
     headerTitle: "Dashboard",
     mainVariant: "default",
+  },
+  {
+    label: "Marketplace",
+    icon: Search,
+    path: AUTH_ROUTES.creatorMarketplace,
+    roles: ["CREATOR"],
+    breadcrumb: "Marketplace",
+    headerTitle: "Marketplace",
+    mainVariant: "flush",
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.creatorCampaigns,
+    roles: ["CREATOR"],
+    breadcrumb: "Campaigns",
+    headerTitle: "Campaigns Command Center",
+    mainVariant: "flush",
   },
   {
     label: "Chat",
@@ -186,8 +215,11 @@ export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUti
 const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCentre,
   AUTH_ROUTES.brandUceCampaigns,
+  AUTH_ROUTES.brandCollaborationPage,
   AUTH_ROUTES.brandCollaborations,
   AUTH_ROUTES.brandSettings,
+  AUTH_ROUTES.creatorMarketplace,
+  AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorCollaborations,
 ] as const;
 

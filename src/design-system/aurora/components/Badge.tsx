@@ -7,6 +7,7 @@ type BadgeProps = PropsWithChildren<{
   className?: string;
   style?: HTMLAttributes<HTMLElement>["style"];
   onClick?: () => void;
+  disabled?: boolean;
 }>;
 
 export function Badge({ children, tone = "success", className = "", style, onClick }: BadgeProps) {
@@ -21,12 +22,20 @@ export function Badge({ children, tone = "success", className = "", style, onCli
   );
 }
 
-export function Chip({ children, tone = "success", className = "", style, onClick }: BadgeProps) {
+export function Chip({
+  children,
+  tone = "success",
+  className = "",
+  style,
+  onClick,
+  disabled = false,
+}: BadgeProps) {
   return (
     <button 
       className={`aurora-chip aurora-chip--${tone} ${className}`} 
       type="button" 
       style={style}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}

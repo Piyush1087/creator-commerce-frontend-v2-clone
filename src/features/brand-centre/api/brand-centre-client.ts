@@ -177,6 +177,32 @@ export async function postApprovePlannerCard(cardId: string): Promise<unknown> {
   return await readJsonOrThrow(response);
 }
 
+export async function fetchBrandCollaborationPageMeta(): Promise<{
+  brand_id: string;
+  slug: string;
+  company_name: string;
+  public_path: string;
+}> {
+  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/collaboration-page`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { slug?: unknown }).slug !== "string"
+  ) {
+    throw new Error("Unexpected collaboration page response.");
+  }
+  return json as {
+    brand_id: string;
+    slug: string;
+    company_name: string;
+    public_path: string;
+  };
+}
+
 export async function postBrandCentreSessionEvict(): Promise<{ archived: number }> {
   const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/session/evict`, {
     method: "POST",
