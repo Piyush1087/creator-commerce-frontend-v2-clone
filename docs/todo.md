@@ -137,6 +137,19 @@ Razorpay shows **card-level** errors in checkout. **Escrow balance** errors are 
 Check priciing docs gaps doc   
 
 razorpay webhooks for prod  
-  
-  
-Invetory count is alwasy 0 in uce bridge
+
+Invetory count is alwasy 0 in uce bridge  
+
+Creator Side :  
+**Known gaps (not in scope yet)**
+
+
+| **Gap**                           | **Notes**                          |
+| --------------------------------- | ---------------------------------- |
+| `bank_method.status: "suspended"` | No backend KYC rejection field yet |
+| Invoice / tax PDFs                | Buttons disabled — no APIs         |
+| Receipt PDF on cleared payouts    | Disabled                           |
+| Real Razorpay payout              | Ledger-only today                  |
+
+
+Clean up create campiagn/dirctly from copilot

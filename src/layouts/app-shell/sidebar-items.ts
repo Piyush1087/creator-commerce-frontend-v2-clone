@@ -8,6 +8,7 @@ import {
   Search,
   Settings,
   Globe,
+  Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -88,6 +89,15 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     mainVariant: "flush",
   },
   {
+    label: "Payouts",
+    icon: Wallet,
+    path: AUTH_ROUTES.brandPayouts,
+    roles: ["BRAND"],
+    breadcrumb: "Payouts",
+    headerTitle: "Billing, Escrow & Compliance Hub",
+    mainVariant: "flush",
+  },
+  {
     label: "Settings",
     icon: Settings,
     path: AUTH_ROUTES.brandSettings,
@@ -124,6 +134,15 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     roles: ["CREATOR"],
     breadcrumb: "Campaigns",
     headerTitle: "Campaigns Command Center",
+    mainVariant: "flush",
+  },
+  {
+    label: "Payouts",
+    icon: Wallet,
+    path: AUTH_ROUTES.creatorPayouts,
+    roles: ["CREATOR"],
+    breadcrumb: "Payouts",
+    headerTitle: "Earnings & Payouts Hub",
     mainVariant: "flush",
   },
   {
@@ -217,9 +236,11 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandUceCampaigns,
   AUTH_ROUTES.brandCollaborationPage,
   AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.brandPayouts,
   AUTH_ROUTES.brandSettings,
   AUTH_ROUTES.creatorMarketplace,
   AUTH_ROUTES.creatorCampaigns,
+  AUTH_ROUTES.creatorPayouts,
   AUTH_ROUTES.creatorCollaborations,
 ] as const;
 

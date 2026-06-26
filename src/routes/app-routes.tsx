@@ -12,12 +12,14 @@ import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage"
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
+import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
 import { CreatorCampaignsCommandCenterPage } from "../pages/creator/campaigns/creator-campaigns-command-center-page";
 import { CreatorCampaignsHistoryPage } from "../pages/creator/campaigns/creator-campaigns-history-page";
 import { CreatorCampaignDetailPage } from "../pages/creator/marketplace/creator-campaign-detail-page";
 import { CreatorMarketplacePage } from "../pages/creator/marketplace/creator-marketplace-page";
 import { CreatorDashboardPage } from "../pages/creator/dashboard/creator-dashboard-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
+import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { PublicCampaignDetailPage } from "../pages/public/marketplace/public-campaign-detail-page";
 import { PublicInviteLandingPage } from "../pages/public/marketplace/public-invite-landing-page";
@@ -54,6 +56,7 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
         <Route path={AUTH_ROUTES.brandCollaborationPage} element={<BrandCollaborationPage />} />
         <Route path={AUTH_ROUTES.brandCollaborations} element={<BrandCollaborationsPage />} />
+        <Route path={AUTH_ROUTES.brandPayouts} element={<BrandPayoutsPage />} />
         <Route path={AUTH_ROUTES.brandSettings} element={<BrandSettingsLayout />}>
           <Route index element={<Navigate to="billing" replace />} />
           <Route path="billing" element={<BrandSettingsBillingPage />} />
@@ -66,6 +69,7 @@ export function AppRoutes() {
           element={<CreatorCampaignDetailPage />}
         />
         <Route path={AUTH_ROUTES.creatorCampaigns} element={<CreatorCampaignsCommandCenterPage />} />
+        <Route path={AUTH_ROUTES.creatorPayouts} element={<CreatorPayoutsPage />} />
         <Route
           path={AUTH_ROUTES.creatorCampaignsHistory}
           element={<CreatorCampaignsHistoryPage />}

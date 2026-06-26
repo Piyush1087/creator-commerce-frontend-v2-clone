@@ -4,6 +4,7 @@ export type EscrowVaultApiResponse = {
   razorpay_virtual_account_id: string;
   virtual_account_number: string;
   ifsc_code: string;
+  upi_vpa: string | null;
   bank_name: string;
   currency: string;
   total_pooled_balance: number;
