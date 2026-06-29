@@ -154,6 +154,15 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     headerTitle: "Collaborations",
     mainVariant: "flush",
   },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.creatorSettings,
+    roles: ["CREATOR"],
+    breadcrumb: "Settings",
+    headerTitle: "Settings",
+    mainVariant: "default",
+  },
 ];
 
 const brandSidebarFooterNavItems: SidebarFooterNavItem[] = [
@@ -242,6 +251,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorPayouts,
   AUTH_ROUTES.creatorCollaborations,
+  AUTH_ROUTES.creatorSettings,
 ] as const;
 
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
@@ -273,8 +283,26 @@ export function resolveHeaderMeta(
   role: UserRole | null,
 ): { breadcrumb: string; title: string } {
   if (pathname.startsWith(AUTH_ROUTES.brandSettings)) {
-    const title = pathname.includes("/escrow") ? "Secure Escrow" : "Billing";
-    return { breadcrumb: "Settings", title };
+    if (pathname.includes("/integrations")) {
+      return { breadcrumb: "Settings", title: "Integrations" };
+    }
+    if (pathname.includes("/escrow")) {
+      return { breadcrumb: "Settings", title: "Secure Escrow" };
+    }
+    if (pathname.includes("/billing")) {
+      return { breadcrumb: "Settings", title: "Billing" };
+    }
+    return { breadcrumb: "Settings", title: "General" };
+  }
+
+  if (pathname.startsWith(AUTH_ROUTES.creatorSettings)) {
+    if (pathname.includes("/social")) {
+      return { breadcrumb: "Settings", title: "Social Channels" };
+    }
+    if (pathname.includes("/payouts")) {
+      return { breadcrumb: "Settings", title: "Payouts & Tax" };
+    }
+    return { breadcrumb: "Settings", title: "Profile & Workspace" };
   }
 
   const match = findSidebarNavItemByPath(pathname, role);

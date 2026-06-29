@@ -5,9 +5,15 @@ import { LoginPage } from "../pages/auth/login-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
+import { BrandSettingsIntegrationsPage } from "../pages/brand/settings/brand-settings-integrations-page";
+import { BrandSettingsGeneralPage } from "../pages/brand/settings/brand-settings-general-page";
 import { BrandSettingsLayout } from "../pages/brand/settings/brand-settings-layout";
 import { BrandSettingsBillingPage } from "../pages/brand/settings/brand-settings-billing-page";
 import { BrandSettingsEscrowPage } from "../pages/brand/settings/brand-settings-escrow-page";
+import { CreatorSettingsLayout } from "../pages/creator/settings/creator-settings-layout";
+import { CreatorSettingsPayoutsPage } from "../pages/creator/settings/creator-settings-payouts-page";
+import { CreatorSettingsProfilePage } from "../pages/creator/settings/creator-settings-profile-page";
+import { CreatorSettingsSocialPage } from "../pages/creator/settings/creator-settings-social-page";
 import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage";
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
@@ -58,7 +64,9 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandCollaborations} element={<BrandCollaborationsPage />} />
         <Route path={AUTH_ROUTES.brandPayouts} element={<BrandPayoutsPage />} />
         <Route path={AUTH_ROUTES.brandSettings} element={<BrandSettingsLayout />}>
-          <Route index element={<Navigate to="billing" replace />} />
+          <Route index element={<Navigate to="general" replace />} />
+          <Route path="general" element={<BrandSettingsGeneralPage />} />
+          <Route path="integrations" element={<BrandSettingsIntegrationsPage />} />
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
@@ -75,6 +83,12 @@ export function AppRoutes() {
           element={<CreatorCampaignsHistoryPage />}
         />
         <Route path={AUTH_ROUTES.creatorCollaborations} element={<CreatorCollaborationsPage />} />
+        <Route path={AUTH_ROUTES.creatorSettings} element={<CreatorSettingsLayout />}>
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<CreatorSettingsProfilePage />} />
+          <Route path="social" element={<CreatorSettingsSocialPage />} />
+          <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
+        </Route>
       </Route>
       <Route path="/*" element={<BrandOnboardingAppRoutes />} />
     </Routes>
