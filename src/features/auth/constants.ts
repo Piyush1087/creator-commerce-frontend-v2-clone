@@ -8,7 +8,10 @@ export const AUTH_ROUTES = {
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
   brandCollaborations: "/brand/collaborations",
   brandCollaborationPage: "/brand/collaboration-page",
+  brandPayouts: "/brand/payouts",
   brandSettings: "/brand/settings",
+  brandSettingsGeneral: "/brand/settings/general",
+  brandSettingsIntegrations: "/brand/settings/integrations",
   brandSettingsBilling: "/brand/settings/billing",
   brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
@@ -17,6 +20,11 @@ export const AUTH_ROUTES = {
   creatorCampaigns: "/creator/campaigns",
   creatorCampaignsHistory: "/creator/campaigns/history",
   creatorCollaborations: "/creator/collaborations",
+  creatorPayouts: "/creator/payouts",
+  creatorSettings: "/creator/settings",
+  creatorSettingsProfile: "/creator/settings/profile",
+  creatorSettingsSocial: "/creator/settings/social",
+  creatorSettingsPayouts: "/creator/settings/payouts",
 } as const;
 
 /** Public guest marketplace (no auth required). */

@@ -1,5 +1,5 @@
-import type { EscrowLedgerApiEntry } from "../contracts/escrow.contracts";
-import type { EscrowLedgerEntry } from "../types";
+import type { EscrowLedgerEntry } from "../../brand-escrow/types";
+import type { BrandPayoutsLedgerRow } from "../contracts/brand-payouts.contracts";
 
 const CREDIT_TYPES = new Set([
   "VBA_TOPUP_WIRE",
@@ -19,10 +19,15 @@ const TYPE_LABELS: Record<string, string> = {
   FAILED_COLLAB_REFUND: "Collaboration refund",
 };
 
-export function mapLedgerApiEntry(entry: EscrowLedgerApiEntry): EscrowLedgerEntry {
+export function mapHubLedgerRow(entry: BrandPayoutsLedgerRow): EscrowLedgerEntry {
   const direction: EscrowLedgerEntry["direction"] = CREDIT_TYPES.has(entry.transaction_type)
     ? "credit"
     : "debit";
+
+  const contextLabel =
+    entry.creator_handle && entry.campaign_name
+      ? `${entry.creator_handle} / ${entry.campaign_name}`
+      : entry.campaign_name ?? entry.creator_handle ?? TYPE_LABELS[entry.transaction_type] ?? entry.transaction_type;
 
   return {
     id: entry.transaction_id,
@@ -36,5 +41,17 @@ export function mapLedgerApiEntry(entry: EscrowLedgerApiEntry): EscrowLedgerEntr
     collaborationId: entry.collaboration_id,
     gatewayReferenceId: entry.gateway_reference_id,
     trancheTarget: entry.payout_tranche_target,
+    contextLabel,
   };
+}
+
+export function maskSensitiveAccount(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 4) {
+    return `•••• ${digits}`;
+  }
+  return `•••• ${digits.slice(-4)}`;
 }
