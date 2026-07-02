@@ -1,6 +1,8 @@
 1. MUI components (due to prompt in gemini.md)
 2. Font on landing page is not satoshi
-3. Animation has not come in because ai studio didn't have it. Can you pull it from stitch directly later?
+3. Animation has not come in because ai studio didn't have it. Can you pull it from stitch directly later?  
+  
+update to node 22
 
 product doc vs real code comparisionfe and be 
 
@@ -86,6 +88,8 @@ So: **backend logic is directionally correct; the product promise is ahead of wh
 
 ---
 
+
+
 ## **What “correct” looks like (industry standard)**
 
 You **cannot** make the whole flow one DB transaction with Razorpay in the middle. The correct pattern is:
@@ -115,10 +119,14 @@ Razorpay does **not** update your escrow balance. **You** must, from webhooks or
 - **Backup:** poll Razorpay order/payment status for rows stuck in `PROCESSING_GATEWAY` for X minutes.
 - **Last resort:** nightly reconciliation (Razorpay settlements vs your ledger).
 
+
+
 ### **4. Idempotency everywhere**
 
 - Same payment / same webhook delivered twice → credit **once** (you already lean this way).
 - User retries top-up → new order, new ledger row, or same idempotency key returns same intent.
+
+
 
 ### **5. Error messages**
 
