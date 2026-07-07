@@ -23,7 +23,7 @@ import { CreatorCampaignsCommandCenterPage } from "../pages/creator/campaigns/cr
 import { CreatorCampaignsHistoryPage } from "../pages/creator/campaigns/creator-campaigns-history-page";
 import { CreatorCampaignDetailPage } from "../pages/creator/marketplace/creator-campaign-detail-page";
 import { CreatorMarketplacePage } from "../pages/creator/marketplace/creator-marketplace-page";
-import { CreatorDashboardPage } from "../pages/creator/dashboard/creator-dashboard-page";
+import { CreatorCentrePage } from "../pages/creator/centre/creator-centre-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
@@ -33,7 +33,11 @@ import { PublicMarketplacePage } from "../pages/public/marketplace/public-market
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/MarketplaceGuestLayout";
 import { RequireAuth } from "../shared/auth/require-auth";
+import { CreatorOnboardingAppRoutes } from "./creator-onboarding-app";
 import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
+import { CreatorInstagramOAuthCallbackPage } from "../pages/creator/onboarding/creator-instagram-oauth-callback-page";
+import { CREATOR_ONBOARDING_ROUTES } from "../features/creator-onboarding/constants";
+import { UnmatchedRouteHandler } from "./unmatched-route-handler";
 
 export function AppRoutes() {
   return (
@@ -70,7 +74,16 @@ export function AppRoutes() {
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
-        <Route path={AUTH_ROUTES.creatorDashboard} element={<CreatorDashboardPage />} />
+        <Route path={AUTH_ROUTES.creatorHome} element={<CreatorCentrePage />} />
+        <Route
+          path={AUTH_ROUTES.creatorAnalytics}
+          element={<Navigate to={`${AUTH_ROUTES.creatorHome}?tab=analytics`} replace />}
+        />
+        <Route
+          path={AUTH_ROUTES.creatorMediaKit}
+          element={<Navigate to={`${AUTH_ROUTES.creatorHome}?tab=media-kit`} replace />}
+        />
+        <Route path={AUTH_ROUTES.creatorDashboard} element={<CreatorCentrePage />} />
         <Route path={AUTH_ROUTES.creatorMarketplace} element={<CreatorMarketplacePage />} />
         <Route
           path={AUTH_ROUTES.creatorMarketplaceCampaign}
@@ -90,7 +103,20 @@ export function AppRoutes() {
           <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
         </Route>
       </Route>
-      <Route path="/*" element={<BrandOnboardingAppRoutes />} />
+      <Route path="/creator/onboarding/*" element={<CreatorOnboardingAppRoutes />} />
+      <Route
+        path={CREATOR_ONBOARDING_ROUTES.instagramCallback}
+        element={<CreatorInstagramOAuthCallbackPage />}
+      />
+      <Route
+        path="/*"
+        element={
+          <>
+            <UnmatchedRouteHandler />
+            <BrandOnboardingAppRoutes />
+          </>
+        }
+      />
     </Routes>
   );
 }

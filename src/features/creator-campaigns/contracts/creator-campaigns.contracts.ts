@@ -130,7 +130,30 @@ export type VelocityAlertRow = {
   headline: string | null;
   body: string | null;
   cta_label: string | null;
+  campaign_id: string | null;
+  current_phase?: string | null;
+  production_deadline_at?: string | null;
+};
+
+export type PanicPanelAlert = {
+  id: string;
   campaign_id: string;
+  campaign_name: string;
+  current_phase: string;
+  production_deadline_at: string | null;
+};
+
+export type PanicPanelPayload = {
+  hasUrgentAlerts: boolean;
+  alertCount: number;
+  alerts: PanicPanelAlert[];
+};
+
+export type CommandCenterQuery = {
+  currentView?: "ACTIVE_PRODUCTION" | "PENDING_APPLICATIONS";
+  searchQuery?: string;
+  platformFilter?: string;
+  dependencyFilter?: "AWAITING_CREATOR" | "AWAITING_BRAND" | "ALL";
 };
 
 export type ActiveCollaborationRow = {
@@ -140,6 +163,9 @@ export type ActiveCollaborationRow = {
   brand_avatar_url: string | null;
   campaign_name: string | null;
   content_format: string | null;
+  current_phase?: string | null;
+  action_required_by_role?: string | null;
+  production_deadline_at?: string | null;
   milestone_label: string | null;
   milestone_subtext: string | null;
   cta_label: string | null;
@@ -153,6 +179,8 @@ export type PendingCollaborationRowApi = {
   brand_name: string | null;
   brand_avatar_url: string | null;
   campaign_name: string | null;
+  current_phase?: string | null;
+  action_required_by_role?: string | null;
   status_label: string | null;
   context_copy: string | null;
   cta_label: string | null;
@@ -161,9 +189,11 @@ export type PendingCollaborationRowApi = {
 };
 
 export type CampaignsWorkspaceResponse = {
+  current_view?: string;
   active_count: number;
   pending_count: number;
   completed_count: number;
+  panic_panel?: PanicPanelPayload;
   velocity_alerts: VelocityAlertRow[];
   active_rows: ActiveCollaborationRow[];
   pending_rows: PendingCollaborationRowApi[];
@@ -179,12 +209,22 @@ export type HistoryCollaborationRowApi = {
   collaboration_id: string;
   brand_name: string | null;
   campaign_name: string | null;
+  current_phase?: string | null;
   closed_label: string | null;
   payout_amount: number | null;
   closed_at: string | null;
 };
 
+export type HistoryArchiveQuery = {
+  page?: number;
+  limit?: number;
+  archiveStatus?: "ARCHIVED_COMPLETED" | "ARCHIVED_CLOSED" | "ALL";
+};
+
 export type CampaignsHistoryResponse = {
+  page?: number;
+  limit?: number;
+  total?: number;
   stats: HistoryStats;
   rows: HistoryCollaborationRowApi[];
 };

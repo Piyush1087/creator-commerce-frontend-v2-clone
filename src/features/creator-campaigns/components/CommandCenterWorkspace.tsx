@@ -7,8 +7,8 @@ import { AUTH_ROUTES } from "../../auth/constants";
 import type {
   ActiveCollaborationRow,
   PendingCollaborationRowApi,
-  VelocityAlertRow,
 } from "../contracts/creator-campaigns.contracts";
+import { useCreatorCampaignsWorkspace } from "../hooks/use-creator-campaigns-workspace";
 import { displayValue } from "../utils/display-value";
 import { OptionalMedia } from "./OptionalMedia";
 
@@ -17,16 +17,9 @@ import "../creator-campaigns.css";
 type CommandView = "active" | "pending";
 
 type CommandCenterWorkspaceProps = {
-  workspace: {
-    active_count: number;
-    pending_count: number;
-    completed_count: number;
-    velocity_alerts: VelocityAlertRow[];
-    active_rows: ActiveCollaborationRow[];
-    pending_rows: PendingCollaborationRowApi[];
-  } | null;
-  loading: boolean;
-  error: string | null;
+  workspace?: never;
+  loading?: never;
+  error?: never;
 };
 
 function collaborationHref(workflowId: string | null): string {
@@ -58,6 +51,9 @@ function ProductionTable({ rows }: { rows: ActiveCollaborationRow[] }) {
                 <th>Brand Identity</th>
                 <th>Campaign &amp; Track</th>
                 <th>Milestone Track Pipeline</th>
+                <th>Phase</th>
+                <th>Action role</th>
+                <th>Deadline</th>
                 <th style={{ textAlign: "right" }}>Action</th>
               </tr>
             </thead>
@@ -82,6 +78,9 @@ function ProductionTable({ rows }: { rows: ActiveCollaborationRow[] }) {
                     <p className="cc-row-milestone">{displayValue(row.milestone_label)}</p>
                     <p className="cc-row-sub">{displayValue(row.milestone_subtext)}</p>
                   </td>
+                  <td>{displayValue(row.current_phase)}</td>
+                  <td>{displayValue(row.action_required_by_role)}</td>
+                  <td>{displayValue(row.production_deadline_at)}</td>
                   <td style={{ textAlign: "right" }}>
                     <Link to={collaborationHref(row.workflow_collaboration_id)}>
                       <Button
@@ -152,6 +151,7 @@ function PendingTable({ rows }: { rows: PendingCollaborationRowApi[] }) {
                 <th>Brand</th>
                 <th>Campaign</th>
                 <th>Status</th>
+                <th>Phase</th>
                 <th style={{ textAlign: "right" }}>Action</th>
               </tr>
             </thead>
@@ -175,6 +175,7 @@ function PendingTable({ rows }: { rows: PendingCollaborationRowApi[] }) {
                     <p className="cc-row-milestone">{displayValue(row.status_label)}</p>
                     <p className="cc-row-sub">{displayValue(row.context_copy)}</p>
                   </td>
+                  <td>{displayValue(row.current_phase)}</td>
                   <td style={{ textAlign: "right" }}>
                     <Link to={pendingCampaignHref(row)}>
                       <Button
@@ -218,12 +219,11 @@ function PendingTable({ rows }: { rows: PendingCollaborationRowApi[] }) {
   );
 }
 
-export function CommandCenterWorkspace({
-  workspace,
-  loading,
-  error,
-}: CommandCenterWorkspaceProps) {
+export function CommandCenterWorkspace(_props: CommandCenterWorkspaceProps = {}) {
   const [view, setView] = useState<CommandView>("active");
+  const { workspace, loading, error } = useCreatorCampaignsWorkspace({
+    currentView: view === "active" ? "ACTIVE_PRODUCTION" : "PENDING_APPLICATIONS",
+  });
   const showVelocity = view === "active";
 
   const activeCount = workspace?.active_count ?? 0;
@@ -291,7 +291,13 @@ export function CommandCenterWorkspace({
                   <h3>{displayValue(alert.headline)}</h3>
                   <p>{displayValue(alert.body)}</p>
                 </div>
-                <Link to={`${AUTH_ROUTES.creatorMarketplace}/${alert.campaign_id}`}>
+                <Link
+                  to={
+                    alert.campaign_id
+                      ? `${AUTH_ROUTES.creatorMarketplace}/${alert.campaign_id}`
+                      : AUTH_ROUTES.creatorCampaigns
+                  }
+                >
                   <Button variant={alert.tone === "critical" ? "secondary" : "primary"}>
                     {displayValue(alert.cta_label)}
                   </Button>

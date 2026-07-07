@@ -3,6 +3,8 @@ import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   CampaignsHistoryResponse,
   CampaignsWorkspaceResponse,
+  CommandCenterQuery,
+  HistoryArchiveQuery,
   MarketplaceAlternativesResponse,
   MarketplaceDetailResponse,
   MarketplaceListQuery,
@@ -125,18 +127,33 @@ export async function claimMarketplaceInvitation(
   };
 }
 
-export async function fetchCampaignsWorkspace(): Promise<CampaignsWorkspaceResponse> {
-  const response = await fetch(`${CAMPAIGNS_BASE}/workspace`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+export async function fetchCampaignsWorkspace(
+  query: CommandCenterQuery = {},
+): Promise<CampaignsWorkspaceResponse> {
+  const params = new URLSearchParams();
+  if (query.currentView) params.set("currentView", query.currentView);
+  if (query.searchQuery?.trim()) params.set("searchQuery", query.searchQuery.trim());
+  if (query.platformFilter) params.set("platformFilter", query.platformFilter);
+  if (query.dependencyFilter) params.set("dependencyFilter", query.dependencyFilter);
+  const qs = params.toString();
+  const response = await fetch(
+    `${CAMPAIGNS_BASE}/workspace${qs ? `?${qs}` : ""}`,
+    { method: "GET", headers: authHeaders() },
+  );
   return (await readJsonOrThrow(response)) as CampaignsWorkspaceResponse;
 }
 
-export async function fetchCampaignsHistory(): Promise<CampaignsHistoryResponse> {
-  const response = await fetch(`${CAMPAIGNS_BASE}/history`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+export async function fetchCampaignsHistory(
+  query: HistoryArchiveQuery = {},
+): Promise<CampaignsHistoryResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set("page", String(query.page));
+  if (query.limit) params.set("limit", String(query.limit));
+  if (query.archiveStatus) params.set("archiveStatus", query.archiveStatus);
+  const qs = params.toString();
+  const response = await fetch(
+    `${CAMPAIGNS_BASE}/history${qs ? `?${qs}` : ""}`,
+    { method: "GET", headers: authHeaders() },
+  );
   return (await readJsonOrThrow(response)) as CampaignsHistoryResponse;
 }

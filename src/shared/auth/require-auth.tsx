@@ -1,6 +1,10 @@
 import { Navigate, useLocation } from "react-router-dom";
 
-import { getAccessToken } from "./auth-session";
+import {
+  clearAuthSession,
+  isAccessTokenValid,
+  loadAuthSession,
+} from "./auth-session";
 
 type RequireAuthProps = {
   children: React.ReactNode;
@@ -8,12 +12,13 @@ type RequireAuthProps = {
 
 export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation();
-  const token = getAccessToken();
+  const token = loadAuthSession()?.accessToken ?? null;
 
-  if (!token) {
-    return (
-      <Navigate to="/" replace state={{ from: location.pathname }} />
-    );
+  if (!token || !isAccessTokenValid(token)) {
+    if (token) {
+      clearAuthSession();
+    }
+    return <Navigate to="/" replace state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;

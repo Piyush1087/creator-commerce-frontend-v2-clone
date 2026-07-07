@@ -7,9 +7,11 @@ import {
 import type {
   CampaignsHistoryResponse,
   CampaignsWorkspaceResponse,
+  CommandCenterQuery,
+  HistoryArchiveQuery,
 } from "../contracts/creator-campaigns.contracts";
 
-export function useCreatorCampaignsWorkspace() {
+export function useCreatorCampaignsWorkspace(query: CommandCenterQuery = {}) {
   const [workspace, setWorkspace] = useState<CampaignsWorkspaceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export function useCreatorCampaignsWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaignsWorkspace();
+      const response = await fetchCampaignsWorkspace(query);
       setWorkspace(response);
     } catch (err) {
       setWorkspace(null);
@@ -26,7 +28,7 @@ export function useCreatorCampaignsWorkspace() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [query.currentView, query.searchQuery, query.platformFilter, query.dependencyFilter]);
 
   useEffect(() => {
     void load();
@@ -35,7 +37,7 @@ export function useCreatorCampaignsWorkspace() {
   return { workspace, loading, error, reload: load };
 }
 
-export function useCreatorCampaignsHistory() {
+export function useCreatorCampaignsHistory(query: HistoryArchiveQuery = {}) {
   const [history, setHistory] = useState<CampaignsHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export function useCreatorCampaignsHistory() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaignsHistory();
+      const response = await fetchCampaignsHistory(query);
       setHistory(response);
     } catch (err) {
       setHistory(null);
@@ -52,7 +54,7 @@ export function useCreatorCampaignsHistory() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [query.page, query.limit, query.archiveStatus]);
 
   useEffect(() => {
     void load();

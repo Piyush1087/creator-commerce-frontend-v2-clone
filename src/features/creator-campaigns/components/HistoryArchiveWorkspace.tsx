@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Alert, Button } from "../../../design-system/aurora";
@@ -15,15 +16,22 @@ type HistoryArchiveWorkspaceProps = {
   history: CampaignsHistoryResponse | null;
   loading: boolean;
   error: string | null;
+  page: number;
+  onPageChange: (page: number) => void;
 };
 
 export function HistoryArchiveWorkspace({
   history,
   loading,
   error,
+  page,
+  onPageChange,
 }: HistoryArchiveWorkspaceProps) {
   const stats = history?.stats;
   const rows = history?.rows ?? [];
+  const total = history?.total ?? 0;
+  const limit = history?.limit ?? 15;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   return (
     <div className="cc-workspace">
@@ -86,6 +94,7 @@ export function HistoryArchiveWorkspace({
                       <th>Brand</th>
                       <th>Campaign</th>
                       <th>Outcome</th>
+                      <th>Phase</th>
                       <th>Payout</th>
                       <th>Closed</th>
                     </tr>
@@ -98,6 +107,7 @@ export function HistoryArchiveWorkspace({
                         </td>
                         <td>{displayValue(row.campaign_name)}</td>
                         <td>{displayValue(row.closed_label)}</td>
+                        <td>{displayValue(row.current_phase)}</td>
                         <td>{displayCurrency(row.payout_amount)}</td>
                         <td>{formatClosedDate(row.closed_at)}</td>
                       </tr>
@@ -120,6 +130,28 @@ export function HistoryArchiveWorkspace({
                 </div>
               </>
             )}
+          </div>
+
+          <div className="cc-history-pagination" style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1 || loading}
+              onClick={() => onPageChange(page - 1)}
+            >
+              Previous
+            </Button>
+            <span className="cc-muted">
+              Page {page} of {totalPages} ({displayValue(total)} total)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages || loading}
+              onClick={() => onPageChange(page + 1)}
+            >
+              Next
+            </Button>
           </div>
         </>
       ) : null}
