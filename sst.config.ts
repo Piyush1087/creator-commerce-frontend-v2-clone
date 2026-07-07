@@ -36,6 +36,11 @@ export default $config({
       process.env.RAZORPAY_API_KEY_ID?.trim() ||
       "";
 
+    const defaultPublicAppUrl =
+      $app.stage === "prod"
+        ? "https://dashboard.thecreatorshop.in"
+        : "https://dashboard.dev.thecreatorshop.in";
+
     new sst.aws.StaticSite("react-app", {
       transform: {
         cdn: (args) => {
@@ -67,6 +72,10 @@ export default $config({
             : "https://api.dev.thecreatorshop.in",
         VITE_STAGE: $app.stage,
         VITE_RAZORPAY_KEY_ID: razorpayPublicKeyId,
+        VITE_PUBLIC_APP_URL:
+          $app.stage === "dev" || $app.stage === "prod"
+            ? defaultPublicAppUrl
+            : (process.env.VITE_PUBLIC_APP_URL?.trim() || ""),
       },
       domain: {
         dns: false,
