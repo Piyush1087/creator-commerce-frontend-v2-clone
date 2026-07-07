@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Allow access via ngrok / tunnel hostnames (Meta OAuth local dev)
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://localhost:3000",

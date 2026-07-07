@@ -1,6 +1,7 @@
 import { env } from "../../../shared/config/env";
 import {
   authAuthorizationHeader,
+  handleAuthFailure,
   loadAuthSession,
   saveAuthSession,
   type AuthSessionV1,
@@ -41,6 +42,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
     throw new Error("The server returned an invalid response. Please try again.");
   }
   if (!response.ok) {
+    if (response.status === 401) {
+      handleAuthFailure();
+    }
     const message =
       nestHttpMessage(body) ?? `Request failed (${response.status}).`;
     throw new Error(message);

@@ -1,18 +1,20 @@
 import {
-  LayoutDashboard,
-  Store,
+  Globe,
   HelpCircle,
+  Home,
+  LayoutDashboard,
   LogOut,
   Megaphone,
   MessageCircle,
   Search,
   Settings,
-  Globe,
+  Store,
   Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
+import { isCreatorCentrePath } from "../../features/creator-centre/constants/creator-centre-tabs";
 import type { UserRole } from "../../shared/auth/user-role";
 
 export type AppShellMainVariant = "default" | "flush";
@@ -110,13 +112,13 @@ const brandSidebarNavItems: SidebarNavItem[] = [
 
 const creatorSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: AUTH_ROUTES.creatorDashboard,
+    label: "Creator Centre",
+    icon: Home,
+    path: AUTH_ROUTES.creatorHome,
     roles: ["CREATOR"],
-    breadcrumb: "Home",
-    headerTitle: "Dashboard",
-    mainVariant: "default",
+    breadcrumb: "Creator Centre",
+    headerTitle: "Creator Centre",
+    mainVariant: "flush",
   },
   {
     label: "Marketplace",
@@ -247,6 +249,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCollaborations,
   AUTH_ROUTES.brandPayouts,
   AUTH_ROUTES.brandSettings,
+  AUTH_ROUTES.creatorHome,
   AUTH_ROUTES.creatorMarketplace,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorPayouts,
@@ -255,6 +258,10 @@ const PREFIX_MATCH_PATHS = [
 ] as const;
 
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
+  if (itemPath === AUTH_ROUTES.creatorHome) {
+    return isCreatorCentrePath(pathname);
+  }
+
   if (PREFIX_MATCH_PATHS.some((p) => p === itemPath)) {
     return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
   }
@@ -303,6 +310,10 @@ export function resolveHeaderMeta(
       return { breadcrumb: "Settings", title: "Payouts & Tax" };
     }
     return { breadcrumb: "Settings", title: "Profile & Workspace" };
+  }
+
+  if (isCreatorCentrePath(pathname)) {
+    return { breadcrumb: "Creator Centre", title: "Creator Centre" };
   }
 
   const match = findSidebarNavItemByPath(pathname, role);

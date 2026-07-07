@@ -15,6 +15,9 @@ export const AUTH_ROUTES = {
   brandSettingsBilling: "/brand/settings/billing",
   brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
+  creatorHome: "/creator/home",
+  creatorAnalytics: "/creator/analytics",
+  creatorMediaKit: "/creator/media-kit",
   creatorMarketplace: "/creator/marketplace",
   creatorMarketplaceCampaign: "/creator/marketplace/:campaignId",
   creatorCampaigns: "/creator/campaigns",
@@ -38,7 +41,7 @@ export const PUBLIC_ROUTES = {
 export function getHomeRouteForRole(role: UserRole | null): string {
   switch (role) {
     case "CREATOR":
-      return AUTH_ROUTES.creatorDashboard;
+      return AUTH_ROUTES.creatorHome;
     case "BRAND":
       return AUTH_ROUTES.brandCentre;
     default:
