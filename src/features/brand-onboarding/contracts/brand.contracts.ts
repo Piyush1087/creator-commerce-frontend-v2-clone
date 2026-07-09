@@ -96,6 +96,46 @@ export type VerifyBrandVerificationResponseBody = {
   domain: string;
 };
 
+export type SurfaceScanProgressPhase =
+  | "signals"
+  | "products"
+  | "audience"
+  | "competitors"
+  | "persisting"
+  | "complete"
+  | "error";
+
+export type SurfaceScanProgressResponse = {
+  leadId: string;
+  phase: SurfaceScanProgressPhase | string;
+  completedPhases: Array<SurfaceScanProgressPhase | string>;
+  message?: string;
+  error?: string;
+  updatedAt: string;
+};
+
+export type SyncOfferingItem = {
+  id?: string;
+  type: "PRODUCT" | "TREATMENT" | "SERVICE" | "COLLECTION";
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  url: string;
+  categoryTag?: string | null;
+  startingPriceLabel?: string | null;
+  isActive?: boolean;
+};
+
+export type SyncCompetitorItem = {
+  id?: string;
+  name: string;
+  websiteUrl: string;
+  logoUrl?: string | null;
+  socialHandles?: string[];
+  whyCompetitor?: string | null;
+  isActive?: boolean;
+};
+
 export type PatchBrandProfileRequestBody = {
   name?: string;
   tagline?: string | null;

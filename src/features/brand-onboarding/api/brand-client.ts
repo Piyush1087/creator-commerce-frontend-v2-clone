@@ -8,7 +8,10 @@ import type {
   BrandProfileResponseBody,
   PatchBrandProfileRequestBody,
   SendBrandVerificationResponseBody,
+  SurfaceScanProgressResponse,
   SurfaceScanResponseBody,
+  SyncCompetitorItem,
+  SyncOfferingItem,
   VerifyBrandVerificationResponseBody,
 } from "../contracts/brand.contracts";
 import {
@@ -64,6 +67,20 @@ function parseSurfaceScanGate(body: unknown): SurfaceScanGatePayload | null {
     return body as SurfaceScanGatePayload;
   }
   return null;
+}
+
+export async function getSurfaceScanProgress(
+  leadId: string,
+): Promise<SurfaceScanProgressResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/progress/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!json || typeof json !== "object") {
+    throw new Error("Unexpected response from surface scan progress.");
+  }
+  return json as SurfaceScanProgressResponse;
 }
 
 export async function postSurfaceScan(body: {
@@ -171,6 +188,115 @@ export async function patchBrandProfile(
   const json = await readJsonOrThrow(response);
   if (!isBrandProfileResponse(json)) {
     throw new Error("Unexpected response from brand profile update.");
+  }
+  return json;
+}
+
+export async function syncBrandOfferings(
+  brandProfileId: string,
+  offerings: SyncOfferingItem[],
+): Promise<BrandProfileResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/offerings`,
+    {
+      method: "PATCH",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ offerings }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandProfileResponse(json)) {
+    throw new Error("Unexpected response from offerings sync.");
+  }
+  return json;
+}
+
+export async function uploadOfferingImage(
+  brandProfileId: string,
+  offeringId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/offerings/${encodeURIComponent(offeringId)}/image`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from offering image upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function uploadBrandLogo(
+  brandProfileId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/logo`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from brand logo upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function uploadCompetitorLogo(
+  brandProfileId: string,
+  competitorId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/competitors/${encodeURIComponent(competitorId)}/logo`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from competitor logo upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function syncBrandCompetitors(
+  brandProfileId: string,
+  competitors: SyncCompetitorItem[],
+): Promise<BrandProfileResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/competitors`,
+    {
+      method: "PATCH",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ competitors }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandProfileResponse(json)) {
+    throw new Error("Unexpected response from competitors sync.");
   }
   return json;
 }

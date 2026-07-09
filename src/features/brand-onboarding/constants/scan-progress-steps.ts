@@ -1,6 +1,6 @@
 import type { ScanStep } from "../types";
 
-/** UI-only labels for the surface-scan progress animation (not sample brand data). */
+/** Labels mapped to backend SurfaceScanProgressStore phases (Stitch copy). */
 export const SCAN_PROGRESS_STEPS: ScanStep[] = [
   {
     id: "signals",

@@ -27,7 +27,10 @@ import type {
 } from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import type { LandingGateRedirect, LandingGateRedirectState } from "../landing-gate-redirect";
-import { saveBrandOnboardingSession } from "../session/onboarding-session";
+import {
+  loadBrandOnboardingSession,
+  saveBrandOnboardingSession,
+} from "../session/onboarding-session";
 import { BrandActiveModal } from "./brand-active-modal";
 import { RateLimitModal } from "./rate-limit-modal";
 import { LandingUrlCapture } from "./landing-url-capture";
@@ -534,8 +537,27 @@ export function LandingPageView() {
         domain={resumeDomain}
         onClose={() => setShowResumeModal(false)}
         onContinue={() => {
+          const session = loadBrandOnboardingSession();
+          const nextBrandProfileId =
+            brandProfileId ?? session?.brandProfileId ?? "";
+          const nextLeadId = leadId ?? session?.leadId ?? "";
+          const nextUrl = scannedUrl || session?.normalizedUrl || "";
+          if (!nextBrandProfileId) {
+            setApiError(
+              "Could not resume this scan. Submit the brand URL again to continue.",
+            );
+            setShowResumeModal(false);
+            return;
+          }
           setShowResumeModal(false);
-          navigate(ONBOARDING_ROUTES.dna);
+          navigate(ONBOARDING_ROUTES.dna, {
+            state: {
+              url: nextUrl,
+              leadId: nextLeadId,
+              brandProfileId: nextBrandProfileId,
+              scanMode: "cached" as const,
+            },
+          });
         }}
       />
       <ProcessPreviewModal

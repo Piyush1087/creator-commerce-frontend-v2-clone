@@ -1,16 +1,19 @@
 /* Brand onboarding marketing chrome — uses Aurora tokens only. */
 
 .bons-shell {
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--surface-page);
   color: var(--text-high);
 }
 
 .bons-shell__header {
-  position: sticky;
-  top: 0;
+  flex: 0 0 var(--height-header);
+  position: relative;
   z-index: var(--z-header);
   height: var(--height-header);
   display: flex;
@@ -129,17 +132,38 @@
 }
 
 .bons-shell__main {
-  flex: 1;
+  flex: 1 1 auto;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding-bottom: var(--height-bottom-nav);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 899px) {
+  /* Reserve space only when the mobile bottom bar is actually painted. */
+  .bons-shell:has(.bons-shell__bottom-nav) .bons-shell__main {
+    padding-bottom: var(--height-bottom-nav);
+  }
+
+  .bons-shell:has(.bob-verify--hide-nav) .bons-shell__main,
+  .bons-shell--scan .bons-shell__main {
+    padding-bottom: 0;
+  }
 }
 
 @media (min-width: 900px) {
-  .bons-shell__main {
-    padding-bottom: 0;
+  .bons-shell:has(.bob-verify) .bons-shell__main {
+    overflow: hidden;
   }
+}
+
+.bons-shell--scan .bons-shell__main {
+  overflow: hidden;
+  padding-bottom: 0;
 }
 
 .bons-shell__drawer-backdrop {
@@ -251,6 +275,7 @@
 .bons-shell--scan {
   background: var(--color-secondary);
   color: #fff;
+  overflow: hidden;
 }
 
 .bons-shell__header--scan {

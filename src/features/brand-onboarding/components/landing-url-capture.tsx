@@ -61,9 +61,10 @@ export function LandingUrlCapture({
     }
   };
 
+  const hasInlineError = Boolean(error || remoteError);
   const rowClass = [
     "bob-url-row",
-    error ? "bob-url-row--error" : "",
+    hasInlineError ? "bob-url-row--error" : "",
     listening || isBusy ? "bob-url-row--active" : "",
   ]
     .filter(Boolean)
@@ -109,12 +110,12 @@ export function LandingUrlCapture({
         </Button>
       </div>
       {error ? (
-        <p className="bob-url-feedback bob-url-feedback--error">
+        <p className="bob-url-feedback bob-url-feedback--error" role="alert">
           {error}
         </p>
       ) : null}
       {remoteError ? (
-        <p className="bob-url-feedback bob-url-feedback--error" style={{ marginTop: 8 }}>
+        <p className="bob-url-feedback bob-url-feedback--error" role="alert">
           {remoteError}
         </p>
       ) : null}

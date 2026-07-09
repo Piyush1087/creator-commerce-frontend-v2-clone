@@ -1,6 +1,6 @@
-import { Check, ChevronLeft, Clock, Mail, ShieldCheck, X } from "lucide-react";
+import { Check, ChevronLeft, Clock, Mail, Shield, ShieldCheck, X } from "lucide-react";
 
-import { Badge, Button, TextField } from "../../../design-system/aurora";
+import { Badge, Button } from "../../../design-system/aurora";
 
 type SetupVerificationModalProps = {
   open: boolean;
@@ -73,19 +73,12 @@ export function SetupVerificationModal({
               <Mail size={20} aria-hidden />
             </span>
             <div>
-              <h3>
-                <Mail size={16} aria-hidden /> Verify Your Brand Email
-              </h3>
+              <h3>Verify your brand email</h3>
               <p>
                 Use an email address connected to your website domain. This helps
-                us: protect creator trust, prevent impersonation, maintain
+                us protect creator trust, prevent impersonation, and maintain
                 platform quality.
               </p>
-              <TextField
-                label="Work email"
-                placeholder="Example: hello@yourbrand.com"
-                helperText="Mock input only; email verification is not wired yet."
-              />
             </div>
           </div>
 
@@ -99,6 +92,20 @@ export function SetupVerificationModal({
                 Securely connect your Meta Business account to enable automated
                 priority outreach to verified creators. We never access passwords
                 or publish content without approval.
+              </p>
+            </div>
+          </div>
+
+          <div className="bob-setup-card bob-setup-card--muted">
+            <span className="bob-setup-card__icon bob-setup-card__icon--outline">
+              <Shield size={20} aria-hidden />
+            </span>
+            <div>
+              <h3>Brand safety &amp; compliance</h3>
+              <p>
+                All outreach follows platform-safe sending practices and verified
+                business authentication protocols. Built for modern growth and
+                compliance teams.
               </p>
             </div>
           </div>

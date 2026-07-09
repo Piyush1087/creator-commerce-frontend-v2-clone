@@ -60,11 +60,29 @@ export function isAccessTokenValid(token: string | null | undefined): boolean {
   return payload.exp * 1000 > Date.now();
 }
 
+function isGuestOnboardingPath(pathname: string): boolean {
+  if (pathname === "/") {
+    return true;
+  }
+  return (
+    pathname.startsWith("/brand/onboarding") ||
+    pathname.startsWith("/creator/onboarding") ||
+    pathname.startsWith("/marketplace") ||
+    pathname.startsWith("/b/")
+  );
+}
+
+/** Clear session; only hard-redirect away from protected app routes. */
 export function handleAuthFailure(): void {
   clearAuthSession();
-  if (typeof window !== "undefined" && window.location.pathname !== "/") {
-    window.location.replace("/");
+  if (typeof window === "undefined") {
+    return;
   }
+  const { pathname } = window.location;
+  if (isGuestOnboardingPath(pathname)) {
+    return;
+  }
+  window.location.replace("/");
 }
 
 export function loadAuthSession(): AuthSessionV1 | null {
