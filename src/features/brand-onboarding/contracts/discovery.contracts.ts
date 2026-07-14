@@ -36,6 +36,7 @@ export type DiscoverValidateSuccess = {
 export type DiscoverValidateWaitlist = {
   outcome: "waitlist";
   logId: string;
+  leadId: string;
   normalizedUrl: string;
   domain: string;
   industry: IndustryVertical;

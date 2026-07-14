@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Shield, Sparkles } from "lucide-react";
+import { Check, Dna, Shield, Sparkles } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../../../design-system/aurora";
@@ -28,6 +28,14 @@ const UI_PHASE_ORDER: ScanPhase[] = [
   "audience",
   "competitors",
 ];
+
+const DESKTOP_ORBIT_CHIPS = [
+  "Style Guide Identified",
+  "SEO Meta Parsed",
+  "Social Proof Detected",
+] as const;
+
+const MOBILE_ORBIT_TAGS = ["POS_TAGGING", "AUDIENCE_MATCH"] as const;
 
 /** Share one in-flight POST across StrictMode remounts for the same lead. */
 const inflightSurfaceScans = new Map<
@@ -238,127 +246,195 @@ export function BrandScanView() {
         : "Scan complete — opening your brand DNA."
       : "This takes a few seconds.";
 
+  const stepList = (
+    <nav className="bob-scan__steps" aria-label="Scan progress">
+      {SCAN_PROGRESS_STEPS.map((step, index) => {
+        const isDone = completeSteps.includes(index) || scanComplete;
+        const isActive = !isDone && uiStep === index;
+        const isPending = !isDone && index > uiStep;
+        const overdueActive = !isDone && !isActive && !isPending && uiStep > index;
+        const showActive = isActive || overdueActive;
+        const subtext = isPending
+          ? "Awaiting processing..."
+          : step.subtext;
+
+        return (
+          <div
+            key={step.id}
+            className={[
+              "bob-scan-step",
+              showActive ? "bob-scan-step--active" : "",
+              isDone ? "bob-scan-step--done" : "",
+              isPending ? "bob-scan-step--pending" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <div
+              className={[
+                "bob-scan-step__dot",
+                isDone ? "bob-scan-step__dot--done" : "",
+                showActive ? "bob-scan-step__dot--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {isDone ? (
+                <Check size={14} strokeWidth={3} aria-hidden />
+              ) : showActive ? (
+                <span className="bob-scan-step__ping" aria-hidden />
+              ) : (
+                <span className="bob-scan-step__num">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              )}
+            </div>
+            <div className="bob-scan-step__copy">
+              <h3>{step.label}</h3>
+              <p className="bob-scan-step__subtext--desktop">{subtext}</p>
+            </div>
+          </div>
+        );
+      })}
+    </nav>
+  );
+
+  const desktopOrb = (
+    <div className="bob-scan-visual bob-scan-visual--desktop" aria-label="Brand scan animation">
+      <div className="bob-scan-visual__grid" aria-hidden />
+      <div className="bob-scan-orb-stage bob-scan-orb-stage--desktop">
+        <div className="bob-scan-orb-halo" aria-hidden />
+        <div className="bob-scan-orb-halo bob-scan-orb-halo--delayed" aria-hidden />
+        <div
+          className={[
+            "bob-scan-orb-core bob-scan-orb-core--desktop",
+            scanComplete ? "bob-scan-orb-core--complete" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <div className="bob-scan-orb-core__inner">
+            {scanComplete ? (
+              <Check size={56} strokeWidth={3} className="bob-scan-orb-check" aria-hidden />
+            ) : (
+              <>
+                <Dna size={56} className="bob-scan-orb-zap" aria-hidden />
+                <p className="bob-scan-orb-status">Brand DNA</p>
+              </>
+            )}
+          </div>
+        </div>
+        {DESKTOP_ORBIT_CHIPS.map((label, index) => (
+          <div
+            key={label}
+            className={`bob-scan-orbit-tag bob-scan-orbit-tag--${index + 1}`}
+          >
+            <span className="bob-scan-orbit-tag__dot" aria-hidden />
+            <span className="bob-scan-orbit-tag__text">{label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="bob-scan-trust">
+        <Shield size={18} aria-hidden />
+        <span>No changes made to your website</span>
+        <span className="bob-scan-trust__divider" aria-hidden />
+        <span className="bob-scan-trust__meta">Real-time simulation active</span>
+      </div>
+    </div>
+  );
+
+  const mobileOrb = (
+    <div className="bob-scan-visual bob-scan-visual--mobile" aria-label="Brand scan animation">
+      <div className="bob-scan-orb-stage bob-scan-orb-stage--mobile">
+        <div className="bob-scan-mobile-glow" aria-hidden />
+        <div className="bob-scan-burst bob-scan-burst--1" aria-hidden />
+        <div className="bob-scan-burst bob-scan-burst--2" aria-hidden />
+        <div className="bob-scan-burst bob-scan-burst--3" aria-hidden />
+        <div className="bob-scan-burst bob-scan-burst--4" aria-hidden />
+        <div
+          className={[
+            "bob-scan-orb-core bob-scan-orb-core--mobile",
+            scanComplete ? "bob-scan-orb-core--complete" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {scanComplete ? (
+            <Check size={36} strokeWidth={3} className="bob-scan-orb-check" aria-hidden />
+          ) : (
+            <Dna size={40} className="bob-scan-orb-zap" aria-hidden />
+          )}
+        </div>
+        {MOBILE_ORBIT_TAGS.map((label, index) => (
+          <div
+            key={label}
+            className={`bob-scan-mobile-tag bob-scan-mobile-tag--${index + 1}`}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="bob-scan">
       <div className="bob-scan__bg" aria-hidden />
       <div className="bob-scan__layout">
-        <div className="bob-scan__panel">
-          <div>
-            <p
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.45)",
-                letterSpacing: "0.06em",
-                marginBottom: 8,
-              }}
-            >
-              Analyzing your brand
-            </p>
-            <h1 style={{ color: "var(--color-primary)" }}>{brandName}</h1>
-            <p style={{ color: "rgba(255,255,255,0.65)", marginTop: 8 }}>{statusLine}</p>
+        <aside className="bob-scan__panel">
+          <div className="bob-scan__intro bob-scan__intro--desktop">
+            <h2 className="bob-scan__headline">Analyzing your brand</h2>
+            <p className="bob-scan__status">{statusLine}</p>
             {error ? (
-              <div style={{ marginTop: 16 }}>
-                <p style={{ color: "#ffb4b4", marginBottom: 12 }}>{error}</p>
+              <div className="bob-scan__error">
+                <p>{error}</p>
                 <Button type="button" variant="secondary" onClick={() => navigate("/")}>
                   Back to landing
                 </Button>
               </div>
             ) : null}
-            <div className="bob-scan__steps" style={{ marginTop: 24 }}>
-              {SCAN_PROGRESS_STEPS.map((step, index) => {
-                const isDone = completeSteps.includes(index) || scanComplete;
-                const isActive = !isDone && uiStep === index;
-                const isPending = !isDone && index > uiStep;
-                const overdueActive =
-                  !isDone && !isActive && !isPending && uiStep > index;
-                const showActive = isActive || overdueActive;
-                const dotClass = [
-                  "bob-scan-step__dot",
-                  isDone ? "bob-scan-step__dot--done" : "",
-                  showActive ? "bob-scan-step__dot--active" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ");
-                return (
-                  <div
-                    key={step.id}
-                    className={[
-                      "bob-scan-step",
-                      showActive ? "bob-scan-step--active" : "",
-                      isDone ? "bob-scan-step--done" : "",
-                      isPending ? "bob-scan-step--pending" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    <div className={dotClass}>
-                      {isDone ? (
-                        <Check size={16} strokeWidth={3} aria-hidden />
-                      ) : showActive ? (
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: "var(--color-primary)",
-                            display: "inline-block",
-                          }}
-                        />
-                      ) : (
-                        <span>{String(index + 1).padStart(2, "0")}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h3>{step.label}</h3>
-                      <p>{step.subtext}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
-          <div className="bob-scan-ai-card bob-scan-ai-card--footer">
-            <Sparkles size={18} color="var(--color-primary)" aria-hidden />
+
+          <div className="bob-scan__intro bob-scan__intro--mobile">
+            <p className="bob-scan__eyebrow">Scanning in progress</p>
+            <h1>
+              Analyzing your brand
+              <br />
+              <span className="bob-scan__brand-name">{brandName}</span>
+            </h1>
+            {error ? (
+              <div className="bob-scan__error">
+                <p>{error}</p>
+                <Button type="button" variant="secondary" onClick={() => navigate("/")}>
+                  Back to landing
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="bob-scan__mobile-visual">{mobileOrb}</div>
+
+          <div className="bob-scan__steps-wrap">{stepList}</div>
+
+          <div className="bob-scan-ai-card">
+            <Sparkles size={20} aria-hidden />
             <div>
               <strong>Aurora AI Active</strong>
               <p>
-                Our engine is non-intrusive. We perform a read-only scan of your public
-                pages — nothing is changed on your website.
+                Our engine is non-intrusive. We are performing a read-only scan of your
+                public infrastructure.
               </p>
             </div>
           </div>
-        </div>
-        <div className="bob-scan-visual" aria-label="Brand scan animation">
-          <div className="bob-scan-orb-stage">
-            <div className="bob-scan-burst bob-scan-burst--1" aria-hidden />
-            <div className="bob-scan-burst bob-scan-burst--2" aria-hidden />
-            <div className="bob-scan-burst bob-scan-burst--3" aria-hidden />
-            <div className="bob-scan-orb-halo" aria-hidden />
-            <div
-              className={[
-                "bob-scan-orb-core",
-                scanComplete ? "bob-scan-orb-core--complete" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              {scanComplete ? (
-                <Check size={56} strokeWidth={3} className="bob-scan-orb-check" aria-hidden />
-              ) : (
-                <Sparkles size={48} className="bob-scan-orb-zap" aria-hidden />
-              )}
-              <p className="bob-scan-orb-status">
-                {scanComplete ? "Ready" : "Brand DNA"}
-              </p>
-            </div>
-          </div>
-          <div className="bob-scan-trust">
-            <Shield size={16} color="var(--color-primary)" aria-hidden />
-            <span>No changes made to your website</span>
-          </div>
-        </div>
+        </aside>
+
+        <section className="bob-scan__desktop-visual">{desktopOrb}</section>
       </div>
+
+      <footer className="bob-scan-mobile-footer">
+        <Shield size={14} aria-hidden />
+        <span>AI can make mistakes.</span>
+      </footer>
     </div>
   );
 }

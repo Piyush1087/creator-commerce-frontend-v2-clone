@@ -58,10 +58,22 @@ function isBlockedMarketplace(hostname: string): boolean {
   return BLOCKED_MARKETPLACE_LABELS.some((label) => labels.includes(label));
 }
 
+const BLOCKED_RESTRICTED_SEGMENT_SUFFIXES = [".gov", ".mil", ".edu"] as const;
+
+function isBlockedRestrictedSegment(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return BLOCKED_RESTRICTED_SEGMENT_SUFFIXES.some(
+    (suffix) => h === suffix.slice(1) || h.endsWith(suffix),
+  );
+}
+
 function isBlockedSocialOrMarketplace(raw: string): boolean {
   const hostname = extractHostname(raw);
   if (!hostname) {
     return false;
+  }
+  if (isBlockedRestrictedSegment(hostname)) {
+    return true;
   }
   return isBlockedApex(hostname) || isBlockedMarketplace(hostname);
 }
@@ -75,5 +87,17 @@ export const urlSchema = z
   )
   .refine(
     (val) => !isBlockedSocialOrMarketplace(val),
-    "We need your brand’s direct website. Social profiles and marketplaces are not supported.",
+    (val) => {
+      const hostname = extractHostname(val);
+      if (hostname && isBlockedRestrictedSegment(hostname)) {
+        return {
+          message:
+            "Access Denied: This target website belongs to a restricted segment, or is not supported by the platform.",
+        };
+      }
+      return {
+        message:
+          "We need your brand’s direct website. Social profiles and marketplaces are not supported.",
+      };
+    },
   );
