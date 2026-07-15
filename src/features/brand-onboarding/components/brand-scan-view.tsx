@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Dna, Shield, Sparkles } from "lucide-react";
+import { Check, Dna, RefreshCw, Shield, Sparkles } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../../../design-system/aurora";
@@ -9,6 +9,7 @@ import {
   postSurfaceScan,
   SurfaceScanGateError,
   SurfaceScanInfrastructureError,
+  SurfaceScanTimeoutError,
 } from "../api/brand-client";
 import type { SurfaceScanResponseBody } from "../contracts/brand.contracts";
 import { isHttpApiError } from "../api/http-api-error";
@@ -100,6 +101,8 @@ export function BrandScanView() {
   const [uiStep, setUiStep] = useState(0);
   const [completeSteps, setCompleteSteps] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [scanMode, setScanMode] = useState<"http" | "cached" | null>(null);
 
   useEffect(() => {
@@ -223,6 +226,11 @@ export function BrandScanView() {
           });
           return;
         }
+        if (err instanceof SurfaceScanTimeoutError) {
+          setError(err.payload.message);
+          setCanRetry(true);
+          return;
+        }
         if (isHttpApiError(err) && err.isRateLimited) {
           navigate(ONBOARDING_ROUTES.landing, {
             replace: true,
@@ -247,7 +255,16 @@ export function BrandScanView() {
         window.clearTimeout(navigateTimeout);
       }
     };
-  }, [brandUrl, leadId, navigate]);
+  }, [brandUrl, leadId, navigate, retryAttempt]);
+
+  const retryScan = () => {
+    setError(null);
+    setCanRetry(false);
+    setUiStep(0);
+    setCompleteSteps([]);
+    setScanMode(null);
+    setRetryAttempt((attempt) => attempt + 1);
+  };
 
   const scanComplete =
     !error && (uiStep >= SCAN_PROGRESS_STEPS.length || scanMode !== null);
@@ -259,6 +276,24 @@ export function BrandScanView() {
         ? "Using your recent scan results."
         : "Scan complete — opening core identity review."
       : "This takes a few seconds.";
+
+  const errorActions = (
+    <div className="bob-scan__error-actions">
+      {canRetry ? (
+        <Button type="button" onClick={retryScan}>
+          <RefreshCw size={16} aria-hidden />
+          Retry scan
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => navigate(ONBOARDING_ROUTES.landing)}
+      >
+        Back to landing
+      </Button>
+    </div>
+  );
 
   const stepList = (
     <nav className="bob-scan__steps" aria-label="Scan progress">
@@ -402,9 +437,7 @@ export function BrandScanView() {
             {error ? (
               <div className="bob-scan__error">
                 <p>{error}</p>
-                <Button type="button" variant="secondary" onClick={() => navigate("/")}>
-                  Back to landing
-                </Button>
+                {errorActions}
               </div>
             ) : null}
           </div>
@@ -419,9 +452,7 @@ export function BrandScanView() {
             {error ? (
               <div className="bob-scan__error">
                 <p>{error}</p>
-                <Button type="button" variant="secondary" onClick={() => navigate("/")}>
-                  Back to landing
-                </Button>
+                {errorActions}
               </div>
             ) : null}
           </div>

@@ -1978,6 +1978,13 @@
   margin: 0 0 12px;
 }
 
+.bob-scan__error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .bob-scan__mobile-visual {
   display: block;
   margin: 0 0 32px;

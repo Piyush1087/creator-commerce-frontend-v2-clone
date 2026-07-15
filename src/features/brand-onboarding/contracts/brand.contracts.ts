@@ -108,6 +108,37 @@ export type SurfaceScanInfrastructureErrorBody = {
   message: string;
 };
 
+/** Stage 1A vendor/platform response exceeded the scan-page retry budget. */
+export type SurfaceScanTimeoutErrorBody = {
+  outcome: "scan_timeout";
+  timeoutMs: number;
+  message: string;
+};
+
+export function unwrapSurfaceScanTimeoutError(
+  value: unknown,
+): SurfaceScanTimeoutErrorBody | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const root = value as {
+    outcome?: unknown;
+    timeoutMs?: unknown;
+    message?: unknown;
+  };
+  if (
+    root.outcome === "scan_timeout" &&
+    typeof root.timeoutMs === "number" &&
+    typeof root.message === "string"
+  ) {
+    return root as SurfaceScanTimeoutErrorBody;
+  }
+  if (root.message && typeof root.message === "object") {
+    return unwrapSurfaceScanTimeoutError(root.message);
+  }
+  return null;
+}
+
 export function isSurfaceScanInfrastructureError(
   value: unknown,
 ): value is SurfaceScanInfrastructureErrorBody {
@@ -194,6 +225,8 @@ export type CoreIdentitySnapshot = {
   social_handles: UniversalFieldWrapper<CoreIdentitySocialHandles>;
   tagline: UniversalFieldWrapper<string | null>;
   discovered_root_links: string[];
+  /** Ordered alternate logo URLs the backend mirror can walk on 404. */
+  logo_candidates?: string[];
 };
 
 export type CoreIdentitySnapshotResponse = {

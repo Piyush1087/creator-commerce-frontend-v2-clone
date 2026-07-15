@@ -302,11 +302,9 @@ export function CoreIdentityReviewView() {
                 Confirm core identity?
               </h2>
               <p className="bob-modal__description">
-                This Checkpoint 1 confirmation locks brand name, industry,
-                sub-industry, logo, geography, and social handles as the
-                authoritative Stage 1A identity for the rest of onboarding.
-                Remaining website acquisition (Stage 1B) is deferred and will
-                not start yet.
+                This confirmation locks brand name, industry, sub-industry,
+                logo, geography, and social handles as the authoritative
+                identity for the rest of onboarding.
               </p>
               <div className="bob-modal__actions">
                 <Button

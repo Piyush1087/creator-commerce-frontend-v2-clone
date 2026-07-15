@@ -15,11 +15,13 @@ import type {
   VerifyBrandVerificationResponseBody,
 } from "../contracts/brand.contracts";
 import type { SurfaceScanInfrastructureErrorBody } from "../contracts/brand.contracts";
+import type { SurfaceScanTimeoutErrorBody } from "../contracts/brand.contracts";
 import {
   isBrandProfileResponse,
   isCoreIdentitySnapshotResponse,
   isSurfaceScanInfrastructureError,
   isSurfaceScanResponse,
+  unwrapSurfaceScanTimeoutError,
   unwrapSurfaceScanInfrastructureError,
 } from "../contracts/brand.contracts";
 import type { CoreIdentitySnapshotResponse } from "../contracts/brand.contracts";
@@ -52,6 +54,17 @@ export class SurfaceScanInfrastructureError extends Error {
   constructor(payload: SurfaceScanInfrastructureErrorBody) {
     super(payload.message);
     this.name = "SurfaceScanInfrastructureError";
+    this.payload = payload;
+  }
+}
+
+/** Retryable Stage 1A timeout; handled directly on the scan page. */
+export class SurfaceScanTimeoutError extends Error {
+  readonly payload: SurfaceScanTimeoutErrorBody;
+
+  constructor(payload: SurfaceScanTimeoutErrorBody) {
+    super(payload.message);
+    this.name = "SurfaceScanTimeoutError";
     this.payload = payload;
   }
 }
@@ -125,6 +138,10 @@ export async function postSurfaceScan(body: {
       if (payload) {
         throw new SurfaceScanInfrastructureError(payload);
       }
+    }
+    const timeout = unwrapSurfaceScanTimeoutError(parsed);
+    if (timeout) {
+      throw new SurfaceScanTimeoutError(timeout);
     }
     throw httpErrorFromResponse(response, parsed);
   }
