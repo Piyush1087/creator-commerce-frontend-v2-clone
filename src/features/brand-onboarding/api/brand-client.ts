@@ -14,11 +14,16 @@ import type {
   SyncOfferingItem,
   VerifyBrandVerificationResponseBody,
 } from "../contracts/brand.contracts";
+import type { SurfaceScanInfrastructureErrorBody } from "../contracts/brand.contracts";
 import {
   isBrandProfileResponse,
+  isCoreIdentitySnapshotResponse,
+  isSurfaceScanInfrastructureError,
   isSurfaceScanResponse,
+  unwrapSurfaceScanInfrastructureError,
 } from "../contracts/brand.contracts";
-import { httpErrorFromResponse, nestHttpMessage } from "./http-api-error";
+import type { CoreIdentitySnapshotResponse } from "../contracts/brand.contracts";
+import { httpErrorFromResponse } from "./http-api-error";
 
 /** Onboarding is anonymous until claim; do not attach dashboard JWT. */
 function onboardingJsonHeaders(): Record<string, string> {
@@ -37,6 +42,17 @@ export class SurfaceScanGateError extends Error {
     super(gate.message);
     this.name = "SurfaceScanGateError";
     this.gate = gate;
+  }
+}
+
+/** Landing Page State F — infrastructure / live connection runtime error. */
+export class SurfaceScanInfrastructureError extends Error {
+  readonly payload: SurfaceScanInfrastructureErrorBody;
+
+  constructor(payload: SurfaceScanInfrastructureErrorBody) {
+    super(payload.message);
+    this.name = "SurfaceScanInfrastructureError";
+    this.payload = payload;
   }
 }
 
@@ -104,12 +120,32 @@ export async function postSurfaceScan(body: {
     if (gate) {
       throw new SurfaceScanGateError(gate);
     }
+    if (isSurfaceScanInfrastructureError(parsed)) {
+      const payload = unwrapSurfaceScanInfrastructureError(parsed);
+      if (payload) {
+        throw new SurfaceScanInfrastructureError(payload);
+      }
+    }
     throw httpErrorFromResponse(response, parsed);
   }
   if (!isSurfaceScanResponse(parsed)) {
     throw new Error("Unexpected response from surface scan.");
   }
   return parsed;
+}
+
+export async function getCoreIdentitySnapshot(
+  leadId: string,
+): Promise<CoreIdentitySnapshotResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/core-identity/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isCoreIdentitySnapshotResponse(json)) {
+    throw new Error("Unexpected response from core identity snapshot.");
+  }
+  return json;
 }
 
 export async function getBrandProfile(

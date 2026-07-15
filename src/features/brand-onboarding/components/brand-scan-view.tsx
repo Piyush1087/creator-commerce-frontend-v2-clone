@@ -8,6 +8,7 @@ import {
   getSurfaceScanProgress,
   postSurfaceScan,
   SurfaceScanGateError,
+  SurfaceScanInfrastructureError,
 } from "../api/brand-client";
 import type { SurfaceScanResponseBody } from "../contracts/brand.contracts";
 import { isHttpApiError } from "../api/http-api-error";
@@ -179,7 +180,7 @@ export function BrandScanView() {
           if (cancelled) {
             return;
           }
-          navigate(ONBOARDING_ROUTES.dna, {
+          navigate(ONBOARDING_ROUTES.coreIdentity, {
             replace: true,
             state: {
               url: brandUrl,
@@ -205,6 +206,19 @@ export function BrandScanView() {
                 leadId,
                 normalizedUrl: brandUrl,
               }),
+            },
+          });
+          return;
+        }
+        if (err instanceof SurfaceScanInfrastructureError) {
+          navigate(ONBOARDING_ROUTES.landing, {
+            replace: true,
+            state: {
+              gate: {
+                kind: "infrastructure_error",
+                message: err.payload.message,
+                url: brandUrl,
+              },
             },
           });
           return;
@@ -243,7 +257,7 @@ export function BrandScanView() {
     : scanComplete
       ? scanMode === "cached"
         ? "Using your recent scan results."
-        : "Scan complete — opening your brand DNA."
+        : "Scan complete — opening core identity review."
       : "This takes a few seconds.";
 
   const stepList = (

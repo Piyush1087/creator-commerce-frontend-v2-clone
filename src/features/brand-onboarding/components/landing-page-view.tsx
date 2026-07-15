@@ -151,6 +151,13 @@ export function LandingPageView() {
       setLeadId,
       setScannedUrl,
     });
+    if (gate.kind === "infrastructure_error") {
+      // Landing Page State F: input keeps the failing domain, marked with the
+      // status-error token, and the CTA becomes "Retry Connection Check".
+      setGateBanner({ tone: "error", message: gate.message });
+      setLockedUrl(gate.url ?? scannedUrl ?? "");
+      setPrimaryLabel("Retry Connection Check");
+    }
     if (gate.kind === "rate_limit") {
       setGateBanner({
         tone: "warning",

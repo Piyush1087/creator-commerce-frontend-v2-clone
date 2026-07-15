@@ -7,6 +7,7 @@ import type { SurfaceScanGatePayload } from "./api/brand-client";
 
 export type LandingGateRedirect =
   | { kind: "rate_limit"; message?: string }
+  | { kind: "infrastructure_error"; message: string; url?: string }
   | {
       kind: "verification_required";
       payload: DiscoverValidateVerificationRequired;

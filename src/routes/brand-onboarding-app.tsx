@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { BrandOnboardingShell } from "../layouts/brand-onboarding-shell/BrandOnboardingShell";
 import { BrandOnboardingCataloguePage } from "../pages/brand/onboarding/brand-onboarding-catalogue-page";
 import { BrandOnboardingCompetitorsPage } from "../pages/brand/onboarding/brand-onboarding-competitors-page";
+import { BrandOnboardingCoreIdentityPage } from "../pages/brand/onboarding/brand-onboarding-core-identity-page";
 import { BrandOnboardingDnaPage } from "../pages/brand/onboarding/brand-onboarding-dna-page";
 import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onboarding-landing-page";
 import { BrandOnboardingPricingPage } from "../pages/brand/onboarding/brand-onboarding-pricing-page";
@@ -18,6 +19,10 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/scan"
           element={<BrandOnboardingScanPage />}
+        />
+        <Route
+          path="brand/onboarding/core-identity"
+          element={<BrandOnboardingCoreIdentityPage />}
         />
         <Route path="brand/onboarding/dna" element={<BrandOnboardingDnaPage />} />
         <Route

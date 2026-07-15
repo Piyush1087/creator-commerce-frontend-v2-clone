@@ -228,7 +228,8 @@ export function LandingUrlCapture({
     primaryDisabled ||
     showLoadingStatus ||
     !url.trim() ||
-    (locked && shouldValidateUrl);
+    // State F must stay clickable so "Retry Connection Check" can re-submit.
+    (locked && shouldValidateUrl && mode !== "infra_retry");
 
   return (
     <div className={`bob-url-capture bob-url-capture--${mode}`}>

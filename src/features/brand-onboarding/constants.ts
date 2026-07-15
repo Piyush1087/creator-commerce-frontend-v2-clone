@@ -1,6 +1,7 @@
 export const BRAND_ONBOARDING_NAV = [
   { to: "/", label: "Start" },
   { to: "/brand/onboarding/scan", label: "Scan" },
+  { to: "/brand/onboarding/core-identity", label: "Core Identity" },
   { to: "/brand/onboarding/dna", label: "Brand DNA" },
   { to: "/brand/onboarding/catalogue", label: "Catalogue" },
   { to: "/brand/onboarding/competitors", label: "Competitors" },
@@ -12,6 +13,7 @@ export const BRAND_ONBOARDING_NAV = [
 export const ONBOARDING_ROUTES = {
   landing: "/",
   scan: "/brand/onboarding/scan",
+  coreIdentity: "/brand/onboarding/core-identity",
   dna: "/brand/onboarding/dna",
   catalogue: "/brand/onboarding/catalogue",
   competitors: "/brand/onboarding/competitors",

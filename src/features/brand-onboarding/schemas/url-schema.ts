@@ -32,16 +32,52 @@ const BLOCKED_MARKETPLACE_LABELS = [
   "shopee",
 ] as const;
 
-function extractHostname(raw: string): string | null {
+const BLOCKED_RESTRICTED_SEGMENT_SUFFIXES = [
+  ".gov",
+  ".gov.in",
+  ".nic.in",
+  ".mil",
+  ".mil.in",
+  ".edu",
+] as const;
+
+const SUSPICIOUS_TLDS = new Set([
+  "zip",
+  "top",
+  "ru",
+  "cc",
+  "link",
+  "biz",
+  "info",
+  "tk",
+  "ml",
+]);
+
+const DOMAIN_LABEL = /^[a-z0-9-]{1,63}$/i;
+
+/**
+ * Landing change-doc Truncate & Slice Gate: cut tracking (`?…`) and deep paths
+ * so discovery always keys off the apex host.
+ */
+export function truncateToApexHostInput(raw: string): string {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {
+    return "";
+  }
+  const withoutQuery = trimmed.split("?")[0]?.split("#")[0] ?? trimmed;
+  const withoutProtocol = withoutQuery.replace(/^(https?:\/\/)/i, "");
+  const withoutWww = withoutProtocol.replace(/^www\./i, "");
+  const hostOnly = withoutWww.split("/")[0] ?? "";
+  return hostOnly.trim();
+}
+
+function extractHostname(raw: string): string | null {
+  const apex = truncateToApexHostInput(raw);
+  if (!apex) {
     return null;
   }
-  const withProtocol = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
   try {
-    return new URL(withProtocol).hostname.replace(/^www\./, "");
+    return new URL(`https://${apex}`).hostname.replace(/^www\./, "");
   } catch {
     return null;
   }
@@ -58,8 +94,6 @@ function isBlockedMarketplace(hostname: string): boolean {
   return BLOCKED_MARKETPLACE_LABELS.some((label) => labels.includes(label));
 }
 
-const BLOCKED_RESTRICTED_SEGMENT_SUFFIXES = [".gov", ".mil", ".edu"] as const;
-
 function isBlockedRestrictedSegment(hostname: string): boolean {
   const h = hostname.toLowerCase();
   return BLOCKED_RESTRICTED_SEGMENT_SUFFIXES.some(
@@ -67,37 +101,56 @@ function isBlockedRestrictedSegment(hostname: string): boolean {
   );
 }
 
-function isBlockedSocialOrMarketplace(raw: string): boolean {
-  const hostname = extractHostname(raw);
-  if (!hostname) {
+function hasSuspiciousTld(hostname: string): boolean {
+  const parts = hostname.split(".");
+  const tld = parts[parts.length - 1];
+  return SUSPICIOUS_TLDS.has(tld);
+}
+
+function isValidApexHostname(hostname: string): boolean {
+  const labels = hostname.split(".");
+  if (labels.length < 2) {
     return false;
   }
-  if (isBlockedRestrictedSegment(hostname)) {
-    return true;
-  }
-  return isBlockedApex(hostname) || isBlockedMarketplace(hostname);
+  return labels.every((label) => DOMAIN_LABEL.test(label));
 }
 
 export const urlSchema = z
   .string()
+  .trim()
   .min(1, "Please enter a website address.")
-  .regex(
-    /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i,
+  .transform((val) => truncateToApexHostInput(val))
+  .refine(
+    (host) => Boolean(host) && isValidApexHostname(host),
     "Please enter a valid website address (e.g., brand.com).",
   )
-  .refine(
-    (val) => !isBlockedSocialOrMarketplace(val),
-    (val) => {
-      const hostname = extractHostname(val);
-      if (hostname && isBlockedRestrictedSegment(hostname)) {
-        return {
-          message:
-            "Access Denied: This target website belongs to a restricted segment, or is not supported by the platform.",
-        };
-      }
+  .refine((host) => {
+    if (isBlockedRestrictedSegment(host)) {
+      return false;
+    }
+    if (isBlockedApex(host) || isBlockedMarketplace(host)) {
+      return false;
+    }
+    if (hasSuspiciousTld(host)) {
+      return false;
+    }
+    return true;
+  }, (host) => {
+    if (isBlockedRestrictedSegment(host)) {
       return {
         message:
-          "We need your brand’s direct website. Social profiles and marketplaces are not supported.",
+          "Access Denied: This target website belongs to a restricted segment, or is not supported by the platform.",
       };
-    },
-  );
+    }
+    if (hasSuspiciousTld(host)) {
+      return {
+        message:
+          "Please enter a valid brand website (this domain extension is not supported).",
+      };
+    }
+    return {
+      message:
+        "We need your brand’s direct website. Social profiles and marketplaces are not supported.",
+    };
+  })
+  .transform((host) => `https://${host}`);
