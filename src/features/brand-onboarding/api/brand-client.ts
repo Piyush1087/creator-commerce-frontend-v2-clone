@@ -6,6 +6,13 @@ import type {
 } from "../contracts/discovery.contracts";
 import type {
   BrandProfileResponseBody,
+  ConfirmCheckpoint2RequestBody,
+  ConfirmCheckpoint2ResponseBody,
+  Checkpoint2Response,
+  ConfirmIdentityRequestBody,
+  ConfirmIdentityResponseBody,
+  CoreIdentitySnapshotResponse,
+  IntelligenceStatusResponse,
   PatchBrandProfileRequestBody,
   SendBrandVerificationResponseBody,
   SurfaceScanProgressResponse,
@@ -18,13 +25,13 @@ import type { SurfaceScanInfrastructureErrorBody } from "../contracts/brand.cont
 import type { SurfaceScanTimeoutErrorBody } from "../contracts/brand.contracts";
 import {
   isBrandProfileResponse,
+  isCheckpoint2Response,
   isCoreIdentitySnapshotResponse,
   isSurfaceScanInfrastructureError,
   isSurfaceScanResponse,
   unwrapSurfaceScanTimeoutError,
   unwrapSurfaceScanInfrastructureError,
 } from "../contracts/brand.contracts";
-import type { CoreIdentitySnapshotResponse } from "../contracts/brand.contracts";
 import { httpErrorFromResponse } from "./http-api-error";
 
 /** Onboarding is anonymous until claim; do not attach dashboard JWT. */
@@ -163,6 +170,84 @@ export async function getCoreIdentitySnapshot(
     throw new Error("Unexpected response from core identity snapshot.");
   }
   return json;
+}
+
+export async function postConfirmIdentity(
+  leadId: string,
+  body: ConfirmIdentityRequestBody,
+): Promise<ConfirmIdentityResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/confirm-identity/${encodeURIComponent(leadId)}`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    (json as { success?: unknown }).success !== true
+  ) {
+    throw httpErrorFromResponse(response, json);
+  }
+  return json as ConfirmIdentityResponseBody;
+}
+
+export async function getIntelligenceStatus(
+  leadId: string,
+): Promise<IntelligenceStatusResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/intelligence/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { leadId?: unknown }).leadId !== "string"
+  ) {
+    throw new Error("Unexpected response from intelligence status.");
+  }
+  return json as IntelligenceStatusResponse;
+}
+
+export async function getCheckpoint2(
+  leadId: string,
+): Promise<Checkpoint2Response> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/checkpoint-2/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isCheckpoint2Response(json)) {
+    throw new Error("Unexpected response from checkpoint-2 fetch.");
+  }
+  return json;
+}
+
+export async function postConfirmCheckpoint2(
+  leadId: string,
+  body: ConfirmCheckpoint2RequestBody,
+): Promise<ConfirmCheckpoint2ResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/checkpoint-2/${encodeURIComponent(leadId)}/confirm`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    (json as { success?: unknown }).success !== true
+  ) {
+    throw httpErrorFromResponse(response, json);
+  }
+  return json as ConfirmCheckpoint2ResponseBody;
 }
 
 export async function getBrandProfile(

@@ -22,7 +22,14 @@ function parseAgeRange(ageRange: string): [number, number] {
 export function mapProfileToBrandDna(profile: BrandProfileResponseBody): BrandDnaState {
   const vi = (profile.visualIdentity ?? {}) as BrandVisualIdentity;
   const tones =
-    (vi.toneOfVoice ?? []).map((t) => `${t.label}: ${t.description}`.trim()) ??
+    (vi.toneOfVoice ?? []).map((t) => {
+      const label = t.label.trim();
+      const description = t.description.trim();
+      if (!description || description.toLowerCase() === label.toLowerCase()) {
+        return label;
+      }
+      return `${label}: ${description}`;
+    }) ??
     [];
   const audience = (profile.targetAudience ?? {}) as BrandTargetAudience;
   const age = audience.ageRange;
@@ -50,7 +57,10 @@ export function mapProfileToBrandDna(profile: BrandProfileResponseBody): BrandDn
           ? audience.countries.join(", ")
           : "",
       ageRange: ageRangeStr,
-      affluence: audience.affluence ?? 0,
+      // Affluence used to sometimes be stored as `0` for legacy scans.
+      // The DNA form only accepts 1–5, so coerce 0/undefined to the default `3`.
+      affluence:
+        audience.affluence && audience.affluence >= 1 ? audience.affluence : 3,
       traits:
         audience.traits && audience.traits.length > 0
           ? audience.traits

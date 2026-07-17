@@ -5,6 +5,7 @@ import { BrandOnboardingCataloguePage } from "../pages/brand/onboarding/brand-on
 import { BrandOnboardingCompetitorsPage } from "../pages/brand/onboarding/brand-onboarding-competitors-page";
 import { BrandOnboardingCoreIdentityPage } from "../pages/brand/onboarding/brand-onboarding-core-identity-page";
 import { BrandOnboardingDnaPage } from "../pages/brand/onboarding/brand-onboarding-dna-page";
+import { BrandOnboardingIntelligenceScanPage } from "../pages/brand/onboarding/brand-onboarding-intelligence-scan-page";
 import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onboarding-landing-page";
 import { BrandOnboardingPricingPage } from "../pages/brand/onboarding/brand-onboarding-pricing-page";
 import { BrandOnboardingScanPage } from "../pages/brand/onboarding/brand-onboarding-scan-page";
@@ -23,6 +24,10 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/core-identity"
           element={<BrandOnboardingCoreIdentityPage />}
+        />
+        <Route
+          path="brand/onboarding/intelligence-scan"
+          element={<BrandOnboardingIntelligenceScanPage />}
         />
         <Route path="brand/onboarding/dna" element={<BrandOnboardingDnaPage />} />
         <Route

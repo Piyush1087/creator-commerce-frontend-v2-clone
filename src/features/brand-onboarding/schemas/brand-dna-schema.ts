@@ -20,7 +20,7 @@ export const brandDnaFormSchema = z
       .max(200, "Brand name must be 200 characters or fewer."),
     tagline: z
       .string()
-      .max(150, "Tagline must be 150 characters or fewer.")
+      .max(180, "Tagline must be 180 characters or fewer.")
       .optional(),
     description: z
       .string()
@@ -36,7 +36,12 @@ export const brandDnaFormSchema = z
       .max(120, "Persona name must be 120 characters or fewer.")
       .optional()
       .or(z.literal("")),
-    affluence: z.number().int().min(1).max(5).optional(),
+    affluence: z
+      .number()
+      .int()
+      .min(1, "Affluence score must be between 1 and 5.")
+      .max(5, "Affluence score must be between 1 and 5.")
+      .optional(),
     ageMin: z.number().int().min(13).max(99).optional(),
     ageMax: z.number().int().min(13).max(99).optional(),
     industry: z
@@ -47,16 +52,11 @@ export const brandDnaFormSchema = z
       .max(8, "You can keep at most 8 brand colors."),
     tones: z
       .array(shortTag("Tone tag", 80))
-      .min(1, "Select at least 1 tone of voice.")
-      .max(5, "You can keep at most 5 tone tags."),
+      .min(1, "Select at least 1 tone of voice."),
     aesthetics: z
       .array(shortTag("Visual aesthetic", 80))
-      .min(1, "Select at least 1 visual aesthetic.")
-      .max(5, "You can keep at most 5 visual aesthetic tags."),
-    traits: z
-      .array(shortTag("Audience trait", 80))
-      .min(1, "Select at least 1 audience trait.")
-      .max(7, "You can keep at most 7 audience traits."),
+      .min(1, "Select at least 1 visual aesthetic."),
+    traits: z.array(shortTag("Audience trait", 80)),
   })
   .superRefine((value, ctx) => {
     if (
@@ -83,7 +83,7 @@ export const dnaBrandNameSchema = z
   .max(200, "Brand name must be 200 characters or fewer.");
 export const dnaTaglineSchema = z
   .string()
-  .max(150, "Tagline must be 150 characters or fewer.");
+  .max(180, "Tagline must be 180 characters or fewer.");
 export const dnaDescriptionSchema = z
   .string()
   .max(

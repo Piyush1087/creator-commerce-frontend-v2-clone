@@ -16,7 +16,8 @@ import { Button } from "../../../design-system/aurora";
 
 import { postDiscoveryResolve, postDiscoveryValidate, postDiscoveryWaitlist } from "../api/discovery-client";
 import { isHttpApiError } from "../api/http-api-error";
-import type { IndustryVertical } from "../contracts/discovery.contracts";
+import type { IndustryVertical, WaitlistReasonCode } from "../contracts/discovery.contracts";
+import { waitlistReasonMessage } from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import type { LandingGateRedirect, LandingGateRedirectState } from "../landing-gate-redirect";
 import {
@@ -112,6 +113,7 @@ export function LandingPageView() {
         body: string;
         domain: string;
         industry?: IndustryVertical;
+        reason?: WaitlistReasonCode;
         leadId?: string;
         marketIntelligenceLogId?: string;
         sourceUrl?: string;
@@ -329,20 +331,48 @@ export function LandingPageView() {
         setScannedUrl(nextUrl);
         return;
       }
+      if (validated.outcome === "infrastructure_error") {
+        setGateBanner({ tone: "error", message: validated.message });
+        setLockedUrl(validated.normalizedUrl);
+        setPrimaryLabel("Retry Connection Check");
+        setPrimaryDisabled(false);
+        setEmailCapture(null);
+        return;
+      }
       if (validated.outcome === "waitlist") {
         const industryLabel = formatIndustry(validated.industry);
         setGateBanner({
           tone: "warning",
-          message: `We've identified ${validated.domain} as ${industryLabel}. Creator's Shop is currently optimized for D2C, SaaS, Healthcare, and Offline Services.`,
+          message:
+            validated.message ??
+            waitlistReasonMessage(
+              validated.reason,
+              industryLabel,
+              validated.domain,
+            ),
         });
         setLockedUrl(validated.normalizedUrl);
-        setPrimaryLabel(waitlistCtaLabel(validated.industry));
+        setPrimaryLabel(
+          validated.reason === "FOREIGN_LANGUAGE"
+            ? "Notify me for localization"
+            : validated.reason === "PARKED_DOMAIN" ||
+                validated.reason === "CONTENT_UNREADABLE"
+              ? "Notify me when scanning improves"
+              : waitlistCtaLabel(validated.industry),
+        );
         setPrimaryDisabled(true);
         setEmailCapture({
           kind: "waitlist",
-          body: "We're training our AI on your niche. Leave your email for early-bird access.",
+          body:
+            validated.reason === "FOREIGN_LANGUAGE"
+              ? "Leave your email for early-bird access when we support your language."
+              : validated.reason === "PARKED_DOMAIN" ||
+                  validated.reason === "CONTENT_UNREADABLE"
+                ? "Leave your email and we'll follow up when we can evaluate this storefront."
+                : "We're training our AI on your niche. Leave your email for early-bird access.",
           domain: validated.domain,
           industry: validated.industry,
+          reason: validated.reason ?? "UNSUPPORTED_INDUSTRY",
           leadId: validated.leadId,
           marketIntelligenceLogId: validated.logId,
           sourceUrl: validated.normalizedUrl,
@@ -440,6 +470,8 @@ export function LandingPageView() {
         await postDiscoveryWaitlist({
           email: trimmed,
           industry: emailCapture.industry,
+          reason: emailCapture.reason,
+          domain: emailCapture.domain,
           discoveryLeadId: emailCapture.leadId,
           marketIntelligenceLogId: emailCapture.marketIntelligenceLogId,
           sourceUrl: emailCapture.sourceUrl ?? lockedUrl ?? undefined,
@@ -457,7 +489,6 @@ export function LandingPageView() {
     }
     setEmailError(null);
     setEmailCapturedSuccess("Thanks — we've captured your email.");
-    // eslint-disable-next-line no-console
     console.log("landing_email_capture", {
       context: emailCapture?.kind,
       email: trimmed,
@@ -836,24 +867,54 @@ export function LandingPageView() {
                 setBrandProfileId(validated.brandProfileId);
                 return;
               }
+              if (validated.outcome === "infrastructure_error") {
+                setGateBanner({ tone: "error", message: validated.message });
+                setLockedUrl(validated.normalizedUrl);
+                setPrimaryLabel("Retry Connection Check");
+                setPrimaryDisabled(false);
+                setEmailCapture(null);
+                setModalStep("none");
+                return;
+              }
               if (validated.outcome === "waitlist") {
                 const industryLabel = formatIndustry(validated.industry);
                 setGateBanner({
                   tone: "warning",
-                  message: `We've identified ${validated.domain} as ${industryLabel}. Creator's Shop is currently optimized for D2C, SaaS, Healthcare, and Offline Services.`,
+                  message:
+                    validated.message ??
+                    waitlistReasonMessage(
+                      validated.reason,
+                      industryLabel,
+                      validated.domain,
+                    ),
                 });
                 setLockedUrl(validated.normalizedUrl);
-                setPrimaryLabel(waitlistCtaLabel(validated.industry));
+                setPrimaryLabel(
+                  validated.reason === "FOREIGN_LANGUAGE"
+                    ? "Notify me for localization"
+                    : validated.reason === "PARKED_DOMAIN" ||
+                        validated.reason === "CONTENT_UNREADABLE"
+                      ? "Notify me when scanning improves"
+                      : waitlistCtaLabel(validated.industry),
+                );
                 setPrimaryDisabled(true);
                 setEmailCapture({
                   kind: "waitlist",
-                  body: "We're training our AI on your niche. Leave your email for early-bird access.",
+                  body:
+                    validated.reason === "FOREIGN_LANGUAGE"
+                      ? "Leave your email for early-bird access when we support your language."
+                      : validated.reason === "PARKED_DOMAIN" ||
+                          validated.reason === "CONTENT_UNREADABLE"
+                        ? "Leave your email and we'll follow up when we can evaluate this storefront."
+                        : "We're training our AI on your niche. Leave your email for early-bird access.",
                   domain: validated.domain,
                   industry: validated.industry,
+                  reason: validated.reason ?? "UNSUPPORTED_INDUSTRY",
                   leadId: validated.leadId,
                   marketIntelligenceLogId: validated.logId,
                   sourceUrl: validated.normalizedUrl,
                 });
+                setModalStep("none");
                 return;
               }
               if (validated.outcome === "success") {

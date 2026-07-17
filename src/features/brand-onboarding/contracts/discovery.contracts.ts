@@ -1,7 +1,5 @@
 /**
- * Mirrors `POST /api/v1/discovery/validate`, `POST /api/v1/discovery/resolve`,
- * and `POST /api/v1/discovery/waitlist` in creator-commerce-backend-v2. Keep in sync with
- * `docs/api/brand-discovery.openapi.yaml` and Prisma enums.
+ * Mirrors discovery validate/resolve/waitlist APIs in creator-commerce-backend-v2.
  */
 
 export const INDUSTRY_VERTICALS = [
@@ -22,6 +20,12 @@ export const INDUSTRY_VERTICALS = [
 
 export type IndustryVertical = (typeof INDUSTRY_VERTICALS)[number];
 
+export type WaitlistReasonCode =
+  | "UNSUPPORTED_INDUSTRY"
+  | "FOREIGN_LANGUAGE"
+  | "CONTENT_UNREADABLE"
+  | "PARKED_DOMAIN";
+
 export type DiscoverValidateRequestBody = {
   url: string;
 };
@@ -40,6 +44,8 @@ export type DiscoverValidateWaitlist = {
   normalizedUrl: string;
   domain: string;
   industry: IndustryVertical;
+  reason?: WaitlistReasonCode;
+  message?: string;
 };
 
 export type DiscoverValidateBlockedCode =
@@ -77,13 +83,23 @@ export type DiscoverValidateVerificationRequired = {
   reason: "DOMAIN_LIMIT" | "IP_LIMIT";
 };
 
+export type DiscoverValidateInfrastructureError = {
+  outcome: "infrastructure_error";
+  reason: "http_status" | "dns_or_timeout" | "redirect_hijack";
+  httpStatus?: number;
+  message: string;
+  domain: string;
+  normalizedUrl: string;
+};
+
 export type DiscoverValidateResponse =
   | DiscoverValidateSuccess
   | DiscoverValidateWaitlist
   | DiscoverValidateBlocked
   | DiscoverValidateOrgClaimed
   | DiscoverValidateBrandActive
-  | DiscoverValidateVerificationRequired;
+  | DiscoverValidateVerificationRequired
+  | DiscoverValidateInfrastructureError;
 
 export type DiscoveryResolveResume = {
   outcome: "resume";
@@ -112,12 +128,13 @@ export type DiscoveryResolveResponse =
 export type DiscoverWaitlistRequestBody = {
   email: string;
   industry: IndustryVertical;
+  reason?: WaitlistReasonCode;
+  domain?: string;
   discoveryLeadId?: string;
   marketIntelligenceLogId?: string;
   sourceUrl?: string;
 };
 
-/** Response from `POST /api/v1/discovery/waitlist` (HTTP 201). */
 export type DiscoverWaitlistResponseBody = {
   id: string;
 };
@@ -135,7 +152,8 @@ export function isDiscoverValidateResponse(
     outcome === "blocked" ||
     outcome === "org_claimed" ||
     outcome === "brand_active" ||
-    outcome === "verification_required"
+    outcome === "verification_required" ||
+    outcome === "infrastructure_error"
   );
 }
 
@@ -164,4 +182,22 @@ export function isDiscoverWaitlistResponse(
   }
   const id = (value as { id?: unknown }).id;
   return typeof id === "string" && id.length > 0;
+}
+
+export function waitlistReasonMessage(
+  reason: WaitlistReasonCode | undefined,
+  industry: string,
+  domain: string,
+): string {
+  switch (reason) {
+    case "FOREIGN_LANGUAGE":
+      return `We've identified ${domain} as a non-English storefront. Creator's Shop currently focuses on English-language brands.`;
+    case "PARKED_DOMAIN":
+      return `We've identified ${domain} as a parked or coming-soon page. Storefront components could not be evaluated yet.`;
+    case "CONTENT_UNREADABLE":
+      return `We couldn't evaluate enough content on ${domain} to classify this brand.`;
+    case "UNSUPPORTED_INDUSTRY":
+    default:
+      return `We've identified ${domain} to be ${industry.replace(/_/g, " ")}. Creator's Shop is currently optimized for D2C, SaaS, Healthcare, and Offline Services.`;
+  }
 }

@@ -39,6 +39,7 @@ const BLOCKED_RESTRICTED_SEGMENT_SUFFIXES = [
   ".mil",
   ".mil.in",
   ".edu",
+  ".ac.in",
 ] as const;
 
 const SUSPICIOUS_TLDS = new Set([
@@ -69,18 +70,6 @@ export function truncateToApexHostInput(raw: string): string {
   const withoutWww = withoutProtocol.replace(/^www\./i, "");
   const hostOnly = withoutWww.split("/")[0] ?? "";
   return hostOnly.trim();
-}
-
-function extractHostname(raw: string): string | null {
-  const apex = truncateToApexHostInput(raw);
-  if (!apex) {
-    return null;
-  }
-  try {
-    return new URL(`https://${apex}`).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
 }
 
 function isBlockedApex(hostname: string): boolean {

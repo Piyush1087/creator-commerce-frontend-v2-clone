@@ -236,6 +236,108 @@ export type CoreIdentitySnapshotResponse = {
   snapshot: CoreIdentitySnapshot;
 };
 
+/** Checkpoint 1 confirm-identity request body (Phase 4). */
+export type ConfirmIdentityRequestBody = {
+  brand_name: string;
+  brand_logo: string | null;
+  industry: string;
+  sub_industry: string;
+  tagline: string | null;
+  social_handles: CoreIdentitySocialHandles;
+};
+
+export type ConfirmIdentityResponseBody = {
+  success: true;
+  nextStage: "STAGE_1B_QUEUED" | string;
+};
+
+export type BrandIntelligenceStage =
+  | "STAGE_1A_COMPLETE"
+  | "CORE_IDENTITY_APPROVED"
+  | "STAGE_1B_COMPLETE"
+  | "STAGE_1B_FAILED"
+  | "STAGE_2_BRAND_DNA_COMPLETE"
+  | "STAGE_2_BRAND_DNA_FAILED"
+  | "STAGE_2_BRAND_DNA_ARCHIVED"
+  | "STAGE_2_NEEDS_REVIEW"
+  | "CHECKPOINT_2_CONFIRMED";
+
+export type BrandDnaAudiencePersona = {
+  name: UniversalFieldWrapper<string>;
+  age_range: UniversalFieldWrapper<string>;
+  gender: UniversalFieldWrapper<string>;
+  geography: UniversalFieldWrapper<string>;
+  affluence_score: UniversalFieldWrapper<string>;
+  traits: UniversalFieldWrapper<string[]>;
+};
+
+export type BrandDnaSnapshot = {
+  industry_niche: UniversalFieldWrapper<string>;
+  brand_positioning: UniversalFieldWrapper<string>;
+  brand_narrative: UniversalFieldWrapper<string>;
+  core_value_proposition: UniversalFieldWrapper<string>;
+  key_differentiators: UniversalFieldWrapper<string[]>;
+  tone_of_voice: UniversalFieldWrapper<string[]>;
+  visual_aesthetic: UniversalFieldWrapper<string[]>;
+  audience_personas: BrandDnaAudiencePersona[];
+};
+
+export type IntelligenceStatusResponse = {
+  leadId: string;
+  brandProfileId: string | null;
+  currentStage: BrandIntelligenceStage | null;
+  brandDna: BrandDnaSnapshot | null;
+  error: string | null;
+};
+
+export type Checkpoint2Status = "ready" | "building" | "failed";
+
+export type Checkpoint2Response = {
+  leadId: string;
+  brandProfileId: string | null;
+  currentStage: BrandIntelligenceStage | null;
+  brandDna: BrandDnaSnapshot | null;
+  offerings: unknown[];
+  competitors: unknown[];
+  checkpoint2Confirmation: unknown | null;
+  status: Checkpoint2Status;
+};
+
+export type ConfirmCheckpoint2RequestBody = {
+  confirmed: true;
+  brandDna?: unknown;
+  offerings?: unknown[];
+  competitors?: unknown[];
+};
+
+export type ConfirmCheckpoint2ResponseBody = {
+  success: true;
+  currentStage: BrandIntelligenceStage;
+  checkpoint2Confirmation: unknown;
+};
+
+export function isCheckpoint2Response(
+  value: unknown,
+): value is Checkpoint2Response {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const v = value as {
+    leadId?: unknown;
+    status?: unknown;
+    offerings?: unknown;
+    competitors?: unknown;
+  };
+  return (
+    typeof v.leadId === "string" &&
+    (v.status === "ready" ||
+      v.status === "building" ||
+      v.status === "failed") &&
+    Array.isArray(v.offerings) &&
+    Array.isArray(v.competitors)
+  );
+}
+
 function isFieldWrapper(value: unknown): value is UniversalFieldWrapper<unknown> {
   if (!value || typeof value !== "object") {
     return false;

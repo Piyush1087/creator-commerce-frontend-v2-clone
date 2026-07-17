@@ -4,10 +4,16 @@ import { Pencil, Plus, Upload, X } from "lucide-react";
 
 import { Alert, Button, Card, Chip, TextField } from "../../../design-system/aurora";
 
-import { getBrandProfile, patchBrandProfile, uploadBrandLogo } from "../api/brand-client";
+import { getBrandProfile, getIntelligenceStatus, patchBrandProfile, uploadBrandLogo } from "../api/brand-client";
 import { uploadErrorMessage } from "../api/http-api-error";
 import { BrandImageAvatar } from "./brand-image-avatar";
-import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
+import type {
+  BrandDnaSnapshot,
+  BrandIntelligenceStage,
+  BrandProfileResponseBody,
+  IntelligenceStatusResponse,
+  UniversalFieldWrapper,
+} from "../contracts/brand.contracts";
 import { INDUSTRY_VERTICALS } from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import { EMPTY_BRAND_DNA } from "../constants/empty-brand-dna";
@@ -33,6 +39,53 @@ const INDUSTRY_EDIT_OPTIONS = INDUSTRY_VERTICALS.filter(
   (value) =>
     value !== "GAMBLING" && value !== "ADULT" && value !== "FRAUDULENT_HIGH_RISK",
 );
+
+const PIPELINE_IN_PROGRESS: BrandIntelligenceStage[] = [
+  "CORE_IDENTITY_APPROVED",
+  "STAGE_1B_COMPLETE",
+  "STAGE_2_BRAND_DNA_COMPLETE",
+];
+
+const PIPELINE_FAILED: BrandIntelligenceStage[] = [
+  "STAGE_1B_FAILED",
+  "STAGE_2_BRAND_DNA_FAILED",
+  "STAGE_2_NEEDS_REVIEW",
+];
+
+function displayOrDash(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : "-";
+}
+
+function wrapDisplay(wrapper: UniversalFieldWrapper<unknown> | null | undefined): string {
+  if (!wrapper) {
+    return "-";
+  }
+  const value = wrapper.value;
+  if (value === null || value === undefined) {
+    return "-";
+  }
+  if (typeof value === "string") {
+    return displayOrDash(value);
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.map(String).join(", ") : "-";
+  }
+  return String(value);
+}
+
+function stageProgressLabel(stage: BrandIntelligenceStage | null): string {
+  switch (stage) {
+    case "CORE_IDENTITY_APPROVED":
+      return "Acquiring brand pages…";
+    case "STAGE_1B_COMPLETE":
+      return "Extracting Brand DNA…";
+    case "STAGE_2_BRAND_DNA_COMPLETE":
+      return "Validating Brand DNA…";
+    default:
+      return "Building brand DNA…";
+  }
+}
 
 type EditableTarget =
   | { field: "brandName"; label: string; value: string; multiline?: false; kind: "text" }
@@ -80,6 +133,30 @@ export function BrandDnaView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [intelStatus, setIntelStatus] = useState<IntelligenceStatusResponse | null>(
+    null,
+  );
+  const [intelBuilding, setIntelBuilding] = useState(false);
+  const [intelNotice, setIntelNotice] = useState<string | null>(() => {
+    if (
+      typeof location.state === "object" &&
+      location.state !== null &&
+      "intelNotice" in location.state &&
+      typeof (location.state as { intelNotice?: unknown }).intelNotice === "string"
+    ) {
+      return (location.state as { intelNotice: string }).intelNotice;
+    }
+    if (
+      typeof location.state === "object" &&
+      location.state !== null &&
+      "intelligenceFailure" in location.state &&
+      (location.state as { intelligenceFailure?: unknown }).intelligenceFailure === true
+    ) {
+      return "Deeper brand analysis unavailable — you can edit manually.";
+    }
+    return null;
+  });
+  const [brandDnaExtra, setBrandDnaExtra] = useState<BrandDnaSnapshot | null>(null);
 
   const [data, setData] = useState<BrandDnaState>(EMPTY_BRAND_DNA);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +173,20 @@ export function BrandDnaView() {
     [data.typography.body, data.typography.heading],
   );
 
+  const leadIdFromState =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "leadId" in location.state &&
+    typeof (location.state as { leadId?: unknown }).leadId === "string"
+      ? (location.state as { leadId: string }).leadId
+      : undefined;
+  const confirmedFromState =
+    typeof location.state === "object" &&
+    location.state !== null &&
+    "coreIdentityConfirmed" in location.state &&
+    (location.state as { coreIdentityConfirmed?: unknown }).coreIdentityConfirmed ===
+      true;
+
   useEffect(() => {
     const fromState =
       typeof location.state === "object" &&
@@ -106,25 +197,101 @@ export function BrandDnaView() {
         : undefined;
     const session = loadBrandOnboardingSession();
     const id = fromState ?? session?.brandProfileId;
+    const leadId = leadIdFromState ?? session?.leadId;
     if (!id) {
       setLoadError("Missing brand profile. Run a scan from the landing page first.");
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
-    void getBrandProfile(id)
-      .then((profile) => {
-        setBaseline(profile);
-        setData(mapProfileToBrandDna(profile));
-        setLoadError(null);
-      })
-      .catch((err) => {
+
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const loadProfile = async () => {
+      const profile = await getBrandProfile(id);
+      if (cancelled) return;
+      setBaseline(profile);
+      setData(mapProfileToBrandDna(profile));
+      setLoadError(null);
+    };
+
+    const applyIntel = async (status: IntelligenceStatusResponse) => {
+      if (cancelled) return;
+      setIntelStatus(status);
+      if (status.brandDna) {
+        setBrandDnaExtra(status.brandDna);
+      }
+      if (status.currentStage && PIPELINE_IN_PROGRESS.includes(status.currentStage)) {
+        setIntelBuilding(true);
+        setIntelNotice(null);
+        return "poll" as const;
+      }
+      if (status.currentStage === "STAGE_2_BRAND_DNA_ARCHIVED") {
+        setIntelBuilding(false);
+        setIntelNotice(null);
+        await loadProfile();
+        return "done" as const;
+      }
+      if (status.currentStage && PIPELINE_FAILED.includes(status.currentStage)) {
+        setIntelBuilding(false);
+        setIntelNotice(
+          "Deeper brand analysis unavailable — you can edit manually.",
+        );
+        return "done" as const;
+      }
+      setIntelBuilding(false);
+      return "done" as const;
+    };
+
+    const start = async () => {
+      setIsLoading(true);
+      try {
+        await loadProfile();
+        if (!leadId) {
+          return;
+        }
+        // Resume flow (no confirmation) — only poll if a scan row already exists.
+        const status = await getIntelligenceStatus(leadId);
+        if (cancelled) return;
+        if (!status.currentStage && !confirmedFromState) {
+          return;
+        }
+        const mode = await applyIntel(status);
+        if (mode === "poll") {
+          pollTimer = setInterval(() => {
+            void getIntelligenceStatus(leadId)
+              .then(async (next) => {
+                const result = await applyIntel(next);
+                if (result === "done" && pollTimer) {
+                  clearInterval(pollTimer);
+                  pollTimer = null;
+                }
+              })
+              .catch(() => {
+                /* keep polling silently */
+              });
+          }, 2500);
+        }
+      } catch (err) {
+        if (cancelled) return;
         const message =
           err instanceof Error ? err.message : "Unable to load brand profile.";
         setLoadError(message);
-      })
-      .finally(() => setIsLoading(false));
-  }, [location.state]);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void start();
+    return () => {
+      cancelled = true;
+      if (pollTimer) {
+        clearInterval(pollTimer);
+      }
+    };
+  }, [confirmedFromState, leadIdFromState, location.state]);
 
   const subtitle = useMemo(() => {
     if (loadError) {
@@ -133,11 +300,14 @@ export function BrandDnaView() {
     if (isLoading) {
       return "Loading your latest scan results…";
     }
+    if (intelBuilding) {
+      return stageProgressLabel(intelStatus?.currentStage ?? null);
+    }
     if (!seedUrl) {
       return "Brand DNA loaded from your profile.";
     }
     return `Seeded from ${seedUrl}${scanMode ? ` • scan: ${scanMode}` : ""}`;
-  }, [isLoading, loadError, scanMode, seedUrl]);
+  }, [intelBuilding, intelStatus?.currentStage, isLoading, loadError, scanMode, seedUrl]);
 
   const handleLooksGood = async () => {
     if (!baseline) {
@@ -148,21 +318,31 @@ export function BrandDnaView() {
     if (data.industry.length === 0) missingGroups.push("industry");
     if (data.tones.length === 0) missingGroups.push("tone of voice");
     if (data.aesthetics.length === 0) missingGroups.push("visual aesthetic");
-    if (data.persona.traits.length === 0) missingGroups.push("audience trait");
     if (missingGroups.length > 0) {
-      setError(
-        missingGroups.length === 1
-          ? `Select at least 1 ${missingGroups[0]} before continuing.`
-          : `Select at least 1 of each: ${missingGroups.join(", ")}.`,
-      );
+      const missingMessageByKey: Record<string, string> = {
+        industry: "Select at least 1 industry.",
+        "tone of voice": "Select at least 1 tone of voice.",
+        "visual aesthetic": "Select at least 1 visual aesthetic.",
+      };
+      const messages = missingGroups
+        .map((k) => missingMessageByKey[k])
+        .filter((m): m is string => Boolean(m));
+      setError(messages.join(" "));
       return;
     }
+
+    // Coerce legacy `0`/missing affluence to 3 so older scans can proceed.
+    const affluence =
+      data.persona.affluence && data.persona.affluence >= 1
+        ? data.persona.affluence
+        : 3;
+
     const parsed = brandDnaFormSchema.safeParse({
       brandName: data.brandName,
       tagline: data.tagline,
       description: data.description,
       personaName: data.persona.name || undefined,
-      affluence: data.persona.affluence,
+      affluence,
       industry: data.industry,
       colors: data.colors,
       tones: data.tones,
@@ -307,10 +487,6 @@ export function BrandDnaView() {
         setEditError(zodFirstError(parsed.error));
         return;
       }
-      if (!editTarget.value && data.tones.length >= 5) {
-        setEditError("You can keep at most 5 tone tags.");
-        return;
-      }
       setData((prev) => {
         if (editTarget.value) {
           return {
@@ -328,10 +504,6 @@ export function BrandDnaView() {
         setEditError(zodFirstError(parsed.error));
         return;
       }
-      if (!editTarget.value && data.aesthetics.length >= 5) {
-        setEditError("You can keep at most 5 visual aesthetic tags.");
-        return;
-      }
       setData((prev) => {
         if (editTarget.value) {
           return {
@@ -347,10 +519,6 @@ export function BrandDnaView() {
       const parsed = dnaTraitTagSchema.safeParse(trimmed);
       if (!parsed.success) {
         setEditError(zodFirstError(parsed.error));
-        return;
-      }
-      if (!editTarget.value && data.persona.traits.length >= 7) {
-        setEditError("You can keep at most 7 audience traits.");
         return;
       }
       setData((prev) => {
@@ -450,6 +618,16 @@ export function BrandDnaView() {
           {loadError}
         </Alert>
       ) : null}
+      {intelBuilding ? (
+        <Alert title="Building brand DNA…" tone="warning">
+          {`${stageProgressLabel(intelStatus?.currentStage ?? null)} Stage: ${intelStatus?.currentStage ?? "starting"}.`}
+        </Alert>
+      ) : null}
+      {intelNotice ? (
+        <Alert title="Deeper analysis unavailable" tone="warning">
+          {intelNotice}
+        </Alert>
+      ) : null}
       {error ? (
         <Alert title="Validation issue" tone="error">
           {error}
@@ -461,7 +639,7 @@ export function BrandDnaView() {
         </Alert>
       ) : null}
 
-      <div className="bob-dna-grid">
+      <div className="bob-dna-grid" style={{ marginTop: error ? 16 : 0 }}>
           <Card title="About" eyebrow="AI extracted">
             <EditableDisplay
               label="Brand name"
@@ -613,49 +791,57 @@ export function BrandDnaView() {
             ) : null}
           </Card>
 
-          <Card title="Audience persona" eyebrow="Matcher signal">
-            <EditableDisplay
-              label="Persona name"
-              value={data.persona.name}
-              onEdit={() =>
-                openEdit({
-                  field: "personaName",
-                  label: "Persona name",
-                  value: data.persona.name,
-                  kind: "text",
-                })
-              }
-            />
-            <EditableDisplay label="Location" value={data.persona.location} />
-            <EditableDisplay label="Age range" value={data.persona.ageRange} onEdit={() =>
-                openEdit({
-                  field: "ageRange",
-                  label: "Age range",
-                  value: data.persona.ageRange,
-                  kind: "text",
-                })
-              } />
-            <EditableDisplay
-              label="Affluence score"
-              value={`${data.persona.affluence}/5`}
-              helpText="Set by scan signals — not editable here."
-            />
-            <TagGroup
-              label="Audience traits"
-              values={data.persona.traits}
-              onAdd={() =>
-                openEdit({ field: "trait", label: "Trait", value: "", kind: "text" })
-              }
-              onRemove={(value) => removeTag("traits", value)}
-            />
+        </div>
+
+      {brandDnaExtra ? (
+        <div style={{ marginTop: 24 }}>
+          <Card title="Additional data" eyebrow="Stage 2 Brand DNA">
+            <div className="bob-dna-additional">
+              <AdditionalRow
+                label="Industry niche"
+                wrapper={brandDnaExtra.industry_niche}
+              />
+              <AdditionalRow
+                label="Brand positioning"
+                wrapper={brandDnaExtra.brand_positioning}
+              />
+              <AdditionalRow
+                label="Brand narrative"
+                wrapper={brandDnaExtra.brand_narrative}
+              />
+              <AdditionalRow
+                label="Core value proposition"
+                wrapper={brandDnaExtra.core_value_proposition}
+              />
+              <AdditionalRow
+                label="Key differentiators"
+                wrapper={brandDnaExtra.key_differentiators}
+              />
+              {(brandDnaExtra.audience_personas ?? []).map((persona, index) => (
+                <AdditionalRow
+                  key={`persona-${index + 1}`}
+                  label={`Audience persona ${index + 1}`}
+                  valueOverride={[
+                    wrapDisplay(persona.name),
+                    wrapDisplay(persona.age_range),
+                    wrapDisplay(persona.gender),
+                    wrapDisplay(persona.geography),
+                    wrapDisplay(persona.affluence_score),
+                    wrapDisplay(persona.traits),
+                  ].join(" · ")}
+                  wrapper={persona.name}
+                />
+              ))}
+            </div>
           </Card>
         </div>
+      ) : null}
 
       <div className="bob-inline" style={{ marginTop: 24 }}>
         <Button
           type="button"
           variant="primary"
-          disabled={isLoading || Boolean(loadError) || isSaving}
+          disabled={isLoading || Boolean(loadError) || isSaving || intelBuilding}
           onClick={() => void handleLooksGood()}
         >
           Looks good, next
@@ -775,9 +961,31 @@ function EditableDisplay({
         ) : null}
       </div>
       <p className={long ? "bob-editable__value bob-editable__value--long" : "bob-editable__value"}>
-        {value}
+        {displayOrDash(value)}
       </p>
       {helpText ? <small>{helpText}</small> : null}
+    </div>
+  );
+}
+
+function AdditionalRow({
+  label,
+  wrapper,
+  valueOverride,
+}: {
+  label: string;
+  wrapper: UniversalFieldWrapper<unknown> | null;
+  valueOverride?: string;
+}) {
+  const value = valueOverride ?? wrapDisplay(wrapper);
+  const meta = wrapper
+    ? `${wrapper.source} · ${wrapper.confidence}%`
+    : "- · -";
+  return (
+    <div className="bob-dna-additional__row">
+      <span className="bob-dna-additional__label">{label}</span>
+      <span className="bob-dna-additional__meta">{meta}</span>
+      <p className="bob-dna-additional__value">{value}</p>
     </div>
   );
 }

@@ -38,7 +38,9 @@ export function BrandOnboardingShell() {
   // Temporarily unused while scan header close button is commented out — restore later
   // const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isScan = location.pathname.endsWith("/brand/onboarding/scan");
+  const isScan =
+    location.pathname.endsWith("/brand/onboarding/scan") ||
+    location.pathname.endsWith("/brand/onboarding/intelligence-scan");
 
   const closeDrawer = () => setDrawerOpen(false);
   // Temporarily unused while header CTA is commented out — restore later
