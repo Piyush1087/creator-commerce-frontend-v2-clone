@@ -1,8 +1,11 @@
-import { Navigate } from "react-router-dom";
+import { CreatorCentreShell } from "../../../features/creator-centre/components/creator-centre-shell";
+import { CreatorProfileWorkspace } from "../../../features/creator-centre/components/creator-profile-workspace";
+import "../../../features/creator-centre/creator-centre.css";
 
-import { AUTH_ROUTES } from "../../../features/auth/constants";
-
-/** @deprecated Redirects to unified Creator Centre. */
 export function CreatorMediaKitPage() {
-  return <Navigate to={`${AUTH_ROUTES.creatorHome}?tab=media-kit`} replace />;
+  return (
+    <CreatorCentreShell>
+      <CreatorProfileWorkspace />
+    </CreatorCentreShell>
+  );
 }

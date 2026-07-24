@@ -9,7 +9,7 @@ export type CreatorCentreTab = {
 export const CREATOR_CENTRE_TABS: CreatorCentreTab[] = [
   { id: "home", label: "Command Center", headerTitle: "Command Center" },
   { id: "analytics", label: "Analytics", headerTitle: "Content Pulse" },
-  { id: "media-kit", label: "Media Kit", headerTitle: "Live Media Kit" },
+  { id: "media-kit", label: "Profile", headerTitle: "Creator Profile" },
 ];
 
 export function getCreatorCentreTabById(

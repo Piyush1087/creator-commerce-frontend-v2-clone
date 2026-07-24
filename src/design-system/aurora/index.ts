@@ -7,6 +7,7 @@ export { SelectField } from "./components/SelectField";
 export { SelectionCard } from "./components/SelectionCard";
 export { Tabs } from "./components/Tabs";
 export { TextField } from "./components/TextField";
+export { Toggle } from "./components/Toggle";
 export { ToastProvider, useToast } from "./components/Toast";
 export type { AuroraButtonVariant } from "./components/Button";
 export type { BadgeTone } from "./components/Badge";

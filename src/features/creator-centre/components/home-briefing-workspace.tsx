@@ -1,182 +1,174 @@
 import { Link } from "react-router-dom";
 
-import { Alert, Button, Card } from "../../../design-system/aurora";
+import { Badge, Button, Card } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
-import { fetchMediaKit } from "../api/creator-centre-client";
-import { fetchCreatorProfileSettings } from "../../settings/api/creator-settings-client";
-import { useCreatorCampaignsWorkspace } from "../../creator-campaigns/hooks/use-creator-campaigns-workspace";
-import { displayValue } from "../../creator-campaigns/utils/display-value";
-import { useAnalyticsPulse } from "../hooks/use-creator-centre";
 import {
-  formatPercent,
-  formatReach,
-} from "../utils/display-value";
+  MOCK_ACTION_REQUIRED,
+  MOCK_ACTIVE_CAMPAIGNS,
+  MOCK_CREATOR_PROFILE,
+  MOCK_HERO_OPPORTUNITY,
+  MOCK_HOME_SNAPSHOT,
+  MOCK_PRIORITY_TASKS,
+} from "../mock-data/centre-mock";
 
 import "../creator-centre.css";
-import { useEffect, useState } from "react";
 
+/**
+ * Home / Daily Briefing — content column only.
+ * Desktop assistant + mobile FAB live in CreatorCentreShell / page layout.
+ * Source: Stitch AI Assistant Integrated + Master Spec.
+ */
 export function HomeBriefingWorkspace() {
-  const { analytics, loading: analyticsLoading } = useAnalyticsPulse(3);
-  const { workspace, loading: workspaceLoading } = useCreatorCampaignsWorkspace();
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [handle, setHandle] = useState<string | null>(null);
-
-  useEffect(() => {
-    void Promise.all([fetchCreatorProfileSettings(), fetchMediaKit()])
-      .then(([profile, kit]) => {
-        setDisplayName(profile.profile.display_name ?? null);
-        setHandle(kit.instagramHandle ?? null);
-      })
-      .catch(() => {
-        setDisplayName(null);
-        setHandle(null);
-      });
-  }, []);
-
-  const loading = analyticsLoading || workspaceLoading;
-  const firstName = displayName?.split(" ")[0] ?? "-";
-  const activeRows = workspace?.active_rows ?? [];
-  const panicAlerts = workspace?.panic_panel?.alerts ?? [];
-
-  const kpis = [
-    {
-      label: "Total Reach",
-      value: formatReach(analytics?.summary.totalReach ?? null),
-      delta: "-",
-    },
-    {
-      label: "Engagements",
-      value: formatPercent(analytics?.summary.engagementRate ?? null),
-      delta: "-",
-    },
-    {
-      label: "Est. Payout",
-      value: "-",
-      delta: "-",
-    },
-  ];
+  const profile = MOCK_CREATOR_PROFILE;
+  const hero = MOCK_HERO_OPPORTUNITY;
 
   return (
-    <div className="cctr-workspace">
-      <p className="cctr-sub">Command Center</p>
-      <h1 className="cctr-greeting">Good morning, {firstName}</h1>
-      <p className="cctr-sub">
-        - · {displayValue(handle)}
-      </p>
+    <div className="cctr-workspace cctr-home cctr-canvas">
+      <p className="cctr-demo-chip">Stitch · AI Assistant Integrated</p>
 
-      {loading ? <p className="cctr-sub">Loading briefing…</p> : null}
+      <header className="cctr-home__welcome">
+        <div className="cctr-home__welcome-row">
+          <h1 className="cctr-greeting">
+            <span aria-hidden="true">👋 </span>
+            Good morning, {profile.firstName}
+          </h1>
+          <span className="cctr-home__updated">{profile.lastUpdated}</span>
+        </div>
+        <p className="cctr-home__subtitle">{profile.subtitle}</p>
+      </header>
 
-      <div className="cctr-kpi-row">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label} className="cctr-kpi">
-            <span className="cctr-sub" style={{ margin: 0 }}>
-              {kpi.label}
-            </span>
-            <p className="cctr-kpi__value">{kpi.value}</p>
-            <span className="cctr-kpi__delta">{kpi.delta}</span>
+      <div className="cctr-bento cctr-bento--snapshot">
+        {MOCK_HOME_SNAPSHOT.map((card) => (
+          <Card key={card.id} className="cctr-snapshot-card">
+            <p className="cctr-snapshot-card__title">
+              <span aria-hidden="true">{card.emoji}</span> {card.title}
+            </p>
+            <div className="cctr-snapshot-card__value-row">
+              <p className="cctr-kpi__value">{card.value}</p>
+              {"badge" in card && card.badge ? (
+                <Badge tone="success">{card.badge}</Badge>
+              ) : null}
+            </div>
+            {card.detail ? (
+              <p className="cctr-snapshot-card__detail">{card.detail}</p>
+            ) : (
+              <div className="cctr-snapshot-card__spacer" />
+            )}
+            {card.actionStyle === "button" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="cctr-snapshot-card__btn"
+              >
+                {card.action}
+              </Button>
+            ) : (
+              <button type="button" className="cctr-text-link" disabled>
+                {card.action}
+              </button>
+            )}
           </Card>
         ))}
       </div>
 
-      <div className="cctr-split cctr-split--home">
-        <div>
-          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Active campaigns</h2>
-          {activeRows.length === 0 ? (
-            <p className="cctr-sub" style={{ marginTop: 12 }}>
-              -
-            </p>
-          ) : (
-            <ul className="cctr-list" style={{ marginTop: 12 }}>
-              {activeRows.map((row) => (
-                <li key={row.collaboration_id} className="cctr-list-item">
-                  <span>
-                    <strong>{displayValue(row.campaign_name)}</strong>
-                    <span>
-                      {displayValue(row.current_phase)} · {displayValue(row.milestone_label)}
-                    </span>
-                  </span>
-                  <Link to={AUTH_ROUTES.creatorCampaigns}>
-                    <Button variant="ghost" size="sm">
-                      Open
-                    </Button>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <h2
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 18,
-              marginTop: 24,
-            }}
-          >
-            Priority tasks
-          </h2>
-          {panicAlerts.length === 0 ? (
-            <p className="cctr-sub" style={{ marginTop: 12 }}>
-              -
-            </p>
-          ) : (
-            <ul className="cctr-list" style={{ marginTop: 12 }}>
-              {panicAlerts.map((alert) => (
-                <li key={alert.id} className="cctr-list-item">
-                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="checkbox" readOnly />
-                    <span>
-                      {displayValue(alert.campaign_name)} — {displayValue(alert.current_phase)}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          )}
+      <Card className="cctr-hero-insight">
+        <p className="cctr-hero-insight__eyebrow">
+          <span aria-hidden="true">{hero.emoji}</span> {hero.title}
+        </p>
+        <p className="cctr-hero-insight__body">
+          {hero.bodyBefore}
+          <strong>{hero.bodyHighlight}</strong>
+          {hero.bodyAfter}
+        </p>
+        <p className="cctr-hero-insight__rec">{hero.recommendation}</p>
+        <div className="cctr-hero-insight__actions">
+          <Button variant="primary" size="sm" disabled>
+            {hero.primaryCta}
+          </Button>
+          <Link to={AUTH_ROUTES.creatorAnalytics} className="cctr-text-link">
+            {hero.secondaryCta}
+          </Link>
         </div>
+      </Card>
 
-        <aside className="cctr-assistant">
-          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 18, margin: 0 }}>
-            Creator Co-Pilot
-          </h2>
-          <div className="cctr-assistant__alert">
-            <strong>{displayValue(analytics?.pulses[0]?.velocityLabel)}</strong>
-            <p className="cctr-sub" style={{ margin: "8px 0 0" }}>
-              {displayValue(analytics?.pulses[0]?.aiPerformanceNote)}
-            </p>
-          </div>
-          <div>
-            <p className="cctr-sub" style={{ marginBottom: 8 }}>
-              Content ideas
-            </p>
-            <ul className="cctr-list">
-              <li className="cctr-list-item">
-                <span>
-                  <strong>-</strong>
-                  <span>-</span>
+      <section className="cctr-home__actions">
+        <h2 className="cctr-home__section-title">
+          <span aria-hidden="true">⚡</span> Action Required
+        </h2>
+        <ul className="cctr-action-list">
+          {MOCK_ACTION_REQUIRED.map((item) => (
+            <li key={item.id} className="cctr-action-list__item">
+              <div className="cctr-action-list__main">
+                <span className="cctr-action-list__emoji" aria-hidden="true">
+                  {item.emoji}
                 </span>
-              </li>
-            </ul>
-          </div>
-          <Button variant="primary" disabled>
-            Yes, schedule
-          </Button>
-          <Button variant="ghost" disabled>
-            Not now
-          </Button>
-          <p className="cctr-sub" style={{ marginTop: 12 }}>
-            Co-pilot chat integration: -
-          </p>
-        </aside>
-      </div>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span className="cctr-home__meta">{item.meta}</span>
+                </div>
+              </div>
+              <Button variant="primary" size="sm" disabled>
+                {item.cta}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      {workspace?.panic_panel?.hasUrgentAlerts ? (
-        <div style={{ marginTop: 24 }}>
-          <Alert tone="warning" title="Urgent campaign actions">
-            {workspace.panic_panel.alertCount} item(s) need attention.{" "}
-            <Link to={AUTH_ROUTES.creatorCampaigns}>Open campaigns</Link>
-          </Alert>
-        </div>
-      ) : null}
+      <div className="cctr-home__grid">
+        <section>
+          <div className="cctr-section-head cctr-section-head--row">
+            <h2>Active Campaigns</h2>
+            <Link to={AUTH_ROUTES.creatorCampaigns} className="cctr-text-link">
+              View All
+            </Link>
+          </div>
+          <ul className="cctr-campaign-list">
+            {MOCK_ACTIVE_CAMPAIGNS.map((campaign) => (
+              <li key={campaign.id} className="cctr-campaign-card">
+                <span
+                  className={`cctr-campaign-card__thumb cctr-campaign-card__thumb--${campaign.thumbTone}`}
+                  aria-hidden="true"
+                >
+                  {campaign.thumbInitials}
+                </span>
+                <div className="cctr-campaign-card__body">
+                  <strong>{campaign.title}</strong>
+                  <span>{campaign.meta}</span>
+                </div>
+                <Link
+                  to={AUTH_ROUTES.creatorCampaigns}
+                  className="cctr-campaign-card__more"
+                  aria-label={`Open ${campaign.title}`}
+                >
+                  ⋮
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <div className="cctr-section-head cctr-section-head--row">
+            <h2>Priority Tasks</h2>
+          </div>
+          <ul className="cctr-task-list">
+            {MOCK_PRIORITY_TASKS.map((task) => (
+              <li key={task.id} className="cctr-task-list__item">
+                <label className="cctr-task-list__label">
+                  <span
+                    className={`cctr-task-list__check${task.urgent ? " cctr-task-list__check--accent" : ""}`}
+                    aria-hidden="true"
+                  />
+                  <span>{task.label}</span>
+                </label>
+                <Badge tone={task.urgent ? "error" : "neutral"}>{task.due}</Badge>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }
