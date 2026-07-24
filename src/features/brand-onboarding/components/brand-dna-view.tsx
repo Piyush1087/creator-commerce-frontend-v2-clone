@@ -4,7 +4,13 @@ import { Pencil, Plus, Upload, X } from "lucide-react";
 
 import { Alert, Button, Card, Chip, TextField } from "../../../design-system/aurora";
 
-import { getBrandProfile, getIntelligenceStatus, patchBrandProfile, uploadBrandLogo } from "../api/brand-client";
+import {
+  getBrandAuditExport,
+  getBrandProfile,
+  getIntelligenceStatus,
+  patchBrandProfile,
+  uploadBrandLogo,
+} from "../api/brand-client";
 import { uploadErrorMessage } from "../api/http-api-error";
 import { BrandImageAvatar } from "./brand-image-avatar";
 import type {
@@ -33,6 +39,7 @@ import {
 } from "../schemas/brand-dna-schema";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import type { BrandDnaState } from "../types";
+import { downloadBrandAuditPdf } from "../utils/brand-audit-pdf";
 import { fileToBase64 } from "../utils/image-upload";
 
 const INDUSTRY_EDIT_OPTIONS = INDUSTRY_VERTICALS.filter(
@@ -167,6 +174,8 @@ export function BrandDnaView() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const typographyLabel = useMemo(
     () => formatTypography(data.typography.heading, data.typography.body),
@@ -599,6 +608,29 @@ export function BrandDnaView() {
     });
   };
 
+  const handleDownloadAuditPdf = async () => {
+    const session = loadBrandOnboardingSession();
+    const leadId = leadIdFromState ?? session?.leadId;
+    if (!leadId) {
+      setPdfError("Missing lead id. Re-run the scan from the landing page.");
+      return;
+    }
+    setIsDownloadingPdf(true);
+    setPdfError(null);
+    try {
+      const audit = await getBrandAuditExport(leadId);
+      downloadBrandAuditPdf(audit);
+    } catch (err) {
+      setPdfError(
+        err instanceof Error
+          ? err.message
+          : "Could not download audit PDF. Please try again.",
+      );
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   return (
     <div className="bob-funnel-page bob-container">
       <div className="bob-funnel-page__header">
@@ -608,11 +640,26 @@ export function BrandDnaView() {
           </h1>
           <p className="bob-muted">{subtitle}</p>
         </div>
-        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
-          Back
-        </Button>
+        <div className="bob-stack" style={{ flexDirection: "row", gap: 8 }}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void handleDownloadAuditPdf()}
+            disabled={isDownloadingPdf || isLoading}
+          >
+            {isDownloadingPdf ? "Preparing PDF…" : "Download audit PDF"}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+            Back
+          </Button>
+        </div>
       </div>
 
+      {pdfError ? (
+        <Alert title="PDF download failed" tone="error">
+          {pdfError}
+        </Alert>
+      ) : null}
       {loadError ? (
         <Alert title="Couldn’t load profile" tone="error">
           {loadError}

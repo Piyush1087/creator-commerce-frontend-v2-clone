@@ -290,6 +290,80 @@ export type IntelligenceStatusResponse = {
   error: string | null;
 };
 
+export type BrandAuditFieldRow = {
+  field: string;
+  value: string;
+  source: string;
+  sourceDetail: string;
+  confidence: number | null;
+  edited: boolean;
+  evidence: string;
+};
+
+export type BrandAuditExportResponse = {
+  leadId: string;
+  brandProfileId: string | null;
+  domain: string | null;
+  generatedAt: string;
+  currentStage: BrandIntelligenceStage | null;
+  pipelineError: string | null;
+  surfaceScan: {
+    completedAt: string | null;
+    scanId: string;
+    discoveredLinksCount: number;
+    discoveredLinksSample: string[];
+    fields: BrandAuditFieldRow[];
+    confirmedIdentity: BrandAuditFieldRow[] | null;
+  };
+  phaseB: {
+    stage1b: {
+      status: string | null;
+      plannedUrls: string[];
+      pageCount: number | null;
+      completedAt: string | null;
+    };
+    crawledPages: Array<{
+      url: string;
+      pageType: string;
+      title: string | null;
+      textChars: number;
+    }>;
+    websiteAssets: {
+      colors: string[];
+      fonts: string[];
+      logo: string | null;
+    };
+    websiteSummary: {
+      homepageExcerpt: string;
+      aboutExcerpt: string | null;
+      navLabels: string[];
+    };
+    brandDna: {
+      fields: BrandAuditFieldRow[];
+      personas: Array<{
+        index: number;
+        fields: BrandAuditFieldRow[];
+      }>;
+    } | null;
+  };
+};
+
+export function isBrandAuditExportResponse(
+  value: unknown,
+): value is BrandAuditExportResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const v = value as { leadId?: unknown; surfaceScan?: unknown; phaseB?: unknown };
+  return (
+    typeof v.leadId === "string" &&
+    typeof v.surfaceScan === "object" &&
+    v.surfaceScan !== null &&
+    typeof v.phaseB === "object" &&
+    v.phaseB !== null
+  );
+}
+
 export type Checkpoint2Status = "ready" | "building" | "failed";
 
 export type Checkpoint2Response = {

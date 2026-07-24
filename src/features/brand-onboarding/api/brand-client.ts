@@ -5,6 +5,7 @@ import type {
   DiscoverValidateVerificationRequired,
 } from "../contracts/discovery.contracts";
 import type {
+  BrandAuditExportResponse,
   BrandProfileResponseBody,
   ConfirmCheckpoint2RequestBody,
   ConfirmCheckpoint2ResponseBody,
@@ -24,6 +25,7 @@ import type {
 import type { SurfaceScanInfrastructureErrorBody } from "../contracts/brand.contracts";
 import type { SurfaceScanTimeoutErrorBody } from "../contracts/brand.contracts";
 import {
+  isBrandAuditExportResponse,
   isBrandProfileResponse,
   isCheckpoint2Response,
   isCoreIdentitySnapshotResponse,
@@ -211,6 +213,20 @@ export async function getIntelligenceStatus(
     throw new Error("Unexpected response from intelligence status.");
   }
   return json as IntelligenceStatusResponse;
+}
+
+export async function getBrandAuditExport(
+  leadId: string,
+): Promise<BrandAuditExportResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/audit/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandAuditExportResponse(json)) {
+    throw new Error("Unexpected response from brand audit export.");
+  }
+  return json;
 }
 
 export async function getCheckpoint2(
