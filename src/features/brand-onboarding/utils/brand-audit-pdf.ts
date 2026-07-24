@@ -210,6 +210,7 @@ export function downloadBrandAuditPdf(audit: BrandAuditExportResponse): void {
     doc,
     [
       ["Scan ID", audit.surfaceScan.scanId],
+      ["Acquisition", audit.surfaceScan.discoveryMode ?? "—"],
       ["Completed", formatDate(audit.surfaceScan.completedAt)],
       [
         "Discovered links",

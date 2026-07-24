@@ -200,7 +200,7 @@ export type UniversalFieldWrapper<T> = {
   value: T;
   confidence: number;
   evidence: FieldEvidence[];
-  source: "AI" | "USER" | "SYSTEM" | "CRAWLER" | string;
+  source: "AI" | "USER" | "SYSTEM" | "CRAWLER" | "ZYTE" | "PLAYWRIGHT" | string;
   edited: boolean;
 };
 
@@ -253,6 +253,7 @@ export type ConfirmIdentityResponseBody = {
 
 export type BrandIntelligenceStage =
   | "STAGE_1A_COMPLETE"
+  | "STAGE_1A_FAILED_FALLBACK"
   | "CORE_IDENTITY_APPROVED"
   | "STAGE_1B_COMPLETE"
   | "STAGE_1B_FAILED"
@@ -310,6 +311,7 @@ export type BrandAuditExportResponse = {
   surfaceScan: {
     completedAt: string | null;
     scanId: string;
+    discoveryMode: string | null;
     discoveredLinksCount: number;
     discoveredLinksSample: string[];
     fields: BrandAuditFieldRow[];

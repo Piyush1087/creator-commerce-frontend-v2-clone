@@ -17,6 +17,7 @@ import {
 import { catalogueOfferingSchema, zodFirstError } from "../schemas/brand-dna-schema";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import { fileToBase64 } from "../utils/image-upload";
+import { hostnameBelongsToBrand } from "../utils/normalize-catalogue-url";
 import type { CatalogueProduct } from "../types";
 
 export function BrandCatalogueView() {
@@ -134,7 +135,7 @@ export function BrandCatalogueView() {
     try {
       const url = new URL(parsed.data.url);
       const host = url.hostname.replace(/^www\./, "");
-      if (!host.includes(rootDomain)) {
+      if (!hostnameBelongsToBrand(host, rootDomain)) {
         setModalError(`You can only add products from ${rootDomain}.`);
         return;
       }
@@ -170,6 +171,17 @@ export function BrandCatalogueView() {
     });
     if (!parsed.success) {
       setModalError(zodFirstError(parsed.error));
+      return;
+    }
+    try {
+      const url = new URL(parsed.data.url);
+      const host = url.hostname.replace(/^www\./, "");
+      if (!hostnameBelongsToBrand(host, rootDomain)) {
+        setModalError(`You can only add products from ${rootDomain}.`);
+        return;
+      }
+    } catch {
+      setModalError("Enter a valid product URL.");
       return;
     }
     const merged = products.map((item) =>

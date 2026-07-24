@@ -16,6 +16,10 @@ import {
 } from "../verification-otp.config";
 import { parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
+import {
+  emailDomainFromAddress,
+  emailDomainMatchesBrandDomain,
+} from "../utils/verification-email-domain";
 
 type VerifyStep = "email" | "otp" | "success";
 
@@ -105,6 +109,14 @@ export function BrandVerificationView() {
 
     if (!isValidEmail(email)) {
       setError("Please enter a valid email address (e.g., name@brand.in)");
+      return;
+    }
+
+    if (!emailDomainMatchesBrandDomain(email, domain)) {
+      const emailDomain = emailDomainFromAddress(email) || "unknown";
+      setError(
+        `The email domain (@${emailDomain}) doesn't match your website (${domain}). Please use your work email, or go back and re-enter your website.`,
+      );
       return;
     }
 
@@ -394,12 +406,6 @@ export function BrandVerificationView() {
                       helperText="We'll send a one-time verification code to this address."
                       error={error ?? undefined}
                     />
-                    {error && (
-                      <div className="bob-inline-error">
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
-                      </div>
-                    )}
                     <div style={{ marginTop: "var(--space-sm)" }}>
                       <Button
                         type="submit"

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { normalizeOnboardingWebsiteUrl } from "../utils/normalize-catalogue-url";
+
 const colorHex = z
   .string()
   .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "Use a valid hex color (e.g. #1A2B3C).");
@@ -125,7 +127,12 @@ export const catalogueOfferingSchema = z.object({
     .trim()
     .min(1, "Product name is required.")
     .max(200, "Product name must be 200 characters or fewer."),
-  url: z.string().url("Enter a valid product URL."),
+  url: z
+    .string()
+    .trim()
+    .min(1, "Enter a valid product URL.")
+    .transform((value) => normalizeOnboardingWebsiteUrl(value))
+    .pipe(z.string().url("Enter a valid product URL.")),
   description: z
     .string()
     .max(150, "Product description must be 150 characters or fewer.")
@@ -150,7 +157,12 @@ export const competitorEditSchema = z.object({
     .trim()
     .min(1, "Competitor name is required.")
     .max(200, "Competitor name must be 200 characters or fewer."),
-  websiteUrl: z.string().url("Enter a valid competitor website."),
+  websiteUrl: z
+    .string()
+    .trim()
+    .min(1, "Enter a valid competitor website.")
+    .transform((value) => normalizeOnboardingWebsiteUrl(value))
+    .pipe(z.string().url("Enter a valid competitor website.")),
   whyCompetitor: z
     .string()
     .trim()
