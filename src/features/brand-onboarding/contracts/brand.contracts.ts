@@ -283,12 +283,21 @@ export type BrandDnaSnapshot = {
   audience_personas: BrandDnaAudiencePersona[];
 };
 
+export type IntelligenceJobStatus =
+  | "QUEUED"
+  | "RUNNING"
+  | "COMPLETED"
+  | "FAILED";
+
 export type IntelligenceStatusResponse = {
   leadId: string;
   brandProfileId: string | null;
   currentStage: BrandIntelligenceStage | null;
   brandDna: BrandDnaSnapshot | null;
   error: string | null;
+  /** Present on newer APIs — keep polling while QUEUED/RUNNING (job retries). */
+  jobStatus?: IntelligenceJobStatus | null;
+  jobAttempt?: number | null;
 };
 
 export type BrandAuditFieldRow = {

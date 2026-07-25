@@ -5,9 +5,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../../design-system/aurora";
 
 import { getIntelligenceStatus } from "../api/brand-client";
-import type { BrandIntelligenceStage } from "../contracts/brand.contracts";
+import type {
+  BrandIntelligenceStage,
+  IntelligenceStatusResponse,
+} from "../contracts/brand.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
+import { decideIntelligencePoll } from "../utils/intelligence-pipeline-status";
 
 type IntelligenceScanLocationState = {
   url?: string;
@@ -36,12 +40,6 @@ const INTELLIGENCE_STEPS = [
     stage: "STAGE_2_BRAND_DNA_COMPLETE" as const,
   },
 ] as const;
-
-const PIPELINE_FAILED: BrandIntelligenceStage[] = [
-  "STAGE_1B_FAILED",
-  "STAGE_2_BRAND_DNA_FAILED",
-  "STAGE_2_NEEDS_REVIEW",
-];
 
 const DESKTOP_ORBIT_CHIPS = [
   "Pages Acquired",
@@ -73,6 +71,13 @@ function stageToUiIndex(stage: BrandIntelligenceStage | null): number {
   }
   if (stage === "STAGE_2_BRAND_DNA_ARCHIVED" || stage === "CHECKPOINT_2_CONFIRMED") {
     return INTELLIGENCE_STEPS.length;
+  }
+  // Transient fail stages (job may still be retrying) — keep progress UI stable.
+  if (stage === "STAGE_1B_FAILED") {
+    return 0;
+  }
+  if (stage === "STAGE_2_BRAND_DNA_FAILED" || stage === "STAGE_2_NEEDS_REVIEW") {
+    return 1;
   }
   const idx = INTELLIGENCE_STEPS.findIndex((step) => step.stage === stage);
   return idx >= 0 ? idx : 0;
@@ -114,6 +119,7 @@ export function BrandIntelligenceScanView() {
     let cancelled = false;
     let pollId: number | undefined;
     let navigateTimeout: number | undefined;
+    const startedAtMs = Date.now();
 
     const dnaState = {
       url: brandUrl,
@@ -138,14 +144,11 @@ export function BrandIntelligenceScanView() {
       }, 700);
     };
 
-    const applyStage = (stage: BrandIntelligenceStage | null) => {
-      if (!stage) {
-        setUiStep(0);
-        setCompleteSteps([]);
-        return "poll" as const;
-      }
+    const applyStatus = (status: IntelligenceStatusResponse) => {
+      const stage = status.currentStage;
+      const decision = decideIntelligencePoll(status, { startedAtMs });
 
-      if (PIPELINE_FAILED.includes(stage)) {
+      if (decision === "failed") {
         setScanComplete(true);
         setCompleteSteps(INTELLIGENCE_STEPS.map((_, idx) => idx));
         setUiStep(INTELLIGENCE_STEPS.length);
@@ -156,15 +159,18 @@ export function BrandIntelligenceScanView() {
         return "done" as const;
       }
 
-      if (
-        stage === "STAGE_2_BRAND_DNA_ARCHIVED" ||
-        stage === "CHECKPOINT_2_CONFIRMED"
-      ) {
+      if (decision === "success") {
         setScanComplete(true);
         setCompleteSteps(INTELLIGENCE_STEPS.map((_, idx) => idx));
         setUiStep(INTELLIGENCE_STEPS.length);
         goToDna();
         return "done" as const;
+      }
+
+      if (!stage) {
+        setUiStep(0);
+        setCompleteSteps([]);
+        return "poll" as const;
       }
 
       const activeIndex = stageToUiIndex(stage);
@@ -181,7 +187,7 @@ export function BrandIntelligenceScanView() {
         if (cancelled) {
           return;
         }
-        const mode = applyStage(status.currentStage);
+        const mode = applyStatus(status);
         if (mode === "done" && pollId) {
           window.clearInterval(pollId);
           pollId = undefined;
