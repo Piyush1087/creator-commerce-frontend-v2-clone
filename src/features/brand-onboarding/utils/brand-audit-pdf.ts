@@ -10,9 +10,18 @@ type JsPdfWithAutoTable = jsPDF & {
   lastAutoTable?: { finalY: number };
 };
 
+export type BrandAuditPdfExtras = {
+  /** Prefer the logo already shown on Brand DNA (often same-origin / uploaded). */
+  logoUrl?: string | null;
+  /** Fallback palette when crawl assets have no colors. */
+  colors?: string[];
+};
+
 const MARGIN = 14;
 const PAGE_WIDTH = 210;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+const SWATCH_RADIUS = 4.5;
+const SWATCH_GAP = 16;
 
 function formatConfidence(value: number | null): string {
   if (value === null || Number.isNaN(value)) {
@@ -164,10 +173,281 @@ function safeFilenamePart(value: string | null | undefined): string {
   return cleaned || "brand";
 }
 
+function parseCssColor(input: string): [number, number, number] | null {
+  const value = input.trim();
+  if (!value) {
+    return null;
+  }
+
+  const hexMatch = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    if (hex.length === 3) {
+      const r = Number.parseInt(hex[0] + hex[0], 16);
+      const g = Number.parseInt(hex[1] + hex[1], 16);
+      const b = Number.parseInt(hex[2] + hex[2], 16);
+      return [r, g, b];
+    }
+    const r = Number.parseInt(hex.slice(0, 2), 16);
+    const g = Number.parseInt(hex.slice(2, 4), 16);
+    const b = Number.parseInt(hex.slice(4, 6), 16);
+    return [r, g, b];
+  }
+
+  const rgbMatch =
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i.exec(value);
+  if (rgbMatch) {
+    const r = Math.min(255, Number(rgbMatch[1]));
+    const g = Math.min(255, Number(rgbMatch[2]));
+    const b = Math.min(255, Number(rgbMatch[3]));
+    return [r, g, b];
+  }
+
+  return null;
+}
+
+type LoadedImage = {
+  dataUrl: string;
+  format: "PNG" | "JPEG" | "WEBP";
+  width: number;
+  height: number;
+};
+
+function detectImageFormat(
+  dataUrl: string,
+  contentType?: string | null,
+): "PNG" | "JPEG" | "WEBP" {
+  const mime = (contentType ?? "").toLowerCase();
+  if (mime.includes("png") || dataUrl.startsWith("data:image/png")) {
+    return "PNG";
+  }
+  if (mime.includes("webp") || dataUrl.startsWith("data:image/webp")) {
+    return "WEBP";
+  }
+  return "JPEG";
+}
+
+async function loadImageForPdf(url: string): Promise<LoadedImage | null> {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("data:image/")) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({
+          dataUrl: trimmed,
+          format: detectImageFormat(trimmed),
+          width: img.naturalWidth || 1,
+          height: img.naturalHeight || 1,
+        });
+      };
+      img.onerror = () => resolve(null);
+      img.src = trimmed;
+    });
+  }
+
+  try {
+    const response = await fetch(trimmed, { mode: "cors", credentials: "omit" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const blob = await response.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Could not read image"));
+        }
+      };
+      reader.onerror = () => reject(new Error("Could not read image"));
+      reader.readAsDataURL(blob);
+    });
+
+    return await new Promise<LoadedImage | null>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({
+          dataUrl,
+          format: detectImageFormat(dataUrl, blob.type),
+          width: img.naturalWidth || 1,
+          height: img.naturalHeight || 1,
+        });
+      };
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
+  } catch {
+    // Fall through to <img crossOrigin> for CDN URLs that allow anonymous CORS.
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || 1;
+        canvas.height = img.naturalHeight || 1;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
+        resolve({
+          dataUrl,
+          format: "PNG",
+          width: canvas.width,
+          height: canvas.height,
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = trimmed;
+  });
+}
+
+function drawColorSwatches(
+  doc: JsPdfWithAutoTable,
+  colors: string[],
+  y: number,
+): number {
+  if (colors.length === 0) {
+    const nextY = ensureSpace(doc, y, 8);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text("No brand colors available.", MARGIN, nextY);
+    return nextY + 6;
+  }
+
+  const rowHeight = 16;
+  let cursorY = ensureSpace(doc, y, rowHeight);
+  let x = MARGIN + SWATCH_RADIUS;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+
+  for (const color of colors) {
+    if (x + SWATCH_RADIUS > MARGIN + CONTENT_WIDTH) {
+      cursorY = ensureSpace(doc, cursorY + rowHeight, rowHeight);
+      x = MARGIN + SWATCH_RADIUS;
+    }
+
+    const rgb = parseCssColor(color);
+    if (rgb) {
+      doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+      doc.circle(x, cursorY + SWATCH_RADIUS, SWATCH_RADIUS, "F");
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      doc.circle(x, cursorY + SWATCH_RADIUS, SWATCH_RADIUS, "S");
+    } else {
+      doc.setDrawColor(160, 160, 160);
+      doc.setLineWidth(0.3);
+      doc.circle(x, cursorY + SWATCH_RADIUS, SWATCH_RADIUS, "S");
+    }
+
+    doc.setTextColor(60, 60, 60);
+    const label = color.length > 12 ? `${color.slice(0, 11)}…` : color;
+    doc.text(label, x, cursorY + SWATCH_RADIUS * 2 + 3.5, { align: "center" });
+    x += SWATCH_GAP;
+  }
+
+  return cursorY + rowHeight + 2;
+}
+
+function drawLogoBlock(
+  doc: JsPdfWithAutoTable,
+  logo: LoadedImage | null,
+  logoUrl: string | null,
+  y: number,
+): number {
+  let cursorY = ensureSpace(doc, y, logo ? 28 : 10);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(40, 40, 40);
+  doc.text("Logo", MARGIN, cursorY);
+  cursorY += 3;
+
+  if (logo) {
+    const maxW = 42;
+    const maxH = 22;
+    const scale = Math.min(maxW / logo.width, maxH / logo.height, 1);
+    const w = Math.max(8, logo.width * scale);
+    const h = Math.max(8, logo.height * scale);
+    cursorY = ensureSpace(doc, cursorY, h + 4);
+    try {
+      doc.addImage(logo.dataUrl, logo.format, MARGIN, cursorY, w, h);
+      return cursorY + h + 6;
+    } catch {
+      // Fall through to URL text if embed fails.
+    }
+  }
+
+  cursorY = ensureSpace(doc, cursorY, 8);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    logoUrl ? clipText(logoUrl, 120) : "No logo available.",
+    MARGIN,
+    cursorY,
+    { maxWidth: CONTENT_WIDTH },
+  );
+  return cursorY + 8;
+}
+
+async function drawWebsiteAssetsVisual(
+  doc: JsPdfWithAutoTable,
+  args: {
+    colors: string[];
+    logoUrl: string | null;
+    fonts: string[];
+  },
+  y: number,
+): Promise<number> {
+  let cursorY = y;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(40, 40, 40);
+  cursorY = ensureSpace(doc, cursorY, 8);
+  doc.text("Colors", MARGIN, cursorY);
+  cursorY += 3;
+  cursorY = drawColorSwatches(doc, args.colors, cursorY);
+
+  const logoImage = args.logoUrl ? await loadImageForPdf(args.logoUrl) : null;
+  cursorY = drawLogoBlock(doc, logoImage, args.logoUrl, cursorY);
+
+  cursorY = kvBlock(
+    doc,
+    [
+      [
+        "Fonts",
+        args.fonts.length > 0 ? args.fonts.join(", ") : "—",
+      ],
+    ],
+    cursorY,
+  );
+
+  return cursorY;
+}
+
 /**
  * Builds a product-team audit PDF: Surface Scan + Phase B combined data.
  */
-export function downloadBrandAuditPdf(audit: BrandAuditExportResponse): void {
+export async function downloadBrandAuditPdf(
+  audit: BrandAuditExportResponse,
+  extras?: BrandAuditPdfExtras,
+): Promise<void> {
   const doc = new jsPDF({ unit: "mm", format: "a4" }) as JsPdfWithAutoTable;
   let y = MARGIN;
 
@@ -292,22 +572,27 @@ export function downloadBrandAuditPdf(audit: BrandAuditExportResponse): void {
   }
 
   y = subsectionTitle(doc, "Website assets (derived from crawl)", y);
+  const assetColors =
+    audit.phaseB.websiteAssets.colors.length > 0
+      ? audit.phaseB.websiteAssets.colors
+      : (extras?.colors ?? []);
+  const assetLogo =
+    extras?.logoUrl?.trim() ||
+    audit.phaseB.websiteAssets.logo ||
+    null;
+  y = await drawWebsiteAssetsVisual(
+    doc,
+    {
+      colors: assetColors,
+      logoUrl: assetLogo,
+      fonts: audit.phaseB.websiteAssets.fonts,
+    },
+    y,
+  );
+
   y = kvBlock(
     doc,
     [
-      [
-        "Colors",
-        audit.phaseB.websiteAssets.colors.length > 0
-          ? audit.phaseB.websiteAssets.colors.join(", ")
-          : "—",
-      ],
-      [
-        "Fonts",
-        audit.phaseB.websiteAssets.fonts.length > 0
-          ? audit.phaseB.websiteAssets.fonts.join(", ")
-          : "—",
-      ],
-      ["Logo", audit.phaseB.websiteAssets.logo ?? "—"],
       [
         "Nav labels",
         audit.phaseB.websiteSummary.navLabels.length > 0

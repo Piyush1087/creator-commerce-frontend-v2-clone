@@ -41,23 +41,12 @@ import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import type { BrandDnaState } from "../types";
 import { downloadBrandAuditPdf } from "../utils/brand-audit-pdf";
 import { fileToBase64 } from "../utils/image-upload";
+import { decideIntelligencePoll } from "../utils/intelligence-pipeline-status";
 
 const INDUSTRY_EDIT_OPTIONS = INDUSTRY_VERTICALS.filter(
   (value) =>
     value !== "GAMBLING" && value !== "ADULT" && value !== "FRAUDULENT_HIGH_RISK",
 );
-
-const PIPELINE_IN_PROGRESS: BrandIntelligenceStage[] = [
-  "CORE_IDENTITY_APPROVED",
-  "STAGE_1B_COMPLETE",
-  "STAGE_2_BRAND_DNA_COMPLETE",
-];
-
-const PIPELINE_FAILED: BrandIntelligenceStage[] = [
-  "STAGE_1B_FAILED",
-  "STAGE_2_BRAND_DNA_FAILED",
-  "STAGE_2_NEEDS_REVIEW",
-];
 
 function displayOrDash(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
@@ -84,8 +73,11 @@ function wrapDisplay(wrapper: UniversalFieldWrapper<unknown> | null | undefined)
 function stageProgressLabel(stage: BrandIntelligenceStage | null): string {
   switch (stage) {
     case "CORE_IDENTITY_APPROVED":
+    case "STAGE_1B_FAILED":
       return "Acquiring brand pages…";
     case "STAGE_1B_COMPLETE":
+    case "STAGE_2_BRAND_DNA_FAILED":
+    case "STAGE_2_NEEDS_REVIEW":
       return "Extracting Brand DNA…";
     case "STAGE_2_BRAND_DNA_COMPLETE":
       return "Validating Brand DNA…";
@@ -215,6 +207,7 @@ export function BrandDnaView() {
 
     let cancelled = false;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const startedAtMs = Date.now();
 
     const loadProfile = async () => {
       const profile = await getBrandProfile(id);
@@ -230,25 +223,27 @@ export function BrandDnaView() {
       if (status.brandDna) {
         setBrandDnaExtra(status.brandDna);
       }
-      if (status.currentStage && PIPELINE_IN_PROGRESS.includes(status.currentStage)) {
+
+      const decision = decideIntelligencePoll(status, { startedAtMs });
+
+      if (decision === "poll") {
         setIntelBuilding(true);
+        // Clear a premature failure notice if the worker is still retrying.
         setIntelNotice(null);
         return "poll" as const;
       }
-      if (status.currentStage === "STAGE_2_BRAND_DNA_ARCHIVED") {
+
+      if (decision === "success") {
         setIntelBuilding(false);
         setIntelNotice(null);
         await loadProfile();
         return "done" as const;
       }
-      if (status.currentStage && PIPELINE_FAILED.includes(status.currentStage)) {
-        setIntelBuilding(false);
-        setIntelNotice(
-          "Deeper brand analysis unavailable — you can edit manually.",
-        );
-        return "done" as const;
-      }
+
       setIntelBuilding(false);
+      setIntelNotice(
+        "Deeper brand analysis unavailable — you can edit manually.",
+      );
       return "done" as const;
     };
 
@@ -619,7 +614,10 @@ export function BrandDnaView() {
     setPdfError(null);
     try {
       const audit = await getBrandAuditExport(leadId);
-      downloadBrandAuditPdf(audit);
+      await downloadBrandAuditPdf(audit, {
+        logoUrl: data.logo,
+        colors: data.colors,
+      });
     } catch (err) {
       setPdfError(
         err instanceof Error
