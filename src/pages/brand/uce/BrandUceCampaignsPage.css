@@ -1,31 +1,44 @@
+/* Match Brand Centre flush content: 1440px + 32px gutters */
 .brand-uce-campaigns-page {
-  padding: var(--space-xl);
-  max-width: 1400px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1440px;
   margin: 0 auto;
+  padding: 32px;
+  min-width: 0;
 }
 
-.page-header {
+.brand-uce-campaigns-page .page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--space-xl);
+  gap: 24px;
+  margin-bottom: 32px;
 }
 
-.page-title {
+.brand-uce-campaigns-page .page-title {
   font-family: var(--font-heading);
   font-size: var(--size-h1);
   font-weight: 600;
-  margin-bottom: var(--space-xs);
+  margin: 0 0 8px;
 }
 
-.page-subtitle {
+.brand-uce-campaigns-page .page-subtitle {
+  margin: 0;
   color: var(--text-muted);
   font-size: var(--size-body);
+  line-height: 1.5;
 }
 
-.header-actions {
+.brand-uce-campaigns-page .header-actions {
   display: flex;
-  gap: var(--space-md);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.brand-uce-campaigns-page .page-content {
+  min-width: 0;
+  width: 100%;
 }
 
 @media (max-width: 767px) {
@@ -33,21 +46,23 @@
     padding: 24px 16px;
   }
 
-  .page-header {
+  .brand-uce-campaigns-page .page-header {
     flex-direction: column;
-    gap: var(--space-lg);
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 24px;
   }
 
-  .page-title {
+  .brand-uce-campaigns-page .page-title {
     font-size: 1.5rem;
   }
 
-  .header-actions {
+  .brand-uce-campaigns-page .header-actions {
     width: 100%;
     flex-direction: column;
   }
 
-  .header-actions button {
+  .brand-uce-campaigns-page .header-actions button {
     width: 100%;
     justify-content: center;
     min-height: 44px;

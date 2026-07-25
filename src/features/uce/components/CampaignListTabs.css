@@ -6,6 +6,13 @@
 
 .campaign-list-tabs__header {
   border-bottom: 1px solid var(--border-default);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.campaign-list-tabs__header .aurora-tabs {
+  flex-wrap: nowrap;
+  min-width: max-content;
 }
 
 .operations-tab__filters {

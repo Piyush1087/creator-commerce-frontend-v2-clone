@@ -24,6 +24,8 @@ import { CreatorCampaignsHistoryPage } from "../pages/creator/campaigns/creator-
 import { CreatorCampaignDetailPage } from "../pages/creator/marketplace/creator-campaign-detail-page";
 import { CreatorMarketplacePage } from "../pages/creator/marketplace/creator-marketplace-page";
 import { CreatorCentrePage } from "../pages/creator/centre/creator-centre-page";
+import { CreatorAnalyticsPage } from "../pages/creator/centre/creator-analytics-page";
+import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
@@ -75,15 +77,12 @@ export function AppRoutes() {
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
         <Route path={AUTH_ROUTES.creatorHome} element={<CreatorCentrePage />} />
+        <Route path={AUTH_ROUTES.creatorAnalytics} element={<CreatorAnalyticsPage />} />
+        <Route path={AUTH_ROUTES.creatorMediaKit} element={<CreatorMediaKitPage />} />
         <Route
-          path={AUTH_ROUTES.creatorAnalytics}
-          element={<Navigate to={`${AUTH_ROUTES.creatorHome}?tab=analytics`} replace />}
+          path={AUTH_ROUTES.creatorDashboard}
+          element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
         />
-        <Route
-          path={AUTH_ROUTES.creatorMediaKit}
-          element={<Navigate to={`${AUTH_ROUTES.creatorHome}?tab=media-kit`} replace />}
-        />
-        <Route path={AUTH_ROUTES.creatorDashboard} element={<CreatorCentrePage />} />
         <Route path={AUTH_ROUTES.creatorMarketplace} element={<CreatorMarketplacePage />} />
         <Route
           path={AUTH_ROUTES.creatorMarketplaceCampaign}

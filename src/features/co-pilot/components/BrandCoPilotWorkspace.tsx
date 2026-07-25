@@ -36,7 +36,6 @@ export function BrandCoPilotWorkspace() {
     onSubmitSlotValues: (values: Record<string, string>) => {
       void coPilot.submitSlotValues(values);
     },
-    onSubmitFeedback: coPilot.submitFeedback,
   };
 
   const composerLockedByHitl = coPilot.pendingHitlWidget !== null;
@@ -53,6 +52,11 @@ export function BrandCoPilotWorkspace() {
     : coPilot.hitlBusyKey
       ? "Working on your confirmed action…"
       : BRAND_CO_PILOT_INPUT_PLACEHOLDER;
+
+  const userMessageCount = coPilot.messages.filter(
+    (message) => message.sender === "USER",
+  ).length;
+  const suggestionCollapseSignal = `${coPilot.activeThreadId ?? "none"}:${userMessageCount}`;
 
   const pendingHitlBanner = composerLockedByHitl ? (
     <Alert tone="warning" title="Staged action waiting">
@@ -75,6 +79,7 @@ export function BrandCoPilotWorkspace() {
         templates={coPilot.intentTemplates}
         disabled={composerLockedByHitl}
         onSelect={coPilot.applyIntentTemplate}
+        collapseSignal={suggestionCollapseSignal}
       />
       <CoPilotComposer
         value={coPilot.promptInput}
@@ -102,6 +107,7 @@ export function BrandCoPilotWorkspace() {
         disabled={composerLockedByHitl}
         onSelect={coPilot.applyIntentTemplate}
         collapseByDefault
+        collapseSignal={suggestionCollapseSignal}
       />
       <CoPilotComposer
         value={coPilot.promptInput}

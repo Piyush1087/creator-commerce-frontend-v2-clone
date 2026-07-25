@@ -1,175 +1,146 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
-  Calendar,
-  CheckCircle2,
-  Eye,
-  FileText,
+  BadgeCheck,
+  FileCheck,
+  Globe,
+  Info,
+  Key,
   Lock,
-  MessageSquare,
-  RefreshCw,
+  Mail,
+  Shield,
   ShieldCheck,
-  Target,
-  TrendingUp,
-  Users,
-  Zap,
 } from "lucide-react";
 
 import { Button } from "../../../design-system/aurora";
 
-import { postDiscoveryResolve, postDiscoveryValidate } from "../api/discovery-client";
+import { postDiscoveryResolve, postDiscoveryValidate, postDiscoveryWaitlist } from "../api/discovery-client";
 import { isHttpApiError } from "../api/http-api-error";
-import type {
-  DiscoverValidateBrandActive,
-  DiscoverValidateOrgClaimed,
-  DiscoverValidateVerificationRequired,
-} from "../contracts/discovery.contracts";
+import type { IndustryVertical, WaitlistReasonCode } from "../contracts/discovery.contracts";
+import { waitlistReasonMessage } from "../contracts/discovery.contracts";
 import { ONBOARDING_ROUTES } from "../constants";
 import type { LandingGateRedirect, LandingGateRedirectState } from "../landing-gate-redirect";
-import { saveBrandOnboardingSession } from "../session/onboarding-session";
-import { BrandActiveModal } from "./brand-active-modal";
-import { RateLimitModal } from "./rate-limit-modal";
-import { LandingUrlCapture } from "./landing-url-capture";
-import { OrgClaimedModal } from "./org-claimed-modal";
+import {
+  loadBrandOnboardingSession,
+  saveBrandOnboardingSession,
+} from "../session/onboarding-session";
+import {
+  LANDING_CAPABILITIES,
+  LANDING_SECURITY_FEATURES,
+  LANDING_SECURITY_MANIFEST,
+  LANDING_TRINITY_PILLARS,
+  LANDING_TRUST_ITEMS,
+} from "./landing-page-content";
+import { LandingUrlCapture, type LandingUrlCaptureMode } from "./landing-url-capture";
 import { ProcessPreviewModal } from "./process-preview-modal";
-import { ResumeScanModal } from "./resume-scan-modal";
 import { SetupVerificationModal } from "./setup-verification-modal";
-import { VerificationRequiredModal } from "./verification-required-modal";
 
-const PROOF_PILLARS = [
-  {
-    title: "Understand Your Brand",
-    body: "Most platforms ask you to fill out 50 fields about your brand. We don't. Just share your website, and our AI learns your personality, your products, and what kind of creative partnership will actually resonate with your audience.",
-    Icon: Target,
-  },
-  {
-    title: "Find Your People",
-    body: "We don't just throw you a list of everyone with a big follower count. We match you with creators based on what matters: whether their audience overlaps with yours, if their content quality matches your standards, and whether they've delivered for brands like you before.",
-    Icon: Users,
-  },
-  {
-    title: "Stay in Sync",
-    body: "No more digging through email threads to find that one brief. Everything—contracts, content drafts, feedback, payments—lives in one conversation with each creator. So you can focus on building great campaigns, not managing chaos.",
-    Icon: RefreshCw,
-  },
+const CAPABILITY_AVATARS = [
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuCKNk1b7arJUls_PN1x6O-Kndrvp2y4zVr2cLuCY1HCUoW57ywuJY0Q1rhPH5PPO9ElN1HhYOnztLb3SR6a8DTl7FAkvfML-UXVBvLUdpSsRmWrHyu2wVELhoCCQ6V7QXBT31H33_ryvlhNjLYfGvEYYYCtmfOJpxOOIr5oKABNwMxU6GryvH4ICw-fyGZmulxSHXgtT5T8mzZa8yx20DqiGE9f-2GYtTPnSYNJgt-mbCi7xrL01zp13PA6w8GW_eZY_lqSt_CIaUBM",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuD5Y6lzHE26NykapC3gTniSfhwsJMr5EwNTydSbiCqLCqawDTk_T_2xe88IhIGQlCBKZOfza0PZV_WsnSS-ZyPrI-R1ZwDdPYVkoorEBpa3fnPGCF2j5dQsZEwmNESlWKXaXO03APPKUbG8faI5dBq5NGelpqwkU5Yr6c3iLt1DDuN61hjVd5Qu2vjEMW5-GQzKpErdbCKwv9IBXRhqJsvXA1PF1Rz512qjXdwx9_Zpy1TU0snbPPpqPRzxpdOulTrK4wscpaPabfEN",
 ] as const;
 
-const CAPABILITIES = [
-  {
-    title: "Instant Brand Profile",
-    body: "We do the heavy lifting by building your profile from your URL.",
-    Icon: FileText,
-  },
-  {
-    title: "Campaign Planner",
-    body: "Effortlessly map out seasonal stories with AI-guided strategy.",
-    Icon: Calendar,
-  },
-  {
-    title: "Creator Deep-Dive",
-    body: "Get the full picture of a partner's impact before you reach out.",
-    Icon: Eye,
-  },
-  {
-    title: "Growth-Ready Plans",
-    body: "Flexible options that grow alongside your brand's success.",
-    Icon: TrendingUp,
-  },
-  {
-    title: "Direct Relationships",
-    body: "Skip the inbox clutter with a faster, more personal chat UI.",
-    Icon: MessageSquare,
-  },
-  {
-    title: "Insightful Intelligence",
-    body: "Stay informed on industry trends to keep your strategy fresh.",
-    Icon: Zap,
-  },
-  {
-    title: "Performance Reports",
-    body: "Clear, actionable data to help you celebrate your ROI.",
-    Icon: BarChart3,
-  },
-  {
-    title: "Fair Market Access",
-    body: "Save up to 40% by connecting directly with talent who fit your budget.",
-    Icon: Zap,
-  },
-  {
-    title: "Secure Escrow",
-    body: "Your investment is protected until every deliverable is met.",
-    Icon: ShieldCheck,
-  },
-] as const;
+const SECURITY_TERMINAL_IMAGE =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuC4G1pPRoiROyUWaJyQYYiDWWrJDnp5h_x0VIZagmQLo_j2LiYs9oP2BjcBPuz8-qaxkd_cUPvzSvd9oW7pEnd9w6IZzZDSJzEJkvnOAhps4i2Tuk-feC56W-bACztwRegpGR8UaQhk4j1hK2UVAOGeJUodlS_W9G-moOXIJH2_yO9qoJvW3aE4f8psuszSNEMr1nr75kY6wDWEk0WCutBVho37gYor8DYm78sn-UQfWp-_KndX-tWiJmeP5AL2mipMIQ0HhbgSmQTO";
+
+function formatIndustry(industry: string): string {
+  return industry.replace(/_/g, " ");
+}
+
+function waitlistCtaLabel(industry: string): string {
+  const label = formatIndustry(industry);
+  return `Notify me when ${label} launches`;
+}
 
 function applyLandingGateRedirect(
   gate: LandingGateRedirect,
   handlers: {
-    setRateLimitModal: (value: { message?: string } | null) => void;
-    setVerificationRequired: (v: DiscoverValidateVerificationRequired | null) => void;
-    setBrandActive: (v: DiscoverValidateBrandActive | null) => void;
-    setOrgClaimed: (v: DiscoverValidateOrgClaimed | null) => void;
     setBrandProfileId: (id: string | null) => void;
     setLeadId: (id: string | null) => void;
     setScannedUrl: (url: string) => void;
   },
 ): void {
-  handlers.setRateLimitModal(null);
-  handlers.setVerificationRequired(null);
-  handlers.setBrandActive(null);
-  handlers.setOrgClaimed(null);
-
-  switch (gate.kind) {
-    case "rate_limit":
-      handlers.setRateLimitModal({ message: gate.message });
-      break;
-    case "verification_required":
-      handlers.setVerificationRequired(gate.payload);
-      handlers.setBrandProfileId(gate.payload.brandProfileId);
-      if (gate.leadId) {
-        handlers.setLeadId(gate.leadId);
-      }
-      if (gate.normalizedUrl) {
-        handlers.setScannedUrl(gate.normalizedUrl);
-      }
-      break;
-    case "brand_active":
-      handlers.setBrandActive(gate.payload);
-      break;
-    case "org_claimed":
-      handlers.setOrgClaimed(gate.payload);
-      break;
-    default:
-      break;
+  if (gate.kind === "verification_required") {
+    handlers.setBrandProfileId(gate.payload.brandProfileId);
+    if (gate.leadId) {
+      handlers.setLeadId(gate.leadId);
+    }
+    if (gate.normalizedUrl) {
+      handlers.setScannedUrl(gate.normalizedUrl);
+    }
   }
+}
+
+function trustIcon(icon: (typeof LANDING_TRUST_ITEMS)[number]["icon"]) {
+  switch (icon) {
+    case "verified":
+      return BadgeCheck;
+    case "lock":
+      return Lock;
+    case "shield":
+      return Shield;
+    case "policy":
+      return FileCheck;
+    default:
+      return ShieldCheck;
+  }
+}
+
+function securityFeatureIcon(index: number) {
+  if (index === 0) {
+    return ShieldCheck;
+  }
+  if (index === 1) {
+    return Shield;
+  }
+  return Key;
 }
 
 export function LandingPageView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [modalStep, setModalStep] = useState<"none" | "preview" | "setup">(
-    "none",
+  const [gateBanner, setGateBanner] = useState<
+    | null
+    | { tone: "error" | "warning" | "success"; message: string; mode?: "shake" | "locked" }
+  >(null);
+  const [lockedUrl, setLockedUrl] = useState<string | null>(null);
+  const [primaryLabel, setPrimaryLabel] = useState("Analyze My Brand");
+  const [primaryDisabled, setPrimaryDisabled] = useState(false);
+  const [emailCapture, setEmailCapture] = useState<
+    | null
+    | {
+        kind: "waitlist" | "org_claimed";
+        body: string;
+        domain: string;
+        industry?: IndustryVertical;
+        reason?: WaitlistReasonCode;
+        leadId?: string;
+        marketIntelligenceLogId?: string;
+        sourceUrl?: string;
+      }
+  >(null);
+  const [capturedEmail, setCapturedEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailCapturedSuccess, setEmailCapturedSuccess] = useState<string | null>(
+    null,
   );
+  const [modalStep, setModalStep] = useState<"none" | "preview" | "setup">("none");
   const [leadId, setLeadId] = useState<string | null>(null);
   const [brandProfileId, setBrandProfileId] = useState<string | null>(null);
   const [scannedUrl, setScannedUrl] = useState("");
-  const [resumeDomain, setResumeDomain] = useState("");
-  const [showResumeModal, setShowResumeModal] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [waitlistNotice, setWaitlistNotice] = useState<string | null>(null);
-  const [orgClaimed, setOrgClaimed] = useState<DiscoverValidateOrgClaimed | null>(
-    null,
-  );
-  const [brandActive, setBrandActive] = useState<DiscoverValidateBrandActive | null>(
-    null,
-  );
-  const [verificationRequired, setVerificationRequired] =
-    useState<DiscoverValidateVerificationRequired | null>(null);
-  const [rateLimitModal, setRateLimitModal] = useState<{ message?: string } | null>(
-    null,
-  );
+  const [stickyCtaVisible, setStickyCtaVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setStickyCtaVisible(window.scrollY > 600);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const state = location.state as LandingGateRedirectState | null;
@@ -178,16 +149,48 @@ export function LandingPageView() {
       return;
     }
     applyLandingGateRedirect(gate, {
-      setRateLimitModal,
-      setVerificationRequired,
-      setBrandActive,
-      setOrgClaimed,
       setBrandProfileId,
       setLeadId,
       setScannedUrl,
     });
+    if (gate.kind === "infrastructure_error") {
+      // Landing Page State F: input keeps the failing domain, marked with the
+      // status-error token, and the CTA becomes "Retry Connection Check".
+      setGateBanner({ tone: "error", message: gate.message });
+      setLockedUrl(gate.url ?? scannedUrl ?? "");
+      setPrimaryLabel("Retry Connection Check");
+    }
+    if (gate.kind === "rate_limit") {
+      setGateBanner({
+        tone: "warning",
+        message: gate.message?.trim() || "Too many requests. Please try again shortly.",
+      });
+      setLockedUrl(scannedUrl || "");
+      setPrimaryLabel("Retry Connection Check");
+    }
+    if (gate.kind === "org_claimed") {
+      setGateBanner({ tone: "warning", message: gate.payload.message, mode: "locked" });
+      setLockedUrl(gate.payload.domain);
+      setPrimaryLabel("Domain Claimed");
+      setPrimaryDisabled(true);
+      setEmailCapture({
+        kind: "org_claimed",
+        body: "Enter your professional email address to request a team invite.",
+        domain: gate.payload.domain,
+      });
+    }
+    if (gate.kind === "brand_active") {
+      setGateBanner({ tone: "warning", message: gate.payload.message, mode: "locked" });
+      setLockedUrl(gate.payload.domain);
+      setPrimaryLabel("Sign in");
+      setPrimaryDisabled(false);
+    }
+    if (gate.kind === "verification_required") {
+      setGateBanner({ tone: "warning", message: gate.payload.message, mode: "locked" });
+      setPrimaryLabel("Verify Domain Ownership");
+    }
     navigate(location.pathname, { replace: true, state: {} });
-  }, [location.pathname, location.state, navigate]);
+  }, [location.pathname, location.state, navigate, scannedUrl]);
 
   const ensureLeadForUrl = async (url: string): Promise<string | null> => {
     const validated = await postDiscoveryValidate({ url });
@@ -197,29 +200,64 @@ export function LandingPageView() {
     return null;
   };
 
+  const handleResumeScan = () => {
+    const session = loadBrandOnboardingSession();
+    const nextBrandProfileId = brandProfileId ?? session?.brandProfileId ?? "";
+    const nextLeadId = leadId ?? session?.leadId ?? "";
+    const nextUrl = scannedUrl || session?.normalizedUrl || "";
+    if (!nextBrandProfileId) {
+      setApiError("Could not resume this scan. Submit the brand URL again to continue.");
+      return;
+    }
+    navigate(ONBOARDING_ROUTES.dna, {
+      state: {
+        url: nextUrl,
+        leadId: nextLeadId,
+        brandProfileId: nextBrandProfileId,
+        scanMode: "cached" as const,
+      },
+    });
+  };
+
   const handleSubmitUrl = async (nextUrl: string) => {
+    setGateBanner(null);
+    setLockedUrl(null);
+    setPrimaryLabel("Analyze My Brand");
+    setPrimaryDisabled(false);
+    setEmailCapture(null);
+    setCapturedEmail("");
+    setEmailError(null);
+    setEmailCapturedSuccess(null);
     setApiError(null);
-    setWaitlistNotice(null);
-    setOrgClaimed(null);
-    setBrandActive(null);
-    setVerificationRequired(null);
-    setRateLimitModal(null);
-    setShowResumeModal(false);
     setLeadId(null);
     setBrandProfileId(null);
     setIsVerifying(true);
     try {
       const resolved = await postDiscoveryResolve({ url: nextUrl });
       if (resolved.outcome === "blocked") {
-        setApiError(resolved.message);
+        setGateBanner({ tone: "error", message: resolved.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Scan Restricted");
+        setPrimaryDisabled(true);
         return;
       }
       if (resolved.outcome === "org_claimed") {
-        setOrgClaimed(resolved);
+        setGateBanner({ tone: "warning", message: resolved.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Domain Claimed");
+        setPrimaryDisabled(true);
+        setEmailCapture({
+          kind: "org_claimed",
+          body: "Enter your professional email address to request a team invite.",
+          domain: resolved.domain,
+        });
         return;
       }
       if (resolved.outcome === "brand_active") {
-        setBrandActive(resolved);
+        setGateBanner({ tone: "warning", message: resolved.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Sign in");
+        setPrimaryDisabled(false);
         return;
       }
       if (resolved.outcome === "verification_required") {
@@ -231,39 +269,61 @@ export function LandingPageView() {
         } else {
           setScannedUrl(nextUrl);
         }
-        setVerificationRequired(resolved);
+        setGateBanner({ tone: "warning", message: resolved.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Verify Domain Ownership");
         return;
       }
       if (resolved.outcome === "resume") {
         setScannedUrl(resolved.normalizedUrl);
         setLeadId(resolved.leadId);
         setBrandProfileId(resolved.brandProfileId);
-        setResumeDomain(resolved.domain);
         saveBrandOnboardingSession({
           leadId: resolved.leadId,
           brandProfileId: resolved.brandProfileId,
           normalizedUrl: resolved.normalizedUrl,
         });
-        setShowResumeModal(true);
+        setGateBanner({
+          tone: "success",
+          message: `We located a recent scan within the last 7 days. Reloading existing data for ${resolved.domain}.`,
+          mode: "locked",
+        });
+        setLockedUrl(resolved.normalizedUrl);
+        setPrimaryLabel("Resume Previous Scan Results");
         return;
       }
 
       const validated = await postDiscoveryValidate({ url: nextUrl });
       if (validated.outcome === "blocked") {
-        setApiError(validated.message);
+        setGateBanner({ tone: "error", message: validated.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Scan Restricted");
+        setPrimaryDisabled(true);
         return;
       }
       if (validated.outcome === "org_claimed") {
-        setOrgClaimed(validated);
+        setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Domain Claimed");
+        setPrimaryDisabled(true);
+        setEmailCapture({
+          kind: "org_claimed",
+          body: "Enter your professional email address to request a team invite.",
+          domain: validated.domain,
+        });
         return;
       }
       if (validated.outcome === "brand_active") {
-        setBrandActive(validated);
+        setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Sign in");
         return;
       }
       if (validated.outcome === "verification_required") {
         setBrandProfileId(validated.brandProfileId);
-        setVerificationRequired(validated);
+        setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Verify Domain Ownership");
         const lead = await ensureLeadForUrl(nextUrl);
         if (lead) {
           setLeadId(lead);
@@ -271,10 +331,52 @@ export function LandingPageView() {
         setScannedUrl(nextUrl);
         return;
       }
+      if (validated.outcome === "infrastructure_error") {
+        setGateBanner({ tone: "error", message: validated.message });
+        setLockedUrl(validated.normalizedUrl);
+        setPrimaryLabel("Retry Connection Check");
+        setPrimaryDisabled(false);
+        setEmailCapture(null);
+        return;
+      }
       if (validated.outcome === "waitlist") {
-        setWaitlistNotice(
-          `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+        const industryLabel = formatIndustry(validated.industry);
+        setGateBanner({
+          tone: "warning",
+          message:
+            validated.message ??
+            waitlistReasonMessage(
+              validated.reason,
+              industryLabel,
+              validated.domain,
+            ),
+        });
+        setLockedUrl(validated.normalizedUrl);
+        setPrimaryLabel(
+          validated.reason === "FOREIGN_LANGUAGE"
+            ? "Notify me for localization"
+            : validated.reason === "PARKED_DOMAIN" ||
+                validated.reason === "CONTENT_UNREADABLE"
+              ? "Notify me when scanning improves"
+              : waitlistCtaLabel(validated.industry),
         );
+        setPrimaryDisabled(true);
+        setEmailCapture({
+          kind: "waitlist",
+          body:
+            validated.reason === "FOREIGN_LANGUAGE"
+              ? "Leave your email for early-bird access when we support your language."
+              : validated.reason === "PARKED_DOMAIN" ||
+                  validated.reason === "CONTENT_UNREADABLE"
+                ? "Leave your email and we'll follow up when we can evaluate this storefront."
+                : "We're training our AI on your niche. Leave your email for early-bird access.",
+          domain: validated.domain,
+          industry: validated.industry,
+          reason: validated.reason ?? "UNSUPPORTED_INDUSTRY",
+          leadId: validated.leadId,
+          marketIntelligenceLogId: validated.logId,
+          sourceUrl: validated.normalizedUrl,
+        });
         return;
       }
       setScannedUrl(validated.normalizedUrl);
@@ -282,262 +384,439 @@ export function LandingPageView() {
       setModalStep("preview");
     } catch (err) {
       if (isHttpApiError(err) && err.isRateLimited) {
-        setRateLimitModal({ message: err.message });
+        setGateBanner({ tone: "warning", message: err.message });
+        setLockedUrl(nextUrl);
+        setPrimaryLabel("Retry Connection Check");
         return;
       }
       const message =
         err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setApiError(message);
+      setGateBanner({ tone: "warning", message });
+      setLockedUrl(nextUrl);
+      setPrimaryLabel("Retry Connection Check");
     } finally {
       setIsVerifying(false);
     }
   };
 
+  const captureMode = useMemo((): LandingUrlCaptureMode => {
+    if (emailCapture?.kind === "waitlist") {
+      return "waitlist";
+    }
+    if (emailCapture?.kind === "org_claimed" || primaryLabel === "Domain Claimed") {
+      return "org_claimed";
+    }
+    if (primaryLabel === "Sign in") {
+      return "brand_active";
+    }
+    if (primaryLabel === "Verify Domain Ownership") {
+      return "verification_required";
+    }
+    if (primaryLabel === "Resume Previous Scan Results") {
+      return "resume";
+    }
+    if (primaryLabel === "Scan Restricted") {
+      return "blocked_locked";
+    }
+    if (primaryLabel === "Retry Connection Check") {
+      return "infra_retry";
+    }
+    if (gateBanner?.mode === "shake") {
+      return "syntax_error";
+    }
+    return "default";
+  }, [emailCapture, gateBanner?.mode, primaryLabel]);
+
+  const bannerForCapture = useMemo(() => {
+    if (!gateBanner) {
+      return null;
+    }
+    if (emailCapture?.kind === "waitlist") {
+      return null;
+    }
+    if (primaryLabel === "Resume Previous Scan Results") {
+      return null;
+    }
+    if (gateBanner.tone === "error") {
+      return { tone: "error" as const, message: gateBanner.message };
+    }
+    if (gateBanner.tone === "success") {
+      return { tone: "success" as const, message: gateBanner.message };
+    }
+    return { tone: "warning" as const, message: gateBanner.message };
+  }, [emailCapture?.kind, gateBanner, primaryLabel]);
+
+  const captureHelperText = useMemo(() => {
+    if (primaryLabel === "Resume Previous Scan Results" && gateBanner?.tone === "success") {
+      return gateBanner.message;
+    }
+    return null;
+  }, [gateBanner, primaryLabel]);
+
+  const submitEmailCapture = async () => {
+    const trimmed = capturedEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Enter a valid work email address.");
+      return;
+    }
+    if (emailCapture?.kind === "waitlist") {
+      if (!emailCapture.industry) {
+        setEmailError("Missing industry context. Submit the URL again.");
+        return;
+      }
+      setIsSubmittingEmail(true);
+      setEmailError(null);
+      try {
+        await postDiscoveryWaitlist({
+          email: trimmed,
+          industry: emailCapture.industry,
+          reason: emailCapture.reason,
+          domain: emailCapture.domain,
+          discoveryLeadId: emailCapture.leadId,
+          marketIntelligenceLogId: emailCapture.marketIntelligenceLogId,
+          sourceUrl: emailCapture.sourceUrl ?? lockedUrl ?? undefined,
+        });
+        setEmailCapturedSuccess("Thanks — you're on the waitlist.");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not join the waitlist. Please try again.";
+        setEmailError(message);
+        setEmailCapturedSuccess(null);
+      } finally {
+        setIsSubmittingEmail(false);
+      }
+      return;
+    }
+    setEmailError(null);
+    setEmailCapturedSuccess("Thanks — we've captured your email.");
+    console.log("landing_email_capture", {
+      context: emailCapture?.kind,
+      email: trimmed,
+      domain: emailCapture?.domain,
+      industry: emailCapture?.industry,
+      lockedUrl,
+    });
+  };
+
+  const scrollToHero = () => {
+    document.getElementById("landing-hero")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div className="bob-landing">
-      <div className="bob-container">
-        <section className="bob-hero">
-          <h1>Meet the Creators Who&apos;ll Love Your Brand as Much as You Do</h1>
-          <p>
-            Finally, creators who share your vision. We don&apos;t just find
-            influencers. We analyze your brand&apos;s heartbeat to introduce you
-            to champion partners.
-          </p>
+    <div
+      className={`bob-landing${
+        stickyCtaVisible ? " bob-landing--sticky-visible" : ""
+      }`}
+    >
+      <section className="bob-hero bob-container" id="landing-hero">
+        <h1>Meet the Creators Who&apos;ll Love Your Brand as Much as You Do</h1>
+        <p className="bob-hero__sub">
+          Finally, creators who share your vision. We don&apos;t just find
+          &quot;influencers.&quot; We deeply analyze your brand&apos;s heartbeat to
+          introduce you to champion partners.
+        </p>
+        <div className="bob-hero__module">
           <LandingUrlCapture
             isBusy={isVerifying}
-            remoteError={apiError}
-            waitlistNotice={waitlistNotice}
-            onSubmitUrl={handleSubmitUrl}
+            mode={captureMode}
+            lockedUrl={lockedUrl ?? undefined}
+            primaryLabel={primaryLabel}
+            primaryDisabled={primaryDisabled}
+            feedback={bannerForCapture}
+            helperText={captureHelperText}
+            onPrimaryAction={async (url) => {
+              if (primaryLabel === "Sign in") {
+                navigate("/login");
+                return;
+              }
+              if (primaryLabel === "Verify Domain Ownership") {
+                navigate(ONBOARDING_ROUTES.verification);
+                return;
+              }
+              if (primaryLabel === "Resume Previous Scan Results") {
+                handleResumeScan();
+                return;
+              }
+              await handleSubmitUrl(url);
+            }}
           />
-          {isVerifying ? (
-            <div className="bob-verifying" aria-live="polite">
-              <div className="bob-skeleton bob-skeleton--wide" />
-              <div className="bob-skeleton bob-skeleton--narrow" />
-              <p>Locating brand servers...</p>
+          {emailCapture ? (
+            <div
+              className={`bob-email-capture${
+                emailCapture.kind === "waitlist"
+                  ? " bob-email-capture--waitlist"
+                  : " bob-email-capture--org-claimed"
+              }`}
+            >
+              {emailCapture.kind === "waitlist" && emailCapture.industry ? (
+                <div className="bob-email-capture__alert">
+                  <Info size={18} aria-hidden />
+                  <p>
+                    We&apos;ve identified <strong>{emailCapture.domain}</strong> as{" "}
+                    {formatIndustry(emailCapture.industry)}. Creator&apos;s Shop is
+                    currently optimized for D2C, SaaS, Healthcare, and Offline
+                    Services.
+                  </p>
+                </div>
+              ) : null}
+              <div
+                className={`bob-email-capture__panel${
+                  emailCapture.kind === "org_claimed"
+                    ? " bob-email-capture__panel--claimed"
+                    : ""
+                }`}
+              >
+                <p>{emailCapture.body}</p>
+                <div className="bob-email-capture__row">
+                  <input
+                    className="bob-email-capture__input"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={
+                      emailCapture.kind === "org_claimed"
+                        ? "email@yourdomain.com"
+                        : "email@address.com"
+                    }
+                    value={capturedEmail}
+                    onChange={(event) => {
+                      setCapturedEmail(event.target.value);
+                      setEmailError(null);
+                      setEmailCapturedSuccess(null);
+                    }}
+                    aria-invalid={emailError ? true : undefined}
+                  />
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={isSubmittingEmail}
+                    onClick={() => void submitEmailCapture()}
+                  >
+                    {emailCapture.kind === "org_claimed"
+                      ? "Request Access"
+                      : "Join Waitlist"}
+                  </Button>
+                </div>
+                {emailError ? (
+                  <p className="bob-email-capture__error" role="alert">
+                    {emailError}
+                  </p>
+                ) : null}
+                {emailCapturedSuccess ? (
+                  <p className="bob-email-capture__success">{emailCapturedSuccess}</p>
+                ) : null}
+              </div>
             </div>
           ) : null}
-          <p className="bob-muted" style={{ marginTop: 12 }}>
-            No credit card. No commitment. Just insights to help you grow.
-          </p>
-          <div className="bob-trust-row">
-            <span>
-              <ShieldCheck size={14} color="var(--color-primary)" aria-hidden />
-              Meta-verified partnership
-            </span>
-            <span>
-              <Lock size={14} color="var(--color-primary)" aria-hidden />
-              256-bit AES Encryption
-            </span>
-            <span>
-              <ShieldCheck size={14} color="var(--color-primary)" aria-hidden />
-              SOC2 Type II
-            </span>
-            <span>
-              <CheckCircle2 size={14} color="var(--color-primary)" aria-hidden />
-              GDPR &amp; CCPA Compliant
-            </span>
-          </div>
-        </section>
+        </div>
+        <p className="bob-hero__disclaimer">
+          No credit card. No commitment. Just insights to help you grow.
+        </p>
+      </section>
 
-        <section className="bob-section" id="how-it-works">
-          <h2 className="bob-section-title">
-            Here&apos;s How We Make Influencer Marketing Feel Easy
-          </h2>
-          <p className="bob-section-sub">
-            Three ways we take the guesswork out of creator marketing.
-          </p>
-          <div className="bob-grid-3">
-            {PROOF_PILLARS.map((pillar) => (
-              <article key={pillar.title} className="bob-pillar">
-                <div className="bob-pillar__icon">
-                  <pillar.Icon size={22} color="var(--color-primary)" />
-                </div>
-                <h2>{pillar.title}</h2>
-                <p>{pillar.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+      <section className="bob-trust-bar" aria-label="Trust and compliance">
+        <div className="bob-container bob-trust-bar__inner">
+          {LANDING_TRUST_ITEMS.map((item) => {
+            const Icon = trustIcon(item.icon);
+            return (
+              <span className="bob-trust-bar__item" key={item.label}>
+                <Icon size={18} color="var(--bob-primary)" aria-hidden />
+                {item.label}
+              </span>
+            );
+          })}
+        </div>
+      </section>
 
-        <section className="bob-section" id="features">
-          <h2 className="bob-section-title">Comprehensive Capabilities</h2>
-          <p className="bob-section-sub">
-            A toolkit designed to make your creative life easier, from initial
-            scan to protected escrow.
-          </p>
+      <section className="bob-section bob-section--trinity bob-container" id="how-it-works">
+        <h2 className="bob-section-title">The Trinity of Partnership</h2>
+        <p className="bob-section-sub">
+          A supportive, human-centric approach that turns cold outreach into lasting
+          connections.
+        </p>
+        <div className="bob-grid-3">
+          {LANDING_TRINITY_PILLARS.map((pillar) => (
+            <article key={pillar.title} className="bob-pillar">
+              <div className={`bob-pillar__icon bob-pillar__icon--${pillar.tone}`}>
+                <pillar.Icon size={28} aria-hidden />
+              </div>
+              <h2>{pillar.title}</h2>
+              <p>{pillar.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="bob-section bob-section--capabilities" id="features">
+        <div className="bob-container">
+          <div className="bob-capabilities-header">
+            <div>
+              <h2 className="bob-section-title">Comprehensive Capabilities</h2>
+              <p className="bob-section-sub">
+                A toolkit designed to make your creative life easier, from initial scan
+                to protected escrow.
+              </p>
+            </div>
+            <div className="bob-capabilities-avatars" aria-hidden>
+              {CAPABILITY_AVATARS.map((src) => (
+                <img key={src} src={src} alt="" loading="lazy" />
+              ))}
+            </div>
+          </div>
           <div className="bob-grid-cap">
-            {CAPABILITIES.map((item) => (
+            {LANDING_CAPABILITIES.map((item) => (
               <article key={item.title} className="bob-cap-card">
-                <item.Icon size={20} color="var(--color-primary)" />
+                <item.Icon size={24} color="var(--bob-primary)" aria-hidden />
                 <h3>{item.title}</h3>
                 <p>{item.body}</p>
               </article>
             ))}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       <section className="bob-security">
         <div className="bob-container bob-security__inner">
           <div>
-            <p
-              style={{
-                color: "var(--color-primary)",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                fontSize: 12,
-                marginBottom: 8,
-              }}
-            >
-              Bank-level security
-            </p>
+            <div className="bob-security-badge">Bank-level security</div>
             <h2>Your brand&apos;s safety is our highest priority.</h2>
             <p>
               We don&apos;t take your trust lightly. Our systems are built on the
-              foundation of compassionate protection, ensuring your accounts and
-              data remain entirely yours.
+              foundation of compassionate protection, ensuring your accounts and data
+              remain entirely yours.
             </p>
             <div className="bob-stack">
-              {[
-                {
-                  title: "Respectful Access",
-                  body: "Meta Graph API (v25.0) for secure, read-only/send-only permissions.",
-                  Icon: ShieldCheck,
-                },
-                {
-                  title: "Protective Limits",
-                  body: "Strict adherence to Meta's safety guidelines to ensure account health.",
-                  Icon: Eye,
-                },
-                {
-                  title: "Total Privacy",
-                  body: "We never see your passwords. Everything is handled via secure, encrypted handshake.",
-                  Icon: Lock,
-                },
-              ].map((item) => (
-                <div className="bob-security-item" key={item.title}>
-                  <span>
-                    <item.Icon size={20} aria-hidden />
-                  </span>
-                  <div>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
+              {LANDING_SECURITY_FEATURES.map((item, index) => {
+                const Icon = securityFeatureIcon(index);
+                return (
+                  <div className="bob-security-item" key={item.title}>
+                    <span>
+                      <Icon size={20} aria-hidden />
+                    </span>
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.body}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-          <div className="bob-terminal" aria-label="Security overview">
-            <div style={{ opacity: 0.85, lineHeight: 1.7 }}>
-              <p style={{ margin: 0 }}>
-                Production integrations (Meta Graph, escrow, and compliance attestations) are
-                wired per environment. This page does not simulate live security handshakes or
-                fake audit output.
-              </p>
-            </div>
-            <div className="bob-terminal__lock">
-              <Lock size={48} aria-hidden />
+          <div className="bob-terminal-wrap">
+            <div className="bob-terminal" aria-label="Security manifest">
+              <div className="bob-terminal__chrome">
+                <div className="bob-terminal__dots">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <span className="bob-terminal__label">SECURITY_MANIFEST.LOG</span>
+              </div>
+              <div className="bob-terminal__lines">
+                {LANDING_SECURITY_MANIFEST.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              <img
+                className="bob-terminal__image"
+                src={SECURITY_TERMINAL_IMAGE}
+                alt="High-tech secure server infrastructure"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bob-cta bob-container">
-        <h2>Ready to meet your perfect creators?</h2>
-        <p className="bob-section-sub">
-          Join thousands of brands who have replaced cold pitching with
-          meaningful partnerships.
-        </p>
-        <div className="bob-cta-actions">
-          <Button type="button" variant="primary">
-            Start My Free Brand Scan
-          </Button>
-          <Button type="button" variant="secondary">
-            Talk to an Expert
-          </Button>
+      <section className="bob-cta">
+        <div className="bob-cta__inner">
+          <h2>Ready to Meet Your Perfect Creators?</h2>
+          <p className="bob-section-sub">
+            Join thousands of brands who have replaced cold pitching with meaningful
+            partnerships.
+          </p>
+          <div className="bob-cta-actions">
+            <Button type="button" variant="primary" onClick={scrollToHero}>
+              Start Your Free Trial
+            </Button>
+            <Button type="button" variant="secondary">
+              Talk to an Expert
+            </Button>
+          </div>
+          <p className="bob-cta-footnote">
+            No credit card required. Certified Meta Partner.
+          </p>
         </div>
       </section>
 
       <footer className="bob-footer">
         <div className="bob-container bob-footer-grid">
-          <div>
+          <div className="bob-footer-brand">
             <h3>The Creator Shop</h3>
-            <small>
-              From Brand DNA to Meaningful Connections. The world's first
-              partner-focused influencer engine. Crafted with care for
-              high-growth teams.
-            </small>
+            <p>
+              From Brand DNA to Meaningful Connections. The world&apos;s first
+              partner-focused influencer engine. Crafted with care for high-growth
+              teams.
+            </p>
+            <div className="bob-footer-social">
+              <a href="https://thecreatorshop.com" aria-label="Website">
+                <Globe size={20} aria-hidden />
+              </a>
+              <a href="mailto:hello@thecreatorshop.com" aria-label="Email us">
+                <Mail size={20} aria-hidden />
+              </a>
+            </div>
           </div>
           <div>
-            <h3>Platform</h3>
+            <h5>Platform</h5>
             <ul className="bob-footer-list">
-              <li>Brand DNA Scanner</li>
-              <li>Competitor Audit</li>
-              <li>Archetype Mapping</li>
-              <li>Priority Outreach</li>
+              <li><a href="#features">Brand DNA Scanner</a></li>
+              <li><a href="#features">Competitor Audit</a></li>
+              <li><a href="#features">Archetype Mapping</a></li>
+              <li><a href="#features">Priority Outreach</a></li>
             </ul>
           </div>
           <div>
-            <h3>Security</h3>
+            <h5>Security</h5>
             <ul className="bob-footer-list">
-              <li>GDPR Compliant</li>
-              <li>CCPA Compliant</li>
-              <li>SOC2 Type II</li>
-              <li>Meta API Integrated</li>
+              <li><a href="#features">GDPR Compliant</a></li>
+              <li><a href="#features">CCPA Compliant</a></li>
+              <li><a href="#features">SOC2 Type II</a></li>
+              <li><a href="#features">Meta API Integrated</a></li>
             </ul>
           </div>
           <div>
-            <h3>Company</h3>
+            <h5>Company</h5>
             <ul className="bob-footer-list">
-              <li>About Us</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
-              <li>Support</li>
+              <li><a href="#landing-hero">About Us</a></li>
+              <li><a href="#landing-hero">Privacy Policy</a></li>
+              <li><a href="#landing-hero">Terms of Service</a></li>
+              <li><a href="#landing-hero">Support</a></li>
             </ul>
           </div>
         </div>
-        <div className="bob-container bob-footer-bottom">
-          <small>© 2026 The Creator Shop. All rights reserved. GDPR &amp; SOC2 Compliant.</small>
-          <small>Crafted with care for high-growth teams in San Francisco &amp; London</small>
+        <div className="bob-footer-bottom-wrap">
+          <div className="bob-container bob-footer-bottom">
+            <small>© 2026 The Creator Shop. All rights reserved. GDPR &amp; SOC2 Compliant.</small>
+            <small>Crafted with care for high-growth teams in San Francisco &amp; London</small>
+          </div>
         </div>
       </footer>
 
-      <RateLimitModal
-        open={rateLimitModal !== null}
-        message={rateLimitModal?.message}
-        onClose={() => setRateLimitModal(null)}
-      />
-      <OrgClaimedModal
-        open={orgClaimed !== null}
-        domain={orgClaimed?.domain ?? ""}
-        adminEmail={orgClaimed?.adminEmail ?? ""}
-        message={orgClaimed?.message ?? ""}
-        onClose={() => setOrgClaimed(null)}
-      />
-      <BrandActiveModal
-        open={brandActive !== null}
-        domain={brandActive?.domain ?? ""}
-        message={brandActive?.message ?? ""}
-        onClose={() => setBrandActive(null)}
-      />
-      <VerificationRequiredModal
-        open={verificationRequired !== null}
-        domain={verificationRequired?.domain ?? ""}
-        reason={verificationRequired?.reason}
-        brandProfileId={verificationRequired?.brandProfileId ?? brandProfileId ?? ""}
-        leadId={leadId}
-        normalizedUrl={scannedUrl}
-        onClose={() => setVerificationRequired(null)}
-      />
-      <ResumeScanModal
-        open={showResumeModal}
-        domain={resumeDomain}
-        onClose={() => setShowResumeModal(false)}
-        onContinue={() => {
-          setShowResumeModal(false);
-          navigate(ONBOARDING_ROUTES.dna);
-        }}
-      />
+      <div
+        className={`bob-sticky-cta${stickyCtaVisible ? " bob-sticky-cta--visible" : ""}`}
+      >
+        <p>Ready to Meet Your Perfect Creators?</p>
+        <Button type="button" variant="primary" onClick={scrollToHero}>
+          Start Free →
+        </Button>
+      </div>
+
+      {apiError ? (
+        <p className="bob-api-error" role="alert">
+          {apiError}
+        </p>
+      ) : null}
+
       <ProcessPreviewModal
         open={modalStep === "preview"}
         onClose={() => setModalStep("none")}
@@ -556,26 +835,86 @@ export function LandingPageView() {
             if (!nextLeadId) {
               const validated = await postDiscoveryValidate({ url: scannedUrl });
               if (validated.outcome === "blocked") {
-                setApiError(validated.message);
+                setGateBanner({ tone: "error", message: validated.message, mode: "locked" });
+                setLockedUrl(scannedUrl);
+                setPrimaryLabel("Scan Restricted");
+                setPrimaryDisabled(true);
                 return;
               }
               if (validated.outcome === "org_claimed") {
-                setOrgClaimed(validated);
+                setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+                setLockedUrl(scannedUrl);
+                setPrimaryLabel("Domain Claimed");
+                setPrimaryDisabled(true);
+                setEmailCapture({
+                  kind: "org_claimed",
+                  body: "Enter your professional email address to request a team invite.",
+                  domain: validated.domain,
+                });
                 return;
               }
               if (validated.outcome === "brand_active") {
-                setBrandActive(validated);
+                setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+                setLockedUrl(scannedUrl);
+                setPrimaryLabel("Sign in");
+                setPrimaryDisabled(false);
                 return;
               }
               if (validated.outcome === "verification_required") {
-                setVerificationRequired(validated);
+                setGateBanner({ tone: "warning", message: validated.message, mode: "locked" });
+                setLockedUrl(scannedUrl);
+                setPrimaryLabel("Verify Domain Ownership");
                 setBrandProfileId(validated.brandProfileId);
                 return;
               }
+              if (validated.outcome === "infrastructure_error") {
+                setGateBanner({ tone: "error", message: validated.message });
+                setLockedUrl(validated.normalizedUrl);
+                setPrimaryLabel("Retry Connection Check");
+                setPrimaryDisabled(false);
+                setEmailCapture(null);
+                setModalStep("none");
+                return;
+              }
               if (validated.outcome === "waitlist") {
-                setWaitlistNotice(
-                  `Thanks - we have logged interest for ${validated.domain}. We will reach out when this vertical opens up.`,
+                const industryLabel = formatIndustry(validated.industry);
+                setGateBanner({
+                  tone: "warning",
+                  message:
+                    validated.message ??
+                    waitlistReasonMessage(
+                      validated.reason,
+                      industryLabel,
+                      validated.domain,
+                    ),
+                });
+                setLockedUrl(validated.normalizedUrl);
+                setPrimaryLabel(
+                  validated.reason === "FOREIGN_LANGUAGE"
+                    ? "Notify me for localization"
+                    : validated.reason === "PARKED_DOMAIN" ||
+                        validated.reason === "CONTENT_UNREADABLE"
+                      ? "Notify me when scanning improves"
+                      : waitlistCtaLabel(validated.industry),
                 );
+                setPrimaryDisabled(true);
+                setEmailCapture({
+                  kind: "waitlist",
+                  body:
+                    validated.reason === "FOREIGN_LANGUAGE"
+                      ? "Leave your email for early-bird access when we support your language."
+                      : validated.reason === "PARKED_DOMAIN" ||
+                          validated.reason === "CONTENT_UNREADABLE"
+                        ? "Leave your email and we'll follow up when we can evaluate this storefront."
+                        : "We're training our AI on your niche. Leave your email for early-bird access.",
+                  domain: validated.domain,
+                  industry: validated.industry,
+                  reason: validated.reason ?? "UNSUPPORTED_INDUSTRY",
+                  leadId: validated.leadId,
+                  marketIntelligenceLogId: validated.logId,
+                  sourceUrl: validated.normalizedUrl,
+                });
+                setModalStep("none");
                 return;
               }
               if (validated.outcome === "success") {
@@ -592,11 +931,18 @@ export function LandingPageView() {
             });
           } catch (err) {
             if (isHttpApiError(err) && err.isRateLimited) {
-              setRateLimitModal({ message: err.message });
+              setGateBanner({ tone: "warning", message: err.message });
+              setLockedUrl(scannedUrl);
+              setPrimaryLabel("Retry Connection Check");
               return;
             }
             if (err instanceof Error && err.message.includes("ThrottlerException")) {
-              setRateLimitModal({});
+              setGateBanner({
+                tone: "warning",
+                message: "Too many requests. Please try again shortly.",
+              });
+              setLockedUrl(scannedUrl);
+              setPrimaryLabel("Retry Connection Check");
               return;
             }
             const message =

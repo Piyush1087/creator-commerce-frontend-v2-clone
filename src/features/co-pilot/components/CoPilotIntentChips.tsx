@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Chip } from "../../../design-system/aurora";
 import type { CoPilotIntentTemplate } from "../types";
@@ -9,8 +9,10 @@ type Props = {
   templates: CoPilotIntentTemplate[];
   onSelect: (template: CoPilotIntentTemplate) => void;
   disabled?: boolean;
-  /** Mobile: hidden until user taps Show suggestions */
+  /** Start collapsed behind “Show suggestions” (mobile sheet). */
   collapseByDefault?: boolean;
+  /** When this value changes (e.g. after a user send), collapse suggestions. */
+  collapseSignal?: number | string;
 };
 
 export function CoPilotIntentChips({
@@ -18,32 +20,52 @@ export function CoPilotIntentChips({
   onSelect,
   disabled = false,
   collapseByDefault = false,
+  collapseSignal,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
-  const hasOverflow = templates.length > VISIBLE_CHIP_COUNT;
-  const showAllChips = expanded || !hasOverflow || collapseByDefault;
-  const visibleTemplates = showAllChips
-    ? templates
-    : templates.slice(0, VISIBLE_CHIP_COUNT);
+  const [panelOpen, setPanelOpen] = useState(!collapseByDefault);
+  const [showAll, setShowAll] = useState(false);
+  const prevSignalRef = useRef<number | string | undefined>(undefined);
+
+  useEffect(() => {
+    if (collapseSignal === undefined) {
+      return;
+    }
+    if (prevSignalRef.current === undefined) {
+      prevSignalRef.current = collapseSignal;
+      return;
+    }
+    if (prevSignalRef.current === collapseSignal) {
+      return;
+    }
+    prevSignalRef.current = collapseSignal;
+    setPanelOpen(false);
+    setShowAll(false);
+  }, [collapseSignal]);
 
   if (templates.length === 0) {
     return null;
   }
 
-  if (collapseByDefault && !expanded) {
+  if (!panelOpen) {
     return (
       <div className="co-pilot-intent-chips co-pilot-intent-chips--collapsed">
         <button
           type="button"
           className="co-pilot-intent-chips__toggle"
           disabled={disabled}
-          onClick={() => setExpanded(true)}
+          onClick={() => setPanelOpen(true)}
         >
           Show suggestions
         </button>
       </div>
     );
   }
+
+  const hasOverflow = templates.length > VISIBLE_CHIP_COUNT;
+  const visibleTemplates =
+    showAll || !hasOverflow
+      ? templates
+      : templates.slice(0, VISIBLE_CHIP_COUNT);
 
   return (
     <div
@@ -64,44 +86,45 @@ export function CoPilotIntentChips({
           {template.label}
         </Chip>
       ))}
-      {!collapseByDefault && hasOverflow && !expanded ? (
+      {hasOverflow && !showAll ? (
         <Chip
           tone="neutral"
           className="co-pilot-intent-chips__chip co-pilot-intent-chips__chip--more"
           disabled={disabled}
           onClick={() => {
             if (!disabled) {
-              setExpanded(true);
+              setShowAll(true);
             }
           }}
         >
-          More suggestions
+          Show more
         </Chip>
       ) : null}
-      {collapseByDefault && expanded ? (
-        <button
-          type="button"
-          className="co-pilot-intent-chips__toggle co-pilot-intent-chips__toggle--hide"
-          disabled={disabled}
-          onClick={() => setExpanded(false)}
-        >
-          Hide suggestions
-        </button>
-      ) : null}
-      {!collapseByDefault && hasOverflow && expanded ? (
+      {hasOverflow && showAll ? (
         <Chip
           tone="neutral"
           className="co-pilot-intent-chips__chip co-pilot-intent-chips__chip--more"
           disabled={disabled}
           onClick={() => {
             if (!disabled) {
-              setExpanded(false);
+              setShowAll(false);
             }
           }}
         >
-          Fewer suggestions
+          Show less
         </Chip>
       ) : null}
+      <button
+        type="button"
+        className="co-pilot-intent-chips__toggle co-pilot-intent-chips__toggle--hide"
+        disabled={disabled}
+        onClick={() => {
+          setPanelOpen(false);
+          setShowAll(false);
+        }}
+      >
+        Hide
+      </button>
     </div>
   );
 }

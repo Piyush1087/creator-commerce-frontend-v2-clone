@@ -1,30 +1,49 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, Plus, Undo2, X } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Undo2, Upload, X } from "lucide-react";
 
 import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 
-import { getBrandProfile } from "../api/brand-client";
+import {
+  getBrandProfile,
+  syncBrandCompetitors,
+  uploadCompetitorLogo,
+} from "../api/brand-client";
+import { uploadErrorMessage } from "../api/http-api-error";
 import { BrandImageAvatar } from "./brand-image-avatar";
 import { ONBOARDING_ROUTES } from "../constants";
 import type { BrandProfileResponseBody } from "../contracts/brand.contracts";
-import { mapCompetitorsToRows, parseHostnameFromUrl } from "../mappers/map-brand-profile";
+import {
+  mapCompetitorRowsToSync,
+  mapCompetitorsToRows,
+  parseHostnameFromUrl,
+} from "../mappers/map-brand-profile";
+import { competitorEditSchema, zodFirstError } from "../schemas/brand-dna-schema";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
+import { fileToBase64 } from "../utils/image-upload";
 import type { CompetitorRow } from "../types";
 
 export function BrandCompetitorsView() {
   const navigate = useNavigate();
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [profile, setProfile] = useState<BrandProfileResponseBody | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [competitors, setCompetitors] = useState<CompetitorRow[]>([]);
   const [activeId, setActiveId] = useState("");
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<CompetitorRow | null>(null);
   const [newUrl, setNewUrl] = useState("");
+  const [newName, setNewName] = useState("");
   const [narrative, setNarrative] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [removed, setRemoved] = useState<CompetitorRow | null>(null);
+  const [logoUploadTargetId, setLogoUploadTargetId] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     const session = loadBrandOnboardingSession();
@@ -61,53 +80,158 @@ export function BrandCompetitorsView() {
     return host.length > 0 ? host : profile?.domain ?? "your-domain.com";
   }, [profile?.domain]);
 
-  const addCompetitor = () => {
+  const persistCompetitors = async (rows: CompetitorRow[]) => {
+    const session = loadBrandOnboardingSession();
+    if (!session) {
+      setError("Missing onboarding session.");
+      return;
+    }
+    setIsSaving(true);
     setError(null);
     try {
-      const url = new URL(newUrl);
-      const blacklist = [
-        "google.com",
-        "facebook.com",
-        "amazon.com",
-        "youtube.com",
-        "instagram.com",
-        "tiktok.com",
-      ];
-      const host = url.hostname.replace(/^www\./, "");
-      if (blacklist.includes(host)) {
-        setError(
-          "Please provide a direct brand website rather than a marketplace or social platform.",
-        );
-        return;
-      }
-      if (narrative.trim().length < 60) {
-        setError("Why narrative must be at least 60 characters for strategic value.");
-        return;
-      }
-      const next: CompetitorRow = {
-        id: `manual-${Date.now()}`,
-        name: host.split(".")[0] ?? "New competitor",
-        url: newUrl,
-        handles: {},
-        narrative,
-      };
-      setCompetitors((prev) => [next, ...prev]);
-      setActiveId(next.id);
-      setAdding(false);
-      setNewUrl("");
-      setNarrative("");
-    } catch {
-      setError("Enter a valid competitor URL.");
+      const updated = await syncBrandCompetitors(
+        session.brandProfileId,
+        mapCompetitorRowsToSync(rows),
+      );
+      setProfile(updated);
+      const mapped = mapCompetitorsToRows(updated.competitors);
+      setCompetitors(mapped);
+      setActiveId((current) =>
+        mapped.some((row) => row.id === current) ? current : mapped[0]?.id ?? "",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unable to save competitor changes.";
+      setError(message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const removeCompetitor = (row: CompetitorRow) => {
-    setCompetitors((prev) => {
-      const next = prev.filter((item) => item.id !== row.id);
-      setActiveId((current) => (current === row.id ? next[0]?.id ?? "" : current));
-      return next;
+  const openAdd = () => {
+    setModalError(null);
+    setError(null);
+    setAdding(true);
+  };
+
+  const closeAdd = () => {
+    setAdding(false);
+    setModalError(null);
+  };
+
+  const closeEdit = () => {
+    setEditing(null);
+    setModalError(null);
+  };
+
+  const addCompetitor = async () => {
+    setModalError(null);
+    const parsed = competitorEditSchema.safeParse({
+      name: newName.trim(),
+      websiteUrl: newUrl.trim(),
+      whyCompetitor: narrative,
     });
+    if (!parsed.success) {
+      setModalError(zodFirstError(parsed.error));
+      return;
+    }
+    const next: CompetitorRow = {
+      id: `manual-${Date.now()}`,
+      name: parsed.data.name,
+      url: parsed.data.websiteUrl,
+      handles: {},
+      narrative: parsed.data.whyCompetitor,
+    };
+    const merged = [next, ...competitors];
+    setCompetitors(merged);
+    setActiveId(next.id);
+    closeAdd();
+    setNewUrl("");
+    setNewName("");
+    setNarrative("");
+    await persistCompetitors(merged);
+  };
+
+  const saveEdit = async () => {
+    if (!editing) {
+      return;
+    }
+    setModalError(null);
+    const parsed = competitorEditSchema.safeParse({
+      name: editing.name,
+      websiteUrl: editing.url,
+      whyCompetitor: editing.narrative,
+      logoUrl: editing.logo?.trim() ? editing.logo : null,
+    });
+    if (!parsed.success) {
+      setModalError(zodFirstError(parsed.error));
+      return;
+    }
+    const merged = competitors.map((row) =>
+      row.id === editing.id
+        ? {
+            ...editing,
+            name: parsed.data.name,
+            url: parsed.data.websiteUrl,
+            narrative: parsed.data.whyCompetitor,
+          }
+        : row,
+    );
+    setCompetitors(merged);
+    closeEdit();
+    await persistCompetitors(merged);
+  };
+
+  const handleContinue = () => {
+    if (competitors.length === 0) {
+      setError("Add at least 1 competitor before continuing.");
+      return;
+    }
+    setError(null);
+    navigate(ONBOARDING_ROUTES.verification);
+  };
+
+  const handleLogoUpload = async (
+    competitorId: string,
+    file: File | undefined,
+  ) => {
+    const session = loadBrandOnboardingSession();
+    if (!session || !file) {
+      return;
+    }
+    setIsUploadingLogo(true);
+    setLogoUploadError(null);
+    try {
+      const base64 = await fileToBase64(file);
+      const uploaded = await uploadCompetitorLogo(
+        session.brandProfileId,
+        competitorId,
+        {
+          imageBase64: base64,
+          contentType: file.type || "image/jpeg",
+        },
+      );
+      const merged = competitors.map((row) =>
+        row.id === competitorId ? { ...row, logo: uploaded.imageUrl } : row,
+      );
+      setCompetitors(merged);
+      if (editing?.id === competitorId) {
+        setEditing({ ...editing, logo: uploaded.imageUrl });
+      }
+    } catch (err) {
+      setLogoUploadError(uploadErrorMessage(err));
+    } finally {
+      setIsUploadingLogo(false);
+      setLogoUploadTargetId(null);
+    }
+  };
+
+  const removeCompetitor = async (row: CompetitorRow) => {
+    const next = competitors.filter((item) => item.id !== row.id);
+    setCompetitors(next);
+    setActiveId((current) => (current === row.id ? next[0]?.id ?? "" : current));
     setRemoved(row);
+    await persistCompetitors(next);
   };
 
   return (
@@ -135,13 +259,20 @@ export function BrandCompetitorsView() {
       ) : null}
 
       <div className="bob-inline" style={{ marginBottom: 16 }}>
-        <Button type="button" variant="primary" onClick={() => setAdding(true)}>
+        <Button type="button" variant="primary" onClick={openAdd}>
           <Plus size={16} aria-hidden /> Add competitor
         </Button>
         <p className="bob-muted" style={{ margin: 0 }}>
           {profile?.name ? `Brand: ${profile.name}` : null}
+          {isSaving ? " • Saving…" : null}
         </p>
       </div>
+
+      {!isLoading && !loadError && competitors.length === 0 ? (
+        <Alert title="No competitors yet" tone="warning">
+          Add at least 1 competitor before continuing.
+        </Alert>
+      ) : null}
 
       {error ? (
         <Alert title="Competitor validation" tone="error">
@@ -154,9 +285,13 @@ export function BrandCompetitorsView() {
             className="bob-link-button"
             type="button"
             onClick={() => {
-              setCompetitors((prev) => [removed, ...prev]);
-              setActiveId(removed.id);
-              setRemoved(null);
+              void (async () => {
+                const merged = [removed, ...competitors];
+                setCompetitors(merged);
+                setActiveId(removed.id);
+                setRemoved(null);
+                await persistCompetitors(merged);
+              })();
             }}
           >
             <Undo2 size={14} aria-hidden /> Undo remove
@@ -207,13 +342,28 @@ export function BrandCompetitorsView() {
               ) : null}
             </div>
             <div className="bob-inline" style={{ marginTop: 16 }}>
-              <Button type="button" variant="ghost">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => window.open(active.url, "_blank", "noopener,noreferrer")}
+              >
                 <ExternalLink size={14} aria-hidden /> Visit
               </Button>
               <Button
                 type="button"
+                variant="ghost"
+                onClick={() => {
+                  setModalError(null);
+                  setEditing(active);
+                }}
+              >
+                <Pencil size={14} aria-hidden /> Edit
+              </Button>
+              <Button
+                type="button"
                 variant="secondary"
-                onClick={() => removeCompetitor(active)}
+                disabled={isSaving}
+                onClick={() => void removeCompetitor(active)}
               >
                 Remove
               </Button>
@@ -226,7 +376,13 @@ export function BrandCompetitorsView() {
         <Button
           type="button"
           variant="primary"
-          onClick={() => navigate(ONBOARDING_ROUTES.verification)}
+          disabled={
+            isSaving ||
+            isLoading ||
+            Boolean(loadError) ||
+            competitors.length === 0
+          }
+          onClick={handleContinue}
         >
           Continue to verification
         </Button>
@@ -241,35 +397,162 @@ export function BrandCompetitorsView() {
                 type="button"
                 className="bob-icon-button"
                 aria-label="Close add competitor"
-                onClick={() => setAdding(false)}
+                onClick={closeAdd}
               >
                 <X size={18} aria-hidden />
               </button>
             </div>
             <TextField
+              label="Competitor name"
+              value={newName}
+              placeholder="Competitor brand"
+              onChange={(event) => {
+                setNewName(event.target.value);
+                setModalError(null);
+              }}
+            />
+            <TextField
               label="Competitor website"
               value={newUrl}
               placeholder="https://competitor.com"
-              onChange={(event) => setNewUrl(event.target.value)}
+              onChange={(event) => {
+                setNewUrl(event.target.value);
+                setModalError(null);
+              }}
             />
             <TextField
-              label="Why they compete (min 60 chars)"
+              label="Why they compete (40–300 chars)"
               multiline
               rows={4}
               value={narrative}
-              onChange={(event) => setNarrative(event.target.value)}
+              onChange={(event) => {
+                setNarrative(event.target.value);
+                setModalError(null);
+              }}
             />
+            {modalError ? (
+              <p className="bob-upload-error" role="alert">
+                {modalError}
+              </p>
+            ) : null}
             <div className="bob-inline" style={{ marginTop: 16 }}>
-              <Button type="button" variant="primary" onClick={addCompetitor}>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isSaving}
+                onClick={() => void addCompetitor()}
+              >
                 Save competitor
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setAdding(false)}>
+              <Button type="button" variant="secondary" onClick={closeAdd}>
                 Cancel
               </Button>
             </div>
           </div>
         </div>
       ) : null}
+
+      {editing ? (
+        <div className="bob-modal-backdrop" role="presentation">
+          <div className="bob-small-dialog" role="dialog" aria-modal="true">
+            <div className="bob-funnel-page__header">
+              <h2 className="aurora-card__title">Edit competitor</h2>
+              <button
+                type="button"
+                className="bob-icon-button"
+                aria-label="Close edit competitor"
+                onClick={closeEdit}
+              >
+                <X size={18} aria-hidden />
+              </button>
+            </div>
+            <TextField
+              label="Competitor name"
+              value={editing.name}
+              onChange={(event) => {
+                setEditing({ ...editing, name: event.target.value });
+                setModalError(null);
+              }}
+            />
+            <TextField
+              label="Competitor website"
+              value={editing.url}
+              onChange={(event) => {
+                setEditing({ ...editing, url: event.target.value });
+                setModalError(null);
+              }}
+            />
+            <TextField
+              label="Why they compete (40–300 chars)"
+              multiline
+              rows={4}
+              value={editing.narrative}
+              onChange={(event) => {
+                setEditing({ ...editing, narrative: event.target.value });
+                setModalError(null);
+              }}
+            />
+            <div className="bob-inline" style={{ marginTop: 12, alignItems: "center" }}>
+              <BrandImageAvatar
+                className="bob-competitor-pill__avatar"
+                src={editing.logo}
+                label={editing.name}
+                size={44}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isUploadingLogo}
+                onClick={() => {
+                  setLogoUploadTargetId(editing.id);
+                  setLogoUploadError(null);
+                  logoInputRef.current?.click();
+                }}
+              >
+                <Upload size={14} aria-hidden />{" "}
+                {isUploadingLogo ? "Uploading…" : "Upload logo"}
+              </Button>
+            </div>
+            {logoUploadError ? (
+              <p className="bob-upload-error" role="alert">
+                {logoUploadError}
+              </p>
+            ) : null}
+            {modalError ? (
+              <p className="bob-upload-error" role="alert">
+                {modalError}
+              </p>
+            ) : null}
+            <div className="bob-inline" style={{ marginTop: 16 }}>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isSaving}
+                onClick={() => void saveEdit()}
+              >
+                Save changes
+              </Button>
+              <Button type="button" variant="secondary" onClick={closeEdit}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/x-icon"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (logoUploadTargetId) {
+            void handleLogoUpload(logoUploadTargetId, file);
+          }
+          event.currentTarget.value = "";
+        }}
+      />
     </div>
   );
 }

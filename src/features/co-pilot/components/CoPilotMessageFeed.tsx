@@ -3,7 +3,6 @@ import { useCoPilotFeedAutoScroll } from "../hooks/use-co-pilot-feed-auto-scroll
 import { formatMessageTimestamp } from "../utils/format-message-timestamp";
 import { Card } from "../../../design-system/aurora";
 import { GenerativeUIPayloadRenderer } from "./GenerativeUIPayloadRenderer";
-import { CoPilotMessageFeedback } from "./CoPilotMessageFeedback";
 
 type Props = {
   messages: CoPilotFeedMessage[];
@@ -15,12 +14,6 @@ type Props = {
   onConfirmHitl?: (idempotencyKey: string) => void;
   onDiscardHitl?: (idempotencyKey: string) => void;
   onSubmitSlotValues?: (slotValues: Record<string, string>) => void;
-  onSubmitFeedback?: (args: {
-    messageId: string;
-    threadId: string;
-    rating: "THUMBS_UP" | "THUMBS_DOWN";
-    reason?: string;
-  }) => Promise<void>;
 };
 
 export function CoPilotMessageFeed({
@@ -33,7 +26,6 @@ export function CoPilotMessageFeed({
   onConfirmHitl,
   onDiscardHitl,
   onSubmitSlotValues,
-  onSubmitFeedback,
 }: Props) {
   const feedRef = useCoPilotFeedAutoScroll({
     activeThreadId,
@@ -93,13 +85,6 @@ export function CoPilotMessageFeed({
                   >
                     {timestampLabel}
                   </time>
-                  {activeThreadId && onSubmitFeedback ? (
-                    <CoPilotMessageFeedback
-                      messageId={message.id}
-                      threadId={activeThreadId}
-                      onSubmit={onSubmitFeedback}
-                    />
-                  ) : null}
                 </div>
               ) : null}
             </div>

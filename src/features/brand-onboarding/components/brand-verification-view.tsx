@@ -16,6 +16,10 @@ import {
 } from "../verification-otp.config";
 import { parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
+import {
+  emailDomainFromAddress,
+  emailDomainMatchesBrandDomain,
+} from "../utils/verification-email-domain";
 
 type VerifyStep = "email" | "otp" | "success";
 
@@ -105,6 +109,14 @@ export function BrandVerificationView() {
 
     if (!isValidEmail(email)) {
       setError("Please enter a valid email address (e.g., name@brand.in)");
+      return;
+    }
+
+    if (!emailDomainMatchesBrandDomain(email, domain)) {
+      const emailDomain = emailDomainFromAddress(email) || "unknown";
+      setError(
+        `The email domain (@${emailDomain}) doesn't match your website (${domain}). Please use your work email, or go back and re-enter your website.`,
+      );
       return;
     }
 
@@ -288,7 +300,7 @@ export function BrandVerificationView() {
   }
 
   return (
-    <div className={`bob-verify bob-verify--hide-nav ${step === "success" ? "bob-verify--success" : ""}`}>
+    <div className="bob-verify bob-verify--hide-nav">
       <div className="bob-verify__split">
         <section className="bob-verify__left" aria-labelledby="bob-verify-title">
           <div className="bob-verify__left-inner">
@@ -301,7 +313,7 @@ export function BrandVerificationView() {
             {step === "success" ? (
               <Card className="bob-verify__card bob-verify__card--success">
                 <div className="bob-verify__success-icon">
-                  <CheckCircle size={56} strokeWidth={1.5} />
+                  <CheckCircle size={40} strokeWidth={1.5} />
                 </div>
                 <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--centered">
                   VERIFICATION SUCCESSFUL
@@ -325,11 +337,12 @@ export function BrandVerificationView() {
                   </div>
                 </div>
 
-                <div className="bob-stack" style={{ marginTop: "var(--space-xl)", width: "100%" }}>
+                <div className="bob-verify__success-cta">
                   <Button
                     type="button"
                     variant="primary"
-                    fullWidthOnMobile
+                    size="md"
+                    className="bob-verify__success-button"
                     onClick={() => navigate(ONBOARDING_ROUTES.pricing)}
                   >
                     Continue to pricing
@@ -393,12 +406,6 @@ export function BrandVerificationView() {
                       helperText="We'll send a one-time verification code to this address."
                       error={error ?? undefined}
                     />
-                    {error && (
-                      <div className="bob-inline-error">
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
-                      </div>
-                    )}
                     <div style={{ marginTop: "var(--space-sm)" }}>
                       <Button
                         type="submit"

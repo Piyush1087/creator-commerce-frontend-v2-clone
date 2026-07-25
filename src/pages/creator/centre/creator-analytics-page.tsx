@@ -1,8 +1,11 @@
-import { Navigate } from "react-router-dom";
+import { CreatorCentreShell } from "../../../features/creator-centre/components/creator-centre-shell";
+import { AnalyticsPulseWorkspace } from "../../../features/creator-centre/components/analytics-pulse-workspace";
+import "../../../features/creator-centre/creator-centre.css";
 
-import { AUTH_ROUTES } from "../../../features/auth/constants";
-
-/** @deprecated Redirects to unified Creator Centre. */
 export function CreatorAnalyticsPage() {
-  return <Navigate to={`${AUTH_ROUTES.creatorHome}?tab=analytics`} replace />;
+  return (
+    <CreatorCentreShell>
+      <AnalyticsPulseWorkspace />
+    </CreatorCentreShell>
+  );
 }

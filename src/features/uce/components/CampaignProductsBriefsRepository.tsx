@@ -8,7 +8,6 @@ import {
   Plus,
 } from "lucide-react";
 import type { RepositoryBrief, RepositoryProduct } from "../types/repository";
-import { EMPTY_FIELD } from "../utils/display-field";
 
 type CampaignProductsBriefsRepositoryProps = {
   products: RepositoryProduct[];
@@ -76,7 +75,9 @@ export function CampaignProductsBriefsRepository({
                 <ProductBlock
                   key={product.id}
                   product={product}
+                  briefs={briefs.filter((b) => b.productId === product.id)}
                   onViewProduct={onViewProduct}
+                  onViewBrief={onViewBrief}
                   onCreateBrief={onCreateBrief}
                 />
               ))}
@@ -91,40 +92,23 @@ export function CampaignProductsBriefsRepository({
             </>
           )}
 
-          <section className="uce-repo-campaign-briefs">
-            <h3 className="uce-repo-campaign-briefs-title">Campaign briefs (API)</h3>
-            <p className="uce-repo-campaign-briefs-note">
-              Briefs are campaign-scoped in the API (not nested under products).
-            </p>
-            {briefs.length === 0 ? (
-              <p className="uce-no-briefs-hint">No briefs yet — {EMPTY_FIELD}</p>
-            ) : (
-              briefs.map((brief) => (
-                <div key={brief.id} className="uce-brief-item">
-                  <div className="uce-brief-item-main">
-                    <span className="uce-field-label">Brief active toggle</span>
-                    <span className="uce-field-value">{EMPTY_FIELD}</span>
-                    <div className="uce-brief-doc-icon">
-                      <FileText size={18} />
-                    </div>
-                    <div>
-                      <span className="uce-brief-title">{brief.name}</span>
-                      <span className="uce-brief-format-pill">{brief.formatType}</span>
-                      <span className="uce-brief-format-pill">{brief.platformsLabel}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="uce-text-action-btn"
-                    onClick={() => onViewBrief(brief)}
-                  >
-                    <Eye size={16} />
-                    View Brief
-                  </button>
-                </div>
-              ))
-            )}
-          </section>
+          {briefs.some((b) => !b.productId) ? (
+            <section className="uce-repo-campaign-briefs">
+              <h3 className="uce-repo-campaign-briefs-title">Unlinked campaign briefs</h3>
+              <p className="uce-repo-campaign-briefs-note">
+                Legacy briefs without a parent product link.
+              </p>
+              {briefs
+                .filter((b) => !b.productId)
+                .map((brief) => (
+                  <BriefRow
+                    key={brief.id}
+                    brief={brief}
+                    onViewBrief={onViewBrief}
+                  />
+                ))}
+            </section>
+          ) : null}
         </div>
       )}
     </section>
@@ -133,11 +117,15 @@ export function CampaignProductsBriefsRepository({
 
 function ProductBlock({
   product,
+  briefs,
   onViewProduct,
+  onViewBrief,
   onCreateBrief,
 }: {
   product: RepositoryProduct;
+  briefs: RepositoryBrief[];
   onViewProduct: (productId: string) => void;
+  onViewBrief: (brief: RepositoryBrief) => void;
   onCreateBrief: (productId: string) => void;
 }) {
   const productInitials = product.name
@@ -157,13 +145,12 @@ function ProductBlock({
           <div>
             <h3>{product.name}</h3>
             <p>
-              SKU: {product.skuCode} • Base Price: {product.basePrice} • Inventory:{" "}
-              {product.inventoryCount}
+              {product.skuCode ? `SKU: ${product.skuCode} • ` : ""}
+              Base Price: {product.basePrice} • Inventory: {product.inventoryCount}
               {product.outOfStock ? " (out of stock)" : ""}
-            </p>
-            <p>
-              <span className="uce-field-label">Product active toggle: </span>
-              <span className="uce-field-value">{EMPTY_FIELD}</span>
+              {briefs.length > 0
+                ? ` • ${briefs.length} Brief${briefs.length === 1 ? "" : "s"} Allocated`
+                : ""}
             </p>
           </div>
         </div>
@@ -179,13 +166,52 @@ function ProductBlock({
         </div>
       </div>
 
+      {briefs.map((brief) => (
+        <BriefRow key={brief.id} brief={brief} onViewBrief={onViewBrief} nested />
+      ))}
+
       <button
         type="button"
         className="uce-add-brief-btn"
         onClick={() => onCreateBrief(product.id)}
       >
         <Plus size={18} />
-        Create campaign brief (linked context: {product.name})
+        Create &amp; Add Strategic Brief to {product.name}
+      </button>
+    </div>
+  );
+}
+
+function BriefRow({
+  brief,
+  onViewBrief,
+  nested = false,
+}: {
+  brief: RepositoryBrief;
+  onViewBrief: (brief: RepositoryBrief) => void;
+  nested?: boolean;
+}) {
+  return (
+    <div className={`uce-brief-item${nested ? " uce-brief-item--nested" : ""}`}>
+      <div className="uce-brief-item-main">
+        <div className="uce-brief-doc-icon">
+          <FileText size={18} />
+        </div>
+        <div>
+          <span className="uce-brief-title">{brief.name}</span>
+          <span className="uce-brief-format-pill">{brief.formatType}</span>
+          {brief.briefType ? (
+            <span className="uce-brief-format-pill">{brief.briefType}</span>
+          ) : null}
+        </div>
+      </div>
+      <button
+        type="button"
+        className="uce-text-action-btn"
+        onClick={() => onViewBrief(brief)}
+      >
+        <Eye size={16} />
+        View Brief
       </button>
     </div>
   );

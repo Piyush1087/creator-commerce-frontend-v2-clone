@@ -5,6 +5,8 @@ import type {
   BrandTargetAudience,
   BrandVisualIdentity,
   PatchBrandProfileRequestBody,
+  SyncCompetitorItem,
+  SyncOfferingItem,
 } from "../contracts/brand.contracts";
 import { INDUSTRY_VERTICALS } from "../contracts/discovery.contracts";
 import type { BrandDnaState } from "../types";
@@ -20,7 +22,14 @@ function parseAgeRange(ageRange: string): [number, number] {
 export function mapProfileToBrandDna(profile: BrandProfileResponseBody): BrandDnaState {
   const vi = (profile.visualIdentity ?? {}) as BrandVisualIdentity;
   const tones =
-    (vi.toneOfVoice ?? []).map((t) => `${t.label}: ${t.description}`.trim()) ??
+    (vi.toneOfVoice ?? []).map((t) => {
+      const label = t.label.trim();
+      const description = t.description.trim();
+      if (!description || description.toLowerCase() === label.toLowerCase()) {
+        return label;
+      }
+      return `${label}: ${description}`;
+    }) ??
     [];
   const audience = (profile.targetAudience ?? {}) as BrandTargetAudience;
   const age = audience.ageRange;
@@ -48,7 +57,10 @@ export function mapProfileToBrandDna(profile: BrandProfileResponseBody): BrandDn
           ? audience.countries.join(", ")
           : "",
       ageRange: ageRangeStr,
-      affluence: audience.affluence ?? 0,
+      // Affluence used to sometimes be stored as `0` for legacy scans.
+      // The DNA form only accepts 1–5, so coerce 0/undefined to the default `3`.
+      affluence:
+        audience.affluence && audience.affluence >= 1 ? audience.affluence : 3,
       traits:
         audience.traits && audience.traits.length > 0
           ? audience.traits
@@ -140,7 +152,9 @@ function mapOfferingTypeToCategory(
 export function mapOfferingsToCatalogue(
   offerings: BrandProfileOfferingResponse[],
 ): CatalogueProduct[] {
-  return offerings.map((o) => ({
+  return offerings
+    .filter((o) => o.isActive)
+    .map((o) => ({
     id: o.id,
     name: o.name,
     description: o.description ?? undefined,
@@ -181,13 +195,67 @@ function mapHandles(handles: string[]): CompetitorHandles {
 export function mapCompetitorsToRows(
   rows: BrandProfileCompetitorResponse[],
 ): CompetitorRow[] {
-  return rows.map((c) => ({
-    id: c.id,
-    name: c.name,
-    logo: c.logoUrl ?? undefined,
-    url: c.websiteUrl,
-    handles: mapHandles(c.socialHandles),
-    narrative: c.whyCompetitor && c.whyCompetitor.length > 0 ? c.whyCompetitor : "—",
+  return rows
+    .filter((c) => c.isActive)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      logo: c.logoUrl ?? undefined,
+      url: c.websiteUrl,
+      handles: mapHandles(c.socialHandles),
+      narrative: c.whyCompetitor && c.whyCompetitor.length > 0 ? c.whyCompetitor : "—",
+    }));
+}
+
+function mapCategoryToOfferingType(
+  category: CatalogueProduct["category"],
+): SyncOfferingItem["type"] {
+  switch (category) {
+    case "Treatment":
+      return "TREATMENT";
+    case "Service":
+      return "SERVICE";
+    case "Collection":
+      return "COLLECTION";
+    default:
+      return "PRODUCT";
+  }
+}
+
+export function mapCatalogueToSyncOfferings(
+  products: CatalogueProduct[],
+): SyncOfferingItem[] {
+  return products.map((product) => ({
+    id: product.id.startsWith("manual-") ? undefined : product.id,
+    type: mapCategoryToOfferingType(product.category),
+    name: product.name,
+    description: product.description ?? null,
+    imageUrl: product.image ?? null,
+    url: product.url,
+    categoryTag: product.category,
+    startingPriceLabel: product.price ?? null,
+    isActive: true,
+  }));
+}
+
+export function mapCompetitorRowsToSync(
+  rows: CompetitorRow[],
+): SyncCompetitorItem[] {
+  return rows.map((row) => ({
+    id: row.id.startsWith("manual-") ? undefined : row.id,
+    name: row.name,
+    websiteUrl: row.url,
+    logoUrl: row.logo ?? null,
+    socialHandles: [
+      ...(row.handles.instagram
+        ? [`https://instagram.com/${row.handles.instagram.replace(/^@/, "")}`]
+        : []),
+      ...(row.handles.tiktok
+        ? [`https://tiktok.com/@${row.handles.tiktok.replace(/^@/, "")}`]
+        : []),
+    ],
+    whyCompetitor: row.narrative === "—" ? null : row.narrative,
+    isActive: true,
   }));
 }
 

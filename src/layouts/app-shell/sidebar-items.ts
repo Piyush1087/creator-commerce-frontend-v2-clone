@@ -1,20 +1,20 @@
 import {
+  BarChart3,
   Globe,
   HelpCircle,
   Home,
-  LayoutDashboard,
   LogOut,
   Megaphone,
   MessageCircle,
   Search,
   Settings,
   Store,
+  UserRound,
   Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
-import { isCreatorCentrePath } from "../../features/creator-centre/constants/creator-centre-tabs";
 import type { UserRole } from "../../shared/auth/user-role";
 
 export type AppShellMainVariant = "default" | "flush";
@@ -46,12 +46,12 @@ export type SidebarUtilityItem = {
 
 const brandSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Home",
+    icon: Home,
     path: AUTH_ROUTES.brandDashboard,
     roles: ["BRAND"],
     breadcrumb: "Home",
-    headerTitle: "Dashboard",
+    headerTitle: "Daily Briefing",
     mainVariant: "flush",
   },
   {
@@ -112,12 +112,30 @@ const brandSidebarNavItems: SidebarNavItem[] = [
 
 const creatorSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Creator Centre",
+    label: "Home",
     icon: Home,
     path: AUTH_ROUTES.creatorHome,
     roles: ["CREATOR"],
-    breadcrumb: "Creator Centre",
-    headerTitle: "Creator Centre",
+    breadcrumb: "Home",
+    headerTitle: "Daily Briefing",
+    mainVariant: "flush",
+  },
+  {
+    label: "Insights",
+    icon: BarChart3,
+    path: AUTH_ROUTES.creatorAnalytics,
+    roles: ["CREATOR"],
+    breadcrumb: "Insights",
+    headerTitle: "Content Pulse",
+    mainVariant: "flush",
+  },
+  {
+    label: "Profile",
+    icon: UserRound,
+    path: AUTH_ROUTES.creatorMediaKit,
+    roles: ["CREATOR"],
+    breadcrumb: "Profile",
+    headerTitle: "Creator Profile",
     mainVariant: "flush",
   },
   {
@@ -249,7 +267,8 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCollaborations,
   AUTH_ROUTES.brandPayouts,
   AUTH_ROUTES.brandSettings,
-  AUTH_ROUTES.creatorHome,
+  AUTH_ROUTES.creatorAnalytics,
+  AUTH_ROUTES.creatorMediaKit,
   AUTH_ROUTES.creatorMarketplace,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorPayouts,
@@ -259,7 +278,11 @@ const PREFIX_MATCH_PATHS = [
 
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
   if (itemPath === AUTH_ROUTES.creatorHome) {
-    return isCreatorCentrePath(pathname);
+    return (
+      pathname === AUTH_ROUTES.creatorHome ||
+      pathname === AUTH_ROUTES.creatorDashboard ||
+      pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
+    );
   }
 
   if (PREFIX_MATCH_PATHS.some((p) => p === itemPath)) {
@@ -312,8 +335,11 @@ export function resolveHeaderMeta(
     return { breadcrumb: "Settings", title: "Profile & Workspace" };
   }
 
-  if (isCreatorCentrePath(pathname)) {
-    return { breadcrumb: "Creator Centre", title: "Creator Centre" };
+  if (
+    pathname === AUTH_ROUTES.creatorDashboard ||
+    pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
+  ) {
+    return { breadcrumb: "Home", title: "Daily Briefing" };
   }
 
   const match = findSidebarNavItemByPath(pathname, role);

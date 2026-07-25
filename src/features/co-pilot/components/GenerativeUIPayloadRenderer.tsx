@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { BadgeTone } from "../../../design-system/aurora";
-import { Alert, Button, Card, SelectField, TextField } from "../../../design-system/aurora";
+import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../../features/auth/constants";
 import type {
   CoPilotChatPayload,
@@ -123,17 +123,34 @@ function SlotFieldControl({
   onChange: (value: string) => void;
 }) {
   if (field.inputType === "SINGLE_SELECT") {
-    const options = (field.selectOptions ?? []).map((option) => ({
-      value: option,
-      label: formatSelectOptionLabel(option),
-    }));
+    const options = field.selectOptions ?? [];
     return (
-      <SelectField
-        label={field.uiLabel}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        options={[{ value: "", label: field.placeholderText }, ...options]}
-      />
+      <fieldset className="co-pilot-slot-list">
+        <legend className="co-pilot-slot-list__legend">{field.uiLabel}</legend>
+        {field.placeholderText ? (
+          <p className="co-pilot-slot-list__hint">{field.placeholderText}</p>
+        ) : null}
+        <ul className="co-pilot-slot-list__options" role="listbox" aria-label={field.uiLabel}>
+          {options.map((option) => {
+            const selected = value === option;
+            return (
+              <li key={option}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  className={`co-pilot-slot-list__option${selected ? " co-pilot-slot-list__option--selected" : ""}`}
+                  onClick={() => onChange(option)}
+                >
+                  <span className="co-pilot-slot-list__option-label">
+                    {formatSelectOptionLabel(option)}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </fieldset>
     );
   }
 
@@ -251,20 +268,20 @@ function ExecutionWidgetPanel({
         <div className="co-pilot-hitl-widget__actions">
           <Button
             type="button"
+            size="sm"
+            disabled={isBusy}
+            onClick={() => onConfirm?.(widget.idempotencyKey)}
+          >
+            {isBusy ? "Working…" : widget.primaryActionLabel}
+          </Button>
+          <Button
+            type="button"
             variant="outline"
             size="sm"
             disabled={isBusy}
             onClick={() => onDiscard?.(widget.idempotencyKey)}
           >
             {widget.cancelActionLabel}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={isBusy}
-            onClick={() => onConfirm?.(widget.idempotencyKey)}
-          >
-            {isBusy ? "Working…" : widget.primaryActionLabel}
           </Button>
         </div>
       ) : null}
