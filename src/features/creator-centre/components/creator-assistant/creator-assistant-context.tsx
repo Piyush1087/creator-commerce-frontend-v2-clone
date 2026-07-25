@@ -16,6 +16,12 @@ export type AssistantMessage = {
   text: string;
 };
 
+export type AssistantExecutionAction = {
+  id: string;
+  label: string;
+  variant: "primary" | "outline";
+};
+
 type CreatorAssistantContextValue = {
   isOpen: boolean;
   open: () => void;
@@ -25,6 +31,8 @@ type CreatorAssistantContextValue = {
   setDraft: (value: string) => void;
   messages: AssistantMessage[];
   isDrafting: boolean;
+  executionActions: AssistantExecutionAction[] | null;
+  clearExecutionActions: () => void;
   sendMessage: (text?: string) => void;
 };
 
@@ -45,40 +53,48 @@ export function CreatorAssistantProvider({ children }: { children: ReactNode }) 
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<AssistantMessage[]>(INITIAL_MESSAGES);
   const [isDrafting, setIsDrafting] = useState(false);
+  const [executionActions, setExecutionActions] = useState<
+    AssistantExecutionAction[] | null
+  >(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sendMessage = useCallback((text?: string) => {
-    const content = (text ?? draft).trim();
-    if (!content || isDrafting) return;
+  const sendMessage = useCallback(
+    (text?: string) => {
+      const content = (text ?? draft).trim();
+      if (!content || isDrafting) return;
 
-    const userId = `user-${Date.now()}`;
-    const statusId = `status-${Date.now()}`;
+      const userId = `user-${Date.now()}`;
+      const statusId = `status-${Date.now()}`;
 
-    setMessages((prev) => [
-      ...prev,
-      { id: userId, role: "user", text: content },
-      {
-        id: statusId,
-        role: "status",
-        text: "Drafting reply…",
-      },
-    ]);
-    setDraft("");
-    setIsDrafting(true);
-
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
+      setExecutionActions(null);
       setMessages((prev) => [
-        ...prev.filter((m) => m.id !== statusId),
+        ...prev,
+        { id: userId, role: "user", text: content },
         {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          text: `Here's a draft reply based on what you asked:\n\n"${content.slice(0, 120)}${content.length > 120 ? "…" : ""}"\n\nI can refine the tone, add pricing, or turn this into a brand pitch. What should we adjust?`,
+          id: statusId,
+          role: "status",
+          text: "Drafting reply…",
         },
       ]);
-      setIsDrafting(false);
-    }, 1200);
-  }, [draft, isDrafting]);
+      setDraft("");
+      setIsDrafting(true);
+
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setMessages((prev) => [
+          ...prev.filter((m) => m.id !== statusId),
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            text: `Here's a draft reply based on what you asked:\n\n"${content.slice(0, 120)}${content.length > 120 ? "…" : ""}"\n\nI can refine the tone, add pricing, or turn this into a brand pitch. What should we adjust?`,
+          },
+        ]);
+        setExecutionActions([...MOCK_ASSISTANT.executionActions]);
+        setIsDrafting(false);
+      }, 1200);
+    },
+    [draft, isDrafting],
+  );
 
   const value = useMemo(
     () => ({
@@ -90,9 +106,11 @@ export function CreatorAssistantProvider({ children }: { children: ReactNode }) 
       setDraft,
       messages,
       isDrafting,
+      executionActions,
+      clearExecutionActions: () => setExecutionActions(null),
       sendMessage,
     }),
-    [isOpen, draft, messages, isDrafting, sendMessage],
+    [isOpen, draft, messages, isDrafting, executionActions, sendMessage],
   );
 
   return (

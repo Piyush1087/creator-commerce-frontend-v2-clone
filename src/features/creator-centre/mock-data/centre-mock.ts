@@ -128,10 +128,15 @@ export const MOCK_PRIORITY_TASKS = [
   },
 ] as const;
 
-/** Desktop assistant column — Stitch `ai_assistant_integrated_2` */
+/**
+ * Creator Assistant — desktop: AI Assistant Integrated;
+ * mobile sheet: Bottom Sheet Interface + Action Execution Engine.
+ */
 export const MOCK_ASSISTANT = {
   title: "Creator Assistant",
   status: "Active",
+  statusDrafting: "Drafting…",
+  statusAnalyzing: "Analyzing…",
   greeting:
     "I've updated your daily briefing. I noticed your Tech aesthetic is trending today. Need help drafting a pitch, calculating a package rate, or reviewing a contract?",
   chips: [
@@ -141,6 +146,12 @@ export const MOCK_ASSISTANT = {
   ],
   placeholder: "Ask your assistant anything...",
   disclaimer: "AI can make mistakes. Please verify important info.",
+  sheetDisclaimer: "Powered by Aurora Intelligence v4.1",
+  /** Shown after a mock draft reply — Action Execution Engine */
+  executionActions: [
+    { id: "use", label: "Use this draft", variant: "primary" as const },
+    { id: "edit", label: "Edit draft", variant: "outline" as const },
+  ],
 };
 
 /**

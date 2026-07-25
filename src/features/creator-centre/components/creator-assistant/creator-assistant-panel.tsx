@@ -9,6 +9,53 @@ type CreatorAssistantPanelProps = {
   variant?: "desktop" | "sheet";
 };
 
+function AttachIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 2.5 9.5 9.5 2.5 12l7 2.5L12 21.5l2.5-7 7-2.5-7-2.5L12 2.5Z" />
+    </svg>
+  );
+}
+
+function SparkleAvatar() {
+  return (
+    <span className="cctr-assistant__avatar" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2.5 9.5 9.5 2.5 12l7 2.5L12 21.5l2.5-7 7-2.5-7-2.5L12 2.5Z" />
+      </svg>
+    </span>
+  );
+}
+
+/**
+ * Creator Assistant chat.
+ * Desktop → AI Assistant Integrated column.
+ * Sheet → Bottom Sheet Interface + Action Execution Engine CTAs.
+ */
 export function CreatorAssistantPanel({
   variant = "desktop",
 }: CreatorAssistantPanelProps) {
@@ -18,6 +65,7 @@ export function CreatorAssistantPanel({
     setDraft,
     messages,
     isDrafting,
+    executionActions,
     sendMessage,
   } = useCreatorAssistant();
   const isSheet = variant === "sheet";
@@ -27,12 +75,16 @@ export function CreatorAssistantPanel({
     const el = threadRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, isDrafting]);
+  }, [messages, isDrafting, executionActions]);
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     sendMessage();
   };
+
+  const statusLabel = isDrafting
+    ? MOCK_ASSISTANT.statusAnalyzing
+    : MOCK_ASSISTANT.status;
 
   return (
     <aside
@@ -40,23 +92,27 @@ export function CreatorAssistantPanel({
     >
       <div className="cctr-assistant__head">
         <div className="cctr-assistant__title-row">
-          <span aria-hidden="true">✨</span>
-          <h2>{MOCK_ASSISTANT.title}</h2>
-          <span className="cctr-assistant__status">
-            <span className="cctr-assistant__dot" aria-hidden="true" />
-            {isDrafting ? "Drafting…" : MOCK_ASSISTANT.status}
-          </span>
+          {isSheet ? <SparkleAvatar /> : <span aria-hidden="true">✨</span>}
+          <div className="cctr-assistant__title-block">
+            <h2>{MOCK_ASSISTANT.title}</h2>
+            <span className="cctr-assistant__status">
+              <span
+                className={`cctr-assistant__dot${isDrafting ? " cctr-assistant__dot--pulse" : ""}`}
+                aria-hidden="true"
+              />
+              {statusLabel}
+            </span>
+          </div>
         </div>
-        {isSheet ? (
-          <button
-            type="button"
-            className="cctr-assistant__close"
-            aria-label="Close assistant"
-            onClick={close}
-          >
-            ✕
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="cctr-assistant__close"
+          aria-label={isSheet ? "Close assistant" : "Assistant stays open on desktop"}
+          onClick={isSheet ? close : undefined}
+          disabled={!isSheet}
+        >
+          ✕
+        </button>
       </div>
 
       <div className="cctr-assistant__body" ref={threadRef}>
@@ -95,38 +151,56 @@ export function CreatorAssistantPanel({
             ))}
           </div>
         ) : null}
+
+        {/* Action Execution Engine — CTAs after a mock draft */}
+        {executionActions && executionActions.length > 0 ? (
+          <div className="cctr-assistant__actions">
+            {executionActions.map((action) => (
+              <Button
+                key={action.id}
+                type="button"
+                variant={action.variant}
+                size={isSheet ? "md" : "sm"}
+                disabled
+                className="cctr-assistant__action-btn"
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <form className="cctr-assistant__foot" onSubmit={onSubmit}>
-        <label className="cctr-assistant__composer">
-          <span className="cctr-assistant__composer-label">Ask the assistant</span>
-          <div className="cctr-assistant__composer-row">
-            <input
-              className="cctr-assistant__input"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={MOCK_ASSISTANT.placeholder}
-              disabled={isDrafting}
-              aria-label="Message the creator assistant"
-            />
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={isDrafting || !draft.trim()}
-            >
-              Send
-            </Button>
-          </div>
-        </label>
-        <p className="cctr-assistant__disclaimer">{MOCK_ASSISTANT.disclaimer}</p>
-        {isSheet ? (
-          <div className="cctr-assistant__sheet-actions">
-            <Button variant="outline" size="sm" onClick={close} type="button">
-              Done
-            </Button>
-          </div>
-        ) : null}
+        <div className="cctr-assistant__composer-bar">
+          <button
+            type="button"
+            className="cctr-assistant__icon-btn"
+            aria-label="Attach file"
+            disabled
+          >
+            <AttachIcon />
+          </button>
+          <input
+            className="cctr-assistant__input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={MOCK_ASSISTANT.placeholder}
+            disabled={isDrafting}
+            aria-label="Message the creator assistant"
+          />
+          <button
+            type="submit"
+            className="cctr-assistant__icon-btn cctr-assistant__icon-btn--send"
+            aria-label="Send message"
+            disabled={isDrafting || !draft.trim()}
+          >
+            <SendIcon />
+          </button>
+        </div>
+        <p className="cctr-assistant__disclaimer">
+          {isSheet ? MOCK_ASSISTANT.sheetDisclaimer : MOCK_ASSISTANT.disclaimer}
+        </p>
       </form>
     </aside>
   );

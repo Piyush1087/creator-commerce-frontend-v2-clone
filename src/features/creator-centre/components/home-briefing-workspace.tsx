@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { Badge, Button, Card } from "../../../design-system/aurora";
+import { Button, Card } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import {
   MOCK_ACTION_REQUIRED,
@@ -13,10 +13,17 @@ import {
 
 import "../creator-centre.css";
 
+const SNAPSHOT_HREF: Record<string, string> = {
+  earnings: AUTH_ROUTES.creatorCollaborations,
+  profile: AUTH_ROUTES.creatorMediaKit,
+  payout: AUTH_ROUTES.creatorPayouts,
+  marketplace: AUTH_ROUTES.creatorCampaigns,
+};
+
 /**
- * Home / Daily Briefing — content column only.
- * Desktop assistant + mobile FAB live in CreatorCentreShell / page layout.
- * Source: Stitch AI Assistant Integrated + Master Spec.
+ * Home / Daily Briefing — content column.
+ * Canonical Stitch: AI Assistant Integrated (+ Header/Snapshot + Insights/Tasks updates).
+ * Mobile: same composition (horizontal snapshot scroll + FAB), not the separate Alex screen.
  */
 export function HomeBriefingWorkspace() {
   const profile = MOCK_CREATOR_PROFILE;
@@ -24,8 +31,6 @@ export function HomeBriefingWorkspace() {
 
   return (
     <div className="cctr-workspace cctr-home cctr-canvas">
-      <p className="cctr-demo-chip">Stitch · AI Assistant Integrated</p>
-
       <header className="cctr-home__welcome">
         <div className="cctr-home__welcome-row">
           <h1 className="cctr-greeting">
@@ -38,38 +43,36 @@ export function HomeBriefingWorkspace() {
       </header>
 
       <div className="cctr-bento cctr-bento--snapshot">
-        {MOCK_HOME_SNAPSHOT.map((card) => (
-          <Card key={card.id} className="cctr-snapshot-card">
-            <p className="cctr-snapshot-card__title">
-              <span aria-hidden="true">{card.emoji}</span> {card.title}
-            </p>
-            <div className="cctr-snapshot-card__value-row">
-              <p className="cctr-kpi__value">{card.value}</p>
-              {"badge" in card && card.badge ? (
-                <Badge tone="success">{card.badge}</Badge>
-              ) : null}
-            </div>
-            {card.detail ? (
-              <p className="cctr-snapshot-card__detail">{card.detail}</p>
-            ) : (
-              <div className="cctr-snapshot-card__spacer" />
-            )}
-            {card.actionStyle === "button" ? (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled
-                className="cctr-snapshot-card__btn"
-              >
-                {card.action}
-              </Button>
-            ) : (
-              <button type="button" className="cctr-text-link" disabled>
-                {card.action}
-              </button>
-            )}
-          </Card>
-        ))}
+        {MOCK_HOME_SNAPSHOT.map((card) => {
+          const href = SNAPSHOT_HREF[card.id];
+          return (
+            <Card key={card.id} className="cctr-snapshot-card">
+              <p className="cctr-snapshot-card__title">
+                <span aria-hidden="true">{card.emoji}</span> {card.title}
+              </p>
+              <div className="cctr-snapshot-card__value-row">
+                <p className="cctr-kpi__value">{card.value}</p>
+                {"badge" in card && card.badge ? (
+                  <span className="cctr-snapshot-card__badge">{card.badge}</span>
+                ) : null}
+              </div>
+              {card.detail ? (
+                <p className="cctr-snapshot-card__detail">{card.detail}</p>
+              ) : (
+                <div className="cctr-snapshot-card__spacer" />
+              )}
+              {card.actionStyle === "button" ? (
+                <Link to={href} className="cctr-snapshot-card__outline-btn">
+                  {card.action}
+                </Link>
+              ) : (
+                <Link to={href} className="cctr-text-link cctr-snapshot-card__link">
+                  {card.action}
+                </Link>
+              )}
+            </Card>
+          );
+        })}
       </div>
 
       <Card className="cctr-hero-insight">
@@ -163,7 +166,11 @@ export function HomeBriefingWorkspace() {
                   />
                   <span>{task.label}</span>
                 </label>
-                <Badge tone={task.urgent ? "error" : "neutral"}>{task.due}</Badge>
+                <span
+                  className={`cctr-task-list__due${task.urgent ? " cctr-task-list__due--urgent" : ""}`}
+                >
+                  {task.due}
+                </span>
               </li>
             ))}
           </ul>
