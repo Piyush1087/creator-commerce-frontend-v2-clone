@@ -377,8 +377,9 @@
   max-width: min(640px, 88%);
   padding: 0.875rem 1rem;
   border-radius: var(--radius-card-standard);
-  background: var(--color-secondary);
-  color: var(--text-on-secondary);
+  background: var(--surface-card);
+  color: var(--text-high);
+  border: 1px solid var(--border-default);
   font-size: var(--size-body);
   line-height: 1.6;
 }
@@ -387,6 +388,9 @@
   width: 100%;
   max-width: none;
   margin: 0;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  box-shadow: none;
 }
 
 .co-pilot-agent-card__narrative {
@@ -624,6 +628,76 @@
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-default);
+}
+
+/* SINGLE_SELECT → in-chat option list (not native dropdown) */
+.co-pilot-slot-list {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.co-pilot-slot-list__legend {
+  padding: 0;
+  margin: 0 0 0.35rem;
+  color: var(--text-high);
+  font-family: var(--font-heading);
+  font-size: var(--size-caption);
+  font-weight: 700;
+}
+
+.co-pilot-slot-list__hint {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+  font-size: var(--size-caption);
+}
+
+.co-pilot-slot-list__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.co-pilot-slot-list__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-left: 4px solid #60a5fa;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-high);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  font-weight: 600;
+  line-height: 1.4;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.co-pilot-slot-list__option:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.co-pilot-slot-list__option--selected {
+  border-color: rgba(52, 211, 153, 0.45);
+  border-left-color: var(--color-primary);
+  background: rgba(52, 211, 153, 0.08);
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.2);
+}
+
+.co-pilot-slot-list__option-label {
+  display: block;
 }
 
 .co-pilot-hitl-widget {

@@ -1267,23 +1267,18 @@ a.cctr-text-link {
 .cctr-assistant__title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
   min-width: 0;
+  flex: 1;
 }
 
 .cctr-assistant__title-block {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
   min-width: 0;
-}
-
-.cctr-assistant--desktop .cctr-assistant__title-block {
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .cctr-assistant__title-block h2,
@@ -1293,6 +1288,14 @@ a.cctr-text-link {
   font-size: 16px;
   font-weight: 700;
   color: var(--home-on-surface);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.cctr-assistant__title-emoji {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .cctr-assistant__avatar {
@@ -1380,12 +1383,15 @@ a.cctr-text-link {
 
 .cctr-assistant__bubble--user {
   align-self: flex-end;
-  background: #061f23;
-  color: #fff;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid var(--home-outline, #e2e8f0);
 }
 
 .cctr-assistant__bubble--assistant {
   align-self: flex-start;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
 }
 
 .cctr-assistant__bubble--status {
@@ -1467,7 +1473,7 @@ a.cctr-text-link {
   gap: 4px;
   height: 48px;
   padding: 0 12px;
-  border: 1px solid var(--home-outline, #e2e8f0);
+  border: 1.5px solid var(--color-primary, #34d399);
   border-radius: 8px;
   background: #fff;
 }
@@ -1517,8 +1523,9 @@ a.cctr-text-link {
 }
 
 .cctr-assistant__composer-bar:focus-within {
-  outline: 2px solid rgba(52, 211, 153, 0.45);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--color-primary, #34d399);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
 }
 
 .cctr-assistant__input:disabled {
@@ -2374,9 +2381,17 @@ a.cctr-text-link {
 
 .cctr-assistant--sheet .cctr-assistant__bubble--assistant {
   max-width: 85%;
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.2);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
   border-radius: 12px 12px 12px 0;
+  font-size: 15px;
+}
+
+.cctr-assistant--sheet .cctr-assistant__bubble--user {
+  max-width: 85%;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid var(--home-outline, #e2e8f0);
   font-size: 15px;
 }
 
@@ -2397,6 +2412,7 @@ a.cctr-text-link {
   min-height: 52px;
   padding: 10px 12px;
   background: #f9fafb;
+  border: 1.5px solid var(--color-primary, #34d399);
   border-radius: 12px;
 }
 

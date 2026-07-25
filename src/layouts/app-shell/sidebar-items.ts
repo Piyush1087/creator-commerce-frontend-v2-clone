@@ -3,7 +3,6 @@ import {
   Globe,
   HelpCircle,
   Home,
-  LayoutDashboard,
   LogOut,
   Megaphone,
   MessageCircle,
@@ -47,12 +46,12 @@ export type SidebarUtilityItem = {
 
 const brandSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Home",
+    icon: Home,
     path: AUTH_ROUTES.brandDashboard,
     roles: ["BRAND"],
     breadcrumb: "Home",
-    headerTitle: "Dashboard",
+    headerTitle: "Daily Briefing",
     mainVariant: "flush",
   },
   {

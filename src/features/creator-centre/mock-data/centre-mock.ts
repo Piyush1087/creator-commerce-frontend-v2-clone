@@ -147,10 +147,10 @@ export const MOCK_ASSISTANT = {
   placeholder: "Ask your assistant anything...",
   disclaimer: "AI can make mistakes. Please verify important info.",
   sheetDisclaimer: "Powered by Aurora Intelligence v4.1",
-  /** Shown after a mock draft reply — Action Execution Engine */
+  /** Shown after a mock draft reply — Header & Snapshot confirm/cancel pattern */
   executionActions: [
-    { id: "use", label: "Use this draft", variant: "primary" as const },
-    { id: "edit", label: "Edit draft", variant: "outline" as const },
+    { id: "use", label: "Yes, use draft", variant: "primary" as const },
+    { id: "edit", label: "Not now", variant: "outline" as const },
   ],
 };
 

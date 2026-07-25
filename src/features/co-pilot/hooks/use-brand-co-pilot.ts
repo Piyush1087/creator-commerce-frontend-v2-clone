@@ -7,6 +7,7 @@ import {
   fetchCoPilotThread,
   fetchCoPilotThreads,
   fetchCoPilotUsage,
+  postCoPilotMessage,
   streamCoPilotHitlConfirm,
   streamCoPilotMessage,
   submitCoPilotFeedback,
@@ -386,15 +387,18 @@ export function useBrandCoPilot() {
 
       try {
         const useStream = options?.useStream ?? !options?.slotValues;
+        // Slot continues need a non-empty text for older validators; prefer "Continue".
+        const requestText =
+          trimmed || (options?.slotValues ? "Continue" : "");
         const result = useStream
-          ? await streamCoPilotMessage(activeThreadId, trimmed, {
+          ? await streamCoPilotMessage(activeThreadId, requestText, {
               scopeContext: activeScope,
               slotValues: options?.slotValues,
               onNarrativeDelta: (delta) => {
                 setStreamingNarrative((prev) => `${prev ?? ""}${delta}`);
               },
             })
-          : await streamCoPilotMessage(activeThreadId, trimmed || " ", {
+          : await postCoPilotMessage(activeThreadId, requestText, {
               scopeContext: activeScope,
               slotValues: options?.slotValues,
             });

@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Megaphone,
   MessageCircle,
   BarChart3,
@@ -20,8 +19,8 @@ export type BottomNavItem = {
 
 export const brandBottomNavItems: BottomNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Home",
+    icon: Home,
     path: AUTH_ROUTES.brandDashboard,
   },
   {

@@ -43,7 +43,7 @@ export function getHomeRouteForRole(role: UserRole | null): string {
     case "CREATOR":
       return AUTH_ROUTES.creatorHome;
     case "BRAND":
-      return AUTH_ROUTES.brandCentre;
+      return AUTH_ROUTES.brandDashboard;
     default:
       return AUTH_ROUTES.login;
   }
