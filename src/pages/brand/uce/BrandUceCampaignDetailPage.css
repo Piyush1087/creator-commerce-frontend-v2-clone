@@ -1,9 +1,14 @@
 .campaign-workspace-canvas {
-  min-height: 100vh;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: 100%;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
   padding-bottom: 48px;
+  min-width: 0;
 }
 
 .campaign-workspace-canvas--missing {
@@ -58,7 +63,7 @@
 
 /* ZONE 2: REPOSITORY */
 .repository-workspace {
-  padding: 24px 60px;
+  padding: 24px 32px;
   background: white;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -238,16 +243,7 @@
 
 .pipeline-canvas {
   flex: 1;
-  padding: 0 60px 60px;
-}
-
-@media (max-width: 1024px) {
-  .repository-workspace,
-  .workspace-tabs-container,
-  .pipeline-canvas {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
+  padding: 0 32px 48px;
 }
 
 @media (max-width: 767px) {

@@ -2,7 +2,8 @@
 export type RepositoryProduct = {
   id: string;
   name: string;
-  skuCode: string;
+  skuCode: string | null;
+  assetType?: string;
   basePrice: string;
   inventoryCount: number;
   outOfStock: boolean;
@@ -10,11 +11,13 @@ export type RepositoryProduct = {
 
 export type RepositoryBrief = {
   id: string;
+  productId?: string | null;
   name: string;
   formatType: string;
   formatTags: string[];
   platforms: string[];
   platformsLabel: string;
   creativeGuidelines: string;
+  briefType?: string | null;
   createdAt: string | null;
 };
