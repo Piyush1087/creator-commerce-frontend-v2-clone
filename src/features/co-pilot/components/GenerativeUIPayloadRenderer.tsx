@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import type { BadgeTone } from "../../../design-system/aurora";
-import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
+import { Alert, Badge, Button, Card, TextField } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../../features/auth/constants";
 import type {
   CoPilotChatPayload,
@@ -72,44 +72,175 @@ function formatPrefillValue(value: unknown): string {
   return String(value);
 }
 
+function formatCellValue(value: string | number | boolean | undefined): string {
+  if (value == null) {
+    return "—";
+  }
+  if (typeof value === "number") {
+    return Number.isInteger(value)
+      ? value.toLocaleString()
+      : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "—";
+  }
+  if (/^[A-Z0-9]+(?:_[A-Z0-9]+)+$/.test(trimmed)) {
+    return formatObjective(trimmed);
+  }
+  return trimmed;
+}
+
+function statusBadgeTone(status: string): BadgeTone {
+  const n = status.toUpperCase();
+  if (n === "ACTIVE" || n === "COMPLETED" || n === "RELEASED") {
+    return "success";
+  }
+  if (n === "PAUSED" || n === "PENDING" || n === "DRAFT") {
+    return "pending";
+  }
+  if (n === "ARCHIVED" || n === "FAILED" || n === "REJECTED") {
+    return "error";
+  }
+  return "neutral";
+}
+
+function pickTitleHeader(headers: string[]): string {
+  const preferred = headers.find((header) =>
+    /^(campaign|name|title|leak|product|creator|entity|card)/i.test(header),
+  );
+  return preferred ?? headers[0] ?? "Item";
+}
+
+function pickStatusHeader(headers: string[]): string | null {
+  return headers.find((header) => /status/i.test(header)) ?? null;
+}
+
+function pickHighlightHeaders(headers: string[], titleHeader: string, statusHeader: string | null): string[] {
+  const candidates = headers.filter(
+    (header) =>
+      header !== titleHeader &&
+      header !== statusHeader &&
+      /^(budget|spend|utilization|remaining|impressions|active collabs|amount|balance)/i.test(
+        header,
+      ),
+  );
+  return candidates.slice(0, 3);
+}
+
 function MetricHighlightGrid({ metrics }: { metrics: MetricItem[] }) {
   return (
-    <div className="co-pilot-metric-grid">
+    <div className="co-pilot-metric-grid" role="list">
       {metrics.map((metric) => (
         <div
           key={metric.label}
+          role="listitem"
           className={`co-pilot-metric-grid__item co-pilot-metric-grid__item--${metric.statusColor.toLowerCase()}`}
         >
-          <span className="co-pilot-metric-grid__label">{metric.label}</span>
-          <strong className="co-pilot-metric-grid__value">{metric.value}</strong>
+          <div className="co-pilot-metric-grid__head">
+            <span className="co-pilot-metric-grid__label">{metric.label}</span>
+            {metric.statusColor !== "NEUTRAL" ? (
+              <Badge
+                tone={metricTone(metric.statusColor)}
+                className="co-pilot-metric-grid__badge"
+              >
+                {metric.statusColor.toLowerCase()}
+              </Badge>
+            ) : null}
+          </div>
+          <strong className="co-pilot-metric-grid__value">
+            {formatCellValue(metric.value)}
+          </strong>
+          {typeof metric.changePercentage === "number" ? (
+            <span className="co-pilot-metric-grid__delta">
+              {metric.changePercentage > 0 ? "+" : ""}
+              {metric.changePercentage}%
+            </span>
+          ) : null}
         </div>
       ))}
     </div>
   );
 }
 
-function AuditDataTable({ table }: { table: DataTableData }) {
+/**
+ * Chat-friendly entity cards for any TABULAR_AUDIT_DATA payload.
+ * Avoids cramped multi-column tables inside the agent bubble.
+ */
+function AuditEntityCards({ table }: { table: DataTableData }) {
+  const titleHeader = pickTitleHeader(table.headers);
+  const statusHeader = pickStatusHeader(table.headers);
+  const highlightHeaders = pickHighlightHeaders(
+    table.headers,
+    titleHeader,
+    statusHeader,
+  );
+  const detailHeaders = table.headers.filter(
+    (header) =>
+      header !== titleHeader &&
+      header !== statusHeader &&
+      !highlightHeaders.includes(header),
+  );
+
+  if (table.rows.length === 0) {
+    return (
+      <div className="co-pilot-audit-cards co-pilot-audit-cards--empty">
+        <p className="co-pilot-audit-cards__empty">No rows to show.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="co-pilot-audit-table-wrap">
-      <table className="co-pilot-audit-table">
-        <thead>
-          <tr>
-            {table.headers.map((header) => (
-              <th key={header}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {table.rows.map((row, index) => (
-            <tr key={index}>
-              {table.headers.map((header) => (
-                <td key={header}>{String(row[header] ?? "")}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className="co-pilot-audit-cards" aria-label="Results">
+      {table.rows.map((row, index) => {
+        const title = formatCellValue(row[titleHeader]);
+        const statusRaw =
+          statusHeader != null ? String(row[statusHeader] ?? "").trim() : "";
+        const statusLabel = statusRaw ? formatCellValue(statusRaw) : null;
+
+        return (
+          <li key={`${title}-${index}`} className="co-pilot-audit-card">
+            <div className="co-pilot-audit-card__top">
+              <div className="co-pilot-audit-card__identity">
+                <p className="co-pilot-audit-card__title">{title}</p>
+                {statusLabel ? (
+                  <Badge tone={statusBadgeTone(statusRaw)}>
+                    {statusLabel}
+                  </Badge>
+                ) : null}
+              </div>
+              {highlightHeaders.length > 0 ? (
+                <div className="co-pilot-audit-card__highlights">
+                  {highlightHeaders.map((header) => (
+                    <div key={header} className="co-pilot-audit-card__stat">
+                      <span className="co-pilot-audit-card__stat-label">
+                        {header}
+                      </span>
+                      <strong className="co-pilot-audit-card__stat-value">
+                        {formatCellValue(row[header])}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            {detailHeaders.length > 0 ? (
+              <dl className="co-pilot-audit-card__details">
+                {detailHeaders.map((header) => (
+                  <div key={header} className="co-pilot-audit-card__detail">
+                    <dt>{header}</dt>
+                    <dd>{formatCellValue(row[header])}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -302,7 +433,7 @@ function ExecutionWidgetPanel({
             {campaignHref ? (
               <p className="co-pilot-hitl-widget__link-wrap">
                 <Link className="co-pilot-hitl-widget__link" to={campaignHref}>
-                  View draft campaign
+                  View campaign
                 </Link>
               </p>
             ) : null}
@@ -332,7 +463,7 @@ export function GenerativeUIPayloadRenderer({
         <MetricHighlightGrid metrics={payload.metricGridData} />
       )}
 
-      {payload.tableData && <AuditDataTable table={payload.tableData} />}
+      {payload.tableData && <AuditEntityCards table={payload.tableData} />}
 
       {payload.formatType === "SLOT_FILLING_CLARIFICATION" && (
         <SlotFillingForm

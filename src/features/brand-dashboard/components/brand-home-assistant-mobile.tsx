@@ -91,7 +91,6 @@ export function BrandHomeAssistantMobile({
         <BrandHomeAssistantPanel
           coPilot={coPilot}
           variant="sheet"
-          onClose={() => setIsOpen(false)}
           onOpenChats={onOpenChats}
         />
       </div>

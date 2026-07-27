@@ -92,7 +92,7 @@ function OperationsTab() {
         objective: objectiveFilter
           ? (objectiveFilter as UceCampaignObjective)
           : undefined,
-        status: showArchived ? "COMPLETED" : undefined,
+        status: showArchived ? "ARCHIVED" : undefined,
       }),
     [debouncedSearch, objectiveFilter, showArchived],
   );
@@ -105,7 +105,11 @@ function OperationsTab() {
     () =>
       showArchived
         ? campaigns
-        : campaigns.filter((c) => c.current_status !== "COMPLETED"),
+        : campaigns.filter(
+            (c) =>
+              c.current_status !== "ARCHIVED" &&
+              c.current_status !== "COMPLETED",
+          ),
     [campaigns, showArchived],
   );
 
@@ -280,7 +284,9 @@ function OperationsTab() {
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <div className="status-toggle-cell">
-                            {campaign.current_status === "COMPLETED" ? (
+                            {campaign.current_status === "COMPLETED" ||
+                            campaign.current_status === "ARCHIVED" ||
+                            campaign.current_status === "DRAFT" ? (
                               <span className="status-toggle-cell__static">
                                 {formatStatus(campaign.current_status)}
                               </span>

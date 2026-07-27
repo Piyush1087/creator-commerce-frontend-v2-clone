@@ -121,7 +121,7 @@ export function CampaignWorkspaceZone1({
               <input
                 type="checkbox"
                 checked={isActive}
-                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED"}
+                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED" || shell.current_status === "ARCHIVED"}
                 onChange={(e) => onStatusChange?.(e.target.checked)}
               />
               <span className="uce-active-toggle-track" />
