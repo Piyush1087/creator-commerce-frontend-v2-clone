@@ -9,6 +9,7 @@ import type {
   DataTableData,
   MetricItem,
   SlotField,
+  ValidationChecklistData,
 } from "../schemas/co-pilot-payload.schema";
 
 type Props = {
@@ -358,6 +359,95 @@ function SlotFillingForm({
   );
 }
 
+function ValidationChecklistPanel({
+  data,
+  busyKey,
+  onRetry,
+  onDiscard,
+}: {
+  data: ValidationChecklistData;
+  busyKey?: string | null;
+  onRetry?: (idempotencyKey: string) => void;
+  onDiscard?: (idempotencyKey: string) => void;
+}) {
+  const pending = data.items.filter((item) => !item.satisfied);
+  const done = data.items.filter((item) => item.satisfied);
+  const isBusy =
+    data.idempotencyKey != null && busyKey === data.idempotencyKey;
+  const campaignHref =
+    data.campaignId != null
+      ? AUTH_ROUTES.brandUceCampaignDetail.replace(":id", data.campaignId)
+      : data.deepLinkPath ?? null;
+
+  return (
+    <div className="co-pilot-validation-checklist">
+      <div className="co-pilot-validation-checklist__head">
+        <h3 className="co-pilot-validation-checklist__title">{data.title}</h3>
+        {data.campaignName ? (
+          <p className="co-pilot-validation-checklist__campaign">
+            {data.campaignName}
+          </p>
+        ) : null}
+      </div>
+      <ul className="co-pilot-validation-checklist__items">
+        {[...done, ...pending].map((item) => (
+          <li
+            key={item.id}
+            className={`co-pilot-validation-checklist__item${
+              item.satisfied
+                ? " co-pilot-validation-checklist__item--done"
+                : " co-pilot-validation-checklist__item--pending"
+            }`}
+          >
+            <span className="co-pilot-validation-checklist__mark" aria-hidden>
+              {item.satisfied ? "✓" : "☐"}
+            </span>
+            <div className="co-pilot-validation-checklist__body">
+              <strong>{item.title}</strong>
+              {item.helpText ? <p>{item.helpText}</p> : null}
+              {!item.satisfied && item.repairHint ? (
+                <p className="co-pilot-validation-checklist__hint">
+                  {item.repairHint}
+                </p>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {campaignHref ? (
+        <p className="co-pilot-validation-checklist__link-wrap">
+          <Link className="co-pilot-hitl-widget__link" to={campaignHref}>
+            Open campaign to fix
+          </Link>
+        </p>
+      ) : null}
+      {data.idempotencyKey ? (
+        <div className="co-pilot-validation-checklist__actions">
+          {data.autoResume ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={isBusy}
+              onClick={() => onRetry?.(data.idempotencyKey!)}
+            >
+              {isBusy ? "Checking…" : data.primaryActionLabel}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isBusy}
+            onClick={() => onDiscard?.(data.idempotencyKey!)}
+          >
+            {data.cancelActionLabel}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ExecutionWidgetPanel({
   payload,
   busyKey,
@@ -482,6 +572,15 @@ export function GenerativeUIPayloadRenderer({
           onDiscard={onDiscardHitl}
         />
       )}
+
+      {payload.validationChecklistData ? (
+        <ValidationChecklistPanel
+          data={payload.validationChecklistData}
+          busyKey={hitlBusyKey}
+          onRetry={onConfirmHitl}
+          onDiscard={onDiscardHitl}
+        />
+      ) : null}
     </Card>
   );
 }

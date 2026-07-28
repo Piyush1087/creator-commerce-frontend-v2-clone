@@ -864,6 +864,93 @@
   font-size: var(--size-caption);
 }
 
+.co-pilot-validation-checklist {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.co-pilot-validation-checklist__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+  font-weight: 700;
+}
+
+.co-pilot-validation-checklist__campaign {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--size-caption);
+}
+
+.co-pilot-validation-checklist__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.co-pilot-validation-checklist__item {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.875rem;
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.co-pilot-validation-checklist__item--done {
+  border-left: 4px solid var(--color-primary);
+  opacity: 0.92;
+}
+
+.co-pilot-validation-checklist__item--pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.co-pilot-validation-checklist__mark {
+  flex-shrink: 0;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.co-pilot-validation-checklist__body {
+  min-width: 0;
+}
+
+.co-pilot-validation-checklist__body strong {
+  display: block;
+  color: var(--text-high);
+  font-size: var(--size-body);
+}
+
+.co-pilot-validation-checklist__body p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--size-caption);
+  line-height: 1.4;
+}
+
+.co-pilot-validation-checklist__hint {
+  color: var(--text-high) !important;
+}
+
+.co-pilot-validation-checklist__link-wrap {
+  margin: 0;
+}
+
+.co-pilot-validation-checklist__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .co-pilot-hitl-widget__outcome {
   margin-top: 0.75rem;
 }
