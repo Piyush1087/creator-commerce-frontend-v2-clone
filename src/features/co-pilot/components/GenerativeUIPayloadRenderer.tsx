@@ -375,9 +375,10 @@ function ValidationChecklistPanel({
   const isBusy =
     data.idempotencyKey != null && busyKey === data.idempotencyKey;
   const campaignHref =
-    data.campaignId != null
+    data.deepLinkPath ??
+    (data.campaignId != null
       ? AUTH_ROUTES.brandUceCampaignDetail.replace(":id", data.campaignId)
-      : data.deepLinkPath ?? null;
+      : null);
 
   return (
     <div className="co-pilot-validation-checklist">
@@ -417,7 +418,9 @@ function ValidationChecklistPanel({
       {campaignHref ? (
         <p className="co-pilot-validation-checklist__link-wrap">
           <Link className="co-pilot-hitl-widget__link" to={campaignHref}>
-            Open campaign to fix
+            {data.deepLinkPath?.includes("/collaborations")
+              ? "Open collaboration to fix"
+              : "Open campaign to fix"}
           </Link>
         </p>
       ) : null}

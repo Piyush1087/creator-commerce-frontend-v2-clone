@@ -7,6 +7,32 @@ export type PendingHitlWidget = {
   cancelActionLabel: string;
 };
 
+/**
+ * Latest Part 5 validation checklist that is eligible for silent resume
+ * (autoResume + idempotencyKey). Does not change HITL semantics — callers
+ * re-invoke the same confirm endpoint.
+ */
+export function findPendingAutoResumeValidation(
+  messages: CoPilotFeedMessage[],
+  resolvedKeys: ReadonlySet<string>,
+): { idempotencyKey: string } | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.sender !== "COPILOT_AGENT") {
+      continue;
+    }
+    const data = message.payload.validationChecklistData;
+    if (!data?.autoResume || !data.idempotencyKey) {
+      continue;
+    }
+    if (resolvedKeys.has(data.idempotencyKey)) {
+      continue;
+    }
+    return { idempotencyKey: data.idempotencyKey };
+  }
+  return null;
+}
+
 export function findPendingHitlWidget(
   messages: CoPilotFeedMessage[],
   resolvedKeys: ReadonlySet<string>,
