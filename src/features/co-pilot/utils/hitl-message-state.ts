@@ -8,9 +8,9 @@ export type PendingHitlWidget = {
 };
 
 /**
- * Latest Part 5 validation checklist that is eligible for silent resume
- * (autoResume + idempotencyKey). Does not change HITL semantics — callers
- * re-invoke the same confirm endpoint.
+ * Latest Part 5 validation checklist that *could* be silently resumed.
+ * Silent resume is currently disabled in use-brand-co-pilot (strict HITL).
+ * Explicit "Try again" still uses the checklist idempotencyKey via onRetry.
  */
 export function findPendingAutoResumeValidation(
   messages: CoPilotFeedMessage[],

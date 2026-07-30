@@ -433,7 +433,7 @@ function ValidationChecklistPanel({
               disabled={isBusy}
               onClick={() => onRetry?.(data.idempotencyKey!)}
             >
-              {isBusy ? "Checking…" : data.primaryActionLabel}
+              {isBusy ? "Checking…" : data.primaryActionLabel || "Try again"}
             </Button>
           ) : null}
           <Button

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   archiveCoPilotThread,
@@ -30,7 +30,6 @@ import { groupCoPilotThreads } from "../utils/thread-grouping";
 import {
   applyHitlResolutionToMessages,
   extractResolvedHitlKeys,
-  findPendingAutoResumeValidation,
   findPendingHitlWidget,
 } from "../utils/hitl-message-state";
 
@@ -135,17 +134,6 @@ export function useBrandCoPilot() {
   const [streamingNarrative, setStreamingNarrative] = useState<string | null>(null);
   const [resolvedHitlKeys, setResolvedHitlKeys] = useState<Set<string>>(() => new Set());
   const [hitlBusyKey, setHitlBusyKey] = useState<string | null>(null);
-  /** One silent Part 5 resume attempt per idempotency key per page lifetime. */
-  const silentResumeAttemptedRef = useRef<Set<string>>(new Set());
-  const messagesRef = useRef(messages);
-  const resolvedHitlKeysRef = useRef(resolvedHitlKeys);
-  const hitlBusyKeyRef = useRef(hitlBusyKey);
-  const activeThreadIdRef = useRef(activeThreadId);
-
-  messagesRef.current = messages;
-  resolvedHitlKeysRef.current = resolvedHitlKeys;
-  hitlBusyKeyRef.current = hitlBusyKey;
-  activeThreadIdRef.current = activeThreadId;
 
   const pendingHitlWidget = useMemo(
     () => findPendingHitlWidget(messages, resolvedHitlKeys),
@@ -546,54 +534,6 @@ export function useBrandCoPilot() {
     },
     [activeThreadId, hitlBusyKey],
   );
-
-  const confirmHitlRef = useRef(confirmHitl);
-  confirmHitlRef.current = confirmHitl;
-
-  /**
-   * Part 5 — when the user returns to chat after fixing a blocker (deep link),
-   * silently re-call the same HITL confirm once. No toast; no backend changes;
-   * does not alter HITL decision rules — only advances UI if prerequisites pass.
-   */
-  const trySilentAutoResume = useCallback(() => {
-    if (!activeThreadIdRef.current || hitlBusyKeyRef.current) {
-      return;
-    }
-    const pending = findPendingAutoResumeValidation(
-      messagesRef.current,
-      resolvedHitlKeysRef.current,
-    );
-    if (!pending) {
-      return;
-    }
-    if (silentResumeAttemptedRef.current.has(pending.idempotencyKey)) {
-      return;
-    }
-    silentResumeAttemptedRef.current.add(pending.idempotencyKey);
-    void confirmHitlRef.current(pending.idempotencyKey);
-  }, []);
-
-  // Entering / re-entering co-pilot (mount or thread finished loading).
-  useEffect(() => {
-    if (isLoading || !activeThreadId) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      trySilentAutoResume();
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [isLoading, activeThreadId, trySilentAutoResume]);
-
-  // Returning to the tab after fixing blockers elsewhere.
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        trySilentAutoResume();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [trySilentAutoResume]);
 
   const discardHitl = useCallback(
     async (idempotencyKey: string) => {
