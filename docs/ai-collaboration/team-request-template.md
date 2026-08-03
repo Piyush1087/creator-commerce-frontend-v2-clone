@@ -20,7 +20,8 @@ Design constraints:
 - Use Aurora tokens and primitives.
 - No Tailwind, Shadcn, or utility-first classes.
 - Do not create one-off versions of Button/Input/Card/etc.
-- Implement mobile behavior below 768px.
+- Follow DESIGN_SYSTEM.md → Mobile Responsive Contract (ship mobile in the
+  first landing; do not defer).
 
 Output shape:
 - Page entry:
@@ -34,5 +35,5 @@ Acceptance checks:
 - npm run build
 - npm run lint
 - desktop visual review
-- mobile visual review
+- mobile audit against DESIGN_SYSTEM.md Mobile Responsive Contract
 ```
