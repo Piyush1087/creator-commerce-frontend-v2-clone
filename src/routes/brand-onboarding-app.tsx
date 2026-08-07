@@ -10,6 +10,8 @@ import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onbo
 import { BrandOnboardingPricingPage } from "../pages/brand/onboarding/brand-onboarding-pricing-page";
 import { BrandOnboardingScanPage } from "../pages/brand/onboarding/brand-onboarding-scan-page";
 import { BrandOnboardingSocialSyncPage } from "../pages/brand/onboarding/brand-onboarding-social-sync-page";
+import { BrandOnboardingSyncCompletePage } from "../pages/brand/onboarding/brand-onboarding-sync-complete-page";
+import { BrandOnboardingSyncVerifyPage } from "../pages/brand/onboarding/brand-onboarding-sync-verify-page";
 import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
 
 export function BrandOnboardingAppRoutes() {
@@ -49,6 +51,14 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/social-sync"
           element={<BrandOnboardingSocialSyncPage />}
+        />
+        <Route
+          path="brand/onboarding/sync-verify"
+          element={<BrandOnboardingSyncVerifyPage />}
+        />
+        <Route
+          path="brand/onboarding/sync-complete"
+          element={<BrandOnboardingSyncCompletePage />}
         />
       </Route>
     </Routes>

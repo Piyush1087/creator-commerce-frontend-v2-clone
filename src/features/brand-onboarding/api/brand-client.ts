@@ -320,9 +320,58 @@ export async function verifyBrandVerificationOtp(
   if (
     !json ||
     typeof json !== "object" ||
-    typeof (json as { verified?: unknown }).verified !== "boolean"
+    typeof (json as { identityConfirmed?: unknown }).identityConfirmed !==
+      "boolean"
   ) {
     throw new Error("Unexpected response from verification verify.");
+  }
+  return json as VerifyBrandVerificationResponseBody;
+}
+
+export async function setBrandVerificationPassword(
+  brandProfileId: string,
+  body: { email: string; password: string },
+): Promise<import("../contracts/brand.contracts").SetBrandPasswordResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/password`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { activated?: unknown }).activated !== "boolean" ||
+    typeof (json as { accessToken?: unknown }).accessToken !== "string"
+  ) {
+    throw new Error("Unexpected response from password setup.");
+  }
+  return json as import("../contracts/brand.contracts").SetBrandPasswordResponseBody;
+}
+
+export async function confirmBrandGoogleVerification(
+  brandProfileId: string,
+  idToken: string,
+): Promise<VerifyBrandVerificationResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/google`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ idToken }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { identityConfirmed?: unknown }).identityConfirmed !==
+      "boolean"
+  ) {
+    throw new Error("Unexpected response from Google verification.");
   }
   return json as VerifyBrandVerificationResponseBody;
 }

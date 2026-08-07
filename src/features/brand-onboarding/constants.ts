@@ -22,4 +22,6 @@ export const ONBOARDING_ROUTES = {
   verification: "/brand/onboarding/verification",
   pricing: "/brand/onboarding/pricing",
   socialSync: "/brand/onboarding/social-sync",
+  syncVerify: "/brand/onboarding/sync-verify",
+  syncComplete: "/brand/onboarding/sync-complete",
 } as const;
