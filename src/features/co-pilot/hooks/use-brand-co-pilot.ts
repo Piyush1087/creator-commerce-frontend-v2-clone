@@ -521,7 +521,10 @@ export function useBrandCoPilot() {
           ]);
         }
 
-        setResolvedHitlKeys((prev) => new Set(prev).add(idempotencyKey));
+        // Only lock the HITL card when the action actually confirmed.
+        if (streamResult.hitlResolution?.status === "CONFIRMED") {
+          setResolvedHitlKeys((prev) => new Set(prev).add(idempotencyKey));
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to confirm action.");
       } finally {

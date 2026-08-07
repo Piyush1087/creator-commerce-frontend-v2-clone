@@ -53,7 +53,8 @@ repo-ready code.
 - The screen is reachable through the intended app composition or route path.
 - TypeScript, build, and lint pass.
 - New UI uses Aurora tokens/primitives.
-- Mobile behavior is considered, especially sidebar-to-drawer/bottom-nav and
-  table-to-card transformations.
+- Mobile passes the **Mobile Responsive Contract** in `DESIGN_SYSTEM.md`
+  (stacking, full-width CTAs, table→cards, modal→sheet, no page-level
+  horizontal scroll, shell clearance for bottom nav/drawer).
 - Any imported AI artifact has an intake note or checklist result in
   `docs/ai-collaboration` when it affects architecture.

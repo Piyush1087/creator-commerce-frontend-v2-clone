@@ -91,9 +91,26 @@ export type SendBrandVerificationResponseBody = {
 };
 
 export type VerifyBrandVerificationResponseBody = {
-  verified: boolean;
+  identityConfirmed: boolean;
   brandProfileId: string;
   domain: string;
+  email: string;
+  nextStep: "password";
+};
+
+export type SetBrandPasswordResponseBody = {
+  activated: boolean;
+  brandProfileId: string;
+  domain: string;
+  organizationId: string;
+  accessToken: string;
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    organizationId: string | null;
+  };
 };
 
 /**

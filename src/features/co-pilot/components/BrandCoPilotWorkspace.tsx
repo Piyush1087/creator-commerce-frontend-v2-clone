@@ -58,14 +58,6 @@ export function BrandCoPilotWorkspace() {
   ).length;
   const suggestionCollapseSignal = `${coPilot.activeThreadId ?? "none"}:${userMessageCount}`;
 
-  const pendingHitlBanner = composerLockedByHitl ? (
-    <Alert tone="warning" title="Staged action waiting">
-      Use <strong>{coPilot.pendingHitlWidget?.primaryActionLabel}</strong> or{" "}
-      <strong>{coPilot.pendingHitlWidget?.cancelActionLabel}</strong> on the card above
-      before sending a new message.
-    </Alert>
-  ) : null;
-
   const desktopControls = (
     <div className="co-pilot-workspace__controls">
       <CoPilotUsageBanner usage={coPilot.usage} />
@@ -74,7 +66,6 @@ export function BrandCoPilotWorkspace() {
           {coPilot.error}
         </Alert>
       )}
-      {pendingHitlBanner}
       <CoPilotIntentChips
         templates={coPilot.intentTemplates}
         disabled={composerLockedByHitl}
@@ -101,7 +92,6 @@ export function BrandCoPilotWorkspace() {
           {coPilot.error}
         </Alert>
       )}
-      {pendingHitlBanner}
       <CoPilotIntentChips
         templates={coPilot.intentTemplates}
         disabled={composerLockedByHitl}

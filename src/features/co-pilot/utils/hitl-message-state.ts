@@ -7,6 +7,32 @@ export type PendingHitlWidget = {
   cancelActionLabel: string;
 };
 
+/**
+ * Latest Part 5 validation checklist that *could* be silently resumed.
+ * Silent resume is currently disabled in use-brand-co-pilot (strict HITL).
+ * Explicit "Try again" still uses the checklist idempotencyKey via onRetry.
+ */
+export function findPendingAutoResumeValidation(
+  messages: CoPilotFeedMessage[],
+  resolvedKeys: ReadonlySet<string>,
+): { idempotencyKey: string } | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message.sender !== "COPILOT_AGENT") {
+      continue;
+    }
+    const data = message.payload.validationChecklistData;
+    if (!data?.autoResume || !data.idempotencyKey) {
+      continue;
+    }
+    if (resolvedKeys.has(data.idempotencyKey)) {
+      continue;
+    }
+    return { idempotencyKey: data.idempotencyKey };
+  }
+  return null;
+}
+
 export function findPendingHitlWidget(
   messages: CoPilotFeedMessage[],
   resolvedKeys: ReadonlySet<string>,

@@ -21,6 +21,7 @@ const STATUS_LABELS: Record<UceCampaignStatus, string> = {
   ACTIVE: "Active",
   PAUSED: "Paused",
   COMPLETED: "Completed",
+  ARCHIVED: "Archived",
 };
 
 export function formatObjective(

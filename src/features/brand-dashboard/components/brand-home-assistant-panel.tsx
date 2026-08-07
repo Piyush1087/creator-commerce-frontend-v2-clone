@@ -17,7 +17,6 @@ export type BrandHomeCoPilot = ReturnType<typeof useBrandCoPilot>;
 type BrandHomeAssistantPanelProps = {
   coPilot: BrandHomeCoPilot;
   variant?: "desktop" | "sheet";
-  onClose?: () => void;
   onOpenChats?: () => void;
 };
 
@@ -27,7 +26,6 @@ type BrandHomeAssistantPanelProps = {
 export function BrandHomeAssistantPanel({
   coPilot,
   variant = "desktop",
-  onClose,
   onOpenChats,
 }: BrandHomeAssistantPanelProps) {
   const isSheet = variant === "sheet";
@@ -127,15 +125,6 @@ export function BrandHomeAssistantPanel({
           >
             New
           </Button>
-          <button
-            type="button"
-            className="cctr-assistant__close"
-            aria-label={isSheet ? "Close assistant" : "Assistant stays open on desktop"}
-            onClick={isSheet ? onClose : undefined}
-            disabled={!isSheet}
-          >
-            ✕
-          </button>
         </div>
       </div>
 
@@ -148,15 +137,6 @@ export function BrandHomeAssistantPanel({
             {coPilot.error ? (
               <Alert tone="error" title="Something went wrong">
                 {coPilot.error}
-              </Alert>
-            ) : null}
-            {composerLockedByHitl ? (
-              <Alert tone="warning" title="Staged action waiting">
-                Use{" "}
-                <strong>{coPilot.pendingHitlWidget?.primaryActionLabel}</strong>{" "}
-                or{" "}
-                <strong>{coPilot.pendingHitlWidget?.cancelActionLabel}</strong>{" "}
-                on the card above before sending a new message.
               </Alert>
             ) : null}
             <div className="home-assistant__feed">

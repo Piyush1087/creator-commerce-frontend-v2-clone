@@ -2,6 +2,8 @@
 2. Font on landing page is not satoshi
 3. Animation has not come in because ai studio didn't have it. Can you pull it from stitch directly later?  
   
+campign and porudtc and quanity
+
 update to node 22
 
 product doc vs real code comparisionfe and be 

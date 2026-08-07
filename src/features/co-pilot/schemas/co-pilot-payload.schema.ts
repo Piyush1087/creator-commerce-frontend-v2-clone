@@ -21,6 +21,7 @@ export const ResponseFormatTypeSchema = z.enum([
   "POLYMORPHIC_ENTITY_CAROUSEL",
   "INTERACTIVE_EXECUTION_WIDGET",
   "SLOT_FILLING_CLARIFICATION",
+  "VALIDATION_CHECKLIST",
 ]);
 
 export const SlotFieldSchema = z.object({
@@ -79,6 +80,28 @@ export const EntityCardSchema = z.object({
   ]),
 });
 
+export const ValidationChecklistItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  satisfied: z.boolean(),
+  helpText: z.string().optional(),
+  repairHint: z.string().optional(),
+});
+
+export const ValidationChecklistDataSchema = z.object({
+  title: z.string(),
+  action: z.string(),
+  code: z.string(),
+  campaignId: z.string().uuid().optional(),
+  campaignName: z.string().optional(),
+  autoResume: z.boolean(),
+  deepLinkPath: z.string().optional(),
+  items: z.array(ValidationChecklistItemSchema),
+  primaryActionLabel: z.string(),
+  cancelActionLabel: z.string(),
+  idempotencyKey: z.string().uuid().optional(),
+});
+
 export const CoPilotChatPayloadSchema = z.object({
   messageId: z.string().uuid(),
   threadId: z.string().uuid(),
@@ -90,6 +113,7 @@ export const CoPilotChatPayloadSchema = z.object({
   carouselEntities: z.array(EntityCardSchema).optional(),
   slotFillingData: SlotFillingSchema.optional(),
   executionWidget: ExecutionWidgetSchema.optional(),
+  validationChecklistData: ValidationChecklistDataSchema.optional(),
 });
 
 export type MetricItem = z.infer<typeof MetricItemSchema>;
@@ -98,6 +122,9 @@ export type EntityCardData = z.infer<typeof EntityCardSchema>;
 export type SlotField = z.infer<typeof SlotFieldSchema>;
 export type SlotFillingData = z.infer<typeof SlotFillingSchema>;
 export type ExecutionWidgetData = z.infer<typeof ExecutionWidgetSchema>;
+export type ValidationChecklistData = z.infer<
+  typeof ValidationChecklistDataSchema
+>;
 export type HitlResolution = z.infer<typeof HitlResolutionSchema>;
 export type ResponseFormatType = z.infer<typeof ResponseFormatTypeSchema>;
 export type CoPilotChatPayload = z.infer<typeof CoPilotChatPayloadSchema>;

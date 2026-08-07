@@ -60,6 +60,24 @@ export const BRAND_CO_PILOT_INTENT_TEMPLATES: CoPilotIntentTemplate[] = [
     associatedScope: "BRAND_CENTRE",
   },
   {
+    id: "campaign-list",
+    label: "List campaigns",
+    templateString: "Show my campaigns",
+    associatedScope: "BRAND_CENTRE",
+  },
+  {
+    id: "campaign-active",
+    label: "Active campaigns",
+    templateString: "Show active campaigns",
+    associatedScope: "BRAND_CENTRE",
+  },
+  {
+    id: "campaign-pause",
+    label: "Pause campaign",
+    templateString: "Pause campaign",
+    associatedScope: "BRAND_CENTRE",
+  },
+  {
     id: "funnel-leaks",
     label: "Funnel leaks",
     templateString: "Where are our primary funnel leaks and what buckets are flagged?",
@@ -110,4 +128,4 @@ export const BRAND_CO_PILOT_INTENT_TEMPLATES: CoPilotIntentTemplate[] = [
 ];
 
 export const BRAND_CO_PILOT_INPUT_PLACEHOLDER =
-  "Ask about Brand Centre, escrow, collaborations, or staged changes…";
+  "Ask about campaigns, Brand Centre, escrow, collaborations, or staged changes…";
