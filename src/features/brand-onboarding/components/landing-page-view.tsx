@@ -31,6 +31,7 @@ import {
   LANDING_TRINITY_PILLARS,
   LANDING_TRUST_ITEMS,
 } from "./landing-page-content";
+import { IdentityTestCapture } from "../../brand-intelligence/components/identity-test-capture";
 import { LandingUrlCapture, type LandingUrlCaptureMode } from "./landing-url-capture";
 import { ProcessPreviewModal } from "./process-preview-modal";
 import { SetupVerificationModal } from "./setup-verification-modal";
@@ -540,6 +541,7 @@ export function LandingPageView() {
               await handleSubmitUrl(url);
             }}
           />
+          <IdentityTestCapture />
           {emailCapture ? (
             <div
               className={`bob-email-capture${

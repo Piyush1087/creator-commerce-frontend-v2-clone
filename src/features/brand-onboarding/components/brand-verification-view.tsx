@@ -10,7 +10,7 @@ import {
   setBrandVerificationPassword,
   verifyBrandVerificationOtp,
 } from "../api/brand-client";
-import { requestGoogleIdToken } from "../utils/google-id-token";
+import { GoogleVerifyModal } from "./google-verify-modal";
 import { ONBOARDING_ROUTES } from "../constants";
 import {
   STUB_OTP_CODE,
@@ -71,6 +71,7 @@ export function BrandVerificationView() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isGoogleVerifying, setIsGoogleVerifying] = useState(false);
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const [sendCooldownSeconds, setSendCooldownSeconds] = useState(0);
@@ -279,30 +280,48 @@ export function BrandVerificationView() {
     }
   };
 
-  const verifyWithGoogle = async () => {
+  const openGoogleVerifyModal = () => {
     if (!session?.brandProfileId) {
       return;
     }
     setError(null);
-    setIsGoogleVerifying(true);
-    try {
-      const idToken = await requestGoogleIdToken();
-      const result = await confirmBrandGoogleVerification(
-        session.brandProfileId,
-        idToken,
-      );
-      setWorkEmail(result.email);
-      setStep("password");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Authentication cancelled. Please click again to retry or verify using your work email instead.",
-      );
-    } finally {
-      setIsGoogleVerifying(false);
-    }
+    setGoogleModalOpen(true);
   };
+
+  const handleGoogleIdToken = useCallback(
+    async (idToken: string) => {
+      if (!session?.brandProfileId) {
+        return;
+      }
+      setError(null);
+      setIsGoogleVerifying(true);
+      try {
+        const result = await confirmBrandGoogleVerification(
+          session.brandProfileId,
+          idToken,
+        );
+        setWorkEmail(result.email);
+        setGoogleModalOpen(false);
+        setStep("password");
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Google verification failed.";
+        const isDomainMismatch =
+          /does not match|doesn't match|corporate Google Workspace|work email/i.test(
+            message,
+          );
+        setError(
+          isDomainMismatch
+            ? "Authentication cancelled. Please click again to retry or verify using your work email instead."
+            : message,
+        );
+        setGoogleModalOpen(false);
+      } finally {
+        setIsGoogleVerifying(false);
+      }
+    },
+    [session?.brandProfileId],
+  );
 
   const submitPassword = async () => {
     if (!session?.brandProfileId) {
@@ -549,7 +568,7 @@ export function BrandVerificationView() {
                       variant="outline"
                       fullWidthOnMobile
                       disabled={isGoogleVerifying || isSending}
-                      onClick={() => void verifyWithGoogle()}
+                      onClick={() => openGoogleVerifyModal()}
                     >
                       {isGoogleVerifying ? "Connecting Google…" : "Verify with Google"}
                     </Button>
@@ -705,6 +724,17 @@ export function BrandVerificationView() {
           </div>
         </section>
       </div>
+
+      <GoogleVerifyModal
+        open={googleModalOpen}
+        brandDomain={domain}
+        onClose={() => {
+          if (!isGoogleVerifying) {
+            setGoogleModalOpen(false);
+          }
+        }}
+        onIdToken={handleGoogleIdToken}
+      />
     </div>
   );
 }

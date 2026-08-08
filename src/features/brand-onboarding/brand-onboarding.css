@@ -1630,6 +1630,13 @@
   font-weight: 600;
 }
 
+.bob-google-verify-button-host {
+  display: flex;
+  justify-content: center;
+  min-height: 48px;
+  margin: var(--space-md) 0;
+}
+
 .bob-journey {
   position: relative;
   display: flex;
@@ -3758,8 +3765,19 @@
 }
 
 /* Social sync (post-verification Meta connect) */
+.bob-social-sync .bob-verify__left {
+  align-items: flex-start;
+}
+
 .bob-social-sync__left-inner {
   gap: var(--space-md);
+  padding-top: var(--space-xl);
+}
+
+@media (min-width: 900px) {
+  .bob-social-sync__left-inner {
+    padding-top: calc(var(--space-xl) + var(--space-md));
+  }
 }
 
 .bob-social-sync__header {

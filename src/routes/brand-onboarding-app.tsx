@@ -13,12 +13,17 @@ import { BrandOnboardingSocialSyncPage } from "../pages/brand/onboarding/brand-o
 import { BrandOnboardingSyncCompletePage } from "../pages/brand/onboarding/brand-onboarding-sync-complete-page";
 import { BrandOnboardingSyncVerifyPage } from "../pages/brand/onboarding/brand-onboarding-sync-verify-page";
 import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
+import { BrandIntelligenceIdentityTestPage } from "../pages/brand/intelligence/brand-intelligence-identity-test-page";
 
 export function BrandOnboardingAppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<BrandOnboardingShell />}>
         <Route index element={<BrandOnboardingLandingPage />} />
+        <Route
+          path="brand/intelligence/identity-test"
+          element={<BrandIntelligenceIdentityTestPage />}
+        />
         <Route
           path="brand/onboarding/scan"
           element={<BrandOnboardingScanPage />}
