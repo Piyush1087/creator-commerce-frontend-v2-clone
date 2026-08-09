@@ -28,15 +28,18 @@ Use this before accepting generated or teammate frontend code.
 
 ## Responsive
 
-- Mobile is tested below 768px.
-- Sidebar is hidden on tablet/mobile.
-- Hamburger drawer works without horizontal overflow.
-- Forms stack on mobile.
+Use `DESIGN_SYSTEM.md` → **Mobile Responsive Contract** as the full bar.
+
+- Mobile is tested at ~375px and ~767px.
+- Sidebar is hidden on tablet/mobile; hamburger drawer works.
+- Forms stack; CTAs are full width where required.
 - Tables become card stacks on mobile.
-- CTAs are full width where required.
+- Modals become bottom sheets on mobile when present.
+- Content clears bottom nav / FAB / sheet.
 - The page itself has no width-wise scroll below 768px.
 - Any horizontal scroll is intentional and isolated to a component, such as tabs,
   not the full document.
+- Desktop `≥768px` remains unchanged by the mobile fixes.
 
 ## Maintainability
 

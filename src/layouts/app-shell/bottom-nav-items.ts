@@ -1,4 +1,11 @@
-import { LayoutDashboard, Megaphone, MessageCircle, Store } from "lucide-react";
+import {
+  Megaphone,
+  MessageCircle,
+  BarChart3,
+  Home,
+  Store,
+  UserRound,
+} from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -12,8 +19,8 @@ export type BottomNavItem = {
 
 export const brandBottomNavItems: BottomNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Home",
+    icon: Home,
     path: AUTH_ROUTES.brandDashboard,
   },
   {
@@ -33,16 +40,27 @@ export const brandBottomNavItems: BottomNavItem[] = [
   },
 ];
 
+/** Master Spec: Home · Insights · Profile (+ Campaigns) */
 export const creatorBottomNavItems: BottomNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: AUTH_ROUTES.creatorDashboard,
+    label: "Home",
+    icon: Home,
+    path: AUTH_ROUTES.creatorHome,
   },
   {
-    label: "Chat",
-    icon: MessageCircle,
-    path: AUTH_ROUTES.creatorCollaborations,
+    label: "Insights",
+    icon: BarChart3,
+    path: AUTH_ROUTES.creatorAnalytics,
+  },
+  {
+    label: "Profile",
+    icon: UserRound,
+    path: AUTH_ROUTES.creatorMediaKit,
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.creatorCampaigns,
   },
 ];
 
@@ -60,12 +78,21 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCentre,
   AUTH_ROUTES.brandUceCampaigns,
   AUTH_ROUTES.brandCollaborations,
-  AUTH_ROUTES.creatorCollaborations,
+  AUTH_ROUTES.creatorAnalytics,
+  AUTH_ROUTES.creatorMediaKit,
+  AUTH_ROUTES.creatorCampaigns,
 ] as const;
 
 export function isBottomNavItemActive(pathname: string, item: BottomNavItem): boolean {
   if (!item.path) {
     return false;
+  }
+  if (item.path === AUTH_ROUTES.creatorHome) {
+    return (
+      pathname === AUTH_ROUTES.creatorHome ||
+      pathname === AUTH_ROUTES.creatorDashboard ||
+      pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
+    );
   }
   if (PREFIX_MATCH_PATHS.some((p) => p === item.path)) {
     return pathname === item.path || pathname.startsWith(`${item.path}/`);

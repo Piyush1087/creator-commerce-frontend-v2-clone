@@ -1,0 +1,617 @@
+/**
+ * Shared Home Assistant chrome — Brand + Creator.
+ * Desktop: Home (Daily Briefing) - AI Assistant Integrated
+ * Mobile sheet: Mobile Assistant - Bottom Sheet Interface
+ */
+
+.home-assistant {
+  --ha-primary: var(--color-primary, #34d399);
+  --ha-on-primary: #061f23;
+  --ha-surface: #ffffff;
+  --ha-surface-low: #f8fafc;
+  --ha-surface-variant: #f9fafb;
+  --ha-outline: #e2e8f0;
+  --ha-on-surface: #0f172a;
+  --ha-on-surface-variant: #64748b;
+  font-family: var(--font-body);
+}
+
+/* Icon + “Brand/Creator Assistant” always one line (desktop + sheet) */
+.home-assistant .cctr-assistant__title-row {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.home-assistant .cctr-assistant__title-row > span[aria-hidden],
+.home-assistant .cctr-assistant__avatar {
+  flex-shrink: 0;
+}
+
+.home-assistant .cctr-assistant__title-block h2 {
+  white-space: nowrap;
+}
+
+.home-assistant__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.home-assistant__chats-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  border: 1px solid var(--ha-outline);
+  border-radius: 8px;
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.home-assistant__chats-btn:hover:not(:disabled) {
+  background: var(--ha-surface-low);
+  border-color: rgba(52, 211, 153, 0.45);
+}
+
+.home-assistant__chats-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-assistant__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 0;
+  overflow: hidden;
+}
+
+.home-assistant__loading {
+  margin: 24px auto;
+  color: var(--ha-on-surface-variant);
+  font-size: 14px;
+}
+
+.home-assistant__feed {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-assistant__feed .co-pilot-feed {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  padding: 0 4px 8px 0;
+  overflow-y: auto;
+}
+
+.home-assistant__foot {
+  flex-shrink: 0;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--ha-outline);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--ha-surface);
+}
+
+/* —— Bubbles / data cards (desktop Integrated) —— */
+
+.home-assistant .co-pilot-feed__row {
+  margin-bottom: 16px;
+}
+
+.home-assistant .co-pilot-user-bubble {
+  max-width: min(100%, 92%);
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  border: 1px solid var(--ha-outline);
+  font-size: 14px;
+  line-height: 1.55;
+  font-family: var(--font-body);
+}
+
+.home-assistant .co-pilot-agent-card {
+  max-width: min(100%, 92%);
+  width: auto;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  box-shadow: none;
+}
+
+.home-assistant .co-pilot-agent-card__narrative {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ha-on-surface);
+}
+
+.home-assistant .co-pilot-feed__timestamp {
+  font-size: 10px;
+  color: var(--ha-on-surface-variant);
+  font-family: var(--font-heading);
+}
+
+.home-assistant .co-pilot-typing {
+  background: var(--ha-surface-low);
+  border-color: var(--ha-outline);
+}
+
+/*
+ * In-chat cards + confirm/cancel — from Stitch
+ * Home (Daily Briefing) - Header & Snapshot Update
+ */
+.home-assistant .co-pilot-metric-grid {
+  margin-top: 12px;
+  gap: 12px;
+}
+
+.home-assistant .co-pilot-metric-grid__item {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  border-left-width: 4px;
+  box-shadow: none;
+}
+
+.home-assistant .co-pilot-metric-grid__item--green {
+  border-left-color: var(--ha-primary);
+}
+
+.home-assistant .co-pilot-metric-grid__item--yellow {
+  border-left-color: #fbbf24;
+}
+
+.home-assistant .co-pilot-metric-grid__item--red {
+  border-left-color: #f87171;
+}
+
+.home-assistant .co-pilot-metric-grid__item--neutral {
+  border-left-color: #60a5fa;
+}
+
+/* Confirm / cancel box (Performance Alert pattern) */
+.home-assistant .co-pilot-hitl-widget {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  background: rgba(52, 211, 153, 0.05);
+}
+
+.home-assistant .co-pilot-hitl-widget__fields {
+  margin-bottom: 12px;
+}
+
+.home-assistant .co-pilot-hitl-widget__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+  justify-content: stretch;
+}
+
+.home-assistant .co-pilot-hitl-widget__actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+}
+
+.home-assistant .co-pilot-slot-form {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  background: rgba(52, 211, 153, 0.05);
+}
+
+.home-assistant .co-pilot-slot-list__legend {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ha-primary);
+}
+
+.home-assistant .co-pilot-slot-list__option {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  border-left-width: 4px;
+  border-left-color: #60a5fa;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.home-assistant .co-pilot-slot-list__option--selected {
+  border-left-color: var(--ha-primary);
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+/* —— Suggestion pills (wrap on desktop; sheet keeps pill wrap) —— */
+
+.home-assistant .co-pilot-intent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+
+.home-assistant .co-pilot-intent-chips .aurora-chip,
+.home-assistant .co-pilot-intent-chips__chip {
+  flex: 0 1 auto;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--ha-outline);
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+.home-assistant .co-pilot-intent-chips .aurora-chip:hover:not(:disabled),
+.home-assistant .co-pilot-intent-chips__chip:hover:not(:disabled) {
+  background: var(--ha-surface-low);
+}
+
+.home-assistant .co-pilot-intent-chips__toggle {
+  flex-shrink: 0;
+  appearance: none;
+  border-radius: 8px;
+  border: 1px solid var(--ha-outline);
+  background: var(--ha-surface);
+  color: var(--ha-on-surface-variant);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.home-assistant .co-pilot-intent-chips__toggle--hide {
+  margin-top: 0;
+  border-style: dashed;
+}
+
+.home-assistant .co-pilot-intent-chips__toggle:hover:not(:disabled) {
+  background: var(--ha-surface-low);
+  color: var(--ha-on-surface);
+}
+
+.home-assistant .co-pilot-intent-chips__toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* —— Composer home bar (Integrated desktop) —— */
+
+.home-assistant .co-pilot-composer--home {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1.5px solid var(--ha-primary);
+  border-radius: 8px;
+  background: var(--ha-surface);
+}
+
+.home-assistant .co-pilot-composer--home:focus-within {
+  outline: none;
+  border-color: var(--ha-primary);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
+}
+
+.home-assistant .co-pilot-composer--home .co-pilot-composer__input {
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  padding: 0 8px;
+  font-size: 14px;
+  resize: none;
+  overflow: hidden;
+}
+
+/* Desktop: textarea is single-line height so placeholder/text sits vertically centered */
+.home-assistant.cctr-assistant--desktop .co-pilot-composer--home .co-pilot-composer__input {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0 8px;
+  line-height: 24px;
+  align-self: center;
+}
+
+.home-assistant .co-pilot-composer__icon-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ha-on-surface-variant);
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.home-assistant .co-pilot-composer__icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.home-assistant .co-pilot-composer__icon-btn--send {
+  color: var(--ha-primary);
+}
+
+.home-assistant .co-pilot-composer__icon-btn--send:disabled {
+  color: var(--ha-primary);
+  opacity: 0.35;
+}
+
+.home-assistant .co-pilot-composer__icon-btn--send:not(:disabled):hover {
+  color: #10b981;
+}
+
+.home-assistant .cctr-assistant__disclaimer,
+.home-assistant .home-assistant__disclaimer {
+  margin: 4px 0 0;
+  font-size: 10px;
+  text-align: center;
+  color: var(--ha-on-surface-variant);
+}
+
+/* —— Mobile sheet overrides (Bottom Sheet Interface) —— */
+
+.home-assistant.cctr-assistant--sheet .home-assistant__body {
+  padding: 16px 20px 0;
+}
+
+.home-assistant.cctr-assistant--sheet .home-assistant__foot {
+  padding: 12px 20px max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-agent-card {
+  max-width: 85%;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 12px 12px 12px 0;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-agent-card__narrative {
+  font-size: 15px;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-user-bubble {
+  max-width: 85%;
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  border: 1px solid var(--ha-outline);
+  font-size: 15px;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-intent-chips {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-intent-chips .aurora-chip,
+.home-assistant.cctr-assistant--sheet .co-pilot-intent-chips__chip {
+  border-radius: 999px;
+  background: var(--ha-surface-variant);
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-composer--home {
+  height: auto;
+  min-height: 52px;
+  align-items: flex-end;
+  padding: 10px 12px;
+  background: var(--ha-surface-variant);
+  border: 1.5px solid var(--ha-primary);
+  border-radius: 12px;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-composer__icon-btn--send {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--ha-primary);
+  color: var(--ha-on-primary);
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-composer__icon-btn--send:disabled {
+  color: var(--ha-on-primary);
+  opacity: 0.45;
+}
+
+.home-assistant.cctr-assistant--sheet .co-pilot-composer__icon-btn--send:not(:disabled):hover {
+  color: var(--ha-on-primary);
+  filter: brightness(0.97);
+}
+
+.home-assistant.cctr-assistant--sheet .home-assistant__disclaimer {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+/* Narrow column responsiveness */
+@media (max-width: 1100px) {
+  .home-assistant .co-pilot-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-assistant.cctr-assistant--panel {
+  height: 100%;
+  max-height: 100%;
+}
+
+/* Creator mock bubbles — same tokens as co-pilot home bubbles */
+.home-assistant .home-assistant__feed--mock {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.home-assistant .cctr-assistant__bubble {
+  max-width: 92%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  font-family: var(--font-body);
+}
+
+.home-assistant .cctr-assistant__bubble--assistant {
+  align-self: flex-start;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  color: var(--ha-on-surface);
+}
+
+.home-assistant .cctr-assistant__bubble--user {
+  align-self: flex-end;
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  border: 1px solid var(--ha-outline);
+}
+
+.home-assistant .cctr-assistant__bubble--status {
+  align-self: flex-start;
+  background: #ecfdf5;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #065f46;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-assistant .home-assistant__chips,
+.home-assistant .cctr-assistant__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+
+.home-assistant .cctr-assistant__chip {
+  flex-shrink: 0;
+  appearance: none;
+  border: 1px solid var(--ha-outline);
+  border-radius: 8px;
+  background: var(--ha-surface);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--ha-on-surface);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.home-assistant .cctr-assistant__chip:hover {
+  background: var(--ha-surface-low);
+}
+
+.home-assistant.cctr-assistant--sheet .cctr-assistant__bubble--assistant {
+  max-width: 85%;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 12px 12px 12px 0;
+  font-size: 15px;
+}
+
+.home-assistant.cctr-assistant--sheet .cctr-assistant__bubble--user {
+  max-width: 85%;
+  background: var(--ha-surface);
+  color: var(--ha-on-surface);
+  border: 1px solid var(--ha-outline);
+  font-size: 15px;
+}
+
+.home-assistant.cctr-assistant--sheet .cctr-assistant__chips {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.home-assistant.cctr-assistant--sheet .cctr-assistant__chip {
+  border-radius: 999px;
+  background: var(--ha-surface-variant);
+}
+
+/* Creator mock confirm/cancel — same Header & Snapshot pattern */
+.home-assistant .cctr-assistant__confirm-card {
+  align-self: stretch;
+  max-width: 92%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  background: rgba(52, 211, 153, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home-assistant .cctr-assistant__confirm-card-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ha-primary);
+  font-family: var(--font-heading);
+}
+
+.home-assistant .cctr-assistant__actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.home-assistant .cctr-assistant__actions .cctr-assistant__action-btn,
+.home-assistant .cctr-assistant__actions .aurora-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+}
+
+.home-assistant.cctr-assistant--sheet .cctr-assistant__confirm-card {
+  max-width: 100%;
+}

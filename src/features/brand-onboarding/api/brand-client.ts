@@ -5,17 +5,36 @@ import type {
   DiscoverValidateVerificationRequired,
 } from "../contracts/discovery.contracts";
 import type {
+  BrandAuditExportResponse,
   BrandProfileResponseBody,
+  ConfirmCheckpoint2RequestBody,
+  ConfirmCheckpoint2ResponseBody,
+  Checkpoint2Response,
+  ConfirmIdentityRequestBody,
+  ConfirmIdentityResponseBody,
+  CoreIdentitySnapshotResponse,
+  IntelligenceStatusResponse,
   PatchBrandProfileRequestBody,
   SendBrandVerificationResponseBody,
+  SurfaceScanProgressResponse,
   SurfaceScanResponseBody,
+  SyncCompetitorItem,
+  SyncOfferingItem,
   VerifyBrandVerificationResponseBody,
 } from "../contracts/brand.contracts";
+import type { SurfaceScanInfrastructureErrorBody } from "../contracts/brand.contracts";
+import type { SurfaceScanTimeoutErrorBody } from "../contracts/brand.contracts";
 import {
+  isBrandAuditExportResponse,
   isBrandProfileResponse,
+  isCheckpoint2Response,
+  isCoreIdentitySnapshotResponse,
+  isSurfaceScanInfrastructureError,
   isSurfaceScanResponse,
+  unwrapSurfaceScanTimeoutError,
+  unwrapSurfaceScanInfrastructureError,
 } from "../contracts/brand.contracts";
-import { httpErrorFromResponse, nestHttpMessage } from "./http-api-error";
+import { httpErrorFromResponse } from "./http-api-error";
 
 /** Onboarding is anonymous until claim; do not attach dashboard JWT. */
 function onboardingJsonHeaders(): Record<string, string> {
@@ -34,6 +53,28 @@ export class SurfaceScanGateError extends Error {
     super(gate.message);
     this.name = "SurfaceScanGateError";
     this.gate = gate;
+  }
+}
+
+/** Landing Page State F — infrastructure / live connection runtime error. */
+export class SurfaceScanInfrastructureError extends Error {
+  readonly payload: SurfaceScanInfrastructureErrorBody;
+
+  constructor(payload: SurfaceScanInfrastructureErrorBody) {
+    super(payload.message);
+    this.name = "SurfaceScanInfrastructureError";
+    this.payload = payload;
+  }
+}
+
+/** Retryable Stage 1A timeout; handled directly on the scan page. */
+export class SurfaceScanTimeoutError extends Error {
+  readonly payload: SurfaceScanTimeoutErrorBody;
+
+  constructor(payload: SurfaceScanTimeoutErrorBody) {
+    super(payload.message);
+    this.name = "SurfaceScanTimeoutError";
+    this.payload = payload;
   }
 }
 
@@ -66,6 +107,20 @@ function parseSurfaceScanGate(body: unknown): SurfaceScanGatePayload | null {
   return null;
 }
 
+export async function getSurfaceScanProgress(
+  leadId: string,
+): Promise<SurfaceScanProgressResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/progress/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!json || typeof json !== "object") {
+    throw new Error("Unexpected response from surface scan progress.");
+  }
+  return json as SurfaceScanProgressResponse;
+}
+
 export async function postSurfaceScan(body: {
   leadId: string;
   force?: boolean;
@@ -87,12 +142,128 @@ export async function postSurfaceScan(body: {
     if (gate) {
       throw new SurfaceScanGateError(gate);
     }
+    if (isSurfaceScanInfrastructureError(parsed)) {
+      const payload = unwrapSurfaceScanInfrastructureError(parsed);
+      if (payload) {
+        throw new SurfaceScanInfrastructureError(payload);
+      }
+    }
+    const timeout = unwrapSurfaceScanTimeoutError(parsed);
+    if (timeout) {
+      throw new SurfaceScanTimeoutError(timeout);
+    }
     throw httpErrorFromResponse(response, parsed);
   }
   if (!isSurfaceScanResponse(parsed)) {
     throw new Error("Unexpected response from surface scan.");
   }
   return parsed;
+}
+
+export async function getCoreIdentitySnapshot(
+  leadId: string,
+): Promise<CoreIdentitySnapshotResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/core-identity/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isCoreIdentitySnapshotResponse(json)) {
+    throw new Error("Unexpected response from core identity snapshot.");
+  }
+  return json;
+}
+
+export async function postConfirmIdentity(
+  leadId: string,
+  body: ConfirmIdentityRequestBody,
+): Promise<ConfirmIdentityResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/confirm-identity/${encodeURIComponent(leadId)}`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    (json as { success?: unknown }).success !== true
+  ) {
+    throw httpErrorFromResponse(response, json);
+  }
+  return json as ConfirmIdentityResponseBody;
+}
+
+export async function getIntelligenceStatus(
+  leadId: string,
+): Promise<IntelligenceStatusResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/intelligence/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { leadId?: unknown }).leadId !== "string"
+  ) {
+    throw new Error("Unexpected response from intelligence status.");
+  }
+  return json as IntelligenceStatusResponse;
+}
+
+export async function getBrandAuditExport(
+  leadId: string,
+): Promise<BrandAuditExportResponse> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/audit/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandAuditExportResponse(json)) {
+    throw new Error("Unexpected response from brand audit export.");
+  }
+  return json;
+}
+
+export async function getCheckpoint2(
+  leadId: string,
+): Promise<Checkpoint2Response> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/checkpoint-2/${encodeURIComponent(leadId)}`,
+    { method: "GET" },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isCheckpoint2Response(json)) {
+    throw new Error("Unexpected response from checkpoint-2 fetch.");
+  }
+  return json;
+}
+
+export async function postConfirmCheckpoint2(
+  leadId: string,
+  body: ConfirmCheckpoint2RequestBody,
+): Promise<ConfirmCheckpoint2ResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/surface-scan/checkpoint-2/${encodeURIComponent(leadId)}/confirm`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    (json as { success?: unknown }).success !== true
+  ) {
+    throw httpErrorFromResponse(response, json);
+  }
+  return json as ConfirmCheckpoint2ResponseBody;
 }
 
 export async function getBrandProfile(
@@ -149,9 +320,58 @@ export async function verifyBrandVerificationOtp(
   if (
     !json ||
     typeof json !== "object" ||
-    typeof (json as { verified?: unknown }).verified !== "boolean"
+    typeof (json as { identityConfirmed?: unknown }).identityConfirmed !==
+      "boolean"
   ) {
     throw new Error("Unexpected response from verification verify.");
+  }
+  return json as VerifyBrandVerificationResponseBody;
+}
+
+export async function setBrandVerificationPassword(
+  brandProfileId: string,
+  body: { email: string; password: string },
+): Promise<import("../contracts/brand.contracts").SetBrandPasswordResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/password`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { activated?: unknown }).activated !== "boolean" ||
+    typeof (json as { accessToken?: unknown }).accessToken !== "string"
+  ) {
+    throw new Error("Unexpected response from password setup.");
+  }
+  return json as import("../contracts/brand.contracts").SetBrandPasswordResponseBody;
+}
+
+export async function confirmBrandGoogleVerification(
+  brandProfileId: string,
+  idToken: string,
+): Promise<VerifyBrandVerificationResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/google`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ idToken }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { identityConfirmed?: unknown }).identityConfirmed !==
+      "boolean"
+  ) {
+    throw new Error("Unexpected response from Google verification.");
   }
   return json as VerifyBrandVerificationResponseBody;
 }
@@ -171,6 +391,115 @@ export async function patchBrandProfile(
   const json = await readJsonOrThrow(response);
   if (!isBrandProfileResponse(json)) {
     throw new Error("Unexpected response from brand profile update.");
+  }
+  return json;
+}
+
+export async function syncBrandOfferings(
+  brandProfileId: string,
+  offerings: SyncOfferingItem[],
+): Promise<BrandProfileResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/offerings`,
+    {
+      method: "PATCH",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ offerings }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandProfileResponse(json)) {
+    throw new Error("Unexpected response from offerings sync.");
+  }
+  return json;
+}
+
+export async function uploadOfferingImage(
+  brandProfileId: string,
+  offeringId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/offerings/${encodeURIComponent(offeringId)}/image`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from offering image upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function uploadBrandLogo(
+  brandProfileId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/logo`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from brand logo upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function uploadCompetitorLogo(
+  brandProfileId: string,
+  competitorId: string,
+  body: { imageBase64: string; contentType?: string },
+): Promise<{ imageUrl: string }> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/competitors/${encodeURIComponent(competitorId)}/logo`,
+    {
+      method: "POST",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (
+    !json ||
+    typeof json !== "object" ||
+    typeof (json as { imageUrl?: unknown }).imageUrl !== "string"
+  ) {
+    throw new Error("Unexpected response from competitor logo upload.");
+  }
+  return json as { imageUrl: string };
+}
+
+export async function syncBrandCompetitors(
+  brandProfileId: string,
+  competitors: SyncCompetitorItem[],
+): Promise<BrandProfileResponseBody> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/competitors`,
+    {
+      method: "PATCH",
+      headers: onboardingJsonHeaders(),
+      body: JSON.stringify({ competitors }),
+    },
+  );
+  const json = await readJsonOrThrow(response);
+  if (!isBrandProfileResponse(json)) {
+    throw new Error("Unexpected response from competitors sync.");
   }
   return json;
 }

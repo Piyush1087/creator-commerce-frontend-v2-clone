@@ -5,9 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, TextField } from "../../../design-system/aurora";
 
 import {
+  confirmBrandGoogleVerification,
   sendBrandVerificationOtp,
+  setBrandVerificationPassword,
   verifyBrandVerificationOtp,
 } from "../api/brand-client";
+import { requestGoogleIdToken } from "../utils/google-id-token";
 import { ONBOARDING_ROUTES } from "../constants";
 import {
   STUB_OTP_CODE,
@@ -16,8 +19,13 @@ import {
 } from "../verification-otp.config";
 import { parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
+import {
+  emailDomainFromAddress,
+  emailDomainMatchesBrandDomain,
+} from "../utils/verification-email-domain";
+import { saveAuthSession } from "../../../shared/auth/auth-session";
 
-type VerifyStep = "email" | "otp" | "success";
+type VerifyStep = "email" | "otp" | "password" | "success";
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -53,12 +61,16 @@ export function BrandVerificationView() {
 
   const [step, setStep] = useState<VerifyStep>("email");
   const [workEmail, setWorkEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isGoogleVerifying, setIsGoogleVerifying] = useState(false);
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const [sendCooldownSeconds, setSendCooldownSeconds] = useState(0);
@@ -105,6 +117,14 @@ export function BrandVerificationView() {
 
     if (!isValidEmail(email)) {
       setError("Please enter a valid email address (e.g., name@brand.in)");
+      return;
+    }
+
+    if (!emailDomainMatchesBrandDomain(email, domain)) {
+      const emailDomain = emailDomainFromAddress(email) || "unknown";
+      setError(
+        `The email domain (@${emailDomain}) doesn't match your website (${domain}). Please use your work email, or go back and re-enter your website.`,
+      );
       return;
     }
 
@@ -240,11 +260,12 @@ export function BrandVerificationView() {
       }
 
       /* PROD — real OTP verify (USE_REAL_BRAND_VERIFICATION_OTP=true) */
-      await verifyBrandVerificationOtp(session.brandProfileId, {
+      const result = await verifyBrandVerificationOtp(session.brandProfileId, {
         email: workEmail.trim(),
         otp: code,
       });
-      setStep("success");
+      setWorkEmail(result.email);
+      setStep("password");
     } catch (err) {
       const message =
         err instanceof Error
@@ -255,6 +276,69 @@ export function BrandVerificationView() {
       inputRefs.current[0]?.focus();
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const verifyWithGoogle = async () => {
+    if (!session?.brandProfileId) {
+      return;
+    }
+    setError(null);
+    setIsGoogleVerifying(true);
+    try {
+      const idToken = await requestGoogleIdToken();
+      const result = await confirmBrandGoogleVerification(
+        session.brandProfileId,
+        idToken,
+      );
+      setWorkEmail(result.email);
+      setStep("password");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Authentication cancelled. Please click again to retry or verify using your work email instead.",
+      );
+    } finally {
+      setIsGoogleVerifying(false);
+    }
+  };
+
+  const submitPassword = async () => {
+    if (!session?.brandProfileId) {
+      return;
+    }
+    setError(null);
+    const trimmed = password.trim();
+    if (trimmed.length === 0) {
+      setError(
+        "Passwords cannot consist entirely of blank spaces. Please enter at least 8 visible characters.",
+      );
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      const result = await setBrandVerificationPassword(session.brandProfileId, {
+        email: workEmail.trim(),
+        password,
+      });
+      saveAuthSession({
+        accessToken: result.accessToken,
+        user: result.user,
+      });
+      setStep("success");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't save your password due to a connection drop. Don't worry, your email is verified. Please click submit again.",
+      );
+    } finally {
+      setIsSavingPassword(false);
     }
   };
 
@@ -288,7 +372,7 @@ export function BrandVerificationView() {
   }
 
   return (
-    <div className={`bob-verify bob-verify--hide-nav ${step === "success" ? "bob-verify--success" : ""}`}>
+    <div className="bob-verify bob-verify--hide-nav">
       <div className="bob-verify__split">
         <section className="bob-verify__left" aria-labelledby="bob-verify-title">
           <div className="bob-verify__left-inner">
@@ -301,7 +385,7 @@ export function BrandVerificationView() {
             {step === "success" ? (
               <Card className="bob-verify__card bob-verify__card--success">
                 <div className="bob-verify__success-icon">
-                  <CheckCircle size={56} strokeWidth={1.5} />
+                  <CheckCircle size={40} strokeWidth={1.5} />
                 </div>
                 <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--centered">
                   VERIFICATION SUCCESSFUL
@@ -325,17 +409,71 @@ export function BrandVerificationView() {
                   </div>
                 </div>
 
-                <div className="bob-stack" style={{ marginTop: "var(--space-xl)", width: "100%" }}>
+                <div className="bob-verify__success-cta">
                   <Button
                     type="button"
                     variant="primary"
-                    fullWidthOnMobile
+                    size="md"
+                    className="bob-verify__success-button"
                     onClick={() => navigate(ONBOARDING_ROUTES.pricing)}
                   >
                     Continue to pricing
                     <ArrowRight size={18} aria-hidden />
                   </Button>
                 </div>
+              </Card>
+            ) : step === "password" ? (
+              <Card className="bob-verify__card">
+                <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--uppercase">
+                  CREATE YOUR WORKSPACE PASSWORD
+                </h1>
+                <p className="bob-verify__lead">
+                  Your brand ownership is verified! Create a strong local password to secure your
+                  personalized market insights database.
+                </p>
+                <form
+                  className="bob-stack"
+                  noValidate
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void submitPassword();
+                  }}
+                >
+                  <TextField
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    name="workspace-password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      if (error) setError(null);
+                    }}
+                    helperText="Minimum 8 characters. Required for both email and Google verification paths."
+                    error={error ?? undefined}
+                  />
+                  <button
+                    type="button"
+                    className="bob-link"
+                    onClick={() => setShowPassword((v) => !v)}
+                  >
+                    {showPassword ? "Hide password" : "Show password"}
+                  </button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    fullWidthOnMobile
+                    disabled={isSavingPassword}
+                  >
+                    {isSavingPassword ? "Saving…" : "Create account & continue"}
+                    <Lock size={18} aria-hidden />
+                  </Button>
+                </form>
+                <p className="bob-verify-disclaimer">
+                  <Info size={14} aria-hidden />
+                  AI can make mistakes. Verify the results.
+                </p>
               </Card>
             ) : (
               <Card className="bob-verify__card">
@@ -347,8 +485,7 @@ export function BrandVerificationView() {
                     `Confirm your corporate identity to unlock Deep Intel and market mapping features for ${domain}.`
                   ) : (
                     <>
-                      {`We sent a code to ${workEmail}. It expires in ${formatMmSs(otpSecondsLeft)}.`}
-                      {" "}
+                      {`We sent a code to ${workEmail}. It expires in ${formatMmSs(otpSecondsLeft)}.`}{" "}
                       <button
                         type="button"
                         className="bob-link"
@@ -360,9 +497,7 @@ export function BrandVerificationView() {
                           ? "Sending…"
                           : sendCooldownSeconds > 0
                             ? `Resend in ${sendCooldownSeconds}s`
-                            : isOtpExpired
-                              ? "Resend code"
-                              : "Resend code"}
+                            : "Resend code"}
                       </button>
                     </>
                   )}
@@ -386,19 +521,11 @@ export function BrandVerificationView() {
                       value={workEmail}
                       onChange={(event) => {
                         setWorkEmail(event.target.value);
-                        if (error) {
-                          setError(null);
-                        }
+                        if (error) setError(null);
                       }}
                       helperText="We'll send a one-time verification code to this address."
                       error={error ?? undefined}
                     />
-                    {error && (
-                      <div className="bob-inline-error">
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
-                      </div>
-                    )}
                     <div style={{ marginTop: "var(--space-sm)" }}>
                       <Button
                         type="submit"
@@ -414,6 +541,23 @@ export function BrandVerificationView() {
                         <ArrowRight size={18} aria-hidden />
                       </Button>
                     </div>
+                    <p className="bob-verify__spam-hint" style={{ textAlign: "center" }}>
+                      or
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      fullWidthOnMobile
+                      disabled={isGoogleVerifying || isSending}
+                      onClick={() => void verifyWithGoogle()}
+                    >
+                      {isGoogleVerifying ? "Connecting Google…" : "Verify with Google"}
+                    </Button>
+                    <p className="bob-otp-helper">
+                      Uses your Google Workspace account matching @{domain}. After identity
+                      confirmation you still create a local password. No Meta connection during
+                      signup.
+                    </p>
                   </form>
                 ) : (
                   <form

@@ -1,4 +1,4 @@
-export type UceCampaignStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED";
+export type UceCampaignStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED" | "ARCHIVED";
 
 export type UceCampaignObjective =
   | "BRAND_AWARENESS"
@@ -29,22 +29,41 @@ export type CampaignListRow = {
   updated_at: string;
 };
 
+export type UceCampaignAssetType =
+  | "INDIVIDUAL_PRODUCT_SKU"
+  | "CURATED_COLLECTION_LINE"
+  | "CORE_BRAND_IDENTITY"
+  | "ACTIVE_SALE_PROMOTION";
+
+export type UceBriefStrategyMode = "CREATOR_LED" | "BRAND_LED";
+
 export type CampaignShellProduct = {
   product_id: string;
-  sku_code: string;
+  asset_type?: UceCampaignAssetType;
+  sku_code: string | null;
   product_name: string;
   inventory_count: number;
   out_of_stock: boolean;
   cost_per_unit: number;
   image_url: string | null;
+  asset_payload?: unknown;
 };
 
 export type CampaignShellBrief = {
   brief_id: string;
+  product_id?: string | null;
   internal_title: string;
   creative_guidelines: string;
   required_platforms: string[];
   deliverable_format_tags: string[];
+  brief_type?: UceBriefStrategyMode | null;
+  purpose?: string | null;
+  objective?: string | null;
+  target_influencer_archetype?: string | null;
+  mandatory_creator_requirements?: string | null;
+  deliverables_inventory?: unknown;
+  content_guidance_matrix?: unknown;
+  parent_planner_logistics_snapshot?: unknown;
   created_at: string;
 };
 
@@ -73,6 +92,8 @@ export type CampaignShellResponse = {
   campaign_id: string;
   campaign_name: string;
   current_status: UceCampaignStatus;
+  can_edit_essentials: boolean;
+  total_inventory_allocated: number;
   pause_warning: string | null;
   zone_1_master: {
     timeline_type: string;
@@ -105,38 +126,184 @@ export type CampaignShellResponse = {
 export type CampaignProductRecord = {
   product_id: string;
   campaign_id: string;
-  sku_code: string;
+  asset_type?: UceCampaignAssetType;
+  sku_code: string | null;
   product_name: string;
   inventory_count: number;
   out_of_stock: boolean;
   cost_per_unit: number;
   image_url: string | null;
+  asset_payload?: unknown;
   created_at: string;
 };
 
-export type CreateCampaignProductBody = {
-  sku_code: string;
-  product_name: string;
-  inventory_count: number;
-  cost_per_unit: number;
+export type PromotionApplicability =
+  | "SITEWIDE"
+  | "SPECIFIC_PRODUCT"
+  | "SPECIFIC_COLLECTION";
+
+export type CreateCampaignProductBody =
+  | {
+      asset_type: "INDIVIDUAL_PRODUCT_SKU";
+      campaign_id: string;
+      product_name: string;
+      price: number;
+      pdp_url: string;
+      thumbnail_asset_url: string | null;
+      brief_description: string;
+      unique_selling_points: string[];
+      compliance_do_not_say_tokens: string[];
+      is_sync_locked?: boolean;
+    }
+  | {
+      asset_type: "CURATED_COLLECTION_LINE";
+      campaign_id: string;
+      collection_name: string;
+      collection_pdp_url: string;
+      collection_thumbnail_url: string | null;
+      short_description: string;
+      collection_usps: string[];
+      linked_product_ids: string[];
+    }
+  | {
+      asset_type: "CORE_BRAND_IDENTITY";
+      campaign_id: string;
+      brand_id: string;
+      corporate_legal_name: string;
+      brand_mission_statement: string;
+      global_tone_adjectives: string[];
+    }
+  | {
+      asset_type: "ACTIVE_SALE_PROMOTION";
+      campaign_id: string;
+      offer_name: string;
+      brief_description: string;
+      offer_code: string;
+      applicability: PromotionApplicability;
+      target_linked_entity_id: string | null;
+      start_date_iso: string;
+      expiration_date_iso: string;
+      t_and_c_footnote: string;
+      entity_deep_link_url: string;
+    };
+
+export type PatchCampaignEssentialsBody = {
+  campaign_name?: string;
+  budget_pool?: number;
+  product_inventories?: Array<{
+    product_id: string;
+    inventory_count: number;
+  }>;
+};
+
+export type UpdateCampaignProductBody = {
+  inventory_count?: number;
+  sku_code?: string;
+  product_name?: string;
+  cost_per_unit?: number;
   image_url?: string | null;
 };
 
 export type CampaignBriefRecord = {
   brief_id: string;
   campaign_id: string;
+  product_id?: string | null;
   internal_title: string;
   creative_guidelines: string;
   required_platforms: string[];
   deliverable_format_tags: string[];
+  brief_type?: UceBriefStrategyMode | null;
+  purpose?: string | null;
+  objective?: string | null;
+  target_influencer_archetype?: string | null;
+  mandatory_creator_requirements?: string | null;
+  deliverables_inventory?: unknown;
+  content_guidance_matrix?: unknown;
+  parent_planner_logistics_snapshot?: unknown;
   created_at: string;
 };
 
+export type DeliverableFormatType =
+  | "REEL_VIDEO"
+  | "STORY"
+  | "PHOTOSHOOT"
+  | "CAROUSEL_BANNER";
+
+export type CreateCampaignBriefDeliverable = {
+  format_type: DeliverableFormatType;
+  video_aspect_ratio?: "9_16_VERTICAL" | "4_5_PORTRAIT";
+  video_duration_range?: "UNDER_15S" | "15_45S" | "OVER_45S";
+  is_reel_amplification?: boolean;
+  photoshoot_quantity_allocation?: number;
+  carousel_aspect_ratio?: "4_5_PORTRAIT" | "1_1_SQUARE";
+  carousel_max_slide_count?: number;
+};
+
+export type CreateCampaignBriefGuidance = {
+  deliverable_id: string;
+  format_type: DeliverableFormatType;
+  is_reel_amplification?: boolean;
+  creator_led_details?: {
+    content_theme: string;
+    description: string;
+    hook_ideas: string[];
+    recommended_b_rolls: string;
+    creator_dos: string[];
+    creator_donts: string[];
+    audio_strategy:
+      | "DIRECT_VOICEOVER"
+      | "TRENDING_MUSIC_BACKGROUND"
+      | "LOFI_FOCUS_BEATS"
+      | "ORIGINAL_AUDIO";
+    lighting_requirements:
+      | "NATURAL_DAYLIGHT"
+      | "BRIGHT_CLINICAL"
+      | "WARM_MOODY"
+      | "STUDIO_RING_LIGHT";
+    background_setting: string;
+    tone_of_voice:
+      | "AUTHORITATIVE_EXPERT"
+      | "HIGH_ENERGY"
+      | "CALMING_ASMR"
+      | "RELATABLE_CASUAL";
+    post_caption: string;
+    hashtags_and_mentions: string[];
+  };
+  brand_led_storyboard?: Array<{
+    sequence_index_id: number;
+    segment_type:
+      | "HOOK_OPENER"
+      | "PROBLEM_PITCH"
+      | "ACTIVE_TECH_REVIEW"
+      | "CONVERSION_CTA";
+    visual_direction: string;
+    audio_teleprompter_script: string;
+    target_screen_time_seconds: number;
+    reference_frame_asset_url?: string | null;
+  }>;
+};
+
 export type CreateCampaignBriefBody = {
-  internal_title: string;
-  creative_guidelines: string;
-  required_platforms: ("INSTAGRAM" | "TIKTOK" | "YOUTUBE")[];
-  deliverable_format_tags: string[];
+  campaign_id: string;
+  product_id: string;
+  brief_name: string;
+  purpose: string;
+  objective: string;
+  target_influencer_archetype: string;
+  brief_type: UceBriefStrategyMode;
+  mandatory_creator_requirements: string;
+  deliverables_inventory: CreateCampaignBriefDeliverable[];
+  content_guidance_matrix: CreateCampaignBriefGuidance[];
+  parent_planner_logistics_snapshot: {
+    campaign_fulfillment_deadline_descriptor: string;
+    fixed_calendar_target_date: string;
+    is_physical_product_gifting_required: boolean;
+    base_escrow_compensation_payout_float: number;
+    commission_incentive_percentage_float: number;
+    link_in_bio_duration_days: number;
+    paid_ads_boosting_whitelist_duration_days: number;
+    organic_reposting_license_duration_days: number;
+  };
 };
 
 export type PipelineCollaborationRow = {

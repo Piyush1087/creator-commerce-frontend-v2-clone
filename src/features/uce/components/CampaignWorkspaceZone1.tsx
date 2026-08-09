@@ -29,6 +29,7 @@ type CampaignWorkspaceZone1Props = {
   shell: CampaignShellResponse | null;
   onOpenShareRouter?: () => void;
   onStatusChange?: (nextActive: boolean) => void;
+  onOpenEdit?: () => void;
   statusUpdating?: boolean;
 };
 
@@ -44,6 +45,7 @@ export function CampaignWorkspaceZone1({
   shell,
   onOpenShareRouter,
   onStatusChange,
+  onOpenEdit,
   statusUpdating = false,
 }: CampaignWorkspaceZone1Props) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -58,6 +60,9 @@ export function CampaignWorkspaceZone1({
   const campaignName = shell?.campaign_name ?? EMPTY_FIELD;
   const spend = shell?.performance_aggregate?.total_spend_to_date;
   const allocated = shell?.zone_1_master?.budget_pool;
+  const inventoryTotal = shell?.total_inventory_allocated ?? 0;
+  const productCount = shell?.zone_2_tactics?.products.length ?? 0;
+  const canEdit = shell?.can_edit_essentials ?? false;
   const targeting = shell?.zone_1_targeting;
   const commercials = shell?.zone_1_commercials;
 
@@ -95,6 +100,19 @@ export function CampaignWorkspaceZone1({
                   {formatCurrency(allocated)}
                 </span>
               </p>
+              <p className="uce-zone1-inventory-line">
+                Inventory Allocated:{" "}
+                <strong>{inventoryTotal}</strong>
+                {productCount > 0 ? (
+                  <span className="uce-zone1-budget-muted">
+                    {" "}
+                    unit{inventoryTotal === 1 ? "" : "s"} across {productCount} product
+                    {productCount === 1 ? "" : "s"}
+                  </span>
+                ) : (
+                  <span className="uce-zone1-budget-muted"> — no products linked</span>
+                )}
+              </p>
             </div>
           </div>
 
@@ -103,7 +121,7 @@ export function CampaignWorkspaceZone1({
               <input
                 type="checkbox"
                 checked={isActive}
-                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED"}
+                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED" || shell.current_status === "ARCHIVED"}
                 onChange={(e) => onStatusChange?.(e.target.checked)}
               />
               <span className="uce-active-toggle-track" />
@@ -111,7 +129,17 @@ export function CampaignWorkspaceZone1({
                 {formatStatus(shell?.current_status)}
               </span>
             </label>
-            <button type="button" className="uce-zone1-icon-btn" title="Edit (not wired)">
+            <button
+              type="button"
+              className="uce-zone1-icon-btn"
+              title={
+                canEdit
+                  ? "Edit campaign name, budget, and inventory"
+                  : "Locked after creator applications or active collaborations"
+              }
+              disabled={!shell || !canEdit}
+              onClick={onOpenEdit}
+            >
               <Pencil size={18} />
             </button>
             <button

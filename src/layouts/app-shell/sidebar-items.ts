@@ -1,11 +1,16 @@
 import {
-  LayoutDashboard,
-  Store,
+  BarChart3,
+  Globe,
   HelpCircle,
+  Home,
   LogOut,
   Megaphone,
   MessageCircle,
+  Search,
   Settings,
+  Store,
+  UserRound,
+  Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -41,13 +46,13 @@ export type SidebarUtilityItem = {
 
 const brandSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
+    label: "Home",
+    icon: Home,
     path: AUTH_ROUTES.brandDashboard,
     roles: ["BRAND"],
     breadcrumb: "Home",
-    headerTitle: "Dashboard",
-    mainVariant: "default",
+    headerTitle: "Daily Briefing",
+    mainVariant: "flush",
   },
   {
     label: "Brand Centre",
@@ -68,12 +73,30 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     mainVariant: "flush",
   },
   {
+    label: "Brand page",
+    icon: Globe,
+    path: AUTH_ROUTES.brandCollaborationPage,
+    roles: ["BRAND"],
+    breadcrumb: "Brand page",
+    headerTitle: "Brand page",
+    mainVariant: "flush",
+  },
+  {
     label: "Collaborations",
     icon: MessageCircle,
     path: AUTH_ROUTES.brandCollaborations,
     roles: ["BRAND"],
     breadcrumb: "Collaborations",
     headerTitle: "Collaborations",
+    mainVariant: "flush",
+  },
+  {
+    label: "Payouts",
+    icon: Wallet,
+    path: AUTH_ROUTES.brandPayouts,
+    roles: ["BRAND"],
+    breadcrumb: "Payouts",
+    headerTitle: "Billing, Escrow & Compliance Hub",
     mainVariant: "flush",
   },
   {
@@ -89,13 +112,58 @@ const brandSidebarNavItems: SidebarNavItem[] = [
 
 const creatorSidebarNavItems: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: AUTH_ROUTES.creatorDashboard,
+    label: "Home",
+    icon: Home,
+    path: AUTH_ROUTES.creatorHome,
     roles: ["CREATOR"],
     breadcrumb: "Home",
-    headerTitle: "Dashboard",
-    mainVariant: "default",
+    headerTitle: "Daily Briefing",
+    mainVariant: "flush",
+  },
+  {
+    label: "Insights",
+    icon: BarChart3,
+    path: AUTH_ROUTES.creatorAnalytics,
+    roles: ["CREATOR"],
+    breadcrumb: "Insights",
+    headerTitle: "Content Pulse",
+    mainVariant: "flush",
+  },
+  {
+    label: "Profile",
+    icon: UserRound,
+    path: AUTH_ROUTES.creatorMediaKit,
+    roles: ["CREATOR"],
+    breadcrumb: "Profile",
+    headerTitle: "Creator Profile",
+    mainVariant: "flush",
+  },
+  {
+    label: "Marketplace",
+    icon: Search,
+    path: AUTH_ROUTES.creatorMarketplace,
+    roles: ["CREATOR"],
+    breadcrumb: "Marketplace",
+    headerTitle: "Marketplace",
+    mainVariant: "flush",
+  },
+  {
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.creatorCampaigns,
+    roles: ["CREATOR"],
+    breadcrumb: "Campaigns",
+    headerTitle: "Campaigns Command Center",
+    mainVariant: "flush",
+  },
+  {
+    label: "Payouts",
+    icon: Wallet,
+    path: AUTH_ROUTES.creatorPayouts,
+    roles: ["CREATOR"],
+    breadcrumb: "Payouts",
+    headerTitle: "Earnings & Payouts Hub",
+    mainVariant: "flush",
   },
   {
     label: "Chat",
@@ -105,6 +173,15 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Collaborations",
     headerTitle: "Collaborations",
     mainVariant: "flush",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.creatorSettings,
+    roles: ["CREATOR"],
+    breadcrumb: "Settings",
+    headerTitle: "Settings",
+    mainVariant: "default",
   },
 ];
 
@@ -186,12 +263,28 @@ export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUti
 const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCentre,
   AUTH_ROUTES.brandUceCampaigns,
+  AUTH_ROUTES.brandCollaborationPage,
   AUTH_ROUTES.brandCollaborations,
+  AUTH_ROUTES.brandPayouts,
   AUTH_ROUTES.brandSettings,
+  AUTH_ROUTES.creatorAnalytics,
+  AUTH_ROUTES.creatorMediaKit,
+  AUTH_ROUTES.creatorMarketplace,
+  AUTH_ROUTES.creatorCampaigns,
+  AUTH_ROUTES.creatorPayouts,
   AUTH_ROUTES.creatorCollaborations,
+  AUTH_ROUTES.creatorSettings,
 ] as const;
 
 export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
+  if (itemPath === AUTH_ROUTES.creatorHome) {
+    return (
+      pathname === AUTH_ROUTES.creatorHome ||
+      pathname === AUTH_ROUTES.creatorDashboard ||
+      pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
+    );
+  }
+
   if (PREFIX_MATCH_PATHS.some((p) => p === itemPath)) {
     return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
   }
@@ -220,8 +313,33 @@ export function resolveHeaderMeta(
   role: UserRole | null,
 ): { breadcrumb: string; title: string } {
   if (pathname.startsWith(AUTH_ROUTES.brandSettings)) {
-    const title = pathname.includes("/escrow") ? "Secure Escrow" : "Billing";
-    return { breadcrumb: "Settings", title };
+    if (pathname.includes("/integrations")) {
+      return { breadcrumb: "Settings", title: "Integrations" };
+    }
+    if (pathname.includes("/escrow")) {
+      return { breadcrumb: "Settings", title: "Secure Escrow" };
+    }
+    if (pathname.includes("/billing")) {
+      return { breadcrumb: "Settings", title: "Billing" };
+    }
+    return { breadcrumb: "Settings", title: "General" };
+  }
+
+  if (pathname.startsWith(AUTH_ROUTES.creatorSettings)) {
+    if (pathname.includes("/social")) {
+      return { breadcrumb: "Settings", title: "Social Channels" };
+    }
+    if (pathname.includes("/payouts")) {
+      return { breadcrumb: "Settings", title: "Payouts & Tax" };
+    }
+    return { breadcrumb: "Settings", title: "Profile & Workspace" };
+  }
+
+  if (
+    pathname === AUTH_ROUTES.creatorDashboard ||
+    pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
+  ) {
+    return { breadcrumb: "Home", title: "Daily Briefing" };
   }
 
   const match = findSidebarNavItemByPath(pathname, role);

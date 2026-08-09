@@ -9,6 +9,7 @@ import {
 } from "../../../features/uce/components/CampaignPipelineWorkspace";
 import { CampaignProductsBriefsRepository } from "../../../features/uce/components/CampaignProductsBriefsRepository";
 import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
+import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
 import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
@@ -16,6 +17,7 @@ import {
   createCampaignBrief,
   createCampaignProduct,
   fetchCampaignShell,
+  patchCampaignEssentials,
   patchCampaignStatus,
 } from "../../../features/uce/api/brand-uce-client";
 import type { UceCampaignStatus } from "../../../features/uce/contracts/brand-uce.contracts";
@@ -60,6 +62,8 @@ export function BrandUceCampaignDetailPage() {
   const [viewProductId, setViewProductId] = useState<string | null>(null);
   const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
+  const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
+  const [isSavingEssentials, setIsSavingEssentials] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -136,6 +140,54 @@ export function BrandUceCampaignDetailPage() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
 
+  const briefWizard = (
+    <BriefingWizardDrawer
+      isOpen={isBriefWizardOpen}
+      onClose={() => {
+        setIsBriefWizardOpen(false);
+        setBriefWizardProductId(null);
+      }}
+      campaignId={loadedShell.campaign_id}
+      campaignName={loadedShell.campaign_name}
+      initialProductId={briefWizardProductId}
+      campaignProducts={briefWizardProducts}
+      archetypeOptions={
+        loadedShell.zone_1_targeting?.creator_archetypes ?? []
+      }
+      logisticsDefaults={{
+        deadlineDescriptor:
+          loadedShell.zone_1_master?.timeline_type === "DYNAMIC_ROLLING"
+            ? `Dynamic rolling (${loadedShell.zone_1_master.dynamic_days_limit ?? "n/a"} days)`
+            : "Fixed campaign end date",
+        fixedCalendarTargetDate:
+          loadedShell.zone_1_master?.fixed_end_date ??
+          new Date(Date.now() + 14 * 86400000).toISOString(),
+        baseEscrowPayout:
+          loadedShell.zone_1_commercials?.fixed_fee_amount ??
+          loadedShell.zone_1_commercials?.negotiable_min_fee ??
+          0,
+        commissionPercent:
+          loadedShell.zone_1_commercials?.advance_payment_percentage ?? 0,
+        samplesRequired: true,
+      }}
+      isSubmitting={isSavingBrief}
+      onSubmitBrief={async (body) => {
+        setIsSavingBrief(true);
+        try {
+          await createCampaignBrief(loadedShell.campaign_id, body);
+          await reload({ silent: true });
+        } finally {
+          setIsSavingBrief(false);
+        }
+      }}
+    />
+  );
+
+  /* Same pattern as Create Campaign: wizard is page content under real AppShell chrome */
+  if (isBriefWizardOpen) {
+    return briefWizard;
+  }
+
   return (
     <div className="campaign-workspace-canvas">
       {statusError ? (
@@ -147,8 +199,25 @@ export function BrandUceCampaignDetailPage() {
       <CampaignWorkspaceZone1
         shell={loadedShell}
         onOpenShareRouter={() => setIsShareRouterOpen(true)}
+        onOpenEdit={() => setIsHeroEditOpen(true)}
         onStatusChange={(active) => void handleStatusChange(active)}
         statusUpdating={statusUpdating}
+      />
+
+      <CampaignHeroEditDrawer
+        isOpen={isHeroEditOpen}
+        onClose={() => setIsHeroEditOpen(false)}
+        shell={loadedShell}
+        isSubmitting={isSavingEssentials}
+        onSubmit={async (body) => {
+          setIsSavingEssentials(true);
+          try {
+            await patchCampaignEssentials(loadedShell.campaign_id, body);
+            await reload({ silent: true });
+          } finally {
+            setIsSavingEssentials(false);
+          }
+        }}
       />
 
       <CampaignProductsBriefsRepository
@@ -179,6 +248,7 @@ export function BrandUceCampaignDetailPage() {
       <LinkAssetDrawer
         isOpen={isLinkAssetOpen}
         onClose={() => setIsLinkAssetOpen(false)}
+        campaignId={loadedShell.campaign_id}
         campaignName={loadedShell.campaign_name}
         linkedProductNames={products.map((p) => p.name)}
         isSubmitting={isSavingProduct}
@@ -206,27 +276,6 @@ export function BrandUceCampaignDetailPage() {
           setViewBrief(null);
         }}
         brief={viewBrief}
-      />
-
-      <BriefingWizardDrawer
-        isOpen={isBriefWizardOpen}
-        onClose={() => {
-          setIsBriefWizardOpen(false);
-          setBriefWizardProductId(null);
-        }}
-        campaignName={loadedShell.campaign_name}
-        initialProductId={briefWizardProductId}
-        campaignProducts={briefWizardProducts}
-        isSubmitting={isSavingBrief}
-        onSubmitBrief={async (body) => {
-          setIsSavingBrief(true);
-          try {
-            await createCampaignBrief(loadedShell.campaign_id, body);
-            await reload({ silent: true });
-          } finally {
-            setIsSavingBrief(false);
-          }
-        }}
       />
 
       <CampaignShareRouterModal

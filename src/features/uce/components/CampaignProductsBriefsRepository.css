@@ -1,5 +1,5 @@
 .uce-repo {
-  margin: 32px 60px 24px;
+  margin: 32px 32px 24px;
   border-radius: 12px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.88);
@@ -425,6 +425,11 @@
   border-radius: 8px;
 }
 
+.uce-brief-item--nested {
+  margin: 8px 0 8px 28px;
+  border-left: 2px solid #d1fae5;
+}
+
 .uce-brief-item-main {
   display: flex;
   align-items: center;
@@ -607,17 +612,9 @@
   font-style: italic;
 }
 
-@media (max-width: 1024px) {
-  .uce-repo {
-    margin-left: 32px;
-    margin-right: 32px;
-  }
-}
-
 @media (max-width: 767px) {
   .uce-repo {
-    margin-left: 16px;
-    margin-right: 16px;
+    margin: 16px 16px 16px;
   }
 
   .uce-repo-body {

@@ -3,11 +3,15 @@ import { Route, Routes } from "react-router-dom";
 import { BrandOnboardingShell } from "../layouts/brand-onboarding-shell/BrandOnboardingShell";
 import { BrandOnboardingCataloguePage } from "../pages/brand/onboarding/brand-onboarding-catalogue-page";
 import { BrandOnboardingCompetitorsPage } from "../pages/brand/onboarding/brand-onboarding-competitors-page";
+import { BrandOnboardingCoreIdentityPage } from "../pages/brand/onboarding/brand-onboarding-core-identity-page";
 import { BrandOnboardingDnaPage } from "../pages/brand/onboarding/brand-onboarding-dna-page";
+import { BrandOnboardingIntelligenceScanPage } from "../pages/brand/onboarding/brand-onboarding-intelligence-scan-page";
 import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onboarding-landing-page";
 import { BrandOnboardingPricingPage } from "../pages/brand/onboarding/brand-onboarding-pricing-page";
 import { BrandOnboardingScanPage } from "../pages/brand/onboarding/brand-onboarding-scan-page";
 import { BrandOnboardingSocialSyncPage } from "../pages/brand/onboarding/brand-onboarding-social-sync-page";
+import { BrandOnboardingSyncCompletePage } from "../pages/brand/onboarding/brand-onboarding-sync-complete-page";
+import { BrandOnboardingSyncVerifyPage } from "../pages/brand/onboarding/brand-onboarding-sync-verify-page";
 import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
 
 export function BrandOnboardingAppRoutes() {
@@ -18,6 +22,14 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/scan"
           element={<BrandOnboardingScanPage />}
+        />
+        <Route
+          path="brand/onboarding/core-identity"
+          element={<BrandOnboardingCoreIdentityPage />}
+        />
+        <Route
+          path="brand/onboarding/intelligence-scan"
+          element={<BrandOnboardingIntelligenceScanPage />}
         />
         <Route path="brand/onboarding/dna" element={<BrandOnboardingDnaPage />} />
         <Route
@@ -39,6 +51,14 @@ export function BrandOnboardingAppRoutes() {
         <Route
           path="brand/onboarding/social-sync"
           element={<BrandOnboardingSocialSyncPage />}
+        />
+        <Route
+          path="brand/onboarding/sync-verify"
+          element={<BrandOnboardingSyncVerifyPage />}
+        />
+        <Route
+          path="brand/onboarding/sync-complete"
+          element={<BrandOnboardingSyncCompletePage />}
         />
       </Route>
     </Routes>

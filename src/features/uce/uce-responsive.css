@@ -3,9 +3,12 @@
  */
 
 @media (max-width: 767px) {
-  /* —— Page shells —— */
-  .brand-uce-campaigns-page {
-    padding: 24px 16px;
+  /* —— Page shells (gutters owned by page CSS; keep min-width safe) —— */
+  .brand-uce-campaigns-page,
+  .campaign-workspace-canvas,
+  .uce-brief-wizard,
+  .brand-uce-campaign-create-page {
+    min-width: 0;
   }
 
   .brand-uce-campaign-create-page {
@@ -23,6 +26,7 @@
   .campaign-list-tabs__header .aurora-tab {
     font-size: 13px;
     padding-bottom: 10px;
+    white-space: nowrap;
   }
 
   /* —— Campaign list (operations) —— */
@@ -53,7 +57,7 @@
   }
 
   .performance-matrix {
-    min-width: 640px;
+    min-width: 900px;
   }
 
   .ledger-table {
@@ -91,6 +95,11 @@
 
   .quick-draft-zone {
     width: 100%;
+  }
+
+  .operations-archived-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   /* —— Detail: zone 1 —— */
@@ -181,6 +190,19 @@
     justify-content: flex-start;
   }
 
+  .uce-repo-pill--desktop {
+    display: none;
+  }
+
+  .uce-repo-add-btn--header {
+    display: none;
+  }
+
+  .uce-repo-dashed-add {
+    font-size: 12px;
+    padding: 16px 12px;
+  }
+
   /* —— Detail: pipeline workspace —— */
   .uce-pipeline-workspace {
     margin: 0 16px 24px !important;
@@ -189,16 +211,21 @@
 
   .uce-pipeline-tabs-bar {
     padding: 0 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .uce-pipeline-tabs {
     gap: 16px;
     min-height: 44px;
+    flex-wrap: nowrap;
+    min-width: max-content;
   }
 
   .uce-pipeline-tab {
     font-size: 13px;
     padding: 12px 0;
+    white-space: nowrap;
   }
 
   .uce-pipeline-canvas {
@@ -293,7 +320,7 @@
     justify-content: space-between;
   }
 
-  /* —— Briefing wizard (drawer) —— */
+  /* —— Briefing / create wizards —— */
   .uce-brief-wizard-grid {
     grid-template-columns: 1fr !important;
   }
@@ -310,7 +337,6 @@
     grid-template-columns: 1fr !important;
   }
 
-  /* —— Create campaign wizard —— */
   .create-wizard {
     min-height: auto;
   }
@@ -352,7 +378,8 @@
   .create-wizard-footer {
     flex-direction: column;
     align-items: stretch;
-    padding: 16px;
+    /* Clear fixed mobile bottom nav from AppShell */
+    padding: 16px 16px calc(16px + var(--height-bottom-nav, 64px));
   }
 
   .create-wizard-footer-hint {
@@ -371,7 +398,7 @@
     justify-content: center;
   }
 
-  /* —— Drawers & modals (stack footers) —— */
+  /* —— Drawers & modals (stack footers / bottom sheets) —— */
   .aurora-sidedrawer__header {
     padding: var(--space-md);
   }
@@ -437,7 +464,6 @@
     min-height: 44px;
   }
 
-  /* Bottom-sheet drawers (Stitch mobile) */
   .aurora-sidedrawer-overlay {
     align-items: flex-end !important;
     justify-content: center !important;
@@ -450,28 +476,6 @@
     border-radius: 16px 16px 0 0 !important;
     margin-top: auto;
   }
-
-  .uce-repo-pill--desktop {
-    display: none;
-  }
-
-  .uce-repo-add-btn--header {
-    display: none;
-  }
-
-  .uce-repo-dashed-add {
-    font-size: 12px;
-    padding: 16px 12px;
-  }
-
-  .performance-matrix {
-    min-width: 900px;
-  }
-
-  .operations-archived-btn {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 @media (max-width: 480px) {
@@ -483,11 +487,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .header-actions {
-    flex-direction: column;
-  }
-
-  .page-title {
+  .brand-uce-campaigns-page .page-title {
     font-size: 1.35rem;
   }
 }

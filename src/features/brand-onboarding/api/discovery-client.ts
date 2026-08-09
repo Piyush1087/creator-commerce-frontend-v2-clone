@@ -2,11 +2,14 @@ import { env } from "../../../shared/config/env";
 import type {
   DiscoverValidateRequestBody,
   DiscoverValidateResponse,
+  DiscoverWaitlistRequestBody,
+  DiscoverWaitlistResponseBody,
   DiscoveryResolveResponse,
 } from "../contracts/discovery.contracts";
 import {
   isDiscoverValidateResponse,
   isDiscoveryResolveResponse,
+  isDiscoverWaitlistResponse,
 } from "../contracts/discovery.contracts";
 import { httpErrorFromResponse } from "./http-api-error";
 
@@ -55,6 +58,21 @@ export async function postDiscoveryValidate(
   const json = await readJsonOrThrow(response);
   if (!isDiscoverValidateResponse(json)) {
     throw new Error("Unexpected response from discovery validate.");
+  }
+  return json;
+}
+
+export async function postDiscoveryWaitlist(
+  body: DiscoverWaitlistRequestBody,
+): Promise<DiscoverWaitlistResponseBody> {
+  const response = await fetch(`${env.apiUrl}/api/v1/discovery/waitlist`, {
+    method: "POST",
+    headers: onboardingJsonHeaders(),
+    body: JSON.stringify(body),
+  });
+  const json = await readJsonOrThrow(response);
+  if (!isDiscoverWaitlistResponse(json)) {
+    throw new Error("Unexpected response from discovery waitlist.");
   }
   return json;
 }

@@ -52,3 +52,8 @@ truth. The image is used for atmosphere, spacing, and visual depth.
   visuals capped with `max-width: 100%`.
 - Include the disclaimer where AI-assisted output is shown:
   `AI can make mistakes. Verify the results.`
+
+For the full mobile bar (breakpoints, transforms, overflow audit, port rules,
+and copy-paste agent prompt), use **Mobile Responsive Contract** in
+`DESIGN_SYSTEM.md`. That section is the source of truth for new ports and for
+auditing any existing page.

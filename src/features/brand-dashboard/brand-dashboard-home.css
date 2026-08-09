@@ -1,0 +1,70 @@
+/* Brand Home — Creator Home split + live co-pilot column */
+
+.bdash-home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+}
+
+/* Layout extras beyond shared home-assistant-chrome.css */
+
+/* Chats drawer above assistant sheet; delete dialog above drawer */
+body:has(.bdash-home-page) .co-pilot-mobile-drawer__overlay {
+  z-index: 1200;
+}
+
+body:has(.bdash-home-page) .co-pilot-mobile-drawer {
+  z-index: 1201;
+}
+
+body:has(.bdash-home-page) .co-pilot-dialog-backdrop {
+  z-index: 1300;
+}
+
+body:has(.bdash-home-page) .co-pilot-dialog {
+  z-index: 1301;
+}
+
+.bdash-assistant.cctr-assistant--panel {
+  border-left: none;
+}
+
+/* Desktop split reuses .cctr-home-split from creator-centre.css */
+.cctr-home-split:has(.bdash-assistant) .cctr-home-split__assistant {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .cctr-home-split:has(.bdash-assistant) .cctr-home-split__assistant {
+    display: flex;
+  }
+}
+
+/* Don’t let full-page co-pilot shell rules fight the home split */
+.aurora-shell:has(.bdash-home-page) {
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .aurora-shell__wrapper:has(.bdash-home-page .cctr-home-split) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .aurora-shell__wrapper:has(.bdash-home-page .cctr-home-split) .aurora-footer {
+    display: none;
+  }
+
+  .aurora-shell__main--flush:has(.bdash-home-page .cctr-home-split) {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: calc(100dvh - var(--height-header, 72px));
+    max-height: calc(100dvh - var(--height-header, 72px));
+    overflow: hidden;
+  }
+}

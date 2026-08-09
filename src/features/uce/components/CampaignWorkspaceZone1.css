@@ -2,7 +2,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px 60px 0;
+  /* Align with Brand Centre / campaigns list shell gutters */
+  padding: 24px 32px 0;
 }
 
 .uce-zone1-breadcrumb {
@@ -137,6 +138,51 @@
 .uce-zone1-budget-muted {
   color: #64748b;
   font-weight: 600;
+}
+
+.uce-zone1-inventory-line {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.uce-zone1-inventory-line strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.uce-zone1-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.uce-hero-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.uce-hero-edit-product {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.uce-hero-edit-inventory-input {
+  margin-top: 6px;
+  max-width: 120px;
+}
+
+.uce-muted-inline {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .uce-zone1-controls {
@@ -416,17 +462,14 @@
   color: #16a34a !important;
 }
 
-@media (max-width: 1024px) {
-  .uce-zone1 {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
-}
-
 @media (max-width: 767px) {
   .uce-zone1 {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding: 16px 16px 0;
+  }
+
+  /* Shell MobileShellNav already shows breadcrumbs */
+  .uce-zone1-breadcrumb {
+    display: none;
   }
 
   .uce-zone1-hero-inner {

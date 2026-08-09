@@ -27,10 +27,14 @@ export function mapLedgerApiEntry(entry: EscrowLedgerApiEntry): EscrowLedgerEntr
   return {
     id: entry.transaction_id,
     label: TYPE_LABELS[entry.transaction_type] ?? entry.transaction_type,
+    transactionType: entry.transaction_type,
     occurredAt: entry.created_at,
     amount: entry.amount,
     currency: entry.currency,
     direction,
     status: entry.transaction_status,
+    collaborationId: entry.collaboration_id,
+    gatewayReferenceId: entry.gateway_reference_id,
+    trancheTarget: entry.payout_tranche_target,
   };
 }

@@ -1,0 +1,85 @@
+.cobs-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-page);
+  color: var(--text-high);
+}
+
+.cobs-shell__header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--height-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  gap: var(--space-sm);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.cobs-shell__brand {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-secondary);
+  text-decoration: none;
+}
+
+.cobs-shell__nav {
+  display: none;
+  align-items: center;
+  gap: var(--space-lg);
+  font-size: var(--size-body);
+}
+
+.cobs-shell__nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.cobs-shell__nav a:hover {
+  color: var(--primary);
+}
+
+@media (min-width: 900px) {
+  .cobs-shell__nav {
+    display: flex;
+  }
+}
+
+.cobs-shell__cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--primary);
+  color: var(--on-primary, #061f23);
+  font-weight: 700;
+  font-size: var(--size-caption);
+  text-decoration: none;
+}
+
+.cobs-shell__main {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: var(--space-md);
+}
+
+.cobs-shell__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-lg) var(--space-md);
+  border-top: 1px solid var(--border-default);
+  font-size: var(--size-caption);
+  color: var(--text-muted);
+}
+
+.cobs-shell__footer-note {
+  font-style: italic;
+}

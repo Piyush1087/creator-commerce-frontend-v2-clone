@@ -17,7 +17,11 @@ import {
   PricingRegulatoryDisclaimers,
 } from "./pricing-support-sections";
 
-export function PricingBillingPanel() {
+export function PricingBillingPanel({
+  hideBillingDetailsSection = false,
+}: {
+  hideBillingDetailsSection?: boolean;
+}) {
   const {
     status,
     subscription,
@@ -251,7 +255,7 @@ export function PricingBillingPanel() {
 
       {!isFrozen ? (
         <>
-          <PricingBillingDetailsSection />
+          {!hideBillingDetailsSection ? <PricingBillingDetailsSection /> : null}
           <PricingInvoiceSection invoices={invoices} />
           <PricingFeatureTeasers />
           <PricingAiDisclaimer />
