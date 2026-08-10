@@ -368,3 +368,21 @@
     margin-bottom: 0;
   }
 }
+
+.collab-thread { width: 100%; text-align: left; color: inherit; font: inherit; }
+.collab-thread__meta { display: flex; flex-direction: column; }
+.collab-context-trigger { border: 0; padding: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.collab-context-trigger h3 { margin: 0; }
+.collab-workspace__notice { margin: 0; padding: 0.5rem 1.25rem; background: var(--surface-warning, #fff7df); color: var(--text-default, #222); font-size: 0.8125rem; }
+.collab-facts { display: grid; gap: 0.5rem; margin: 0.75rem 0; }
+.collab-facts div { display: flex; justify-content: space-between; gap: 1rem; }
+.collab-facts dt { color: var(--text-muted, #666); }
+.collab-facts dd { margin: 0; font-weight: 700; text-align: right; }
+.collab-deliverable { overflow-wrap: anywhere; }
+.collab-deliverable details { margin-top: 0.75rem; }
+.collab-blocking { border-color: var(--color-warning, #d97706); background: var(--surface-warning, #fff7df); }
+.collab-resolution { border-color: var(--border-strong, #b7bcc5); }
+@media (max-width: 767px) {
+  .collab-exec-actions, .collab-exec-actions > button, .collab-exec-card > button { width: 100%; }
+  .collab-exec-card { min-width: 0; overflow-wrap: anywhere; }
+}
