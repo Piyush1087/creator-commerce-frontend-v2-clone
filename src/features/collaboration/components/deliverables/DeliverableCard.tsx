@@ -5,7 +5,7 @@ export function DeliverableCard({ deliverable }: { deliverable: CollaborationDel
   const definition = deliverable.definitionSnapshot;
   const title = typeof definition.title === "string" ? definition.title : `Deliverable ${deliverable.displayOrder}`;
   return <article className="collab-exec-card collab-deliverable"><h5>{title}</h5>
-    <p><strong>{deliverable.state === "APPROVED" ? "Approved by Brand" : deliverable.state === "AUTO_APPROVED" ? "Auto-approved" : deliverable.state.replaceAll("_", " ")}</strong></p>
+    <p><strong>{deliverable.state === "APPROVED" ? "Approved by Brand" : deliverable.state === "AUTO_APPROVED" ? "Auto-approved" : deliverable.state.split("_").join(" ")}</strong></p>
     {deliverable.state === "AUTO_APPROVED" ? <p>The Brand review window expired without a response.</p> : null}
     {deliverable.latestSubmissionVersion ? <><p>Version {deliverable.latestSubmissionVersion.versionNumber} · Asset reference: {deliverable.latestSubmissionVersion.assetRef}</p><p>Review deadline: {new Date(deliverable.latestSubmissionVersion.reviewDeadlineAt).toLocaleString()}</p>{deliverable.latestSubmissionVersion.brandFeedback ? <p>Brand feedback: {deliverable.latestSubmissionVersion.brandFeedback}</p> : null}</> : <p>No submission yet.</p>}
     <p>{deliverable.revisionsRemaining} revision{deliverable.revisionsRemaining === 1 ? "" : "s"} remaining</p>

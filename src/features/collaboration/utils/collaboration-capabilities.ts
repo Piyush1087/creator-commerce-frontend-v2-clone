@@ -2,7 +2,8 @@ import type { CollaborationAvailableAction, CollaborationDetailResponse, Collabo
 
 export type CollaborationCapability =
   | "message" | "accept-proposal" | "counter" | "accept-counter" | "decline-negotiation"
-  | "fund-escrow" | "provide-fulfillment" | "confirm-fulfillment" | "report-fulfillment-issue"
+  | "fund-escrow" | "submit-manual-payment-evidence" | "confirm-manual-payment-receipt"
+  | "dispute-manual-payment" | "provide-fulfillment" | "confirm-fulfillment" | "report-fulfillment-issue"
   | "remediate-fulfillment" | "submit-deliverable" | "approve-deliverable" | "request-revision"
   | "reject-final" | "authorize-publishing" | "decline-publishing" | "submit-publishing-evidence"
   | "verify-publishing" | "request-publishing-correction" | "submit-corrected-evidence"
@@ -12,6 +13,9 @@ const CAPABILITY_BY_ACTION: Record<CollaborationAvailableAction, CollaborationCa
   PostCollaborationMessage: "message", AcceptProposedFee: "accept-proposal", CounterOffer: "counter",
   AcceptCounterOffer: "accept-counter", DeclineNegotiation: "decline-negotiation",
   RequestEscrowFunding: "fund-escrow", ProvideFulfillment: "provide-fulfillment",
+  SubmitManualPaymentEvidence: "submit-manual-payment-evidence",
+  ConfirmManualPaymentReceipt: "confirm-manual-payment-receipt",
+  DisputeManualPayment: "dispute-manual-payment",
   ConfirmFulfillment: "confirm-fulfillment", ReportFulfillmentIssue: "report-fulfillment-issue",
   ProvideFulfillmentRemediation: "remediate-fulfillment", SubmitDeliverable: "submit-deliverable",
   ApproveDeliverable: "approve-deliverable", RequestDeliverableRevision: "request-revision",

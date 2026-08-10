@@ -15,9 +15,10 @@ import "./collaboration-workspace.css";
 type MobileStep = 1 | 2 | 3;
 export function CollaborationWorkspace() {
   const [params, setParams] = useSearchParams();
+  const requestedThreadId = params.get("thread") ?? params.get("collaboration");
   const session = loadAuthSession(); const role = (normalizeUserRole(session?.user.role) ?? "BRAND") as UserRole; const userId = session?.user.id;
   const [threads, setThreads] = useState<CollaborationThreadRow[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(params.get("thread"));
+  const [selectedId, setSelectedId] = useState<string | null>(requestedThreadId);
   const [detail, setDetail] = useState<CollaborationDetailResponse | null>(null);
   const [messages, setMessages] = useState<CollaborationMessageRow[]>([]);
   const [search, setSearch] = useState(""); const [draft, setDraft] = useState(""); const [mobileStep, setMobileStep] = useState<MobileStep>(1);
@@ -29,7 +30,7 @@ export function CollaborationWorkspace() {
     try {
       const rows = await fetchCollaborationThreads(search.trim() ? { search: search.trim() } : undefined); setThreads(rows);
       setSelectedId((current) => {
-        const deepLink = params.get("thread"); const preferred = deepLink && rows.some((row) => row.collaborationId === deepLink) ? deepLink : current;
+        const deepLink = params.get("thread") ?? params.get("collaboration"); const preferred = deepLink && rows.some((row) => row.collaborationId === deepLink) ? deepLink : current;
         return preferred && rows.some((row) => row.collaborationId === preferred) ? preferred : rows[0]?.collaborationId ?? null;
       });
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Failed to load collaborations."); }
