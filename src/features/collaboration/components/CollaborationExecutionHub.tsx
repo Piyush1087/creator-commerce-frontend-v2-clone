@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, CollaborationCommandError, declineNegotiation, envelope, requestEscrowFunding } from "../api/collaboration-client";
+import { acceptCounterOffer, acceptProposedFee, CollaborationCommandError, counterOffer, declineNegotiation, envelope, requestEscrowFunding } from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
 import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
@@ -30,7 +30,7 @@ export function CollaborationExecutionHub({ detail, collaborationId, onRefresh, 
 
   let panel: JSX.Element;
   switch (detail.workflow.stage) {
-    case "NEGOTIATION": panel = <NegotiationPanel detail={detail} busy={busy} onAction={(action) => void run(() => action === "accept-proposal" ? acceptProposedFee(collaborationId, commandEnvelope()) : action === "accept-counter" ? acceptCounterOffer(collaborationId, commandEnvelope()) : declineNegotiation(collaborationId, commandEnvelope()))} />; break;
+    case "NEGOTIATION": panel = <NegotiationPanel detail={detail} busy={busy} onCounter={(amount) => void run(() => counterOffer(collaborationId, commandEnvelope(), amount))} onAction={(action) => void run(() => action === "accept-proposal" ? acceptProposedFee(collaborationId, commandEnvelope()) : action === "accept-counter" ? acceptCounterOffer(collaborationId, commandEnvelope()) : declineNegotiation(collaborationId, commandEnvelope()))} />; break;
     case "SECUREMENT": panel = <SecurementPanel detail={detail} busy={busy} onFund={() => void run(() => requestEscrowFunding(collaborationId, commandEnvelope()))} />; break;
     case "FULFILLMENT": panel = <FulfillmentPanel detail={detail} />; break;
     case "PRODUCTION": panel = <ProductionPanel detail={detail} />; break;
