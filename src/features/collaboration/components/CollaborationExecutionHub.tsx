@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, approveDeliverable, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, submitDeliverable, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
+import { acceptCounterOffer, acceptProposedFee, approveDeliverable, authorizePublishing, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, declinePublishing, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, requestPublishingCorrection, submitCorrectedPublishingEvidence, submitDeliverable, submitPublishingEvidence, verifyPublishing, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
 import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
@@ -54,7 +54,14 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
       onRequestRevision={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`revision:${deliverableExecutionId}:${submissionVersionId}`, () => requestDeliverableRevision(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
       onRejectFinal={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`reject:${deliverableExecutionId}:${submissionVersionId}`, () => rejectFinalDeliverable(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
     />; break;
-    case "PUBLISHING_SETTLEMENT": panel = <PublishingSettlementPanel detail={detail} />; break;
+    case "PUBLISHING_SETTLEMENT": panel = <PublishingSettlementPanel detail={detail} role={role} busyAction={busyAction}
+      onAuthorize={(deliverableExecutionId) => void run(`authorize:${deliverableExecutionId}`, () => authorizePublishing(collaborationId, commandEnvelope(), deliverableExecutionId))}
+      onDecline={(deliverableExecutionId) => void run(`decline:${deliverableExecutionId}`, () => declinePublishing(collaborationId, commandEnvelope(), deliverableExecutionId))}
+      onSubmitEvidence={(deliverableExecutionId, evidenceRef, platform, creatorNote) => void run(`submit-evidence:${deliverableExecutionId}`, () => submitPublishingEvidence(collaborationId, commandEnvelope(), { deliverableExecutionId, evidenceRef, platform, creatorNote }))}
+      onSubmitCorrection={(deliverableExecutionId, evidenceRef, platform, creatorNote) => void run(`submit-correction:${deliverableExecutionId}`, () => submitCorrectedPublishingEvidence(collaborationId, commandEnvelope(), { deliverableExecutionId, evidenceRef, platform, creatorNote }))}
+      onVerify={(deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef) => void run(`verify:${deliverableExecutionId}:${publishingEvidenceId}`, () => verifyPublishing(collaborationId, commandEnvelope(), deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef))}
+      onRequestCorrection={(deliverableExecutionId, publishingEvidenceId, correctionReason) => void run(`correct:${deliverableExecutionId}:${publishingEvidenceId}`, () => requestPublishingCorrection(collaborationId, commandEnvelope(), { deliverableExecutionId, publishingEvidenceId, correctionReason }))}
+    />; break;
   }
 
   const terminal = detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED";

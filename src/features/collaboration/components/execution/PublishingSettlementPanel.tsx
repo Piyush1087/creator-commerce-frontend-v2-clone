@@ -1,12 +1,11 @@
+import type { UserRole } from "../../../../shared/auth/user-role";
 import type { CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
-export function PublishingSettlementPanel({ detail }: { detail: CollaborationDetailResponse }) {
-  return <section><h4>Publishing &amp; Settlement</h4>
-    {detail.deliverables.map((item) => <article className="collab-exec-card" key={item.deliverableExecutionId}><h5>Deliverable {item.displayOrder}</h5>
-      {!item.publishingRequired || item.publishing?.state === "PUBLISHING_NOT_REQUIRED" ? <p>Publishing not required</p> : null}
-      {item.state === "AUTO_APPROVED" && item.publishing?.authorizationState === "NOT_AUTHORIZED" ? <p><strong>Publishing not authorized.</strong> Production is complete; do not publish unless the Brand explicitly approves publication.</p> : null}
-      {item.publishing ? <p>Publishing: {item.publishing.state}</p> : null}
-      {item.publishing?.activeEvidence ? <p>Evidence: {item.publishing.activeEvidence.evidenceRef}</p> : null}
-    </article>)}
-    <article className="collab-exec-card"><h5>Payment</h5><p>{detail.settlement.state === "ELIGIBLE" ? "Ready for settlement" : detail.settlement.state === "PROCESSING" ? "Payment processing" : detail.settlement.state === "SETTLED" ? "Payment settled" : "Not yet eligible"}</p><p>Publishing verification and money movement are tracked separately.</p></article>
-  </section>;
+import { PublishingDeliverableCard } from "../publishing/PublishingDeliverableCard";
+import { SettlementCard } from "../publishing/SettlementCard";
+
+type Props = { detail: CollaborationDetailResponse; role: UserRole; busyAction: string | null; onAuthorize: (deliverableId: string) => void; onDecline: (deliverableId: string) => void; onSubmitEvidence: (deliverableId: string, evidenceRef: string, platform?: string, creatorNote?: string) => void; onSubmitCorrection: (deliverableId: string, evidenceRef: string, platform?: string, creatorNote?: string) => void; onVerify: (deliverableId: string, evidenceId: string, complianceEvidenceRef?: string) => void; onRequestCorrection: (deliverableId: string, evidenceId: string, reason: string) => void };
+
+export function PublishingSettlementPanel(props: Props) {
+  const complete = props.detail.deliverables.filter((item) => !item.publishingRequired || item.publishing?.state === "PUBLISHING_NOT_REQUIRED" || item.publishing?.state === "COMPLIANCE_VERIFIED").length;
+  return <section className="collab-publishing" aria-label="Publishing and settlement"><header><h4>Publishing &amp; Settlement</h4><p>{complete} of {props.detail.deliverables.length} publishing requirements complete</p></header>{props.detail.deliverables.map((item) => <PublishingDeliverableCard key={item.deliverableExecutionId} detail={props.detail} deliverable={item} role={props.role} busyAction={props.busyAction} onAuthorize={props.onAuthorize} onDecline={props.onDecline} onSubmitEvidence={props.onSubmitEvidence} onSubmitCorrection={props.onSubmitCorrection} onVerify={props.onVerify} onRequestCorrection={props.onRequestCorrection} />)}<SettlementCard detail={props.detail} /></section>;
 }
