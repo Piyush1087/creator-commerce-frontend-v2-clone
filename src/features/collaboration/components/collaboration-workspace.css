@@ -395,6 +395,13 @@
 .collab-submission-version { min-width: 0; padding: 0.75rem; border: 1px solid var(--border-default, #e5e7eb); border-radius: var(--radius-md, 12px); }
 .collab-submission-version h6, .collab-command-form h6 { margin: 0; font-size: 14px; }
 .collab-final-review { border-top: 1px solid var(--border-default, #e5e7eb); padding-top: 1rem; }
+.collab-publishing { display: grid; gap: 1rem; min-width: 0; }
+.collab-publishing > header, .collab-publishing-card > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.collab-publishing-history ol { display: grid; gap: 0.75rem; margin: 0.75rem 0 0; padding-left: 1.25rem; }
+.collab-publishing-evidence { min-width: 0; padding: 0.75rem; border: 1px solid var(--border-default, #e5e7eb); border-radius: var(--radius-md, 12px); }
+.collab-publishing-evidence h6, .collab-financial-resolution h6 { margin: 0; font-size: 14px; }
+.collab-publishing-card a { overflow-wrap: anywhere; word-break: break-word; }
+.collab-financial-resolution { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default, #e5e7eb); }
 .collab-blocking { border-color: var(--color-warning, #d97706); background: var(--surface-warning, #fff7df); }
 .collab-resolution { border-color: var(--border-strong, #b7bcc5); }
 @media (max-width: 767px) {
@@ -403,5 +410,7 @@
   .collab-facts dd { max-width: 100%; text-align: left; overflow-wrap: anywhere; }
   .collab-command-form, .collab-issue-history, .collab-issue-card { width: 100%; max-width: 100%; }
   .collab-production > header, .collab-deliverable > header { flex-direction: column; gap: 0.25rem; }
+  .collab-publishing > header, .collab-publishing-card > header { flex-direction: column; gap: 0.25rem; }
+  .collab-publishing-history, .collab-publishing-evidence { width: 100%; max-width: 100%; }
   .collab-exec-card { min-width: 0; overflow-wrap: anywhere; }
 }
