@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, reportFulfillmentIssue, requestEscrowFunding, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
+import { acceptCounterOffer, acceptProposedFee, approveDeliverable, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, submitDeliverable, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
 import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
@@ -48,7 +48,12 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
     case "NEGOTIATION": panel = <NegotiationPanel detail={detail} role={role} busyAction={busyAction} onCounter={(amount) => void run("counter", () => counterOffer(collaborationId, commandEnvelope(), amount))} onAction={(action) => void negotiationAction(action)} />; break;
     case "SECUREMENT": panel = <SecurementPanel detail={detail} role={role} busyAction={busyAction} onFund={() => void run("fund-escrow", () => requestEscrowFunding(collaborationId, commandEnvelope()))} onManagePayoutDetails={() => navigate(AUTH_ROUTES.creatorSettingsPayouts)} />; break;
     case "FULFILLMENT": panel = <FulfillmentPanel detail={detail} role={role} busyAction={busyAction} onProvide={(payload: ProvideFulfillmentPayload) => void run("provide-fulfillment", () => provideFulfillment(collaborationId, commandEnvelope(), payload))} onConfirm={() => void run("confirm-fulfillment", () => confirmFulfillment(collaborationId, commandEnvelope()))} onReportIssue={(payload: ReportFulfillmentIssuePayload) => void run("report-fulfillment-issue", () => reportFulfillmentIssue(collaborationId, commandEnvelope(), payload))} onRemediate={(evidenceRef) => void run("remediate-fulfillment", () => provideFulfillmentRemediation(collaborationId, commandEnvelope(), evidenceRef))} />; break;
-    case "PRODUCTION": panel = <ProductionPanel detail={detail} />; break;
+    case "PRODUCTION": panel = <ProductionPanel detail={detail} role={role} busyAction={busyAction}
+      onSubmit={(deliverableExecutionId, assetRef, creatorNote) => void run(`submit:${deliverableExecutionId}`, () => submitDeliverable(collaborationId, commandEnvelope(), { deliverableExecutionId, assetRef, creatorNote }))}
+      onApprove={(deliverableExecutionId, submissionVersionId) => void run(`approve:${deliverableExecutionId}:${submissionVersionId}`, () => approveDeliverable(collaborationId, commandEnvelope(), deliverableExecutionId, submissionVersionId))}
+      onRequestRevision={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`revision:${deliverableExecutionId}:${submissionVersionId}`, () => requestDeliverableRevision(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
+      onRejectFinal={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`reject:${deliverableExecutionId}:${submissionVersionId}`, () => rejectFinalDeliverable(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
+    />; break;
     case "PUBLISHING_SETTLEMENT": panel = <PublishingSettlementPanel detail={detail} />; break;
   }
 
