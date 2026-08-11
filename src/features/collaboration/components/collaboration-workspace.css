@@ -381,6 +381,12 @@
 .collab-command-form { display: grid; gap: 0.5rem; min-width: 0; }
 .collab-command-form .aurora-field { min-width: 0; margin: 0; }
 .collab-command-form .aurora-field__control { width: 100%; max-width: 100%; }
+.collab-command-form + .collab-command-form, .collab-issue-history, .collab-issue-history + .collab-command-form { margin-top: 1rem; }
+.collab-command-form h5, .collab-issue-history h5 { margin: 0; font-size: 14px; }
+.collab-form-error { margin: 0; color: var(--color-danger, #ca0f1c); }
+.collab-issue-card { margin-top: 0.5rem; border: 1px solid var(--border-default, #e5e7eb); border-radius: var(--radius-md, 12px); padding: 0.75rem; min-width: 0; }
+.collab-issue-card summary { cursor: pointer; font-weight: 700; }
+.collab-evidence-ref { overflow-wrap: anywhere; word-break: break-word; }
 .collab-deliverable { overflow-wrap: anywhere; }
 .collab-deliverable details { margin-top: 0.75rem; }
 .collab-blocking { border-color: var(--color-warning, #d97706); background: var(--surface-warning, #fff7df); }
@@ -389,5 +395,6 @@
   .collab-exec-actions, .collab-exec-actions > button, .collab-exec-card > button { width: 100%; }
   .collab-facts div { align-items: flex-start; flex-direction: column; gap: 0.125rem; }
   .collab-facts dd { max-width: 100%; text-align: left; overflow-wrap: anywhere; }
+  .collab-command-form, .collab-issue-history, .collab-issue-card { width: 100%; max-width: 100%; }
   .collab-exec-card { min-width: 0; overflow-wrap: anywhere; }
 }

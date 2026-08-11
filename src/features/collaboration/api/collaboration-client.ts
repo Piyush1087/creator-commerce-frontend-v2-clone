@@ -62,9 +62,11 @@ export const counterOffer = (id: string, e: CommandEnvelope, counterFee: number)
 export const acceptCounterOffer = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-counter-offer", e);
 export const declineNegotiation = (id: string, e: CommandEnvelope, reasonCode: "BRAND_DECLINED" | "CREATOR_DECLINED") => command(id, "negotiation/decline", { ...e, reasonCode });
 export const requestEscrowFunding = (id: string, e: CommandEnvelope) => command(id, "securement/request-escrow-funding", e);
-export const provideFulfillment = (id: string, e: CommandEnvelope, payload: Record<string, unknown>) => command(id, "fulfillment/provide", { ...e, ...payload });
+export type ProvideFulfillmentPayload = { shipmentTrackingRef?: string; courierName?: string; accessEvidenceRef?: string; redemptionCode?: string; serviceEvidenceRef?: string; genericFulfillmentEvidence?: { description: string; evidenceRef?: string } };
+export type ReportFulfillmentIssuePayload = { issueCode: string; description: string; evidenceRef?: string };
+export const provideFulfillment = (id: string, e: CommandEnvelope, payload: ProvideFulfillmentPayload) => command(id, "fulfillment/provide", { ...e, ...payload });
 export const confirmFulfillment = (id: string, e: CommandEnvelope) => command(id, "fulfillment/confirm", e);
-export const reportFulfillmentIssue = (id: string, e: CommandEnvelope, payload: { issueCode: string; description: string; evidenceRef?: string }) => command(id, "fulfillment/report-issue", { ...e, ...payload });
+export const reportFulfillmentIssue = (id: string, e: CommandEnvelope, payload: ReportFulfillmentIssuePayload) => command(id, "fulfillment/report-issue", { ...e, ...payload });
 export const provideFulfillmentRemediation = (id: string, e: CommandEnvelope, remediationEvidenceRef: string) => command(id, "fulfillment/remediate", { ...e, remediationEvidenceRef });
 export const submitDeliverable = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; assetRef: string; creatorNote?: string; submissionMetadata?: Record<string, unknown> }) => command(id, "production/submit-deliverable", { ...e, ...payload });
 export const approveDeliverable = (id: string, e: CommandEnvelope, deliverableExecutionId: string, submissionVersionId: string) => command(id, "production/approve-deliverable", { ...e, deliverableExecutionId, submissionVersionId });

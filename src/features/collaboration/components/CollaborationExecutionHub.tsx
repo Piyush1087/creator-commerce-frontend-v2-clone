@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, CollaborationCommandError, counterOffer, declineNegotiation, endCollaborationByBrand, envelope, requestEscrowFunding } from "../api/collaboration-client";
+import { acceptCounterOffer, acceptProposedFee, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, reportFulfillmentIssue, requestEscrowFunding, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
 import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
@@ -47,15 +47,16 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
   switch (detail.workflow.stage) {
     case "NEGOTIATION": panel = <NegotiationPanel detail={detail} role={role} busyAction={busyAction} onCounter={(amount) => void run("counter", () => counterOffer(collaborationId, commandEnvelope(), amount))} onAction={(action) => void negotiationAction(action)} />; break;
     case "SECUREMENT": panel = <SecurementPanel detail={detail} role={role} busyAction={busyAction} onFund={() => void run("fund-escrow", () => requestEscrowFunding(collaborationId, commandEnvelope()))} onManagePayoutDetails={() => navigate(AUTH_ROUTES.creatorSettingsPayouts)} />; break;
-    case "FULFILLMENT": panel = <FulfillmentPanel detail={detail} />; break;
+    case "FULFILLMENT": panel = <FulfillmentPanel detail={detail} role={role} busyAction={busyAction} onProvide={(payload: ProvideFulfillmentPayload) => void run("provide-fulfillment", () => provideFulfillment(collaborationId, commandEnvelope(), payload))} onConfirm={() => void run("confirm-fulfillment", () => confirmFulfillment(collaborationId, commandEnvelope()))} onReportIssue={(payload: ReportFulfillmentIssuePayload) => void run("report-fulfillment-issue", () => reportFulfillmentIssue(collaborationId, commandEnvelope(), payload))} onRemediate={(evidenceRef) => void run("remediate-fulfillment", () => provideFulfillmentRemediation(collaborationId, commandEnvelope(), evidenceRef))} />; break;
     case "PRODUCTION": panel = <ProductionPanel detail={detail} />; break;
     case "PUBLISHING_SETTLEMENT": panel = <PublishingSettlementPanel detail={detail} />; break;
   }
 
+  const terminal = detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED";
   return <div className="collab-pane__scroll collab-pane__scroll--execution">
     <header className="collab-exec-card collab-exec-card--summary"><p className="collab-exec-card__kicker">{collaborationLifecycleLabel(detail.lifecycle.state)} · {collaborationStageLabel(detail.workflow.stage)}</p><p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p></header>
-    <BlockingCard detail={detail} />
+    {!terminal ? <BlockingCard detail={detail} /> : null}
     {actionError ? <Alert tone="error" title="Action could not be completed">{actionError}</Alert> : null}
-    {detail.lifecycle.state === "COMPLETED" ? <CompletedPanel detail={detail} /> : detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED" ? <ResolutionCard detail={detail} /> : panel}
+    {detail.lifecycle.state === "COMPLETED" ? <CompletedPanel detail={detail} /> : terminal ? <ResolutionCard detail={detail} /> : panel}
   </div>;
 }
