@@ -46,7 +46,9 @@ export function CollaborationWorkspace() {
 
   useEffect(() => { void loadThreads(); }, [loadThreads]);
   useEffect(() => { if (selectedId) { setDetail(null); setMessages([]); void hydrate(selectedId); } else { setDetail(null); setMessages([]); } }, [hydrate, selectedId]);
-  const refreshAll = useCallback(() => { void loadThreads(); if (selectedId) void hydrate(selectedId, true); }, [hydrate, loadThreads, selectedId]);
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadThreads(), selectedId ? hydrate(selectedId, true) : Promise.resolve()]);
+  }, [hydrate, loadThreads, selectedId]);
   const realtime = useCollaborationRealtime({ enabled: Boolean(userId), selectedCollaborationId: selectedId, onThreadEvent: async (event) => { if (event.collaboration_id === selectedId) await hydrate(event.collaboration_id, true); }, onInboxEvent: async (event) => { await loadThreads(); if (event.collaboration_id === selectedId) await hydrate(event.collaboration_id, true); }, onReconnect: refreshAll });
 
   const pick = (id: string) => { setSelectedId(id); setParams({ thread: id }); setMobileStep(2); };
