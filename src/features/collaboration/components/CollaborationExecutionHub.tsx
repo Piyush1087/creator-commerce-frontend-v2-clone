@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, approveDeliverable, authorizePublishing, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, declinePublishing, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, requestPublishingCorrection, submitCorrectedPublishingEvidence, submitDeliverable, submitPublishingEvidence, verifyPublishing, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
+import { acceptCounterOffer, acceptProposedFee, approveDeliverable, authorizePublishing, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, declinePublishing, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, requestPublishingCorrection, submitCollaborationFeedback, submitCorrectedPublishingEvidence, submitDeliverable, submitPublishingEvidence, verifyPublishing, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
 import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
@@ -65,10 +65,12 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
   }
 
   const terminal = detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED";
+  const completed = detail.lifecycle.state === "COMPLETED";
+  const paused = detail.lifecycle.state === "PAUSED";
   return <div className="collab-pane__scroll collab-pane__scroll--execution">
-    <header className="collab-exec-card collab-exec-card--summary"><p className="collab-exec-card__kicker">{collaborationLifecycleLabel(detail.lifecycle.state)} · {collaborationStageLabel(detail.workflow.stage)}</p><p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p></header>
-    {!terminal ? <BlockingCard detail={detail} /> : null}
-    {actionError ? <Alert tone="error" title="Action could not be completed">{actionError}</Alert> : null}
-    {detail.lifecycle.state === "COMPLETED" ? <CompletedPanel detail={detail} /> : terminal ? <ResolutionCard detail={detail} /> : panel}
+    <header className="collab-exec-card collab-exec-card--summary"><p className="collab-exec-card__kicker">{collaborationLifecycleLabel(detail.lifecycle.state)}{!terminal && !completed ? ` · ${collaborationStageLabel(detail.workflow.stage)}` : ""}</p>{!terminal && !completed ? <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p> : <p>No execution action required</p>}</header>
+    {!terminal && !completed && !paused ? <BlockingCard detail={detail} /> : null}
+    {actionError && !completed ? <Alert tone="error" title="Action could not be completed">{actionError}</Alert> : null}
+    {terminal ? <ResolutionCard detail={detail} /> : completed ? <CompletedPanel detail={detail} feedbackBusy={busyAction === "submit-feedback"} feedbackError={busyAction === null ? actionError : null} onSubmitFeedback={(rating, reviewText) => void run("submit-feedback", () => submitCollaborationFeedback(collaborationId, commandEnvelope(), rating, reviewText))} /> : paused ? <section className="collab-exec-card"><h4>Paused</h4><p>This collaboration is temporarily paused.</p></section> : panel}
   </div>;
 }

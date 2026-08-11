@@ -6,7 +6,7 @@ import { normalizeUserRole, type UserRole } from "../../../shared/auth/user-role
 import { fetchCollaborationMessages, fetchCollaborationThread, fetchCollaborationThreads, postCollaborationMessage } from "../api/collaboration-client";
 import type { CollaborationDetailResponse, CollaborationMessageRow, CollaborationThreadRow } from "../contracts/collaboration.contracts";
 import { useCollaborationRealtime } from "../hooks/use-collaboration-realtime";
-import { actionRequiredLabel, collaborationLifecycleLabel, collaborationStageLabel } from "../utils/stage-labels";
+import { actionRequiredLabel, collaborationPrimaryStatus } from "../utils/stage-labels";
 import { CollaborationExecutionHub } from "./CollaborationExecutionHub";
 import { BrandContextDrawer } from "./context/BrandContextDrawer";
 import { CreatorContextDrawer } from "./context/CreatorContextDrawer";
@@ -59,16 +59,16 @@ export function CollaborationWorkspace() {
     {loadingInbox ? <p className="collab-empty">Loading collaborations…</p> : null}
     {!loadingInbox && !threads.length ? <p className="collab-empty">No collaboration threads yet.</p> : null}
     {threads.map((row) => <button type="button" key={row.collaborationId} className={`collab-thread ${row.collaborationId === selectedId ? "collab-thread--active" : ""}`} onClick={() => pick(row.collaborationId)}>
-      <span className="collab-thread__avatar">{(row.counterpart.displayName ?? "C").slice(0, 1).toUpperCase()}</span><span className="collab-thread__meta"><span className="collab-thread__title">{row.counterpart.displayName}</span><span className="collab-thread__snippet">{row.inbox.lastMessageSnippet ?? row.sourceContext.campaign.name}</span><span className="collab-chip">{collaborationLifecycleLabel(row.lifecycle)} · {collaborationStageLabel(row.workflow.stage)}</span><small>{actionRequiredLabel(row.workflow.actionRequiredBy)}</small></span>
+      <span className="collab-thread__avatar">{(row.counterpart.displayName ?? "C").slice(0, 1).toUpperCase()}</span><span className="collab-thread__meta"><span className="collab-thread__title">{row.counterpart.displayName}</span><span className="collab-thread__snippet">{row.inbox.lastMessageSnippet ?? row.sourceContext.campaign.name}</span><span className="collab-chip">{collaborationPrimaryStatus(row.lifecycle, row.workflow.stage)}</span><small>{row.lifecycle === "ACTIVE" ? actionRequiredLabel(row.workflow.actionRequiredBy) : "No execution action required"}</small></span>
     </button>)}
   </div></>;
 
-  const chatPane = selected ? <><header className="collab-chat-head"><button type="button" className="collab-context-trigger" onClick={() => setContextOpen(true)}><h3>{counterpart?.displayName}</h3></button><p>{selected.sourceContext.campaign.name} · {detail ? collaborationStageLabel(detail.workflow.stage) : collaborationStageLabel(selected.workflow.stage)}</p><Button className="collab-show-mobile-only collab-chat-head__hub-cta" variant="secondary" onClick={() => setMobileStep(3)}>Open execution hub</Button></header>
+  const chatPane = selected ? <><header className="collab-chat-head"><button type="button" className="collab-context-trigger" onClick={() => setContextOpen(true)}><h3>{counterpart?.displayName}</h3></button><p>{selected.sourceContext.campaign.name} · {detail ? collaborationPrimaryStatus(detail.lifecycle.state, detail.workflow.stage) : collaborationPrimaryStatus(selected.lifecycle, selected.workflow.stage)}</p><Button className="collab-show-mobile-only collab-chat-head__hub-cta" variant="secondary" onClick={() => setMobileStep(3)}>Open execution hub</Button></header>
     <div className="collab-chat-feed">{hydrating && !detail ? <p>Loading persisted conversation…</p> : messages.map((message) => message.kind === "SYSTEM" ? <div key={message.message_id} className="collab-msg--system">{message.body}</div> : <div key={message.message_id} className={`collab-msg--user ${message.sender_user_id === userId ? "is-mine" : "is-theirs"}`}>{message.body}</div>)}</div>
     <div className="collab-composer"><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Type a message…" onKeyDown={(event) => { if (event.key === "Enter") void send(); }} /><Button onClick={() => void send()}>Send</Button></div>
   </> : <div className="collab-empty">Select a conversation</div>;
 
-  const executionPane = <><header className="collab-pane__head collab-pane__head--execution"><h3>Execution hub</h3>{detail ? <><p>{detail.sourceContext.campaign.name} · {detail.sourceContext.brief.title}</p><p>{collaborationStageLabel(detail.workflow.stage)} · {actionRequiredLabel(detail.workflow.actionRequiredBy)}</p></> : null}</header><CollaborationExecutionHub role={role} detail={detail} collaborationId={selectedId} onRefresh={refreshAll} onDetailUpdated={setDetail} onError={setError} onStale={() => setStale(true)} /></>;
+  const executionPane = <><header className="collab-pane__head collab-pane__head--execution"><h3>Execution hub</h3>{detail ? <><p>{detail.sourceContext.campaign.name} · {detail.sourceContext.brief.title}</p><p>{collaborationPrimaryStatus(detail.lifecycle.state, detail.workflow.stage)} · {detail.lifecycle.state === "ACTIVE" ? actionRequiredLabel(detail.workflow.actionRequiredBy) : "No execution action required"}</p></> : null}</header><CollaborationExecutionHub role={role} detail={detail} collaborationId={selectedId} onRefresh={refreshAll} onDetailUpdated={setDetail} onError={setError} onStale={() => setStale(true)} /></>;
 
   return <div className="collab-workspace">
     {realtime === "degraded" ? <p className="collab-workspace__notice" role="status">Realtime updates temporarily unavailable. Persisted collaboration data remains available.</p> : null}

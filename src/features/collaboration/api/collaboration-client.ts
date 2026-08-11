@@ -80,4 +80,7 @@ export const verifyPublishing = (id: string, e: CommandEnvelope, deliverableExec
 export const requestPublishingCorrection = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; publishingEvidenceId: string; correctionReason: string }) => command(id, "publishing/request-correction", { ...e, ...payload });
 export const endCollaborationByBrand = (id: string, e: CommandEnvelope) => command(id, "end-by-brand", e);
 export const cancelCollaborationByCreator = (id: string, e: CommandEnvelope) => command(id, "cancel-by-creator", e);
-export const submitCollaborationFeedback = (id: string, e: CommandEnvelope, rating: number, reviewText?: string) => command(id, "feedback/review", { collaborationId: id, ...e, rating, reviewText });
+export const submitCollaborationFeedback = async (id: string, e: CommandEnvelope, rating: number, reviewText?: string) => {
+  await command(id, "feedback/review", { collaborationId: id, ...e, rating, reviewText });
+  return fetchCollaborationThread(id);
+};
