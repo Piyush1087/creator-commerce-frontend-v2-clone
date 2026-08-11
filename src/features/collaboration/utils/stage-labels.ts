@@ -13,5 +13,7 @@ const LIFECYCLE_LABELS: Record<CollaborationLifecycle, string> = {
 export const collaborationStageLabel = (stage: CollaborationStage): string => STAGE_LABELS[stage];
 export const collaborationStageChip = (stage: CollaborationStage): string => STAGE_LABELS[stage];
 export const collaborationLifecycleLabel = (lifecycle: CollaborationLifecycle): string => LIFECYCLE_LABELS[lifecycle];
+export const collaborationPrimaryStatus = (lifecycle: CollaborationLifecycle, stage: CollaborationStage): string =>
+  lifecycle === "ACTIVE" ? STAGE_LABELS[stage] : LIFECYCLE_LABELS[lifecycle];
 export const actionRequiredLabel = (actor: CollaborationActor): string =>
   actor === "NONE" ? "No action required" : actor === "SYSTEM" ? "Waiting for system" : actor === "ADMIN" ? "Under review" : `Waiting for ${actor === "BRAND" ? "Brand" : "Creator"}`;

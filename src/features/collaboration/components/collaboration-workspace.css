@@ -402,6 +402,10 @@
 .collab-publishing-evidence h6, .collab-financial-resolution h6 { margin: 0; font-size: 14px; }
 .collab-publishing-card a { overflow-wrap: anywhere; word-break: break-word; }
 .collab-financial-resolution { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default, #e5e7eb); }
+.collab-completed, .collab-resolution-stack { display: grid; gap: 1rem; min-width: 0; }
+.collab-feedback-record, .collab-feedback-revealed { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-default, #e5e7eb); min-width: 0; }
+.collab-feedback-record h6, .collab-feedback-revealed h6 { margin: 0 0 0.5rem; font-size: 14px; }
+.collab-resolution p, .collab-feedback p { overflow-wrap: anywhere; }
 .collab-blocking { border-color: var(--color-warning, #d97706); background: var(--surface-warning, #fff7df); }
 .collab-resolution { border-color: var(--border-strong, #b7bcc5); }
 @media (max-width: 767px) {
@@ -412,5 +416,6 @@
   .collab-production > header, .collab-deliverable > header { flex-direction: column; gap: 0.25rem; }
   .collab-publishing > header, .collab-publishing-card > header { flex-direction: column; gap: 0.25rem; }
   .collab-publishing-history, .collab-publishing-evidence { width: 100%; max-width: 100%; }
+  .collab-completed, .collab-resolution-stack, .collab-feedback-record, .collab-feedback-revealed { width: 100%; max-width: 100%; }
   .collab-exec-card { min-width: 0; overflow-wrap: anywhere; }
 }
