@@ -17,7 +17,7 @@ import type {
   UceCampaignStatus,
   UpdateCampaignProductBody,
 } from "../contracts/brand-uce.contracts";
-import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
+import type { CanonicalCampaignWizardPayload } from "../schemas/canonical-campaign-wizard-schema";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json",
@@ -92,9 +92,9 @@ export class BrandUceWizardValidationError extends Error {
 }
 
 export async function createCampaignFromWizard(
-  payload: IntegratedCampaignWizardPayload,
+  payload: CanonicalCampaignWizardPayload,
 ): Promise<CampaignShellResponse> {
-  const response = await fetch(`${BASE}/campaigns/wizard`, {
+  const response = await fetch(`${BASE}/campaigns/canonical-wizard`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(payload),
@@ -120,7 +120,7 @@ export async function createCampaignFromWizard(
         ? (body as { issues: unknown }).issues
         : undefined;
 
-    if (response.status === 422 && issues !== undefined) {
+    if ((response.status === 400 || response.status === 422) && issues !== undefined) {
       throw new BrandUceWizardValidationError(message, issues);
     }
 
