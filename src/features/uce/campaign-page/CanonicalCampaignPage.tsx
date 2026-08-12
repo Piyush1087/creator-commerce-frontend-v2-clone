@@ -8,13 +8,11 @@ import {
   fetchCampaignCreatorProfile,
   fetchCampaignDiscoveryView,
   fetchCampaignPageView,
-  fetchCampaignReporting,
   goLiveCampaign,
   patchCampaignStatus,
   publishCampaign,
   rejectCampaignApplication,
 } from "../api/brand-uce-client";
-import type { CampaignReportingResponse } from "../contracts/brand-uce.contracts";
 import { CampaignDetailsDrawer } from "./CampaignDetailsDrawer";
 import { CreatorCard } from "./CreatorCard";
 import { CreatorProfileDrawer } from "./CreatorProfileDrawer";
@@ -89,9 +87,6 @@ export function CanonicalCampaignPage({
   const [outreachBody, setOutreachBody] = useState("");
 
   const [reportOpen, setReportOpen] = useState(false);
-  const [reportLoading, setReportLoading] = useState(false);
-  const [reportError, setReportError] = useState<string>();
-  const [report, setReport] = useState<CampaignReportingResponse>();
 
   const visibleWorkspaces = useMemo(
     () => view.workspaces.filter((w) => w.visible && w.expand.presentation !== "HIDDEN"),
@@ -192,21 +187,6 @@ export function CanonicalCampaignPage({
       );
     } finally {
       setOutreachLoading(false);
-    }
-  };
-
-  const openReport = async () => {
-    setReportOpen(true);
-    setReportLoading(true);
-    setReportError(undefined);
-    try {
-      setReport(await fetchCampaignReporting(view.campaign.id));
-    } catch (error) {
-      setReportError(
-        error instanceof Error ? error.message : "Campaign reporting failed.",
-      );
-    } finally {
-      setReportLoading(false);
     }
   };
 
@@ -352,7 +332,7 @@ export function CanonicalCampaignPage({
                 {canRender(view.performanceSummary.capability) ? (
                   <Button
                     disabled={!isEnabled(view.performanceSummary.capability) || busy}
-                    onClick={() => void openReport()}
+                    onClick={() => setReportOpen(true)}
                     variant="outline"
                   >
                     View report
@@ -466,9 +446,7 @@ export function CanonicalCampaignPage({
                         followers={creator.followers}
                         name={creator.name}
                         onPrimaryAction={() => void openOutreach(creator.campaignCreatorId)}
-                        onSecondaryAction={() =>
-                          void openCreatorProfile(creator.campaignCreatorId)
-                        }
+                        onSecondaryAction={() => void openCreatorProfile(creator.campaignCreatorId)}
                         primaryActionLabel="Outreach"
                         secondaryActionLabel="Profile"
                       />
@@ -520,25 +498,13 @@ export function CanonicalCampaignPage({
                             );
                           })
                         }
+                        onTertiaryAction={() => void openCreatorProfile(applicant.campaignCreatorId)}
                         primaryActionLabel="Approve"
                         secondaryActionLabel="Reject"
+                        tertiaryActionLabel="Profile"
                       />
                     ))
                   )}
-                  {applicants?.state === "READY" ? (
-                    <div className="canonical-campaign-page__stack">
-                      {applicants.applicants.map((applicant) => (
-                        <Button
-                          key={`profile-${applicant.applicationId}`}
-                          onClick={() => void openCreatorProfile(applicant.campaignCreatorId)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          View {applicant.name} profile
-                        </Button>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               )}
               {workspace === item.workspace && item.workspace === "COLLABORATIONS" ? (
@@ -583,11 +549,10 @@ export function CanonicalCampaignPage({
       />
 
       <ReportingDrawer
-        error={reportError}
+        campaignName={view.campaign.name}
         isOpen={reportOpen}
-        loading={reportLoading}
         onClose={() => setReportOpen(false)}
-        report={report}
+        performanceSummary={view.performanceSummary}
       />
     </section>
   );
