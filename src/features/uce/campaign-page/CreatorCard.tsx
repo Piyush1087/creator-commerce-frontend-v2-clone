@@ -12,6 +12,8 @@ export type CreatorCardProps = {
   onPrimaryAction?: () => void;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
+  tertiaryActionLabel?: string;
+  onTertiaryAction?: () => void;
   busy?: boolean;
 };
 
@@ -28,6 +30,8 @@ export function CreatorCard({
   onPrimaryAction,
   secondaryActionLabel,
   onSecondaryAction,
+  tertiaryActionLabel,
+  onTertiaryAction,
   busy,
 }: CreatorCardProps) {
   return (
@@ -56,6 +60,11 @@ export function CreatorCard({
         {secondaryActionLabel && onSecondaryAction ? (
           <Button disabled={busy} onClick={onSecondaryAction} variant="outline">
             {secondaryActionLabel}
+          </Button>
+        ) : null}
+        {tertiaryActionLabel && onTertiaryAction ? (
+          <Button disabled={busy} onClick={onTertiaryAction} variant="ghost">
+            {tertiaryActionLabel}
           </Button>
         ) : null}
       </div>
