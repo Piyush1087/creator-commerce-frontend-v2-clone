@@ -1,5 +1,4 @@
-import { Alert, Badge, Button, TextField } from "../../../design-system/aurora";
-import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
+import { Alert, Badge, Button, SideDrawer, TextField } from "../../../design-system/aurora";
 import type { OutreachComposerView } from "./types";
 
 export function OutreachComposerDrawer({
