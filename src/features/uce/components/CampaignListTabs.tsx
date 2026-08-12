@@ -116,7 +116,7 @@ function OperationsTab() {
   const toggleStatus = async (row: CampaignListRow) => {
     setStatusError(null);
     const next: UceCampaignStatus =
-      row.current_status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+      row.current_status === "LIVE" ? "PAUSED" : "LIVE";
     try {
       await patchCampaignStatus(row.campaign_id, next);
       setLocalRows((prev) => {
@@ -292,7 +292,7 @@ function OperationsTab() {
                               </span>
                             ) : (
                               <Toggle
-                                checked={campaign.current_status === "ACTIVE"}
+                                checked={campaign.current_status === "LIVE"}
                                 onChange={() => void toggleStatus(campaign)}
                                 label={formatStatus(campaign.current_status)}
                               />

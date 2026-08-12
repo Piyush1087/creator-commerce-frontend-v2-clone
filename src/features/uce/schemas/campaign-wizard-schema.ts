@@ -4,7 +4,8 @@ import { z } from "zod";
 
 export const UceCampaignStatusSchema = z.enum([
   "DRAFT",
-  "ACTIVE",
+  "PUBLISHED",
+  "LIVE",
   "PAUSED",
   "COMPLETED",
   "ARCHIVED",
@@ -21,13 +22,25 @@ export const UceCampaignObjectiveSchema = z.enum([
   "SALES_CONVERSIONS",
 ]);
 
-export const UceCompensationTypeSchema = z.enum(["FIXED_FEE", "NEGOTIABLE"]);
+export const UceCompensationTypeSchema = z.enum(["FIXED", "FIXED_FEE", "NEGOTIABLE"]);
 
 export const UcePayoutTermsSchema = z.enum([
   "IMMEDIATE",
   "NET_7",
   "NET_15",
   "NET_30",
+]);
+
+export const UceCampaignVisibilitySchema = z.enum([
+  "PUBLIC",
+  "ELIGIBLE_CREATORS_ONLY",
+  "INVITE_ONLY",
+]);
+
+export const UceVisibilityScopeSchema = z.enum([
+  "EVERYONE",
+  "ELIGIBLE_ONLY",
+  "INVITED_ONLY",
 ]);
 
 export const UceMediaPlatformSchema = z.enum([
@@ -120,6 +133,12 @@ export const Step2TargetingSchema = z
       .array(z.string())
       .min(1, "Provide targeted operational territory distribution maps."),
     disqualifying_keywords: z.array(z.string()).optional().default([]),
+    /** Product vocab; mapper converts to persistence visibility_scopes. */
+    campaign_visibility: UceCampaignVisibilitySchema.default("PUBLIC"),
+    visibility_scopes: z
+      .array(UceVisibilityScopeSchema)
+      .optional()
+      .default(["EVERYONE"]),
   })
   .refine((data) => data.audience_age_min <= data.audience_age_max, {
     message: "Minimum parameters framework cannot overtake defined max boundaries.",
@@ -138,12 +157,15 @@ export const Step3CommercialsSchema = z
     advance_payment_percentage: z
       .number()
       .int()
-      .min(30, "System protection locks force advance escrow thresholds to at least 30%.")
+      .min(0)
       .max(100),
     final_balance_terms: UcePayoutTermsSchema,
   })
   .superRefine((data, ctx) => {
-    if (data.compensation_type === "FIXED_FEE" && data.fixed_fee_amount <= 0) {
+    if (
+      (data.compensation_type === "FIXED" || data.compensation_type === "FIXED_FEE") &&
+      data.fixed_fee_amount <= 0
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Fixed compensation models require positive creator fee settings.",

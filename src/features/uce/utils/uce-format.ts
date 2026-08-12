@@ -18,7 +18,8 @@ const OBJECTIVE_LABELS: Record<UceCampaignObjective, string> = {
 
 const STATUS_LABELS: Record<UceCampaignStatus, string> = {
   DRAFT: "Draft",
-  ACTIVE: "Active",
+  PUBLISHED: "Published",
+  LIVE: "Live",
   PAUSED: "Paused",
   COMPLETED: "Completed",
   ARCHIVED: "Archived",

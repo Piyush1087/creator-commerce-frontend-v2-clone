@@ -5,6 +5,11 @@ import type {
   Step2TargetingPayload,
   Step3CommercialsPayload,
 } from "../schemas/campaign-wizard-schema";
+import {
+  toPersistenceCompensation,
+  toPersistencePayoutTerms,
+  toPersistenceVisibility,
+} from "./phase1-campaign-adapters";
 
 const OBJECTIVE_TO_API: Record<string, Step1StrategyPayload["core_objective"]> = {
   "Brand Awareness": "BRAND_AWARENESS",
@@ -12,11 +17,13 @@ const OBJECTIVE_TO_API: Record<string, Step1StrategyPayload["core_objective"]> =
   "Sales & Conversions": "SALES_CONVERSIONS",
 };
 
-const PAYOUT_TO_API: Record<string, Step3CommercialsPayload["final_balance_terms"]> = {
+const PAYOUT_TO_API: Record<string, string> = {
   "Immediate (Upon Approval)": "IMMEDIATE",
   "Net 7": "NET_7",
   "Net 15": "NET_15",
   "Net 30": "NET_30",
+  "Net 45": "NET_45",
+  "Net 60": "NET_60",
 };
 
 const GENDER_TO_API: Record<string, string> = {
@@ -69,6 +76,7 @@ export function mapWizardToStep1Payload(data: WizardData): Step1StrategyPayload 
 }
 
 export function mapWizardToStep2Payload(data: WizardData): Step2TargetingPayload {
+  const visibility = toPersistenceVisibility("PUBLIC");
   return {
     industry_vertical: data.industry,
     creator_archetypes: data.archetypes,
@@ -78,20 +86,26 @@ export function mapWizardToStep2Payload(data: WizardData): Step2TargetingPayload
     audience_gender: GENDER_TO_API[data.genderFocus] ?? data.genderFocus,
     target_locations: data.targetLocations,
     disqualifying_keywords: data.disqualifyingKeywords,
+    campaign_visibility: "PUBLIC",
+    visibility_scopes: [visibility],
   };
 }
 
 export function mapWizardToStep3Payload(data: WizardData): Step3CommercialsPayload {
   const isFixed = data.compensationType === "fixed";
+  const payout = toPersistencePayoutTerms(
+    PAYOUT_TO_API[data.payoutTerms] ?? "NET_30",
+  );
   return {
-    compensation_type: isFixed ? "FIXED_FEE" : "NEGOTIABLE",
+    compensation_type: isFixed
+      ? toPersistenceCompensation("FIXED")
+      : toPersistenceCompensation("NEGOTIABLE"),
     fixed_fee_amount: isFixed ? data.flatRatePerCreator : 0,
     negotiable_min_fee: isFixed ? 0 : data.negotiableMinFee,
     negotiable_max_fee: isFixed ? 0 : data.negotiableMaxFee,
     total_campaign_budget_pool: data.budget,
     advance_payment_percentage: data.advancePercent,
-    final_balance_terms:
-      PAYOUT_TO_API[data.payoutTerms] ?? "IMMEDIATE",
+    final_balance_terms: payout as Step3CommercialsPayload["final_balance_terms"],
   };
 }
 

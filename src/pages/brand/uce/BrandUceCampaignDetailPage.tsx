@@ -1,102 +1,124 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import { Alert } from "../../../design-system/aurora";
-import { BriefingWizardDrawer } from "../../../features/uce/components/BriefingWizardDrawer";
-import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
-import {
-  CampaignPipelineWorkspace,
-  type PipelineTab,
-} from "../../../features/uce/components/CampaignPipelineWorkspace";
-import { CampaignProductsBriefsRepository } from "../../../features/uce/components/CampaignProductsBriefsRepository";
-import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
-import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
-import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
-import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
-import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
+import { AUTH_ROUTES } from "../../../features/auth/constants";
 import {
   createCampaignBrief,
   createCampaignProduct,
+  fetchCampaignBriefDetails,
+  fetchCampaignPageView,
+  fetchCampaignProductDetails,
   fetchCampaignShell,
-  patchCampaignEssentials,
-  patchCampaignStatus,
 } from "../../../features/uce/api/brand-uce-client";
-import type { UceCampaignStatus } from "../../../features/uce/contracts/brand-uce.contracts";
+import { CanonicalCampaignPage } from "../../../features/uce/campaign-page/CanonicalCampaignPage";
+import type { CampaignPageView } from "../../../features/uce/campaign-page/types";
+import { BriefingWizardDrawer } from "../../../features/uce/components/BriefingWizardDrawer";
+import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
+import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
+import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
+import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
 import { useUceApiJson } from "../../../features/uce/hooks/use-uce-api-json";
-import {
-  mapShellToRepositoryBriefs,
-  mapShellToRepositoryProducts,
-} from "../../../features/uce/mappers/map-shell-to-repository";
-import type { RepositoryBrief } from "../../../features/uce/types/repository";
-import { AUTH_ROUTES } from "../../../features/auth/constants";
-import "../../../features/uce/components/CampaignProductsBriefsRepository.css";
-import "../../../features/uce/components/CampaignShareRouterModal.css";
-import "../../../features/uce/components/CampaignWorkspaceZone1.css";
-import "./BrandUceCampaignDetailPage.css";
+import type { RepositoryBrief, RepositoryProduct } from "../../../features/uce/types/repository";
 import "../../../features/uce/uce-responsive.css";
+import "./BrandUceCampaignDetailPage.css";
+
+type ProductDetailsDto = {
+  campaignAssetId: string;
+  name: string;
+  skuCode?: string | null;
+  inventoryCount: number;
+  imageUrl?: string | null;
+};
+
+type BriefDetailsDto = {
+  briefId: string;
+  name: string;
+  campaignAssetId?: string | null;
+  creativeGuidelines: string;
+  deliverableFormatTags: string[];
+  requiredPlatforms: string[];
+  briefType?: string | null;
+};
+
+function toRepositoryProduct(dto: ProductDetailsDto): RepositoryProduct {
+  return {
+    id: dto.campaignAssetId,
+    name: dto.name,
+    skuCode: dto.skuCode ?? null,
+    basePrice: "—",
+    inventoryCount: dto.inventoryCount,
+    outOfStock: dto.inventoryCount <= 0,
+  };
+}
+
+function toRepositoryBrief(dto: BriefDetailsDto): RepositoryBrief {
+  return {
+    id: dto.briefId,
+    productId: dto.campaignAssetId,
+    name: dto.name,
+    formatType: dto.deliverableFormatTags[0] ?? "—",
+    formatTags: dto.deliverableFormatTags,
+    platforms: dto.requiredPlatforms,
+    platformsLabel: dto.requiredPlatforms.join(", "),
+    creativeGuidelines: dto.creativeGuidelines,
+    briefType: dto.briefType,
+    createdAt: null,
+  };
+}
 
 export function BrandUceCampaignDetailPage() {
   const { id: campaignId = "" } = useParams();
 
+  const pageFetcher = useCallback(
+    () => fetchCampaignPageView(campaignId) as Promise<CampaignPageView>,
+    [campaignId],
+  );
+  // Shell retained only for Add Brief logistics defaults (mature ADAPT surface).
   const shellFetcher = useCallback(
     () => fetchCampaignShell(campaignId),
     [campaignId],
   );
-  const { state, reload } = useUceApiJson(Boolean(campaignId), shellFetcher);
 
-  const shell = state.status === "ready" ? state.data : null;
-  const products = useMemo(
-    () => (shell ? mapShellToRepositoryProducts(shell) : []),
-    [shell],
-  );
-  const briefs = useMemo(
-    () => (shell ? mapShellToRepositoryBriefs(shell) : []),
-    [shell],
+  const { state, reload } = useUceApiJson(Boolean(campaignId), pageFetcher);
+  const { state: shellState, reload: reloadShell } = useUceApiJson(
+    Boolean(campaignId),
+    shellFetcher,
   );
 
-  const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
+  const shell = shellState.status === "ready" ? shellState.data : null;
+
   const [isLinkAssetOpen, setIsLinkAssetOpen] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [isBriefSnapshotOpen, setIsBriefSnapshotOpen] = useState(false);
   const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
-  const [briefWizardProductId, setBriefWizardProductId] = useState<string | null>(null);
-  const [viewProductId, setViewProductId] = useState<string | null>(null);
+  const [briefWizardProductId, setBriefWizardProductId] = useState<string | null>(
+    null,
+  );
+  const [viewProduct, setViewProduct] = useState<RepositoryProduct | null>(null);
   const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
-  const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
-  const [isSavingEssentials, setIsSavingEssentials] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
 
-  const viewProduct = products.find((p) => p.id === viewProductId) ?? null;
+  const pageProducts = useMemo(() => {
+    if (state.status !== "ready") return [];
+    return state.data.productsBriefsSummary.products;
+  }, [state]);
 
   const briefWizardProducts = useMemo(
     () =>
-      products.map((p) => ({
-        id: p.id,
+      pageProducts.map((p) => ({
+        id: p.campaignAssetId,
         name: p.name,
-        sku: p.skuCode,
+        sku: null as string | null,
       })),
-    [products],
+    [pageProducts],
   );
 
-  const handleStatusChange = async (nextActive: boolean) => {
-    if (!shell) return;
-    setStatusError(null);
-    setStatusUpdating(true);
-    const next: UceCampaignStatus = nextActive ? "ACTIVE" : "PAUSED";
-    try {
-      await patchCampaignStatus(shell.campaign_id, next);
-      await reload({ silent: true });
-    } catch (err) {
-      setStatusError(
-        err instanceof Error ? err.message : "Could not update campaign status.",
-      );
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
+  const reloadAll = useCallback(async () => {
+    await Promise.all([reload({ silent: true }), reloadShell({ silent: true })]);
+  }, [reload, reloadShell]);
 
   if (!campaignId) {
     return (
@@ -135,128 +157,95 @@ export function BrandUceCampaignDetailPage() {
   if (state.status !== "ready") {
     return null;
   }
-  const loadedShell = state.data;
-  const campaignSlug = loadedShell.campaign_name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_");
 
-  const briefWizard = (
+  const pageView = state.data;
+
+  const briefWizard = shell ? (
     <BriefingWizardDrawer
       isOpen={isBriefWizardOpen}
       onClose={() => {
         setIsBriefWizardOpen(false);
         setBriefWizardProductId(null);
       }}
-      campaignId={loadedShell.campaign_id}
-      campaignName={loadedShell.campaign_name}
+      campaignId={shell.campaign_id}
+      campaignName={shell.campaign_name}
       initialProductId={briefWizardProductId}
       campaignProducts={briefWizardProducts}
-      archetypeOptions={
-        loadedShell.zone_1_targeting?.creator_archetypes ?? []
-      }
+      archetypeOptions={shell.zone_1_targeting?.creator_archetypes ?? []}
       logisticsDefaults={{
         deadlineDescriptor:
-          loadedShell.zone_1_master?.timeline_type === "DYNAMIC_ROLLING"
-            ? `Dynamic rolling (${loadedShell.zone_1_master.dynamic_days_limit ?? "n/a"} days)`
+          shell.zone_1_master?.timeline_type === "DYNAMIC_ROLLING"
+            ? `Dynamic rolling (${shell.zone_1_master.dynamic_days_limit ?? "n/a"} days)`
             : "Fixed campaign end date",
         fixedCalendarTargetDate:
-          loadedShell.zone_1_master?.fixed_end_date ??
+          shell.zone_1_master?.fixed_end_date ??
           new Date(Date.now() + 14 * 86400000).toISOString(),
         baseEscrowPayout:
-          loadedShell.zone_1_commercials?.fixed_fee_amount ??
-          loadedShell.zone_1_commercials?.negotiable_min_fee ??
+          shell.zone_1_commercials?.fixed_fee_amount ??
+          shell.zone_1_commercials?.negotiable_min_fee ??
           0,
         commissionPercent:
-          loadedShell.zone_1_commercials?.advance_payment_percentage ?? 0,
+          shell.zone_1_commercials?.advance_payment_percentage ?? 0,
         samplesRequired: true,
       }}
       isSubmitting={isSavingBrief}
       onSubmitBrief={async (body) => {
         setIsSavingBrief(true);
         try {
-          await createCampaignBrief(loadedShell.campaign_id, body);
-          await reload({ silent: true });
+          await createCampaignBrief(shell.campaign_id, body);
+          await reloadAll();
         } finally {
           setIsSavingBrief(false);
         }
       }}
     />
-  );
+  ) : null;
 
-  /* Same pattern as Create Campaign: wizard is page content under real AppShell chrome */
-  if (isBriefWizardOpen) {
+  if (isBriefWizardOpen && briefWizard) {
     return briefWizard;
   }
 
   return (
     <div className="campaign-workspace-canvas">
-      {statusError ? (
-        <Alert tone="error" title="Status update failed">
-          {statusError}
-        </Alert>
-      ) : null}
-
-      <CampaignWorkspaceZone1
-        shell={loadedShell}
-        onOpenShareRouter={() => setIsShareRouterOpen(true)}
-        onOpenEdit={() => setIsHeroEditOpen(true)}
-        onStatusChange={(active) => void handleStatusChange(active)}
-        statusUpdating={statusUpdating}
-      />
-
-      <CampaignHeroEditDrawer
-        isOpen={isHeroEditOpen}
-        onClose={() => setIsHeroEditOpen(false)}
-        shell={loadedShell}
-        isSubmitting={isSavingEssentials}
-        onSubmit={async (body) => {
-          setIsSavingEssentials(true);
-          try {
-            await patchCampaignEssentials(loadedShell.campaign_id, body);
-            await reload({ silent: true });
-          } finally {
-            setIsSavingEssentials(false);
-          }
-        }}
-      />
-
-      <CampaignProductsBriefsRepository
-        products={products}
-        briefs={briefs}
-        onAddProduct={() => setIsLinkAssetOpen(true)}
-        onViewProduct={(productId) => {
-          setViewProductId(productId);
-          setIsProductDetailOpen(true);
-        }}
-        onViewBrief={(brief) => {
-          setViewBrief(brief);
-          setIsBriefSnapshotOpen(true);
-        }}
-        onCreateBrief={(productId) => {
-          setBriefWizardProductId(productId);
+      <CanonicalCampaignPage
+        onAddBrief={(campaignAssetId) => {
+          setBriefWizardProductId(campaignAssetId);
           setIsBriefWizardOpen(true);
         }}
-      />
-
-      <CampaignPipelineWorkspace
-        campaignId={loadedShell.campaign_id}
-        campaignName={loadedShell.campaign_name}
-        activeTab={activeWorkspaceTab}
-        onTabChange={setWorkspaceTab}
+        onAddProduct={() => setIsLinkAssetOpen(true)}
+        onOpenBrief={async (briefId) => {
+          const dto = (await fetchCampaignBriefDetails(
+            campaignId,
+            briefId,
+          )) as BriefDetailsDto;
+          setViewBrief(toRepositoryBrief(dto));
+          setIsBriefSnapshotOpen(true);
+        }}
+        onOpenProduct={async (campaignAssetId) => {
+          const dto = (await fetchCampaignProductDetails(
+            campaignId,
+            campaignAssetId,
+          )) as ProductDetailsDto;
+          setViewProduct(toRepositoryProduct(dto));
+          setIsProductDetailOpen(true);
+        }}
+        onOpenShareFallback={() => setIsShareRouterOpen(true)}
+        onReload={() => void reloadAll()}
+        view={pageView}
       />
 
       <LinkAssetDrawer
         isOpen={isLinkAssetOpen}
         onClose={() => setIsLinkAssetOpen(false)}
-        campaignId={loadedShell.campaign_id}
-        campaignName={loadedShell.campaign_name}
-        linkedProductNames={products.map((p) => p.name)}
+        campaignId={campaignId}
+        campaignName={pageView.campaign.name}
+        linkedProductNames={pageProducts.map((p) => p.name)}
         isSubmitting={isSavingProduct}
         onCreateProduct={async (body) => {
           setIsSavingProduct(true);
           try {
-            await createCampaignProduct(loadedShell.campaign_id, body);
-            await reload({ silent: true });
+            await createCampaignProduct(campaignId, body);
+            await reloadAll();
           } finally {
             setIsSavingProduct(false);
           }
@@ -281,9 +270,13 @@ export function BrandUceCampaignDetailPage() {
       <CampaignShareRouterModal
         isOpen={isShareRouterOpen}
         onClose={() => setIsShareRouterOpen(false)}
-        campaignName={loadedShell.campaign_name}
-        campaignSlug={campaignSlug}
-        products={products.map((p) => ({ id: p.id, name: p.name }))}
+        campaignId={campaignId}
+        campaignName={pageView.campaign.name}
+        products={pageProducts.map((p) => ({
+          id: p.campaignAssetId,
+          name: p.name,
+        }))}
+        supportedChannels={pageView.share.supportedChannels}
       />
     </div>
   );

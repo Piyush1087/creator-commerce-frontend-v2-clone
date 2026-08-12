@@ -1,4 +1,10 @@
-export type UceCampaignStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED" | "ARCHIVED";
+export type UceCampaignStatus =
+  | "DRAFT"
+  | "PUBLISHED"
+  | "LIVE"
+  | "PAUSED"
+  | "COMPLETED"
+  | "ARCHIVED";
 
 export type UceCampaignObjective =
   | "BRAND_AWARENESS"
