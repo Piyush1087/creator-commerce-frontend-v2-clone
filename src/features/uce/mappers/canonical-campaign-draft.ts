@@ -28,10 +28,8 @@ const FIELD_TO_PATH: Partial<Record<WizardFieldKey, CanonicalCampaignDraftPath>>
 
 function dateToIso(date: string, endOfDay: boolean): string | null {
   if (!date.trim()) return null;
-  const value = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(value.getTime())) return null;
-  if (endOfDay) value.setHours(23, 59, 59, 999);
-  return value.toISOString();
+  const value = new Date(`${date}${endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z"}`);
+  return Number.isNaN(value.getTime()) ? null : value.toISOString();
 }
 
 export function canonicalDraftPatchForField(
