@@ -10,7 +10,7 @@ export function SecurementPanel({ detail, role, busyAction, onFund, onManagePayo
   const state = securement?.state ?? "NOT_REQUIRED"; const isBrand = role === "BRAND"; const zeroCash = state === "NOT_REQUIRED" || securement?.requiredSecuredAmount === 0;
   const stateCopy = (() => {
     switch (state) {
-      case "AWAITING_ESCROW_FUNDING": return isBrand ? "Secure the full agreed Creator fee in escrow before execution begins." : "Waiting for the Brand to secure funds.";
+      case "AWAITING_ESCROW_FUNDING": return isBrand ? "Secure the full commercial reserve before execution begins." : "Waiting for the Brand to secure the commercial reserve.";
       case "PROCESSING_FUNDING": return "Funding processing. We’ll update this collaboration when securement is confirmed.";
       case "AWAITING_PAYOUT_DETAILS": return role === "CREATOR" ? "Add or update your payout details to continue." : "Waiting for the Creator to add payout details.";
       case "COMPLETED": return "Funds secured. The collaboration can now proceed.";

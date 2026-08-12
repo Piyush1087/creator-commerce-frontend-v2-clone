@@ -60,7 +60,7 @@ export const envelope = (expectedAggregateVersion: number, commandId = createCol
 export const acceptProposedFee = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-proposed-fee", e);
 export const counterOffer = (id: string, e: CommandEnvelope, counterFee: number) => command(id, "negotiation/counter-offer", { ...e, counterFee });
 export const acceptCounterOffer = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-counter-offer", e);
-export const declineNegotiation = (id: string, e: CommandEnvelope, reasonCode: "BRAND_DECLINED" | "CREATOR_DECLINED") => command(id, "negotiation/decline", { ...e, reasonCode });
+export const declineNegotiation = (id: string, e: CommandEnvelope) => command(id, "negotiation/decline", e);
 export const requestEscrowFunding = (id: string, e: CommandEnvelope) => command(id, "securement/request-escrow-funding", e);
 export type ProvideFulfillmentPayload = { shipmentTrackingRef?: string; courierName?: string; accessEvidenceRef?: string; redemptionCode?: string; serviceEvidenceRef?: string; genericFulfillmentEvidence?: { description: string; evidenceRef?: string } };
 export type ReportFulfillmentIssuePayload = { issueCode: string; description: string; evidenceRef?: string };

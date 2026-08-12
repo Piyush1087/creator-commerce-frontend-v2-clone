@@ -40,7 +40,7 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
     if (action === "accept-proposal") return run(action, () => acceptProposedFee(collaborationId, commandEnvelope()));
     if (action === "accept-counter") return run(action, () => acceptCounterOffer(collaborationId, commandEnvelope()));
     if (action === "end") return run(action, () => endCollaborationByBrand(collaborationId, commandEnvelope()));
-    return run(action, () => declineNegotiation(collaborationId, commandEnvelope(), role === "BRAND" ? "BRAND_DECLINED" : "CREATOR_DECLINED"));
+    return run(action, () => declineNegotiation(collaborationId, commandEnvelope()));
   };
 
   let panel: JSX.Element;

@@ -36,7 +36,7 @@ export function FulfillmentPanel({ detail, role, busyAction, onProvide, onConfir
     setForm(EMPTY_FORM); setProvideError(undefined); setIssueDescription(""); setIssueEvidence(""); setIssueError(undefined); setRemediationRef(""); setRemediationError(undefined);
   }, [detail.workflow.aggregateVersion]);
 
-  if (!fulfillment || fulfillment.applies === false || fulfillment.state === "NOT_REQUIRED") {
+  if (!fulfillment || fulfillment.applies === false || fulfillment.state === "SKIPPED") {
     return <section className="collab-exec-card"><h4>Fulfillment</h4><Alert tone="success" title="No fulfillment required">This collaboration does not require Brand-provided support.</Alert></section>;
   }
 
