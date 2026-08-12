@@ -23,7 +23,7 @@ const API_PATH_TO_FIELD: Record<string, WizardFieldKey> = {
   audience_age_max: "audienceAgeMax",
   audience_gender: "audienceGender",
   audience_affinity_ids: "affinityIds",
-  audience_geographies: "geographyLabels",
+  audience_geographies: "audienceGeographies",
   receives_brand_support: "receivesBrandSupport",
   brand_support_type: "brandSupportType",
   brand_support_estimated_value: "brandSupportEstimatedValue",
@@ -50,7 +50,7 @@ const STEP_2_FIELDS: WizardFieldKey[] = [
   "audienceAgeMax",
   "audienceGender",
   "affinityIds",
-  "geographyLabels",
+  "audienceGeographies",
 ];
 
 function apiPathToWizardField(path: (string | number)[]): WizardFieldKey {
@@ -98,7 +98,6 @@ function walkFlattenedFieldErrors(
 
 export function flattenIssuesToFieldErrors(issues: unknown): WizardFieldErrors {
   if (!issues || typeof issues !== "object") return {};
-
   const issueRecord = issues as {
     issues?: Array<{ path?: Array<string | number>; message?: string }>;
     fieldErrors?: Record<string, unknown>;
@@ -161,11 +160,11 @@ function strategyInput(data: WizardData) {
     publishing_schedule: data.publishingSchedule,
     publish_from:
       data.publishingSchedule === "SCHEDULED" && data.publishFrom
-        ? new Date(`${data.publishFrom}T00:00:00`).toISOString()
+        ? new Date(`${data.publishFrom}T00:00:00.000Z`).toISOString()
         : null,
     publish_until:
       data.publishingSchedule === "SCHEDULED" && data.publishUntil
-        ? new Date(`${data.publishUntil}T23:59:59.999`).toISOString()
+        ? new Date(`${data.publishUntil}T23:59:59.999Z`).toISOString()
         : null,
     core_objective: data.objective,
     platforms: ["INSTAGRAM"],
@@ -182,10 +181,7 @@ function targetingInput(data: WizardData) {
     audience_age_max: data.audienceAgeMax,
     audience_gender: data.audienceGender,
     audience_affinity_ids: data.affinityIds,
-    audience_geographies: data.geographyLabels.map((label) => ({
-      source: "PENDING_GOOGLE_PLACES_NORMALIZATION",
-      label,
-    })),
+    audience_geographies: data.audienceGeographies,
   };
 }
 
