@@ -73,14 +73,56 @@ export function zodErrorToFieldErrors(error: ZodError): WizardFieldErrors {
   return fieldErrors;
 }
 
+function walkFlattenedFieldErrors(
+  node: Record<string, unknown>,
+  prefix: string[] = [],
+): WizardFieldErrors {
+  const fieldErrors: WizardFieldErrors = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+      if (value.length > 0) {
+        const wizardKey = apiPathToWizardField([...prefix, key]);
+        if (!fieldErrors[wizardKey]) fieldErrors[wizardKey] = value[0] as string;
+      }
+      continue;
+    }
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      Object.assign(
+        fieldErrors,
+        walkFlattenedFieldErrors(value as Record<string, unknown>, [...prefix, key]),
+      );
+    }
+  }
+  return fieldErrors;
+}
+
 export function flattenIssuesToFieldErrors(issues: unknown): WizardFieldErrors {
   if (!issues || typeof issues !== "object") return {};
-  const record = issues as { issues?: Array<{ path?: Array<string | number>; message?: string }> };
-  if (!Array.isArray(record.issues)) return {};
-  const fieldErrors: WizardFieldErrors = {};
-  for (const issue of record.issues) {
-    const key = apiPathToWizardField(issue.path ?? []);
-    if (!fieldErrors[key] && issue.message) fieldErrors[key] = issue.message;
+
+  const issueRecord = issues as {
+    issues?: Array<{ path?: Array<string | number>; message?: string }>;
+    fieldErrors?: Record<string, unknown>;
+    formErrors?: unknown;
+  };
+
+  if (Array.isArray(issueRecord.issues)) {
+    const fieldErrors: WizardFieldErrors = {};
+    for (const issue of issueRecord.issues) {
+      const key = apiPathToWizardField(issue.path ?? []);
+      if (!fieldErrors[key] && issue.message) fieldErrors[key] = issue.message;
+    }
+    return fieldErrors;
+  }
+
+  const fieldErrors = issueRecord.fieldErrors
+    ? walkFlattenedFieldErrors(issueRecord.fieldErrors)
+    : {};
+  if (
+    Array.isArray(issueRecord.formErrors) &&
+    typeof issueRecord.formErrors[0] === "string" &&
+    !fieldErrors._form
+  ) {
+    fieldErrors._form = issueRecord.formErrors[0];
   }
   return fieldErrors;
 }
@@ -140,7 +182,10 @@ function targetingInput(data: WizardData) {
     audience_age_max: data.audienceAgeMax,
     audience_gender: data.audienceGender,
     audience_affinity_ids: data.affinityIds,
-    audience_geographies: data.geographyLabels.map((label) => ({ source: "PENDING_GOOGLE_PLACES_NORMALIZATION", label })),
+    audience_geographies: data.geographyLabels.map((label) => ({
+      source: "PENDING_GOOGLE_PLACES_NORMALIZATION",
+      label,
+    })),
   };
 }
 
@@ -148,7 +193,9 @@ function commercialInput(data: WizardData) {
   return {
     receives_brand_support: data.receivesBrandSupport,
     brand_support_type: data.receivesBrandSupport ? data.brandSupportType : null,
-    brand_support_estimated_value: data.receivesBrandSupport ? data.brandSupportEstimatedValue : null,
+    brand_support_estimated_value: data.receivesBrandSupport
+      ? data.brandSupportEstimatedValue
+      : null,
     compensation_model: data.compensationModel,
     commercial_offer: data.commercialOffer,
     total_campaign_budget: data.totalCampaignBudget,
@@ -157,7 +204,10 @@ function commercialInput(data: WizardData) {
   };
 }
 
-export function validateCampaignWizardStep(step: 1 | 2 | 3, data: WizardData): WizardValidationResult {
+export function validateCampaignWizardStep(
+  step: 1 | 2 | 3,
+  data: WizardData,
+): WizardValidationResult {
   if (step === 1) {
     const parsed = CanonicalCampaignStrategySchema.safeParse(strategyInput(data));
     return parsed.success ? { success: true } : failure(parsed.error);
@@ -172,14 +222,23 @@ export function validateCampaignWizardStep(step: 1 | 2 | 3, data: WizardData): W
 
 export function validateFullCampaignWizard(data: WizardData): WizardValidationResult {
   try {
-    const parsed = CanonicalCampaignWizardPayloadSchema.safeParse(mapWizardToCanonicalPayload(data));
+    const parsed = CanonicalCampaignWizardPayloadSchema.safeParse(
+      mapWizardToCanonicalPayload(data),
+    );
     return parsed.success ? { success: true } : failure(parsed.error);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid Campaign data.";
-    return { success: false, fieldErrors: { _form: message }, formError: message };
+    return {
+      success: false,
+      fieldErrors: { _form: message },
+      formError: message,
+    };
   }
 }
 
-export function getFieldError(errors: WizardFieldErrors, key: WizardFieldKey): string | undefined {
+export function getFieldError(
+  errors: WizardFieldErrors,
+  key: WizardFieldKey,
+): string | undefined {
   return errors[key];
 }
