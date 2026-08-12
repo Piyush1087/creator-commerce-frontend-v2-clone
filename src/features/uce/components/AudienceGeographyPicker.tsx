@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { env } from "../../../shared/config/env";
 import type { CampaignAudienceGeography } from "../types/campaign-wizard";
+import "./CampaignCanonicalPickers.css";
 
 type GoogleAddressComponent = {
   longText?: string;
@@ -76,7 +77,7 @@ function normalizePlace(place: GooglePlace): CampaignAudienceGeography {
   return {
     scope,
     label: place.formattedAddress?.trim() || place.displayName?.trim() || locality || region || countryCode || "Selected location",
-    country_code: scope === "GLOBAL" ? null : countryCode,
+    country_code: countryCode,
     locality: scope === "LOCALITY" ? locality : null,
     region: scope === "REGION" || scope === "LOCALITY" ? region : null,
     radius_km: null,
@@ -104,8 +105,13 @@ export function AudienceGeographyPicker({
   onBlur?: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
   const [error, setError] = useState<string | null>(null);
   const globalSelected = value.some((item) => item.scope === "GLOBAL");
+
+  valueRef.current = value;
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     let cancelled = false;
@@ -135,8 +141,9 @@ export function AudienceGeographyPicker({
               const place = prediction.toPlace();
               await place.fetchFields({ fields: ["displayName", "formattedAddress", "types", "addressComponents"] });
               const normalized = normalizePlace(place);
-              onChange([
-                ...value.filter((item) => item.scope !== "GLOBAL" && item.label !== normalized.label),
+              const current = valueRef.current;
+              onChangeRef.current([
+                ...current.filter((item) => item.scope !== "GLOBAL" && item.label !== normalized.label),
                 normalized,
               ]);
               setError(null);
@@ -155,7 +162,7 @@ export function AudienceGeographyPicker({
       cancelled = true;
       autocomplete?.remove();
     };
-  }, [onChange, value]);
+  }, []);
 
   return (
     <div className="cw-canonical-picker" onBlur={(event) => {
