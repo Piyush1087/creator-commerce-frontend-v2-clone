@@ -47,7 +47,7 @@ export function OutreachComposerDrawer({
           <div className="canonical-campaign-drawer__badges">
             <Badge>{composer.channel}</Badge>
           </div>
-          <Alert title="Execution boundary pending" tone="info">
+          <Alert title="Execution boundary pending" tone="warning">
             The Campaign backend can prepare this composer, but the canonical final Email/Priority DM execution command is not implemented yet. The UI does not fabricate send or delivery state.
           </Alert>
           {composer.channel === "EMAIL" ? (
