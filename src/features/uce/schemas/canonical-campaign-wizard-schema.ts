@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const CanonicalCampaignWizardPayloadSchema = z.object({
-  strategy: z.object({
+export const CanonicalCampaignStrategySchema = z
+  .object({
     campaign_name: z.string().trim().min(3).max(60),
     publishing_schedule: z.enum(["EVERGREEN", "SCHEDULED"]),
     publish_from: z.string().datetime().optional().nullable(),
@@ -13,8 +13,22 @@ export const CanonicalCampaignWizardPayloadSchema = z.object({
       "ELIGIBLE_CREATORS_ONLY",
       "INVITE_ONLY",
     ]),
-  }),
-  targeting: z.object({
+  })
+  .superRefine((data, ctx) => {
+    if (data.publishing_schedule !== "SCHEDULED") return;
+    if (!data.publish_from) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_from"], message: "Start date is required for a scheduled Campaign." });
+    }
+    if (!data.publish_until) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date is required for a scheduled Campaign." });
+    }
+    if (data.publish_from && data.publish_until && new Date(data.publish_from) > new Date(data.publish_until)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date must be on or after the start date." });
+    }
+  });
+
+export const CanonicalCreatorStrategySchema = z
+  .object({
     creator_archetypes: z.array(z.string().trim().min(1)).min(1).max(5),
     minimum_followers: z.number().int().min(0),
     maximum_followers: z.number().int().min(0).optional().nullable(),
@@ -23,8 +37,18 @@ export const CanonicalCampaignWizardPayloadSchema = z.object({
     audience_gender: z.enum(["ALL", "FEMALE", "MALE"]),
     audience_affinity_ids: z.array(z.string().trim().min(1)).max(5),
     audience_geographies: z.array(z.record(z.unknown())),
-  }),
-  commercials: z.object({
+  })
+  .superRefine((data, ctx) => {
+    if (data.maximum_followers != null && data.maximum_followers <= data.minimum_followers) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["maximum_followers"], message: "Maximum followers must be greater than minimum followers." });
+    }
+    if (data.audience_age_min > data.audience_age_max) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["audience_age_max"], message: "Maximum audience age must be at least the minimum age." });
+    }
+  });
+
+export const CanonicalCommercialPolicySchema = z
+  .object({
     receives_brand_support: z.boolean(),
     brand_support_type: z
       .enum(["PRODUCT", "SERVICE", "EXPERIENCE", "ACCESS_SUBSCRIPTION", "OTHER"])
@@ -42,7 +66,20 @@ export const CanonicalCampaignWizardPayloadSchema = z.object({
       z.literal(100),
     ]),
     payout_terms: z.enum(["NET_7", "NET_15", "NET_30", "NET_45", "NET_60"]),
-  }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.receives_brand_support && !data.brand_support_type) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["brand_support_type"], message: "Select the Brand support type." });
+    }
+    if (data.total_campaign_budget < data.commercial_offer) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["total_campaign_budget"], message: "Total Campaign budget must be at least the commercial offer." });
+    }
+  });
+
+export const CanonicalCampaignWizardPayloadSchema = z.object({
+  strategy: CanonicalCampaignStrategySchema,
+  targeting: CanonicalCreatorStrategySchema,
+  commercials: CanonicalCommercialPolicySchema,
 });
 
 export type CanonicalCampaignWizardPayload = z.infer<
