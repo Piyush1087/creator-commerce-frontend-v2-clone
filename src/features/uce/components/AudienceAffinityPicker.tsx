@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { AUDIENCE_AFFINITIES } from "../canonical/audience-affinities";
+import "./CampaignCanonicalPickers.css";
 
 export function AudienceAffinityPicker({
   value,
