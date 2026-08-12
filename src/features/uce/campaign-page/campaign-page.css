@@ -59,16 +59,32 @@
   gap: 0.85rem;
 }
 
+.canonical-campaign-page__overview-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.canonical-campaign-page__overview-row p {
+  margin-bottom: 0.25rem;
+}
+
 .canonical-campaign-page__metrics {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.canonical-campaign-page__metrics > div {
+  min-width: 0;
+}
+
 .canonical-campaign-page__metrics span {
   display: block;
   font-size: 0.75rem;
   opacity: 0.7;
+  text-transform: capitalize;
 }
 
 .canonical-campaign-page__details {
@@ -187,10 +203,68 @@
 }
 
 .canonical-creator-card__badges,
-.canonical-creator-card__actions {
+.canonical-creator-card__actions,
+.canonical-campaign-drawer__badges,
+.canonical-campaign-drawer__footer-actions {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
+}
+
+.canonical-campaign-drawer__stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.canonical-campaign-drawer__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  margin: 0;
+}
+
+.canonical-campaign-drawer__details > div {
+  min-width: 0;
+}
+
+.canonical-campaign-drawer__details dt {
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.canonical-campaign-drawer__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.canonical-campaign-drawer__section-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.canonical-campaign-drawer__list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.canonical-campaign-drawer__list-item {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 10px;
+}
+
+.canonical-campaign-drawer__list-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.canonical-campaign-drawer__footer-actions {
+  width: 100%;
+  justify-content: flex-end;
 }
 
 @media (max-width: 960px) {
@@ -206,6 +280,11 @@
     flex: 1 1 140px;
   }
 
+  .canonical-campaign-page__overview-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
   .canonical-campaign-page__asset-header,
   .canonical-campaign-page__brief-row {
     align-items: stretch;
@@ -215,5 +294,16 @@
   .canonical-campaign-page__brief-row .aurora-button {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .canonical-campaign-drawer__details,
+  .canonical-campaign-page__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .canonical-campaign-drawer__footer-actions > * {
+    flex: 1 1 auto;
   }
 }
