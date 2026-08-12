@@ -21,6 +21,7 @@ export const env = {
       : LOCAL_API_ORIGIN,
   stage: import.meta.env.VITE_STAGE || "local",
   razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID?.trim() || "",
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY?.trim() || "",
   /**
    * Public browser origin for OAuth redirects (e.g. ngrok HTTPS URL).
    * Meta often rejects saving http://localhost redirect URIs.
