@@ -1,5 +1,9 @@
 import type { CanonicalCampaignDraftPath } from "../api/canonical-campaign-draft-client";
-import type { WizardData, WizardFieldKey } from "../types/campaign-wizard";
+import type {
+  CampaignAudienceGeography,
+  WizardData,
+  WizardFieldKey,
+} from "../types/campaign-wizard";
 
 const FIELD_TO_PATH: Partial<Record<WizardFieldKey, CanonicalCampaignDraftPath>> = {
   name: "strategy.campaign_name",
@@ -15,7 +19,7 @@ const FIELD_TO_PATH: Partial<Record<WizardFieldKey, CanonicalCampaignDraftPath>>
   audienceAgeMax: "targeting.audience_age_max",
   audienceGender: "targeting.audience_gender",
   affinityIds: "targeting.audience_affinity_ids",
-  geographyLabels: "targeting.audience_geographies",
+  audienceGeographies: "targeting.audience_geographies",
   receivesBrandSupport: "commercials.receives_brand_support",
   brandSupportType: "commercials.brand_support_type",
   brandSupportEstimatedValue: "commercials.brand_support_estimated_value",
@@ -53,10 +57,7 @@ export function canonicalDraftPatchForField(
     audienceAgeMax: data.audienceAgeMax,
     audienceGender: data.audienceGender,
     affinityIds: data.affinityIds,
-    geographyLabels: data.geographyLabels.map((label) => ({
-      source: "PENDING_GOOGLE_PLACES_NORMALIZATION",
-      label,
-    })),
+    audienceGeographies: data.audienceGeographies,
     receivesBrandSupport: data.receivesBrandSupport,
     brandSupportType: data.receivesBrandSupport ? data.brandSupportType : null,
     brandSupportEstimatedValue: data.receivesBrandSupport
@@ -77,6 +78,20 @@ function isoToDateInput(value: unknown): string {
   return value.slice(0, 10);
 }
 
+function isCampaignAudienceGeography(value: unknown): value is CampaignAudienceGeography {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as Record<string, unknown>;
+  return (
+    ["LOCALITY", "REGION", "COUNTRY", "GLOBAL"].includes(String(item.scope)) &&
+    typeof item.label === "string" &&
+    (typeof item.country_code === "string" || item.country_code === null) &&
+    (typeof item.locality === "string" || item.locality === null) &&
+    (typeof item.region === "string" || item.region === null) &&
+    (typeof item.radius_km === "number" || item.radius_km === null) &&
+    typeof item.is_primary === "boolean"
+  );
+}
+
 export function mergeCanonicalDraftIntoWizardData(
   base: WizardData,
   draft?: {
@@ -91,14 +106,8 @@ export function mergeCanonicalDraftIntoWizardData(
   const commercials = draft.commercials ?? {};
 
   const geographies = Array.isArray(targeting.audience_geographies)
-    ? targeting.audience_geographies
-        .map((item) =>
-          item && typeof item === "object" && "label" in item
-            ? String((item as { label: unknown }).label)
-            : "",
-        )
-        .filter(Boolean)
-    : base.geographyLabels;
+    ? targeting.audience_geographies.filter(isCampaignAudienceGeography)
+    : base.audienceGeographies;
 
   return {
     ...base,
@@ -115,7 +124,7 @@ export function mergeCanonicalDraftIntoWizardData(
     audienceAgeMax: typeof targeting.audience_age_max === "number" ? targeting.audience_age_max : base.audienceAgeMax,
     audienceGender: typeof targeting.audience_gender === "string" ? targeting.audience_gender as WizardData["audienceGender"] : base.audienceGender,
     affinityIds: Array.isArray(targeting.audience_affinity_ids) ? targeting.audience_affinity_ids.map(String) : base.affinityIds,
-    geographyLabels: geographies,
+    audienceGeographies: geographies,
     receivesBrandSupport: typeof commercials.receives_brand_support === "boolean" ? commercials.receives_brand_support : base.receivesBrandSupport,
     brandSupportType: typeof commercials.brand_support_type === "string" || commercials.brand_support_type === null ? commercials.brand_support_type as WizardData["brandSupportType"] : base.brandSupportType,
     brandSupportEstimatedValue: typeof commercials.brand_support_estimated_value === "number" || commercials.brand_support_estimated_value === null ? commercials.brand_support_estimated_value as number | null : base.brandSupportEstimatedValue,
