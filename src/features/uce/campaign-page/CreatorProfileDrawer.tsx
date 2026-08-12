@@ -1,5 +1,4 @@
-import { Alert, Badge, Button } from "../../../design-system/aurora";
-import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
+import { Alert, Badge, Button, SideDrawer } from "../../../design-system/aurora";
 import type { CreatorProfileView } from "./types";
 
 export function CreatorProfileDrawer({
