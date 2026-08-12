@@ -12,6 +12,20 @@ export type BrandSupportType =
 export type AdvancePaymentPercentage = 0 | 25 | 50 | 75 | 100;
 export type PayoutTerms = "NET_7" | "NET_15" | "NET_30" | "NET_45" | "NET_60";
 
+/**
+ * Campaign audience geography aligned to the frozen Brand Intelligence market-geography object.
+ * CITY input is normalized to LOCALITY; multiple records represent multi-location targeting.
+ */
+export type CampaignAudienceGeography = {
+  scope: "LOCALITY" | "REGION" | "COUNTRY" | "GLOBAL";
+  label: string;
+  country_code: string | null;
+  locality: string | null;
+  region: string | null;
+  radius_km: number | null;
+  is_primary: boolean;
+};
+
 export type WizardData = {
   name: string;
   objective: CampaignObjective | "";
@@ -26,7 +40,7 @@ export type WizardData = {
   audienceAgeMax: number;
   audienceGender: AudienceGender;
   affinityIds: string[];
-  geographyLabels: string[];
+  audienceGeographies: CampaignAudienceGeography[];
   receivesBrandSupport: boolean;
   brandSupportType: BrandSupportType | null;
   brandSupportEstimatedValue: number | null;
@@ -51,7 +65,7 @@ export type WizardFieldKey =
   | "audienceAgeMax"
   | "audienceGender"
   | "affinityIds"
-  | "geographyLabels"
+  | "audienceGeographies"
   | "receivesBrandSupport"
   | "brandSupportType"
   | "brandSupportEstimatedValue"
