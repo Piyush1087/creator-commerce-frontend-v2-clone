@@ -41,6 +41,8 @@ import {
   wizardStepForField,
 } from "../utils/validate-campaign-wizard";
 import { buildCampaignDetailPath } from "../utils/uce-format";
+import { AudienceAffinityPicker } from "./AudienceAffinityPicker";
+import { AudienceGeographyPicker } from "./AudienceGeographyPicker";
 import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 
@@ -55,7 +57,7 @@ const OBJECTIVES: Array<{
   { value: "PULSE", label: "Awareness & Reach", description: "Maximize unique reach and visibility." },
   { value: "PROOF", label: "Trust & Validation", description: "Build credibility through meaningful engagement." },
   { value: "PRODUCTION", label: "High-Quality Assets", description: "Generate reusable creator content." },
-  { value: "PUSH", label: "Direct Action", description: "Drive measurable action through campaign links." },
+  { value: "PUSH", label: "Direct Action", description: "Drive measurable action through Campaign links." },
 ];
 
 const VISIBILITY: Array<{ value: CampaignVisibility; label: string }> = [
@@ -115,7 +117,7 @@ const BRAND_SUPPORT_OPTIONS: Array<{ value: BrandSupportType; label: string }> =
 
 const STEP_FIELDS: Record<1 | 2 | 3, WizardFieldKey[]> = {
   1: ["name", "objective", "publishingSchedule", "publishFrom", "publishUntil", "visibility"],
-  2: ["archetypes", "minimumFollowers", "maximumFollowers", "audienceAgeMin", "audienceAgeMax", "audienceGender", "affinityIds", "geographyLabels"],
+  2: ["archetypes", "minimumFollowers", "maximumFollowers", "audienceAgeMin", "audienceAgeMax", "audienceGender", "affinityIds", "audienceGeographies"],
   3: ["receivesBrandSupport", "brandSupportType", "brandSupportEstimatedValue", "compensationModel", "commercialOffer", "totalCampaignBudget", "advancePaymentPercentage", "payoutTerms"],
 };
 
@@ -133,7 +135,7 @@ const INITIAL_DATA: WizardData = {
   audienceAgeMax: 34,
   audienceGender: "ALL",
   affinityIds: [],
-  geographyLabels: [],
+  audienceGeographies: [],
   receivesBrandSupport: false,
   brandSupportType: null,
   brandSupportEstimatedValue: null,
@@ -300,6 +302,8 @@ export function CreateCampaignWizard() {
   const archetypeLabel = (id: string) =>
     ARCHETYPE_OPTIONS.find(([value]) => value === id)?.[1] ?? id;
 
+  const stepProps: StepProps = { data, patchData, errors: fieldErrors, validateOnExit };
+
   return (
     <div className="create-wizard">
       <div className="create-wizard-workspace">
@@ -311,9 +315,9 @@ export function CreateCampaignWizard() {
               </div>
             ) : null}
 
-            {step === 1 ? <StrategyStep data={data} patchData={patchData} errors={fieldErrors} validateOnExit={validateOnExit} /> : null}
-            {step === 2 ? <CreatorStep data={data} patchData={patchData} errors={fieldErrors} validateOnExit={validateOnExit} /> : null}
-            {step === 3 ? <CommercialStep data={data} patchData={patchData} errors={fieldErrors} validateOnExit={validateOnExit} /> : null}
+            {step === 1 ? <StrategyStep {...stepProps} /> : null}
+            {step === 2 ? <CreatorStep {...stepProps} /> : null}
+            {step === 3 ? <CommercialStep {...stepProps} /> : null}
           </div>
         </section>
 
@@ -328,6 +332,8 @@ export function CreateCampaignWizard() {
             <LedgerRow label="Platform" value="Instagram" />
             <LedgerRow label="Visibility" value={VISIBILITY.find((item) => item.value === data.visibility)?.label ?? data.visibility} />
             <LedgerRow label="Archetypes" value={data.archetypes.length ? data.archetypes.map(archetypeLabel).join(", ") : "Not selected"} />
+            <LedgerRow label="Affinities" value={data.affinityIds.length ? `${data.affinityIds.length} selected` : "Optional"} />
+            <LedgerRow label="Geography" value={data.audienceGeographies.length ? data.audienceGeographies.map((item) => item.label).join(", ") : "Not selected"} />
             <LedgerRow label="Commercial offer" value={data.commercialOffer > 0 ? data.commercialOffer.toLocaleString() : "Not set"} />
             <LedgerRow label="Total budget" value={data.totalCampaignBudget > 0 ? data.totalCampaignBudget.toLocaleString() : "Not set"} />
             <LedgerRow label="Currency" value="Derived from Brand country" />
@@ -422,8 +428,17 @@ function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
           <div className="cw-format-chips" style={{ paddingLeft: 0 }}>
             {ARCHETYPE_OPTIONS.map(([id, label]) => {
               const selected = data.archetypes.includes(id);
-              const next = selected ? data.archetypes.filter((value) => value !== id) : data.archetypes.length < 5 ? [...data.archetypes, id] : data.archetypes;
-              return <button type="button" key={id} className={`cw-format-chip ${selected ? "is-active" : ""}`} onClick={() => patchData({ archetypes: next }, "archetypes")} onBlur={() => void validateOnExit("archetypes")}>{label}</button>;
+              return (
+                <button
+                  type="button"
+                  key={id}
+                  className={`cw-format-chip ${selected ? "is-active" : ""}`}
+                  onClick={() => patchData({ archetypes: selected ? data.archetypes.filter((value) => value !== id) : data.archetypes.length < 5 ? [...data.archetypes, id] : data.archetypes }, "archetypes")}
+                  onBlur={() => void validateOnExit("archetypes")}
+                >
+                  {label}
+                </button>
+              );
             })}
           </div>
           <p className="cw-hint">Select 1–5 canonical Creator Shop archetypes.</p>
@@ -449,14 +464,21 @@ function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
           </select>
         </WizardField>
 
-        <WizardField label="Audience Affinity IDs" className="cw-field--full" error={getFieldError(errors, "affinityIds")}>
-          <CommaListInput values={data.affinityIds} placeholder="Add canonical affinity IDs, comma separated (max 5)" maxItems={5} onChange={(values) => patchData({ affinityIds: values }, "affinityIds")} onBlur={() => void validateOnExit("affinityIds")} />
-          <p className="cw-hint">Temporary production input until the canonical affinity search picker is connected.</p>
+        <WizardField label="Audience Affinities" className="cw-field--full" error={getFieldError(errors, "affinityIds")}>
+          <AudienceAffinityPicker
+            value={data.affinityIds}
+            onChange={(value) => patchData({ affinityIds: value }, "affinityIds")}
+            onBlur={() => void validateOnExit("affinityIds")}
+          />
+          <p className="cw-hint">Optional. Search by canonical label or alias; only canonical IDs are saved.</p>
         </WizardField>
 
-        <WizardField label="Audience Geography" required className="cw-field--full" error={getFieldError(errors, "geographyLabels")}>
-          <CommaListInput values={data.geographyLabels} placeholder="Add city, region or country labels" onChange={(values) => patchData({ geographyLabels: values }, "geographyLabels")} onBlur={() => void validateOnExit("geographyLabels")} />
-          <p className="cw-hint">Google Maps Places normalization remains the required provider boundary; these temporary labels are not treated as normalized Places records.</p>
+        <WizardField label="Audience Geography" required className="cw-field--full" error={getFieldError(errors, "audienceGeographies")}>
+          <AudienceGeographyPicker
+            value={data.audienceGeographies}
+            onChange={(value) => patchData({ audienceGeographies: value }, "audienceGeographies")}
+            onBlur={() => void validateOnExit("audienceGeographies")}
+          />
         </WizardField>
       </div>
     </div>
@@ -529,10 +551,6 @@ type StepProps = {
 
 function WizardField({ label, error, required, className, children }: { label: string; error?: string; required?: boolean; className?: string; children: ReactNode }) {
   return <div className={`cw-field ${error ? "cw-field--error" : ""} ${className ?? ""}`}><span className="cw-label">{label}{required ? <span className="cw-required">Required</span> : null}</span>{children}{error ? <p className="cw-field-error" role="alert">{error}</p> : null}</div>;
-}
-
-function CommaListInput({ values, onChange, onBlur, placeholder, maxItems }: { values: string[]; onChange: (values: string[]) => void; onBlur?: () => void; placeholder: string; maxItems?: number }) {
-  return <input className="cw-input" value={values.join(", ")} placeholder={placeholder} onBlur={onBlur} onChange={(e) => { const next = e.target.value.split(",").map((value) => value.trim()).filter(Boolean); onChange(maxItems ? next.slice(0, maxItems) : next); }} />;
 }
 
 function LedgerRow({ label, value }: { label: string; value: string }) {
