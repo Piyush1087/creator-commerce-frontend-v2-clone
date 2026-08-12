@@ -14,11 +14,9 @@ function dateInputToIso(date: string, endOfDay: boolean): string | null {
 export function mapWizardToCanonicalPayload(
   data: WizardData,
 ): CanonicalCampaignWizardPayload {
-  if (!data.objective) {
-    throw new Error("Select a Campaign objective.");
-  }
+  if (!data.objective) throw new Error("Select a Campaign objective.");
 
-  const payload: CanonicalCampaignWizardPayload = {
+  return CanonicalCampaignWizardPayloadSchema.parse({
     strategy: {
       campaign_name: data.name.trim(),
       publishing_schedule: data.publishingSchedule,
@@ -42,13 +40,7 @@ export function mapWizardToCanonicalPayload(
       audience_age_max: data.audienceAgeMax,
       audience_gender: data.audienceGender,
       audience_affinity_ids: data.affinityIds,
-      // Google Places integration is the production input provider target. Until the
-      // picker lands, typed labels are preserved explicitly as un-normalized inputs;
-      // the backend must not treat these records as normalized Places objects.
-      audience_geographies: data.geographyLabels.map((label) => ({
-        source: "PENDING_GOOGLE_PLACES_NORMALIZATION",
-        label,
-      })),
+      audience_geographies: data.audienceGeographies,
     },
     commercials: {
       receives_brand_support: data.receivesBrandSupport,
@@ -61,7 +53,5 @@ export function mapWizardToCanonicalPayload(
       advance_payment_percentage: data.advancePaymentPercentage,
       payout_terms: data.payoutTerms,
     },
-  };
-
-  return CanonicalCampaignWizardPayloadSchema.parse(payload);
+  });
 }
