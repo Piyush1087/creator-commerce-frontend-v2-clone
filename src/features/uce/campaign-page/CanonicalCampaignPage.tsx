@@ -7,35 +7,29 @@ import {
   fetchCampaignApplicationsView,
   fetchCampaignCreatorProfile,
   fetchCampaignDiscoveryView,
+  fetchCampaignPageView,
+  fetchCampaignReporting,
   goLiveCampaign,
   patchCampaignStatus,
   publishCampaign,
   rejectCampaignApplication,
 } from "../api/brand-uce-client";
+import type { CampaignReportingResponse } from "../contracts/brand-uce.contracts";
+import { CampaignDetailsDrawer } from "./CampaignDetailsDrawer";
 import { CreatorCard } from "./CreatorCard";
+import { CreatorProfileDrawer } from "./CreatorProfileDrawer";
+import { OutreachComposerDrawer } from "./OutreachComposerDrawer";
+import { ReportingDrawer } from "./ReportingDrawer";
 import type {
   ApplicantsWorkspaceView,
+  CampaignDetailsView,
   CampaignPageView,
   Capability,
+  CreatorProfileView,
   DiscoveryWorkspaceView,
+  OutreachComposerView,
 } from "./types";
 import "./campaign-page.css";
-
-type CreatorProfileView = {
-  state: string;
-  campaignCreatorId: string;
-  name: string;
-  email?: string | null;
-  platform: string;
-  source: string;
-  reviewState: string;
-  applications: Array<{
-    applicationId: string;
-    status: string;
-    source: string;
-    appliedAt: string;
-  }>;
-};
 
 function canRender(capability: Capability | undefined) {
   return capability && capability.presentation !== "HIDDEN";
@@ -75,25 +69,29 @@ export function CanonicalCampaignPage({
   const [notice, setNotice] = useState<string>();
   const [discovery, setDiscovery] = useState<DiscoveryWorkspaceView>();
   const [applicants, setApplicants] = useState<ApplicantsWorkspaceView>();
-  const [creatorProfile, setCreatorProfile] = useState<CreatorProfileView>();
   const [busy, setBusy] = useState(false);
 
-  const openCreatorProfile = async (campaignCreatorId: string) => {
-    setBusy(true);
-    try {
-      const data = (await fetchCampaignCreatorProfile(
-        view.campaign.id,
-        campaignCreatorId,
-      )) as CreatorProfileView;
-      setCreatorProfile(data);
-    } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Creator profile failed.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string>();
+  const [details, setDetails] = useState<CampaignDetailsView | undefined>(view.details);
+
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string>();
+  const [creatorProfile, setCreatorProfile] = useState<CreatorProfileView>();
+
+  const [outreachOpen, setOutreachOpen] = useState(false);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachError, setOutreachError] = useState<string>();
+  const [outreachComposer, setOutreachComposer] = useState<OutreachComposerView>();
+  const [outreachSubject, setOutreachSubject] = useState("");
+  const [outreachBody, setOutreachBody] = useState("");
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string>();
+  const [report, setReport] = useState<CampaignReportingResponse>();
 
   const visibleWorkspaces = useMemo(
     () => view.workspaces.filter((w) => w.visible && w.expand.presentation !== "HIDDEN"),
@@ -109,14 +107,18 @@ export function CanonicalCampaignPage({
 
   useEffect(() => {
     if (workspace === "DISCOVERY" && !discovery) {
-      void fetchCampaignDiscoveryView(view.campaign.id).then((data) =>
-        setDiscovery(data as DiscoveryWorkspaceView),
-      );
+      void fetchCampaignDiscoveryView(view.campaign.id)
+        .then((data) => setDiscovery(data as DiscoveryWorkspaceView))
+        .catch((error) =>
+          setNotice(error instanceof Error ? error.message : "Discovery failed."),
+        );
     }
     if (workspace === "APPLICANTS" && !applicants) {
-      void fetchCampaignApplicationsView(view.campaign.id).then((data) =>
-        setApplicants(data as ApplicantsWorkspaceView),
-      );
+      void fetchCampaignApplicationsView(view.campaign.id)
+        .then((data) => setApplicants(data as ApplicantsWorkspaceView))
+        .catch((error) =>
+          setNotice(error instanceof Error ? error.message : "Applicants failed."),
+        );
     }
   }, [workspace, discovery, applicants, view.campaign.id]);
 
@@ -130,6 +132,81 @@ export function CanonicalCampaignPage({
       setNotice(error instanceof Error ? error.message : `${label} failed.`);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const openCampaignDetails = async () => {
+    setDetailsOpen(true);
+    setDetailsLoading(true);
+    setDetailsError(undefined);
+    try {
+      const refreshed = (await fetchCampaignPageView(view.campaign.id)) as CampaignPageView;
+      setDetails(refreshed.details);
+    } catch (error) {
+      setDetailsError(
+        error instanceof Error ? error.message : "Campaign details failed.",
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const openCreatorProfile = async (campaignCreatorId: string) => {
+    setProfileOpen(true);
+    setProfileLoading(true);
+    setProfileError(undefined);
+    setCreatorProfile(undefined);
+    try {
+      const data = (await fetchCampaignCreatorProfile(
+        view.campaign.id,
+        campaignCreatorId,
+      )) as CreatorProfileView;
+      setCreatorProfile(data);
+    } catch (error) {
+      setProfileError(
+        error instanceof Error ? error.message : "Creator profile failed.",
+      );
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const openOutreach = async (campaignCreatorId: string) => {
+    setOutreachOpen(true);
+    setOutreachLoading(true);
+    setOutreachError(undefined);
+    setOutreachComposer(undefined);
+    setOutreachSubject("");
+    setOutreachBody("");
+    try {
+      const data = (await composeCampaignOutreach(
+        view.campaign.id,
+        campaignCreatorId,
+      )) as OutreachComposerView;
+      setOutreachComposer(data);
+      setOutreachSubject(data.subject ?? "");
+      setOutreachBody(data.body);
+    } catch (error) {
+      setOutreachError(
+        error instanceof Error ? error.message : "Outreach compose failed.",
+      );
+    } finally {
+      setOutreachLoading(false);
+    }
+  };
+
+  const openReport = async () => {
+    setReportOpen(true);
+    setReportLoading(true);
+    setReportError(undefined);
+    try {
+      setReport(await fetchCampaignReporting(view.campaign.id));
+    } catch (error) {
+      setReportError(
+        error instanceof Error ? error.message : "Campaign reporting failed.",
+      );
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -148,6 +225,15 @@ export function CanonicalCampaignPage({
           </p>
         </div>
         <div className="canonical-campaign-page__actions">
+          {canRender(view.campaign.capabilities.view) && (
+            <Button
+              disabled={!isEnabled(view.campaign.capabilities.view) || busy}
+              onClick={() => void openCampaignDetails()}
+              variant="outline"
+            >
+              View
+            </Button>
+          )}
           {canRender(view.campaign.capabilities.publish) && (
             <Button
               disabled={!isEnabled(view.campaign.capabilities.publish) || busy}
@@ -204,42 +290,27 @@ export function CanonicalCampaignPage({
       )}
       {view.hydration.postLiveReadinessBlocked && (
         <Alert title="Readiness blocked" tone="warning">
-          Post-live readiness blocked. Restore Product/Brief/budget readiness to continue
+          Post-live readiness blocked. Restore Product/Brief readiness to continue
           execution.
         </Alert>
       )}
 
       <div className="canonical-campaign-page__layout">
         <div className="canonical-campaign-page__primary">
-          <Card title="Campaign Details">
-            {view.details ? (
-              <dl className="canonical-campaign-page__details">
-                <div>
-                  <dt>Objective</dt>
-                  <dd>{view.details.objective ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>Timeline</dt>
-                  <dd>{view.details.timelineType ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>Visibility</dt>
-                  <dd>{view.details.visibilityScopes.join(", ") || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Compensation</dt>
-                  <dd>{view.details.compensationType ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt>Budget pool</dt>
-                  <dd>
-                    {view.details.budgetPool != null ? view.details.budgetPool : "—"}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p>Campaign details unavailable.</p>
-            )}
+          <Card title="Campaign Overview">
+            <div className="canonical-campaign-page__overview-row">
+              <div>
+                <p className="canonical-campaign-page__empty">Objective</p>
+                <strong>{view.details?.objective ?? "—"}</strong>
+              </div>
+              <div>
+                <p className="canonical-campaign-page__empty">Creation source</p>
+                <strong>{view.campaign.creationSource}</strong>
+              </div>
+              <Button onClick={() => void openCampaignDetails()} variant="outline">
+                View details
+              </Button>
+            </div>
           </Card>
 
           <Card title="Campaign Copilot">
@@ -269,13 +340,24 @@ export function CanonicalCampaignPage({
 
           <Card title="Performance">
             {view.performanceSummary.state === "READY" ? (
-              <div className="canonical-campaign-page__metrics">
-                {view.performanceSummary.metrics.map((metric) => (
-                  <div key={metric.metricId}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </div>
-                ))}
+              <div className="canonical-campaign-page__stack">
+                <div className="canonical-campaign-page__metrics">
+                  {view.performanceSummary.metrics.map((metric) => (
+                    <div key={metric.metricId}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                    </div>
+                  ))}
+                </div>
+                {canRender(view.performanceSummary.capability) ? (
+                  <Button
+                    disabled={!isEnabled(view.performanceSummary.capability) || busy}
+                    onClick={() => void openReport()}
+                    variant="outline"
+                  >
+                    View report
+                  </Button>
+                ) : null}
               </div>
             ) : (
               <p>Reporting is unavailable for this state.</p>
@@ -383,14 +465,7 @@ export function CanonicalCampaignPage({
                         engagement={creator.engagement}
                         followers={creator.followers}
                         name={creator.name}
-                        onPrimaryAction={() =>
-                          void run("Outreach compose", () =>
-                            composeCampaignOutreach(
-                              view.campaign.id,
-                              creator.campaignCreatorId,
-                            ),
-                          )
-                        }
+                        onPrimaryAction={() => void openOutreach(creator.campaignCreatorId)}
                         onSecondaryAction={() =>
                           void openCreatorProfile(creator.campaignCreatorId)
                         }
@@ -450,33 +525,70 @@ export function CanonicalCampaignPage({
                       />
                     ))
                   )}
+                  {applicants?.state === "READY" ? (
+                    <div className="canonical-campaign-page__stack">
+                      {applicants.applicants.map((applicant) => (
+                        <Button
+                          key={`profile-${applicant.applicationId}`}
+                          onClick={() => void openCreatorProfile(applicant.campaignCreatorId)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          View {applicant.name} profile
+                        </Button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               )}
+              {workspace === item.workspace && item.workspace === "COLLABORATIONS" ? (
+                <p className="canonical-campaign-page__empty">
+                  Collaboration detail remains independently owned by the Collaboration module.
+                </p>
+              ) : null}
             </Card>
           ))}
-
-          {creatorProfile ? (
-            <Card title="Creator Profile (Campaign)">
-              <p>
-                <strong>{creatorProfile.name}</strong> · {creatorProfile.platform} ·{" "}
-                {creatorProfile.source}
-              </p>
-              <p>{creatorProfile.email ?? "No email on file"}</p>
-              <p>Review: {creatorProfile.reviewState}</p>
-              <div className="canonical-campaign-page__stack">
-                {creatorProfile.applications.map((app) => (
-                  <p key={app.applicationId}>
-                    {app.status} · {app.source} · {app.appliedAt}
-                  </p>
-                ))}
-              </div>
-              <Button onClick={() => setCreatorProfile(undefined)} variant="outline">
-                Close profile
-              </Button>
-            </Card>
-          ) : null}
         </div>
       </div>
+
+      <CampaignDetailsDrawer
+        campaignName={view.campaign.name}
+        creationSource={view.campaign.creationSource}
+        details={details}
+        error={detailsError}
+        isOpen={detailsOpen}
+        lifecycleStatus={view.campaign.lifecycleStatus}
+        loading={detailsLoading}
+        onClose={() => setDetailsOpen(false)}
+      />
+
+      <CreatorProfileDrawer
+        error={profileError}
+        isOpen={profileOpen}
+        loading={profileLoading}
+        onClose={() => setProfileOpen(false)}
+        profile={creatorProfile}
+      />
+
+      <OutreachComposerDrawer
+        body={outreachBody}
+        composer={outreachComposer}
+        error={outreachError}
+        isOpen={outreachOpen}
+        loading={outreachLoading}
+        onBodyChange={setOutreachBody}
+        onClose={() => setOutreachOpen(false)}
+        onSubjectChange={setOutreachSubject}
+        subject={outreachSubject}
+      />
+
+      <ReportingDrawer
+        error={reportError}
+        isOpen={reportOpen}
+        loading={reportLoading}
+        onClose={() => setReportOpen(false)}
+        report={report}
+      />
     </section>
   );
 }
