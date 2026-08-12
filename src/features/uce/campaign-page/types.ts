@@ -8,6 +8,16 @@ export interface Capability {
   reasonCategory?: string;
 }
 
+export interface CampaignDetailsView {
+  state: SurfaceState;
+  objective: string | null;
+  platforms: unknown;
+  visibilityScopes: string[];
+  compensationType: string | null;
+  budgetPool: number | null;
+  timelineType: string | null;
+}
+
 export interface CampaignPageView {
   campaign: {
     id: string;
@@ -61,15 +71,7 @@ export interface CampaignPageView {
     expand: Capability;
   }>;
   share: { capability: Capability; supportedChannels: ShareChannel[] };
-  details?: {
-    state: SurfaceState;
-    objective: string | null;
-    platforms: unknown;
-    visibilityScopes: string[];
-    compensationType: string | null;
-    budgetPool: number | null;
-    timelineType: string | null;
-  };
+  details?: CampaignDetailsView;
 }
 
 export interface DiscoveryWorkspaceView {
@@ -107,4 +109,31 @@ export interface ApplicantsWorkspaceView {
     intelligenceStatus: "PROCESSING" | "READY" | "UNAVAILABLE";
     intelligenceLabel?: string;
   }>;
+}
+
+export interface CreatorProfileView {
+  state: SurfaceState;
+  campaignCreatorId: string;
+  name: string;
+  email?: string | null;
+  platform: string;
+  source: string;
+  reviewState: string;
+  applications: Array<{
+    applicationId: string;
+    status: string;
+    source: string;
+    appliedAt: string;
+    briefId?: string;
+    campaignAssetId?: string;
+  }>;
+}
+
+export interface OutreachComposerView {
+  ok: true;
+  campaignId: string;
+  campaignCreatorId: string;
+  channel: "EMAIL" | "PRIORITY_DM";
+  subject?: string;
+  body: string;
 }
