@@ -6,10 +6,9 @@ import {
 
 function dateInputToIso(date: string, endOfDay: boolean): string | null {
   if (!date.trim()) return null;
-  const parsed = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  if (endOfDay) parsed.setHours(23, 59, 59, 999);
-  return parsed.toISOString();
+  const suffix = endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z";
+  const parsed = new Date(`${date}${suffix}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 export function mapWizardToCanonicalPayload(
