@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+function utcDayStart(value: Date) {
+  return Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
+}
+
 export const CanonicalCampaignStrategySchema = z
   .object({
     campaign_name: z.string().trim().min(3).max(60),
@@ -21,6 +25,12 @@ export const CanonicalCampaignStrategySchema = z
     }
     if (!data.publish_until) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date is required for a scheduled Campaign." });
+    }
+    if (data.publish_from) {
+      const start = new Date(data.publish_from);
+      if (utcDayStart(start) < utcDayStart(new Date())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_from"], message: "Start date cannot be in the past." });
+      }
     }
     if (data.publish_from && data.publish_until && new Date(data.publish_from) > new Date(data.publish_until)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date must be on or after the start date." });
