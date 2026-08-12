@@ -64,11 +64,9 @@ function component(place: GooglePlace, type: string, short = false): string | nu
 function normalizePlace(place: GooglePlace): CampaignAudienceGeography {
   const types = place.types ?? [];
   const countryCode = component(place, "country", true)?.toUpperCase() ?? null;
-  const locality =
-    component(place, "locality") ??
-    component(place, "postal_town") ??
-    component(place, "administrative_area_level_2");
-  const region = component(place, "administrative_area_level_1");
+  const adminArea2 = component(place, "administrative_area_level_2");
+  const locality = component(place, "locality") ?? component(place, "postal_town") ?? adminArea2;
+  const region = component(place, "administrative_area_level_1") ?? adminArea2;
 
   let scope: CampaignAudienceGeography["scope"] = "LOCALITY";
   if (types.includes("country")) scope = "COUNTRY";
@@ -189,7 +187,7 @@ export function AudienceGeographyPicker({
         Global
       </button>
 
-      {!globalSelected ? <div ref={hostRef} className="cw-google-place-host" /> : null}
+      <div ref={hostRef} className="cw-google-place-host" hidden={globalSelected} />
       {error ? <p className="cw-field-error" role="alert">{error}</p> : null}
       <p className="cw-hint">Choose Google Places results. City inputs are stored as locality; multiple selections represent multi-location targeting.</p>
     </div>
