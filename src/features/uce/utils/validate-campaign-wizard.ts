@@ -1,11 +1,11 @@
 import type { ZodError } from "zod";
 
 import {
-  IntegratedCampaignWizardPayloadSchema,
   Step1StrategySchema,
   Step2TargetingSchema,
   Step3CommercialsSchema,
 } from "../schemas/campaign-wizard-schema";
+import { CanonicalCampaignWizardPayloadSchema } from "../schemas/canonical-campaign-wizard-schema";
 import {
   mapWizardToIntegratedPayload,
   mapWizardToStep1Payload,
@@ -17,26 +17,38 @@ import type { WizardData, WizardFieldErrors, WizardFieldKey } from "../types/cam
 const API_PATH_TO_FIELD: Record<string, WizardFieldKey> = {
   campaign_name: "name",
   core_objective: "objective",
+  publishing_schedule: "milestoneDays",
+  publish_from: "startDate",
+  publish_until: "endDate",
   timeline_type: "milestoneDays",
   fixed_start_date: "startDate",
   fixed_end_date: "endDate",
   dynamic_days_limit: "milestoneDays",
   platform_deliverables: "platforms",
+  platforms: "platforms",
   industry_vertical: "industry",
   creator_archetypes: "archetypes",
   follower_tiers: "followerTiers",
+  minimum_followers: "followerTiers",
+  maximum_followers: "followerTiers",
   audience_age_min: "ageMin",
   audience_age_max: "ageMax",
   audience_gender: "genderFocus",
   target_locations: "targetLocations",
+  audience_geographies: "targetLocations",
   disqualifying_keywords: "disqualifyingKeywords",
+  audience_affinity_ids: "disqualifyingKeywords",
   compensation_type: "compensationType",
+  compensation_model: "compensationType",
   fixed_fee_amount: "flatRatePerCreator",
   negotiable_min_fee: "negotiableMinFee",
   negotiable_max_fee: "negotiableMaxFee",
+  commercial_offer: "flatRatePerCreator",
   total_campaign_budget_pool: "budget",
+  total_campaign_budget: "budget",
   advance_payment_percentage: "advancePercent",
   final_balance_terms: "payoutTerms",
+  payout_terms: "payoutTerms",
 };
 
 const STEP_1_FIELDS: WizardFieldKey[] = [
@@ -63,7 +75,7 @@ const INTEGRATED_SECTIONS = new Set(["strategy", "targeting", "commercials"]);
 
 const SECTION_TO_WIZARD_FIELD: Record<string, WizardFieldKey> = {
   strategy: "name",
-  targeting: "industry",
+  targeting: "archetypes",
   commercials: "budget",
 };
 
@@ -76,26 +88,17 @@ const SECTION_REQUIRED_MESSAGE: Record<string, string> = {
 function apiPathToWizardField(path: (string | number)[]): WizardFieldKey {
   const segments = path.filter((segment): segment is string => typeof segment === "string");
 
-  if (segments.includes("platform_deliverables")) {
+  if (segments.includes("platform_deliverables") || segments.includes("platforms")) {
     return "platforms";
   }
 
-  if (
-    segments.length >= 2 &&
-    INTEGRATED_SECTIONS.has(segments[0] ?? "")
-  ) {
+  if (segments.length >= 2 && INTEGRATED_SECTIONS.has(segments[0] ?? "")) {
     const apiField = segments[1];
-    if (apiField) {
-      return API_PATH_TO_FIELD[apiField] ?? "_form";
-    }
+    if (apiField) return API_PATH_TO_FIELD[apiField] ?? "_form";
   }
 
   const leaf = segments[segments.length - 1];
-  if (leaf) {
-    return API_PATH_TO_FIELD[leaf] ?? "_form";
-  }
-
-  return "_form";
+  return leaf ? API_PATH_TO_FIELD[leaf] ?? "_form" : "_form";
 }
 
 export function wizardStepForField(key: WizardFieldKey): 1 | 2 | 3 {
@@ -106,15 +109,10 @@ export function wizardStepForField(key: WizardFieldKey): 1 | 2 | 3 {
 
 export function zodErrorToFieldErrors(error: ZodError): WizardFieldErrors {
   const fieldErrors: WizardFieldErrors = {};
-
   for (const issue of error.issues) {
     const key = apiPathToWizardField(issue.path);
-
-    if (!fieldErrors[key]) {
-      fieldErrors[key] = issue.message;
-    }
+    if (!fieldErrors[key]) fieldErrors[key] = issue.message;
   }
-
   return fieldErrors;
 }
 
@@ -125,27 +123,15 @@ function walkFlattenedFieldErrors(
   const fieldErrors: WizardFieldErrors = {};
 
   for (const [key, value] of Object.entries(node)) {
-    if (
-      Array.isArray(value) &&
-      value.length > 0 &&
-      value.every((entry) => typeof entry === "string")
-    ) {
+    if (Array.isArray(value) && value.length > 0 && value.every((entry) => typeof entry === "string")) {
       const path = [...prefix, key];
       let wizardKey = apiPathToWizardField(path);
       let message = value[0];
-
-      if (
-        prefix.length === 0 &&
-        SECTION_TO_WIZARD_FIELD[key] &&
-        message === "Required"
-      ) {
+      if (prefix.length === 0 && SECTION_TO_WIZARD_FIELD[key] && message === "Required") {
         wizardKey = SECTION_TO_WIZARD_FIELD[key]!;
         message = SECTION_REQUIRED_MESSAGE[key] ?? message;
       }
-
-      if (!fieldErrors[wizardKey]) {
-        fieldErrors[wizardKey] = message;
-      }
+      if (!fieldErrors[wizardKey]) fieldErrors[wizardKey] = message;
       continue;
     }
 
@@ -161,15 +147,9 @@ function walkFlattenedFieldErrors(
 }
 
 export function flattenIssuesToFieldErrors(issues: unknown): WizardFieldErrors {
-  if (!issues || typeof issues !== "object") {
-    return {};
-  }
+  if (!issues || typeof issues !== "object") return {};
 
-  const record = issues as {
-    formErrors?: unknown;
-    fieldErrors?: unknown;
-  };
-
+  const record = issues as { formErrors?: unknown; fieldErrors?: unknown };
   const fieldErrors =
     record.fieldErrors && typeof record.fieldErrors === "object"
       ? walkFlattenedFieldErrors(record.fieldErrors as Record<string, unknown>, [])
@@ -192,11 +172,8 @@ export function firstWizardFieldError(
   fallback: string,
 ): string {
   for (const key of Object.keys(fieldErrors) as WizardFieldKey[]) {
-    if (key !== "_form" && fieldErrors[key]) {
-      return fieldErrors[key]!;
-    }
+    if (key !== "_form" && fieldErrors[key]) return fieldErrors[key]!;
   }
-
   return fieldErrors._form ?? fallback;
 }
 
@@ -205,22 +182,16 @@ export function firstWizardErrorStep(fieldErrors: WizardFieldErrors): 1 | 2 | 3 
     if (key === "_form") continue;
     return wizardStepForField(key);
   }
-
   return null;
 }
 
 export type WizardValidationResult =
   | { success: true }
-  | {
-      success: false;
-      fieldErrors: WizardFieldErrors;
-      formError: string;
-    };
+  | { success: false; fieldErrors: WizardFieldErrors; formError: string };
 
 function failure(error: ZodError): WizardValidationResult {
   const fieldErrors = zodErrorToFieldErrors(error);
-  const formError =
-    error.issues[0]?.message ?? "Please fix the highlighted fields before continuing.";
+  const formError = error.issues[0]?.message ?? "Please fix the highlighted fields before continuing.";
   return { success: false, fieldErrors, formError };
 }
 
@@ -243,10 +214,15 @@ export function validateCampaignWizardStep(
 export function validateFullCampaignWizard(
   data: WizardData,
 ): WizardValidationResult {
-  const parsed = IntegratedCampaignWizardPayloadSchema.safeParse(
-    mapWizardToIntegratedPayload(data),
-  );
-  return parsed.success ? { success: true } : failure(parsed.error);
+  try {
+    const parsed = CanonicalCampaignWizardPayloadSchema.safeParse(
+      mapWizardToIntegratedPayload(data),
+    );
+    return parsed.success ? { success: true } : failure(parsed.error);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Campaign fields are not canonical.";
+    return { success: false, fieldErrors: { _form: message }, formError: message };
+  }
 }
 
 export function getFieldError(
