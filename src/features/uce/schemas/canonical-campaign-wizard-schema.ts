@@ -36,7 +36,7 @@ export const CanonicalCreatorStrategySchema = z
     audience_age_max: z.number().int().min(13).max(65),
     audience_gender: z.enum(["ALL", "FEMALE", "MALE"]),
     audience_affinity_ids: z.array(z.string().trim().min(1)).max(5),
-    audience_geographies: z.array(z.record(z.unknown())),
+    audience_geographies: z.array(z.record(z.unknown())).min(1, "Select at least one audience geography."),
   })
   .superRefine((data, ctx) => {
     if (data.maximum_followers != null && data.maximum_followers <= data.minimum_followers) {
