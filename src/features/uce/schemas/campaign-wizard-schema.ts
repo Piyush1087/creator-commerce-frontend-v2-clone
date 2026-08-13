@@ -31,6 +31,13 @@ export const Step1StrategySchema = z
     if (data.publish_from && data.publish_until && new Date(data.publish_until) < new Date(data.publish_from)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date must follow start date." });
     }
+    if (data.publishing_schedule === "SCHEDULED" && data.publish_from) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(data.publish_from) < today) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_from"], message: "Start date cannot be in the past." });
+      }
+    }
   });
 
 export const Step2TargetingSchema = z
@@ -47,6 +54,10 @@ export const Step2TargetingSchema = z
   .refine((data) => data.audience_age_min <= data.audience_age_max, {
     path: ["audience_age_max"],
     message: "Maximum age must be at least the minimum age.",
+  })
+  .refine((data) => data.maximum_followers === null || data.maximum_followers >= data.minimum_followers, {
+    path: ["maximum_followers"],
+    message: "Maximum followers must be at least minimum followers.",
   });
 
 export const Step3CommercialsSchema = z
@@ -55,14 +66,15 @@ export const Step3CommercialsSchema = z
     brand_support_type: z.enum(["PRODUCT", "SERVICE", "EXPERIENCE", "ACCESS_SUBSCRIPTION", "OTHER"]).nullable(),
     brand_support_estimated_value: z.number().min(0).nullable(),
     compensation_model: z.enum(["FIXED", "NEGOTIABLE"]),
-    commercial_offer: z.number().min(0),
-    total_campaign_budget: z.number().min(0),
+    commercial_offer: z.number().positive(),
+    total_campaign_budget: z.number().positive(),
     advance_payment_percentage: z.union([z.literal(0), z.literal(25), z.literal(50), z.literal(75), z.literal(100)]),
     payout_terms: z.enum(["NET_7", "NET_15", "NET_30", "NET_45", "NET_60"]),
   })
-  .refine((data) => data.total_campaign_budget >= data.commercial_offer, {
-    path: ["total_campaign_budget"],
-    message: "Campaign budget must cover the creator offer.",
+  .superRefine((data, ctx) => {
+    if (data.total_campaign_budget < data.commercial_offer) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["total_campaign_budget"], message: "Campaign budget must cover the creator offer." });
+    if (data.receives_brand_support && !data.brand_support_type) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["brand_support_type"], message: "Select support type." });
+    if (data.receives_brand_support && data.brand_support_estimated_value === null) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["brand_support_estimated_value"], message: "Enter support value." });
   });
 
 export const IntegratedCampaignWizardPayloadSchema = z.object({

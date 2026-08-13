@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { BriefingWizardDrawer } from "../../../features/uce/components/BriefingWizardDrawer";
 import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
@@ -37,6 +37,7 @@ import "./BrandUceCampaignDetailPage.css";
 import "../../../features/uce/uce-responsive.css";
 
 export function BrandUceCampaignDetailPage() {
+  const navigate = useNavigate();
   const { id: campaignId = "" } = useParams();
 
   const shellFetcher = useCallback(
@@ -94,14 +95,11 @@ export function BrandUceCampaignDetailPage() {
     setStatusError(null);
     setStatusUpdating(true);
     try {
-      const current = page?.campaign.lifecycleStatus;
+      const capabilities = page?.campaign.capabilities;
       const action = nextActive
-        ? current === "PAUSED"
-          ? "resume"
-          : current === "PUBLISHED"
-            ? "go-live"
-            : "publish"
-        : "pause";
+        ? capabilities?.resume.available ? "resume" : capabilities?.goLive.available ? "go-live" : capabilities?.publish.available ? "publish" : null
+        : capabilities?.pause.available ? "pause" : null;
+      if (!action) throw new Error("This lifecycle action is not available for the Campaign.");
       await executeCampaignLifecycle(shell.campaign_id, action);
       await reload({ silent: true });
     } catch (err) {
@@ -214,9 +212,11 @@ export function BrandUceCampaignDetailPage() {
 
       <CampaignWorkspaceZone1
         shell={loadedShell}
+        canShare={loadedPage.campaign.capabilities.share.available}
+        canEdit={loadedPage.campaign.capabilities.edit.available}
         onOpenShareRouter={() => setIsShareRouterOpen(true)}
-        onOpenEdit={() => setIsHeroEditOpen(true)}
-        onStatusChange={(active) => void handleStatusChange(active)}
+        onOpenEdit={() => loadedPage.campaign.lifecycleStatus === "DRAFT" ? navigate(`${AUTH_ROUTES.brandUceCampaignCreate}?draft=${encodeURIComponent(loadedPage.campaign.id)}`) : setIsHeroEditOpen(true)}
+        onStatusChange={loadedPage.campaign.capabilities.pause.available || loadedPage.campaign.capabilities.resume.available || loadedPage.campaign.capabilities.goLive.available || loadedPage.campaign.capabilities.publish.available ? (active) => void handleStatusChange(active) : undefined}
         statusUpdating={statusUpdating}
       />
 

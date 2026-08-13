@@ -31,6 +31,8 @@ type CampaignWorkspaceZone1Props = {
   onStatusChange?: (nextActive: boolean) => void;
   onOpenEdit?: () => void;
   statusUpdating?: boolean;
+  canEdit?: boolean;
+  canShare?: boolean;
 };
 
 function timelineLabel(shell: CampaignShellResponse | null): string {
@@ -47,6 +49,8 @@ export function CampaignWorkspaceZone1({
   onStatusChange,
   onOpenEdit,
   statusUpdating = false,
+  canEdit = false,
+  canShare = false,
 }: CampaignWorkspaceZone1Props) {
   const [isExpanded, setIsExpanded] = useState(true);
   const isActive = shell?.current_status === "LIVE";
@@ -62,7 +66,6 @@ export function CampaignWorkspaceZone1({
   const allocated = shell?.zone_1_master?.budget_pool;
   const inventoryTotal = shell?.total_inventory_allocated ?? 0;
   const productCount = shell?.zone_2_tactics?.products.length ?? 0;
-  const canEdit = shell?.can_edit_essentials ?? false;
   const targeting = shell?.zone_1_targeting;
   const commercials = shell?.zone_1_commercials;
 
@@ -121,7 +124,7 @@ export function CampaignWorkspaceZone1({
               <input
                 type="checkbox"
                 checked={isActive}
-                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED" || shell.current_status === "ARCHIVED"}
+                disabled={!shell || !onStatusChange || statusUpdating}
                 onChange={(e) => onStatusChange?.(e.target.checked)}
               />
               <span className="uce-active-toggle-track" />
@@ -147,6 +150,7 @@ export function CampaignWorkspaceZone1({
               className="uce-zone1-icon-btn"
               title="Open Universal Router"
               onClick={onOpenShareRouter}
+              disabled={!shell || !canShare}
             >
               <Share2 size={18} />
             </button>

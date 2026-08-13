@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test:campaign": "node --test tests/campaign-canonical-contract.test.mjs",
+    "test:campaign": "node --test tests/campaign-canonical-contract.test.mjs tests/campaign-create-reconciliation.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

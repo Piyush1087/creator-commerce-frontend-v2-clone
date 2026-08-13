@@ -4,17 +4,15 @@ import { Search, Eye, Edit2, Download, PlusCircle, Archive } from "lucide-react"
 import { Alert } from "../../../design-system/aurora";
 import { Button } from "../../../design-system/aurora/components/Button";
 import { Card } from "../../../design-system/aurora/components/Card";
-import { Toggle } from "../../../design-system/aurora/components/Toggle";
+import { AUTH_ROUTES } from "../../auth/constants";
 import {
   fetchCampaignList,
   fetchCampaignListAggregates,
-  executeCampaignLifecycle,
 } from "../api/brand-uce-client";
 import type {
   CampaignListAggregates,
   CampaignListRow,
   UceCampaignObjective,
-  UceCampaignStatus,
 } from "../contracts/brand-uce.contracts";
 import { useUceApiJson } from "../hooks/use-uce-api-json";
 import { displayField, EMPTY_FIELD } from "../utils/display-field";
@@ -71,8 +69,6 @@ function OperationsTab() {
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [objectiveFilter, setObjectiveFilter] = useState("");
-  const [statusError, setStatusError] = useState<string | null>(null);
-  const [localRows, setLocalRows] = useState<CampaignListRow[] | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -80,10 +76,6 @@ function OperationsTab() {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [searchInput]);
-
-  useEffect(() => {
-    setLocalRows(null);
-  }, [debouncedSearch, objectiveFilter, showArchived]);
 
   const listFetcher = useCallback(
     () =>
@@ -97,9 +89,9 @@ function OperationsTab() {
     [debouncedSearch, objectiveFilter, showArchived],
   );
 
-  const { state, reload } = useUceApiJson(true, listFetcher);
+  const { state } = useUceApiJson(true, listFetcher);
 
-  const campaigns = localRows ?? (state.status === "ready" ? state.data : []);
+  const campaigns = state.status === "ready" ? state.data : [];
 
   const visibleCampaigns = useMemo(
     () =>
@@ -112,34 +104,6 @@ function OperationsTab() {
           ),
     [campaigns, showArchived],
   );
-
-  const toggleStatus = async (row: CampaignListRow) => {
-    setStatusError(null);
-    try {
-      const action = row.current_status === "LIVE"
-        ? "pause"
-        : row.current_status === "PAUSED"
-          ? "resume"
-          : row.current_status === "PUBLISHED"
-            ? "go-live"
-            : "publish";
-      const next: UceCampaignStatus = action === "pause" ? "PAUSED" : action === "publish" ? "PUBLISHED" : "LIVE";
-      await executeCampaignLifecycle(row.campaign_id, action);
-      setLocalRows((prev) => {
-        const base = prev ?? campaigns;
-        return base.map((c) =>
-          c.campaign_id === row.campaign_id
-            ? { ...c, current_status: next }
-            : c,
-        );
-      });
-      void reload({ silent: true });
-    } catch (err) {
-      setStatusError(
-        err instanceof Error ? err.message : "Could not update campaign status.",
-      );
-    }
-  };
 
   const toggleRowSelected = (id: string) => {
     setSelectedIds((prev) => {
@@ -160,12 +124,6 @@ function OperationsTab() {
 
   return (
     <div className="operations-tab">
-      {statusError ? (
-        <Alert tone="error" title="Status update failed">
-          {statusError}
-        </Alert>
-      ) : null}
-
       {state.status === "error" ? (
         <Alert tone="error" title="Could not load campaigns">
           {state.message}
@@ -258,9 +216,11 @@ function OperationsTab() {
                       <tr
                         key={campaign.campaign_id}
                         className={`campaign-row-clickable ${selectedIds.has(campaign.campaign_id) ? "is-selected" : ""}`}
-                        onClick={() =>
-                          navigate(buildCampaignDetailPath(campaign.campaign_id))
-                        }
+                        onClick={() => navigate(
+                          campaign.current_status === "DRAFT"
+                            ? `${AUTH_ROUTES.brandUceCampaignCreate}?draft=${encodeURIComponent(campaign.campaign_id)}`
+                            : buildCampaignDetailPath(campaign.campaign_id),
+                        )}
                       >
                         <td
                           className="ops-td-check"
@@ -291,19 +251,9 @@ function OperationsTab() {
                         </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <div className="status-toggle-cell">
-                            {campaign.current_status === "COMPLETED" ||
-                            campaign.current_status === "ARCHIVED" ||
-                            campaign.current_status === "DRAFT" ? (
-                              <span className="status-toggle-cell__static">
-                                {formatStatus(campaign.current_status)}
-                              </span>
-                            ) : (
-                              <Toggle
-                                checked={campaign.current_status === "LIVE"}
-                                onChange={() => void toggleStatus(campaign)}
-                                label={formatStatus(campaign.current_status)}
-                              />
-                            )}
+                            <span className="status-toggle-cell__static">
+                              {formatStatus(campaign.current_status)}
+                            </span>
                           </div>
                         </td>
                         <td>

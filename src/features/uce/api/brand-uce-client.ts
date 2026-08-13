@@ -181,7 +181,7 @@ export async function publishCanonicalCampaignDraft(
         ? (body as { issues: unknown }).issues
         : undefined;
 
-    if (response.status === 422 && issues !== undefined) {
+    if ((response.status === 400 || response.status === 422) && issues !== undefined) {
       throw new BrandUceWizardValidationError(message, issues);
     }
 

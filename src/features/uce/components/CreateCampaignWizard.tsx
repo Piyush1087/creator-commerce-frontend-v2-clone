@@ -1,10 +1,9 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
-  type Dispatch,
   type ReactNode,
-  type SetStateAction,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,6 +19,7 @@ import {
   mapWizardToStep2Payload,
   mapWizardToStep3Payload,
 } from "../mappers/map-wizard-to-payload";
+import { hydrateCanonicalCampaignDraft } from "../mappers/hydrate-canonical-campaign-draft";
 import { buildCampaignDetailPath } from "../utils/uce-format";
 import {
   ArrowLeft,
@@ -47,17 +47,19 @@ import {
   firstWizardFieldError,
   flattenIssuesToFieldErrors,
   validateFullCampaignWizard,
+  validateCampaignWizardField,
 } from "../utils/validate-campaign-wizard";
 import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 import { AgeRangeSlider } from "./AgeRangeSlider";
+import { CanonicalGeographyPicker } from "./CanonicalGeographyPicker";
 
 const OBJECTIVES = [
-  "Brand Awareness",
-  "Traffic & Clicks",
-  "Content Production",
-  "Sales & Conversions",
-];
+  { value: "PULSE", label: "Brand Awareness" },
+  { value: "PROOF", label: "Traffic & Clicks" },
+  { value: "PRODUCTION", label: "Content Production" },
+  { value: "PUSH", label: "Sales & Conversions" },
+] as const;
 const INDUSTRIES = [
   { value: "fashion", label: "Fashion & Apparel" },
   { value: "beauty", label: "Beauty & Cosmetics" },
@@ -65,28 +67,16 @@ const INDUSTRIES = [
   { value: "fitness", label: "Health & Fitness" },
   { value: "food", label: "Food & Beverage" },
 ];
-const FOLLOWER_TIERS = [
-  "Nano (1k-10k)",
-  "Micro (10k-50k)",
-  "Mid-Tier (50k-250k)",
-  "Macro (250k+)",
-];
 const ARCHETYPE_OPTIONS = [
-  "Aesthetic",
-  "Comedy",
-  "Tech",
-  "Educational",
-  "Lifestyle",
-  "Fitness",
-  "Beauty",
-];
-const PAYOUT_OPTIONS = [
-  "Net 7",
-  "Net 15",
-  "Net 30",
-  "Net 45",
-  "Net 60",
-];
+  { value: "AESTHETIC_MINIMALIST", label: "Aesthetic" },
+  { value: "ENTERTAINER", label: "Comedy" },
+  { value: "INDUSTRY_EXPERT", label: "Tech" },
+  { value: "EDUCATOR", label: "Educational" },
+  { value: "LIFESTYLE_INTEGRATOR", label: "Lifestyle" },
+  { value: "COACH", label: "Fitness" },
+  { value: "PRODUCT_REVIEWER", label: "Beauty" },
+] as const;
+const PAYOUT_OPTIONS = ["NET_7", "NET_15", "NET_30", "NET_45", "NET_60"] as const;
 
 const STEP_LABELS = [
   "Core Strategy",
@@ -103,32 +93,30 @@ const LEDGER_SECTION_STEP: Record<LedgerSection, number> = {
 };
 
 const INITIAL_DATA: WizardData = {
-  name: "",
-  objective: "",
-  timeline: "fixed",
-  startDate: "",
-  endDate: "",
-  milestoneDays: "30",
-  platforms: {
-    instagram: { enabled: true, formats: ["Reel"] },
-    tiktok: { enabled: false, formats: [] },
-    youtube: { enabled: false, formats: [] },
-  },
-  industry: "",
-  followerTiers: ["Micro (10k-50k)", "Mid-Tier (50k-250k)"],
-  archetypes: ["Aesthetic", "Comedy"],
-  targetLocations: ["United States", "United Kingdom"],
-  disqualifyingKeywords: ["Gambling", "Controversial"],
-  ageMin: 18,
-  ageMax: 34,
-  genderFocus: "Female-Skewing",
-  compensationType: "fixed",
-  flatRatePerCreator: 0,
-  negotiableMinFee: 0,
-  negotiableMaxFee: 0,
-  budget: 0,
-  advancePercent: 25,
-  payoutTerms: "Net 7",
+  campaignName: "",
+  coreObjective: "",
+  publishingSchedule: "SCHEDULED",
+  publishFrom: "",
+  publishUntil: "",
+  platforms: ["INSTAGRAM"],
+  platformFormats: ["Reel"],
+  campaignVisibility: "PUBLIC",
+  creatorArchetypes: [],
+  minimumFollowers: 10_000,
+  maximumFollowers: 250_000,
+  audienceAffinityIds: [],
+  audienceGeographies: [],
+  audienceAgeMin: 18,
+  audienceAgeMax: 34,
+  audienceGender: "FEMALE",
+  receivesBrandSupport: false,
+  brandSupportType: null,
+  brandSupportEstimatedValue: null,
+  compensationModel: "FIXED",
+  commercialOffer: 0,
+  totalCampaignBudget: 0,
+  advancePaymentPercentage: 25,
+  payoutTerms: "NET_7",
 };
 
 const PLATFORM_CONFIG = [
@@ -144,13 +132,13 @@ export function CreateCampaignWizard() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [archetypeInput, setArchetypeInput] = useState("");
-  const [keywordInput, setKeywordInput] = useState("");
-  const [locationInput, setLocationInput] = useState("");
   const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
+  const [touchedFields, setTouchedFields] = useState<Set<WizardFieldKey>>(new Set());
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const pendingAutosaveRef = useRef<Set<WizardFieldKey>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -166,26 +154,7 @@ export function CreateCampaignWizard() {
           url.searchParams.set("draft", draft.campaignId);
           window.history.replaceState({}, "", url);
         }
-        const strategy = draft.draft.strategy;
-        const targeting = draft.draft.targeting;
-        const commercials = draft.draft.commercials;
-        setData((current) => ({
-          ...current,
-          name: strategy?.campaign_name ?? current.name,
-          objective:
-            strategy?.core_objective === "PULSE" ? "Brand Awareness" :
-            strategy?.core_objective === "PROOF" ? "Traffic & Clicks" :
-            strategy?.core_objective === "PRODUCTION" ? "Content Production" :
-            strategy?.core_objective === "PUSH" ? "Sales & Conversions" : current.objective,
-          timeline: strategy?.publishing_schedule === "EVERGREEN" ? "milestone" : current.timeline,
-          startDate: strategy?.publish_from?.slice(0, 10) ?? current.startDate,
-          endDate: strategy?.publish_until?.slice(0, 10) ?? current.endDate,
-          archetypes: targeting?.creator_archetypes ?? current.archetypes,
-          ageMin: targeting?.audience_age_min ?? current.ageMin,
-          ageMax: targeting?.audience_age_max ?? current.ageMax,
-          budget: commercials?.total_campaign_budget ?? current.budget,
-          advancePercent: commercials?.advance_payment_percentage ?? current.advancePercent,
-        }));
+        setData((current) => hydrateCanonicalCampaignDraft(draft, current));
       } catch (error) {
         if (!cancelled) setDraftError(error instanceof Error ? error.message : "Could not initialize draft.");
       }
@@ -209,6 +178,39 @@ export function CreateCampaignWizard() {
     }
   };
 
+  const autosaveFields = async (fields: WizardFieldKey[], state: WizardData) => {
+    if (!draftId) return;
+    const paths: Partial<Record<WizardFieldKey, ["strategy" | "targeting" | "commercials", string]>> = {
+      campaignName: ["strategy", "campaign_name"], coreObjective: ["strategy", "core_objective"], publishingSchedule: ["strategy", "publishing_schedule"],
+      publishFrom: ["strategy", "publish_from"], publishUntil: ["strategy", "publish_until"], campaignVisibility: ["strategy", "campaign_visibility"],
+      creatorArchetypes: ["targeting", "creator_archetypes"], minimumFollowers: ["targeting", "minimum_followers"], maximumFollowers: ["targeting", "maximum_followers"],
+      audienceAgeMin: ["targeting", "audience_age_min"], audienceAgeMax: ["targeting", "audience_age_max"], audienceGender: ["targeting", "audience_gender"],
+      audienceAffinityIds: ["targeting", "audience_affinity_ids"], audienceGeographies: ["targeting", "audience_geographies"],
+      receivesBrandSupport: ["commercials", "receives_brand_support"], brandSupportType: ["commercials", "brand_support_type"], brandSupportEstimatedValue: ["commercials", "brand_support_estimated_value"],
+      compensationModel: ["commercials", "compensation_model"], commercialOffer: ["commercials", "commercial_offer"], totalCampaignBudget: ["commercials", "total_campaign_budget"],
+      advancePaymentPercentage: ["commercials", "advance_payment_percentage"], payoutTerms: ["commercials", "payout_terms"],
+    };
+    const payload = mapWizardToIntegratedPayload(state);
+    for (const key of fields) {
+      const target = paths[key];
+      if (!target || validateCampaignWizardField(key, state)) continue;
+      const [section, field] = target;
+      await autosaveCanonicalCampaignField(draftId, `${section}.${field}`, payload[section][field as keyof typeof payload[typeof section]]);
+      pendingAutosaveRef.current.delete(key);
+    }
+  };
+
+  useEffect(() => {
+    if (!draftId || pendingAutosaveRef.current.size === 0) return;
+    const timer = window.setTimeout(() => {
+      void autosaveFields([...pendingAutosaveRef.current], data)
+        .then(() => setDraftError(null))
+        .catch((error: unknown) => setDraftError(error instanceof Error ? error.message : "Could not autosave Campaign draft."));
+    }, 600);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, draftId]);
+
   const clearFieldError = (key: WizardFieldKey) => {
     setFieldErrors((prev) => {
       if (!prev[key]) return prev;
@@ -220,8 +222,38 @@ export function CreateCampaignWizard() {
   };
 
   const patchData = (patch: Partial<WizardData>, touched?: WizardFieldKey) => {
-    setData((prev) => ({ ...prev, ...patch }));
-    if (touched) clearFieldError(touched);
+    if (touched) pendingAutosaveRef.current.add(touched);
+    setData((prev) => {
+      const next = { ...prev, ...patch };
+      if (touched && touchedFields.has(touched)) {
+        const message = validateCampaignWizardField(touched, next);
+        setFieldErrors((errors) => ({ ...errors, [touched]: message }));
+      }
+      const dependent: Partial<Record<WizardFieldKey, WizardFieldKey>> = {
+        publishFrom: "publishUntil", publishUntil: "publishFrom",
+        commercialOffer: "totalCampaignBudget", totalCampaignBudget: "commercialOffer",
+        minimumFollowers: "maximumFollowers", maximumFollowers: "minimumFollowers",
+      };
+      const other = touched ? dependent[touched] : undefined;
+      if (other && touchedFields.has(other)) {
+        setFieldErrors((errors) => ({ ...errors, [other]: validateCampaignWizardField(other, next) }));
+      }
+      return next;
+    });
+  };
+
+  const cancelAndExit = async () => {
+    if (draftId && pendingAutosaveRef.current.size) {
+      try { await autosaveFields([...pendingAutosaveRef.current], data); }
+      catch (error) { setDraftError(error instanceof Error ? error.message : "Could not save Campaign draft."); return; }
+    }
+    navigate(AUTH_ROUTES.brandUceCampaigns);
+  };
+
+  const touchField = (key: WizardFieldKey) => {
+    setTouchedFields((current) => new Set(current).add(key));
+    const message = validateCampaignWizardField(key, data);
+    setFieldErrors((errors) => ({ ...errors, [key]: message }));
   };
 
   const prevStep = () => {
@@ -294,23 +326,24 @@ export function CreateCampaignWizard() {
     }
   };
 
-  const industryLabel =
-    INDUSTRIES.find((i) => i.value === data.industry)?.label ?? "Not specified";
+  const industryLabel = INDUSTRIES.find((i) =>
+    data.audienceAffinityIds.includes(i.value.toUpperCase()),
+  )?.label ?? "Not specified";
 
   const timelineLabel =
-    data.timeline === "fixed"
-      ? data.startDate && data.endDate
-        ? `${data.startDate} – ${data.endDate}`
+    data.publishingSchedule === "SCHEDULED"
+      ? data.publishFrom && data.publishUntil
+        ? `${data.publishFrom} – ${data.publishUntil}`
         : "Fixed Date Range"
-      : `Milestone · ${data.milestoneDays} days`;
+      : "Evergreen";
 
   const enabledPlatforms = useMemo(
     () =>
-      PLATFORM_CONFIG.filter((p) => data.platforms[p.key].enabled).map((p) => ({
+      PLATFORM_CONFIG.map((p) => ({
         label: p.label,
-        formats: data.platforms[p.key].formats,
+        formats: data.platformFormats,
       })),
-    [data.platforms],
+    [data.platformFormats],
   );
 
   return (
@@ -329,24 +362,20 @@ export function CreateCampaignWizard() {
               <Step1Strategy
                 data={data}
                 patchData={patchData}
-                setData={setData}
                 errors={fieldErrors}
                 clearFieldError={clearFieldError}
+                touchField={touchField}
               />
             )}
             {step === 2 && (
               <Step2Targeting
                 data={data}
                 patchData={patchData}
-                setData={setData}
                 errors={fieldErrors}
                 clearFieldError={clearFieldError}
                 archetypeInput={archetypeInput}
                 setArchetypeInput={setArchetypeInput}
-                keywordInput={keywordInput}
-                setKeywordInput={setKeywordInput}
-                locationInput={locationInput}
-                setLocationInput={setLocationInput}
+                touchField={touchField}
               />
             )}
             {step === 3 && (
@@ -354,6 +383,7 @@ export function CreateCampaignWizard() {
                 data={data}
                 patchData={patchData}
                 errors={fieldErrors}
+                touchField={touchField}
               />
             )}
           </div>
@@ -378,7 +408,7 @@ export function CreateCampaignWizard() {
         <div className="create-wizard-footer-actions">
           <Button
             variant="ghost"
-            onClick={() => navigate(AUTH_ROUTES.brandUceCampaigns)}
+            onClick={() => void cancelAndExit()}
           >
             Cancel &amp; Exit
           </Button>
@@ -437,50 +467,22 @@ function WizardField({
 
 function Step1Strategy({
   data,
-  setData,
   patchData,
   errors,
-  clearFieldError,
+  touchField,
 }: {
   data: WizardData;
-  setData: Dispatch<SetStateAction<WizardData>>;
   patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
   errors: WizardFieldErrors;
   clearFieldError: (key: WizardFieldKey) => void;
+  touchField: (key: WizardFieldKey) => void;
 }) {
-  const togglePlatform = (key: keyof WizardData["platforms"], enabled: boolean) => {
-    clearFieldError("platforms");
-    setData((prev) => ({
-      ...prev,
-      platforms: {
-        ...prev.platforms,
-        [key]: {
-          ...prev.platforms[key],
-          enabled,
-          formats: enabled && prev.platforms[key].formats.length === 0
-            ? [PLATFORM_CONFIG.find((p) => p.key === key)!.formats[0]]
-            : prev.platforms[key].formats,
-        },
-      },
-    }));
-  };
-
-  const toggleFormat = (key: keyof WizardData["platforms"], format: string) => {
-    clearFieldError("platforms");
-    setData((prev) => {
-      const current = prev.platforms[key].formats;
-      const next = current.includes(format)
-        ? current.filter((f) => f !== format)
-        : [...current, format];
-      return {
-        ...prev,
-        platforms: {
-          ...prev.platforms,
-          [key]: { ...prev.platforms[key], formats: next },
-        },
-      };
-    });
-  };
+  const today = new Date().toLocaleDateString("en-CA");
+  const toggleFormat = (format: string) => patchData({
+    platformFormats: data.platformFormats.includes(format)
+      ? data.platformFormats.filter((value) => value !== format)
+      : [...data.platformFormats, format],
+  }, "platforms");
 
   return (
     <div className="create-wizard-step">
@@ -493,26 +495,28 @@ function Step1Strategy({
       </header>
 
       <div className="create-wizard-fields">
-        <WizardField label="Campaign Name" error={getFieldError(errors, "name")}>
+        <WizardField label="Campaign Name" error={getFieldError(errors, "campaignName")}>
           <input
             type="text"
             className="cw-input"
             placeholder="e.g., Summer Launch 2026"
-            value={data.name}
-            onChange={(e) => patchData({ name: e.target.value }, "name")}
+            value={data.campaignName}
+            onChange={(e) => patchData({ campaignName: e.target.value }, "campaignName")}
+            onBlur={() => touchField("campaignName")}
           />
         </WizardField>
 
-        <WizardField label="Core Objective" error={getFieldError(errors, "objective")}>
+        <WizardField label="Core Objective" error={getFieldError(errors, "coreObjective")}>
           <select
             className="cw-input cw-select"
-            value={data.objective}
-            onChange={(e) => patchData({ objective: e.target.value }, "objective")}
+            value={data.coreObjective}
+            onChange={(e) => patchData({ coreObjective: e.target.value as WizardData["coreObjective"] }, "coreObjective")}
+            onBlur={() => touchField("coreObjective")}
           >
             <option value="">Select an objective</option>
             {OBJECTIVES.map((o) => (
-              <option key={o} value={o}>
-                {o}
+              <option key={o.value} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -520,15 +524,15 @@ function Step1Strategy({
 
         <WizardField label="Timeline Structure">
           <div
-            className={`cw-timeline-panel ${getFieldError(errors, "startDate") || getFieldError(errors, "endDate") || getFieldError(errors, "milestoneDays") ? "cw-field--error-inline" : ""}`}
+            className={`cw-timeline-panel ${getFieldError(errors, "publishFrom") || getFieldError(errors, "publishUntil") ? "cw-field--error-inline" : ""}`}
           >
             <div className="cw-radio-row">
               <label className="cw-radio">
                 <input
                   type="radio"
                   name="timeline"
-                  checked={data.timeline === "fixed"}
-                  onChange={() => patchData({ timeline: "fixed" }, "startDate")}
+                  checked={data.publishingSchedule === "SCHEDULED"}
+                  onChange={() => patchData({ publishingSchedule: "SCHEDULED" }, "publishingSchedule")}
                 />
                 <span>Fixed Date Range</span>
               </label>
@@ -536,25 +540,28 @@ function Step1Strategy({
                 <input
                   type="radio"
                   name="timeline"
-                  checked={data.timeline === "milestone"}
-                  onChange={() => patchData({ timeline: "milestone" }, "milestoneDays")}
+                  checked={data.publishingSchedule === "EVERGREEN"}
+                  onChange={() => patchData({ publishingSchedule: "EVERGREEN", publishFrom: "", publishUntil: "" }, "publishingSchedule")}
                 />
-                <span>Dynamic Milestone Track</span>
+                <span>Evergreen</span>
               </label>
             </div>
-            {data.timeline === "fixed" ? (
+            {data.publishingSchedule === "SCHEDULED" ? (
               <div className="cw-date-row">
                 <label className="cw-date-field">
                   <span>Start Date</span>
                   <input
                     type="date"
                     className="cw-input cw-input--sm"
-                    value={data.startDate}
-                    onChange={(e) => patchData({ startDate: e.target.value }, "startDate")}
+                    min={today}
+                    max={data.publishUntil || undefined}
+                    value={data.publishFrom}
+                    onChange={(e) => patchData({ publishFrom: e.target.value }, "publishFrom")}
+                    onBlur={() => touchField("publishFrom")}
                   />
-                  {getFieldError(errors, "startDate") ? (
+                  {getFieldError(errors, "publishFrom") ? (
                     <p className="cw-field-error" role="alert">
-                      {getFieldError(errors, "startDate")}
+                      {getFieldError(errors, "publishFrom")}
                     </p>
                   ) : null}
                 </label>
@@ -563,35 +570,19 @@ function Step1Strategy({
                   <input
                     type="date"
                     className="cw-input cw-input--sm"
-                    value={data.endDate}
-                    onChange={(e) => patchData({ endDate: e.target.value }, "endDate")}
+                    min={data.publishFrom || today}
+                    value={data.publishUntil}
+                    onChange={(e) => patchData({ publishUntil: e.target.value }, "publishUntil")}
+                    onBlur={() => touchField("publishUntil")}
                   />
-                  {getFieldError(errors, "endDate") ? (
+                  {getFieldError(errors, "publishUntil") ? (
                     <p className="cw-field-error" role="alert">
-                      {getFieldError(errors, "endDate")}
+                      {getFieldError(errors, "publishUntil")}
                     </p>
                   ) : null}
                 </label>
               </div>
-            ) : (
-              <label className="cw-date-field cw-date-field--narrow">
-                <span>Days-to-Complete</span>
-                <input
-                  type="number"
-                  className="cw-input cw-input--sm"
-                  placeholder="30"
-                  value={data.milestoneDays}
-                  onChange={(e) =>
-                    patchData({ milestoneDays: e.target.value }, "milestoneDays")
-                  }
-                />
-                {getFieldError(errors, "milestoneDays") ? (
-                  <p className="cw-field-error" role="alert">
-                    {getFieldError(errors, "milestoneDays")}
-                  </p>
-                ) : null}
-              </label>
-            )}
+            ) : <p className="cw-hint">The Campaign remains available until its lifecycle is completed or archived.</p>}
           </div>
         </WizardField>
 
@@ -599,25 +590,24 @@ function Step1Strategy({
           <span className="cw-label cw-label--section">Platform &amp; Format Matrix</span>
           <div className="cw-platform-matrix">
             {PLATFORM_CONFIG.map(({ key, label, formats }) => {
-              const platform = data.platforms[key];
               return (
                 <div key={key} className="cw-platform-block">
                   <label className="cw-platform-check">
                     <input
                       type="checkbox"
-                      checked={platform.enabled}
-                      onChange={(e) => togglePlatform(key, e.target.checked)}
+                      checked={data.platforms.includes("INSTAGRAM")}
+                      disabled
                     />
                     <span>{label}</span>
                   </label>
-                  {platform.enabled && (
+                  {data.platforms.includes("INSTAGRAM") && (
                     <div className="cw-format-chips">
                       {formats.map((format) => (
                         <button
                           key={format}
                           type="button"
-                          className={`cw-format-chip ${platform.formats.includes(format) ? "is-active" : ""}`}
-                          onClick={() => toggleFormat(key, format)}
+                          className={`cw-format-chip ${data.platformFormats.includes(format) ? "is-active" : ""}`}
+                          onClick={() => toggleFormat(format)}
                         >
                           {format}
                         </button>
@@ -636,95 +626,41 @@ function Step1Strategy({
 
 function Step2Targeting({
   data,
-  setData,
   patchData,
   errors,
   clearFieldError,
   archetypeInput,
   setArchetypeInput,
-  keywordInput,
-  setKeywordInput,
-  locationInput,
-  setLocationInput,
+  touchField,
 }: {
   data: WizardData;
-  setData: Dispatch<SetStateAction<WizardData>>;
   patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
   errors: WizardFieldErrors;
   clearFieldError: (key: WizardFieldKey) => void;
   archetypeInput: string;
   setArchetypeInput: (v: string) => void;
-  keywordInput: string;
-  setKeywordInput: (v: string) => void;
-  locationInput: string;
-  setLocationInput: (v: string) => void;
+  touchField: (key: WizardFieldKey) => void;
 }) {
-  const toggleTier = (tier: string) => {
-    clearFieldError("followerTiers");
-    setData((prev) => ({
-      ...prev,
-      followerTiers: prev.followerTiers.includes(tier)
-        ? prev.followerTiers.filter((t) => t !== tier)
-        : [...prev.followerTiers, tier],
-    }));
-  };
-
   const addArchetype = () => {
-    const value = archetypeInput.trim();
-    if (!value || data.archetypes.includes(value)) return;
-    clearFieldError("archetypes");
-    setData((prev) => ({ ...prev, archetypes: [...prev.archetypes, value] }));
+    const typed = archetypeInput.trim();
+    const value = ARCHETYPE_OPTIONS.find((option) => option.label.toLowerCase() === typed.toLowerCase() || option.value === typed)?.value;
+    if (!value || data.creatorArchetypes.includes(value)) return;
+    clearFieldError("creatorArchetypes");
+    patchData({ creatorArchetypes: [...data.creatorArchetypes, value] }, "creatorArchetypes");
     setArchetypeInput("");
   };
 
   const removeArchetype = (value: string) => {
-    clearFieldError("archetypes");
-    setData((prev) => ({
-      ...prev,
-      archetypes: prev.archetypes.filter((a) => a !== value),
-    }));
+    clearFieldError("creatorArchetypes");
+    patchData({ creatorArchetypes: data.creatorArchetypes.filter((a) => a !== value) }, "creatorArchetypes");
   };
 
-  const addLocation = () => {
-    const value = locationInput.trim();
-    if (!value || data.targetLocations.includes(value)) return;
-    clearFieldError("targetLocations");
-    setData((prev) => ({
-      ...prev,
-      targetLocations: [...prev.targetLocations, value],
-    }));
-    setLocationInput("");
-  };
-
-  const removeLocation = (value: string) => {
-    clearFieldError("targetLocations");
-    setData((prev) => ({
-      ...prev,
-      targetLocations: prev.targetLocations.filter((l) => l !== value),
-    }));
-  };
-
-  const addKeyword = () => {
-    const value = keywordInput.trim();
-    if (!value || data.disqualifyingKeywords.includes(value)) return;
-    setData((prev) => ({
-      ...prev,
-      disqualifyingKeywords: [...prev.disqualifyingKeywords, value],
-    }));
-    setKeywordInput("");
-  };
-
-  const removeKeyword = (value: string) => {
-    setData((prev) => ({
-      ...prev,
-      disqualifyingKeywords: prev.disqualifyingKeywords.filter((k) => k !== value),
-    }));
-  };
 
   const patchAgeRange = (ageMin: number, ageMax: number) => {
-    setData((prev) => ({ ...prev, ageMin, ageMax }));
-    clearFieldError("ageMin");
-    clearFieldError("ageMax");
+    patchData({ audienceAgeMin: ageMin, audienceAgeMax: ageMax }, "audienceAgeMin");
+    patchData({ audienceAgeMin: ageMin, audienceAgeMax: ageMax }, "audienceAgeMax");
+    clearFieldError("audienceAgeMin");
+    clearFieldError("audienceAgeMax");
   };
 
   return (
@@ -738,43 +674,35 @@ function Step2Targeting({
       </header>
 
       <div className="create-wizard-fields create-wizard-fields--grid">
-        <WizardField label="Industry Vertical" error={getFieldError(errors, "industry")}>
+        <WizardField label="Industry Vertical" error={getFieldError(errors, "audienceAffinityIds")}>
           <select
             className="cw-input cw-select"
-            value={data.industry}
-            onChange={(e) => patchData({ industry: e.target.value }, "industry")}
+            value={data.audienceAffinityIds[0] ?? ""}
+            onChange={(e) => patchData({ audienceAffinityIds: e.target.value ? [e.target.value] : [] }, "audienceAffinityIds")}
           >
             <option value="">Select your brand&apos;s core industry...</option>
             {INDUSTRIES.map((ind) => (
-              <option key={ind.value} value={ind.value}>
+              <option key={ind.value} value={ind.value.toUpperCase()}>
                 {ind.label}
               </option>
             ))}
           </select>
         </WizardField>
 
-        <WizardField label="Follower Tiers" error={getFieldError(errors, "followerTiers")}>
-          <div className="cw-tier-chips">
-            {FOLLOWER_TIERS.map((tier) => (
-              <button
-                key={tier}
-                type="button"
-                className={`cw-tier-chip ${data.followerTiers.includes(tier) ? "is-active" : ""}`}
-                onClick={() => toggleTier(tier)}
-              >
-                {tier}
-              </button>
-            ))}
+        <WizardField label="Follower Range" error={getFieldError(errors, "minimumFollowers") ?? getFieldError(errors, "maximumFollowers")}>
+          <div className="cw-date-row">
+            <input type="number" className="cw-input" min={0} aria-label="Minimum Followers" value={data.minimumFollowers} onChange={(e) => patchData({ minimumFollowers: Number(e.target.value) || 0 }, "minimumFollowers")} onBlur={() => touchField("minimumFollowers")} />
+            <input type="number" className="cw-input" min={data.minimumFollowers} aria-label="Maximum Followers" placeholder="No maximum" value={data.maximumFollowers ?? ""} onChange={(e) => patchData({ maximumFollowers: e.target.value ? Number(e.target.value) : null }, "maximumFollowers")} onBlur={() => touchField("maximumFollowers")} />
           </div>
         </WizardField>
 
         <WizardField
           label="Creator Archetypes"
-          error={getFieldError(errors, "archetypes")}
+          error={getFieldError(errors, "creatorArchetypes")}
           className="cw-field--full"
         >
           <TokenInput
-            tokens={data.archetypes}
+            tokens={data.creatorArchetypes}
             inputValue={archetypeInput}
             onInputChange={setArchetypeInput}
             onAdd={addArchetype}
@@ -785,18 +713,11 @@ function Step2Targeting({
 
         <WizardField
           label="Target Locations"
-          error={getFieldError(errors, "targetLocations")}
+          error={getFieldError(errors, "audienceGeographies")}
           className="cw-field--full"
         >
-          <TokenInput
-            tokens={data.targetLocations}
-            inputValue={locationInput}
-            onInputChange={setLocationInput}
-            onAdd={addLocation}
-            onRemove={removeLocation}
-            placeholder="Add country or region..."
-          />
-          <p className="cw-hint">Press Enter to add a territory (e.g. United States).</p>
+          <CanonicalGeographyPicker value={data.audienceGeographies} onChange={(audienceGeographies) => patchData({ audienceGeographies }, "audienceGeographies")} onBlur={() => touchField("audienceGeographies")} />
+          <p className="cw-hint">Select a structured suggestion. Free text is not saved as geography authority.</p>
         </WizardField>
 
         <div className="cw-audience-panel cw-field--full">
@@ -807,24 +728,24 @@ function Step2Targeting({
           <div className="cw-audience-grid">
             <WizardField
               label="Age Range"
-              error={getFieldError(errors, "ageMin") ?? getFieldError(errors, "ageMax")}
+              error={getFieldError(errors, "audienceAgeMin") ?? getFieldError(errors, "audienceAgeMax")}
             >
               <AgeRangeSlider
-                min={data.ageMin}
-                max={data.ageMax}
+                min={data.audienceAgeMin}
+                max={data.audienceAgeMax}
                 onChange={patchAgeRange}
               />
             </WizardField>
-            <WizardField label="Gender Focus" error={getFieldError(errors, "genderFocus")}>
+            <WizardField label="Gender Focus" error={getFieldError(errors, "audienceGender")}>
               <div className="cw-segmented">
-                {["All", "Female-Skewing", "Male-Skewing"].map((g) => (
+                {(["ALL", "FEMALE", "MALE"] as const).map((g) => (
                   <button
                     key={g}
                     type="button"
-                    className={data.genderFocus === g ? "is-active" : ""}
-                    onClick={() => patchData({ genderFocus: g }, "genderFocus")}
+                    className={data.audienceGender === g ? "is-active" : ""}
+                    onClick={() => patchData({ audienceGender: g }, "audienceGender")}
                   >
-                    {g}
+                    {g === "ALL" ? "All" : g === "FEMALE" ? "Female-Skewing" : "Male-Skewing"}
                   </button>
                 ))}
               </div>
@@ -832,18 +753,6 @@ function Step2Targeting({
           </div>
         </div>
 
-        <div className="cw-field cw-field--full">
-          <span className="cw-label">Disqualifying Keywords</span>
-          <TokenInput
-            tokens={data.disqualifyingKeywords}
-            inputValue={keywordInput}
-            onInputChange={setKeywordInput}
-            onAdd={addKeyword}
-            onRemove={removeKeyword}
-            placeholder="Add keyword to exclude..."
-          />
-          <p className="cw-hint">Press Enter to add a keyword token.</p>
-        </div>
       </div>
     </div>
   );
@@ -853,13 +762,15 @@ function Step3Commercials({
   data,
   patchData,
   errors,
+  touchField,
 }: {
   data: WizardData;
   patchData: (patch: Partial<WizardData>, touched?: WizardFieldKey) => void;
   errors: WizardFieldErrors;
+  touchField: (key: WizardFieldKey) => void;
 }) {
-  const escrowMin = Math.round(data.budget * (data.advancePercent / 100));
-  const isFixed = data.compensationType === "fixed";
+  const escrowMin = Math.round(data.totalCampaignBudget * (data.advancePaymentPercentage / 100));
+  const isFixed = data.compensationModel === "FIXED";
 
   return (
     <div className="create-wizard-step">
@@ -872,12 +783,28 @@ function Step3Commercials({
       </header>
 
       <div className="create-wizard-fields create-wizard-fields--grid">
+        <WizardField label="Brand Provisioning / Support" className="cw-field--full">
+          <div className="cw-segmented cw-segmented--wide">
+            <button type="button" className={!data.receivesBrandSupport ? "is-active" : ""} onClick={() => patchData({ receivesBrandSupport: false, brandSupportType: null, brandSupportEstimatedValue: null }, "receivesBrandSupport")}>No support provided</button>
+            <button type="button" className={data.receivesBrandSupport ? "is-active" : ""} onClick={() => patchData({ receivesBrandSupport: true, brandSupportType: data.brandSupportType ?? "PRODUCT" }, "receivesBrandSupport")}>Support provided</button>
+          </div>
+        </WizardField>
+        {data.receivesBrandSupport ? <>
+          <WizardField label="Support Type" error={getFieldError(errors, "brandSupportType")}>
+            <select className="cw-input cw-select" value={data.brandSupportType ?? ""} onChange={(event) => patchData({ brandSupportType: event.target.value as WizardData["brandSupportType"] }, "brandSupportType")} onBlur={() => touchField("brandSupportType")}>
+              <option value="">Select support</option>{["PRODUCT", "SERVICE", "EXPERIENCE", "ACCESS_SUBSCRIPTION", "OTHER"].map((value) => <option key={value} value={value}>{value.replace(/_/g, " ")}</option>)}
+            </select>
+          </WizardField>
+          <WizardField label="Estimated Support Value" error={getFieldError(errors, "brandSupportEstimatedValue")}>
+            <div className="cw-currency-wrap"><span>$</span><input type="number" className="cw-input" min={0} value={data.brandSupportEstimatedValue ?? ""} onChange={(event) => patchData({ brandSupportEstimatedValue: event.target.value ? Number(event.target.value) : null }, "brandSupportEstimatedValue")} onBlur={() => touchField("brandSupportEstimatedValue")} /></div>
+          </WizardField>
+        </> : null}
         <WizardField label="Compensation Type" className="cw-field--full">
           <div className="cw-segmented cw-segmented--wide">
             <button
               type="button"
               className={isFixed ? "is-active" : ""}
-              onClick={() => patchData({ compensationType: "fixed" }, "compensationType")}
+              onClick={() => patchData({ compensationModel: "FIXED" }, "compensationModel")}
             >
               Fixed Fee
             </button>
@@ -885,7 +812,7 @@ function Step3Commercials({
               type="button"
               className={!isFixed ? "is-active" : ""}
               onClick={() =>
-                patchData({ compensationType: "negotiable" }, "compensationType")
+                patchData({ compensationModel: "NEGOTIABLE" }, "compensationModel")
               }
             >
               Negotiable Offer
@@ -897,7 +824,7 @@ function Step3Commercials({
           <WizardField
             label="Flat Rate Per Creator"
             required
-            error={getFieldError(errors, "flatRatePerCreator")}
+            error={getFieldError(errors, "commercialOffer")}
           >
             <div className="cw-currency-wrap">
               <span>$</span>
@@ -907,26 +834,26 @@ function Step3Commercials({
                 min={1}
                 step="0.01"
                 placeholder="0.00"
-                value={data.flatRatePerCreator || ""}
+                value={data.commercialOffer || ""}
                 onChange={(e) =>
                   patchData(
-                    { flatRatePerCreator: Number(e.target.value) || 0 },
-                    "flatRatePerCreator",
+                    { commercialOffer: Number(e.target.value) || 0 },
+                    "commercialOffer",
                   )
                 }
+                onBlur={() => touchField("commercialOffer")}
               />
             </div>
             <p className="cw-hint">
               Creators will see: &quot;Fixed Fee: $
-              {data.flatRatePerCreator.toLocaleString()}&quot;
+              {data.commercialOffer.toLocaleString()}&quot;
             </p>
           </WizardField>
         ) : (
-          <>
-            <WizardField
-              label="Negotiable Minimum Fee"
+          <WizardField
+              label="Payout Starting From"
               required
-              error={getFieldError(errors, "negotiableMinFee")}
+              error={getFieldError(errors, "commercialOffer")}
             >
               <div className="cw-currency-wrap">
                 <span>$</span>
@@ -936,43 +863,20 @@ function Step3Commercials({
                   min={1}
                   step="0.01"
                   placeholder="0.00"
-                  value={data.negotiableMinFee || ""}
+                  value={data.commercialOffer || ""}
                   onChange={(e) =>
                     patchData(
-                      { negotiableMinFee: Number(e.target.value) || 0 },
-                      "negotiableMinFee",
+                      { commercialOffer: Number(e.target.value) || 0 },
+                      "commercialOffer",
                     )
                   }
+                  onBlur={() => touchField("commercialOffer")}
                 />
               </div>
             </WizardField>
-            <WizardField
-              label="Negotiable Maximum Fee"
-              required
-              error={getFieldError(errors, "negotiableMaxFee")}
-            >
-              <div className="cw-currency-wrap">
-                <span>$</span>
-                <input
-                  type="number"
-                  className="cw-input"
-                  min={1}
-                  step="0.01"
-                  placeholder="0.00"
-                  value={data.negotiableMaxFee || ""}
-                  onChange={(e) =>
-                    patchData(
-                      { negotiableMaxFee: Number(e.target.value) || 0 },
-                      "negotiableMaxFee",
-                    )
-                  }
-                />
-              </div>
-            </WizardField>
-          </>
         )}
 
-        <WizardField error={getFieldError(errors, "budget")} className="cw-field--full">
+        <WizardField error={getFieldError(errors, "totalCampaignBudget")} className="cw-field--full">
           <span className="cw-label cw-label--with-icon">
             Total Campaign Budget Pool
             <span className="cw-required">Required</span>
@@ -989,17 +893,18 @@ function Step3Commercials({
               min={1}
               step="1"
               placeholder="0"
-              value={data.budget || ""}
+              value={data.totalCampaignBudget || ""}
               onChange={(e) =>
-                patchData({ budget: Number(e.target.value) || 0 }, "budget")
+                patchData({ totalCampaignBudget: Number(e.target.value) || 0 }, "totalCampaignBudget")
               }
+              onBlur={() => touchField("totalCampaignBudget")}
             />
           </div>
         </WizardField>
 
         <WizardField
           label="Advance Payment Percentage"
-          error={getFieldError(errors, "advancePercent")}
+          error={getFieldError(errors, "advancePaymentPercentage")}
         >
           <div className="cw-advance-row">
             <div className="cw-percent-wrap">
@@ -1009,13 +914,13 @@ function Step3Commercials({
                 min={0}
                 step={25}
                 max={100}
-                value={data.advancePercent}
+                value={data.advancePaymentPercentage}
                 onChange={(e) =>
                   patchData(
                     {
-                      advancePercent: Math.min(100, Math.max(0, Math.round((Number(e.target.value) || 0) / 25) * 25)),
+                      advancePaymentPercentage: Math.min(100, Math.max(0, Math.round((Number(e.target.value) || 0) / 25) * 25)) as WizardData["advancePaymentPercentage"],
                     },
-                    "advancePercent",
+                    "advancePaymentPercentage",
                   )
                 }
               />
@@ -1026,9 +931,9 @@ function Step3Commercials({
               <span>Canonical increments: 0%, 25%, 50%, 75%, or 100%</span>
             </div>
           </div>
-          {data.budget > 0 && (
+          {data.totalCampaignBudget > 0 && (
             <p className="cw-hint">
-              Escrow hold: ${escrowMin.toLocaleString()} ({data.advancePercent}% of
+              Escrow hold: ${escrowMin.toLocaleString()} ({data.advancePaymentPercentage}% of
               pool)
             </p>
           )}
@@ -1041,11 +946,11 @@ function Step3Commercials({
           <select
             className="cw-input cw-select"
             value={data.payoutTerms}
-            onChange={(e) => patchData({ payoutTerms: e.target.value }, "payoutTerms")}
+            onChange={(e) => patchData({ payoutTerms: e.target.value as WizardData["payoutTerms"] }, "payoutTerms")}
           >
             {PAYOUT_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
-                {opt}
+                {opt.replace("_", " ")}
               </option>
             ))}
           </select>
@@ -1149,8 +1054,8 @@ function ContextLedger({
           isLocked={false}
           onToggle={() => toggleSection("strategy")}
         >
-          <LedgerRow label="Name" value={data.name || "Not specified"} />
-          <LedgerRow label="Objective" value={data.objective || "Not specified"} />
+          <LedgerRow label="Name" value={data.campaignName || "Not specified"} />
+          <LedgerRow label="Objective" value={OBJECTIVES.find((item) => item.value === data.coreObjective)?.label || "Not specified"} />
           <LedgerRow label="Timeline" value={timelineLabel} />
           <div className="cw-ledger-row">
             <span className="cw-ledger-key">Platform/Format</span>
@@ -1185,17 +1090,13 @@ function ContextLedger({
           <LedgerRow label="Vertical" value={industryLabel} />
           <LedgerRow
             label="Audience"
-            value={`${data.ageMin} - ${data.ageMax} Years`}
+            value={`${data.audienceAgeMin} - ${data.audienceAgeMax} Years`}
           />
-          <LedgerRow label="Gender" value={data.genderFocus} />
+          <LedgerRow label="Gender" value={data.audienceGender} />
           <div className="cw-ledger-row">
             <span className="cw-ledger-key">Follower Tiers</span>
             <div className="cw-ledger-tags">
-              {data.followerTiers.map((t) => (
-                <span key={t} className="cw-ledger-tag cw-ledger-tag--primary">
-                  {t.split(" ")[0]}
-                </span>
-              ))}
+              <span className="cw-ledger-tag cw-ledger-tag--primary">{data.minimumFollowers.toLocaleString()}–{data.maximumFollowers?.toLocaleString() ?? "No max"}</span>
             </div>
           </div>
         </LedgerAccordion>
@@ -1210,10 +1111,10 @@ function ContextLedger({
           <LedgerRow
             label="Offer Type"
             value={
-              data.compensationType === "fixed" ? "Fixed Fee" : "Negotiable Offer"
+              data.compensationModel === "FIXED" ? "Fixed Fee" : "Negotiable Offer"
             }
           />
-          <LedgerRow label="Advance" value={`${data.advancePercent}% Upfront`} />
+          <LedgerRow label="Advance" value={`${data.advancePaymentPercentage}% Upfront`} />
           <LedgerRow label="Terms" value={data.payoutTerms} />
         </LedgerAccordion>
       </div>
@@ -1234,10 +1135,10 @@ function ContextLedger({
               <span>Estimated Reach</span>
               <strong>2.4M - 4.1M</strong>
             </div>
-            {data.budget > 0 && (
+            {data.totalCampaignBudget > 0 && (
               <div>
                 <span>Budget Pool</span>
-                <strong>${data.budget.toLocaleString()}</strong>
+                <strong>${data.totalCampaignBudget.toLocaleString()}</strong>
               </div>
             )}
           </div>

@@ -1,58 +1,44 @@
-export type TimelineType = "fixed" | "milestone";
+import type { CanonicalCampaignPayload } from "../contracts/brand-uce.contracts";
 
-export type CompensationType = "fixed" | "negotiable";
+export type CanonicalGeography = CanonicalCampaignPayload["targeting"]["audience_geographies"][number];
 
-export type WizardData = {
-  name: string;
-  objective: string;
-  timeline: TimelineType;
-  startDate: string;
-  endDate: string;
-  milestoneDays: string;
-  platforms: {
-    instagram: { enabled: boolean; formats: string[] };
-    tiktok: { enabled: boolean; formats: string[] };
-    youtube: { enabled: boolean; formats: string[] };
-  };
-  industry: string;
-  followerTiers: string[];
-  archetypes: string[];
-  targetLocations: string[];
-  disqualifyingKeywords: string[];
-  ageMin: number;
-  ageMax: number;
-  genderFocus: string;
-  compensationType: CompensationType;
-  flatRatePerCreator: number;
-  negotiableMinFee: number;
-  negotiableMaxFee: number;
-  budget: number;
-  advancePercent: number;
-  payoutTerms: string;
+/** Frontend authority for Create Campaign. Values intentionally mirror the canonical API. */
+export type CreateCampaignFormState = {
+  campaignName: string;
+  coreObjective: CanonicalCampaignPayload["strategy"]["core_objective"] | "";
+  publishingSchedule: CanonicalCampaignPayload["strategy"]["publishing_schedule"];
+  publishFrom: string;
+  publishUntil: string;
+  platforms: CanonicalCampaignPayload["strategy"]["platforms"];
+  platformFormats: string[];
+  campaignVisibility: CanonicalCampaignPayload["strategy"]["campaign_visibility"];
+  creatorArchetypes: string[];
+  minimumFollowers: number;
+  maximumFollowers: number | null;
+  audienceAgeMin: number;
+  audienceAgeMax: number;
+  audienceGender: CanonicalCampaignPayload["targeting"]["audience_gender"];
+  audienceAffinityIds: string[];
+  audienceGeographies: CanonicalGeography[];
+  receivesBrandSupport: boolean;
+  brandSupportType: CanonicalCampaignPayload["commercials"]["brand_support_type"];
+  brandSupportEstimatedValue: number | null;
+  compensationModel: CanonicalCampaignPayload["commercials"]["compensation_model"];
+  commercialOffer: number;
+  totalCampaignBudget: number;
+  advancePaymentPercentage: CanonicalCampaignPayload["commercials"]["advance_payment_percentage"];
+  payoutTerms: CanonicalCampaignPayload["commercials"]["payout_terms"];
 };
 
+export type WizardData = CreateCampaignFormState;
+
 export type WizardFieldKey =
-  | "name"
-  | "objective"
-  | "startDate"
-  | "endDate"
-  | "milestoneDays"
-  | "platforms"
-  | "industry"
-  | "archetypes"
-  | "followerTiers"
-  | "targetLocations"
-  | "ageMin"
-  | "ageMax"
-  | "genderFocus"
-  | "disqualifyingKeywords"
-  | "compensationType"
-  | "flatRatePerCreator"
-  | "negotiableMinFee"
-  | "negotiableMaxFee"
-  | "budget"
-  | "advancePercent"
-  | "payoutTerms"
-  | "_form";
+  | "campaignName" | "coreObjective" | "publishingSchedule" | "publishFrom" | "publishUntil"
+  | "platforms" | "campaignVisibility" | "creatorArchetypes" | "minimumFollowers"
+  | "maximumFollowers" | "audienceAgeMin" | "audienceAgeMax" | "audienceGender"
+  | "audienceAffinityIds" | "audienceGeographies"
+  | "receivesBrandSupport" | "brandSupportType" | "brandSupportEstimatedValue"
+  | "compensationModel" | "commercialOffer" | "totalCampaignBudget"
+  | "advancePaymentPercentage" | "payoutTerms" | "_form";
 
 export type WizardFieldErrors = Partial<Record<WizardFieldKey, string>>;
