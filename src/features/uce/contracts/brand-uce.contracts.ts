@@ -1,9 +1,150 @@
-export type UceCampaignStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "COMPLETED" | "ARCHIVED";
+export type UceCampaignStatus =
+  | "DRAFT"
+  | "PUBLISHED"
+  | "LIVE"
+  | "PAUSED"
+  | "COMPLETED"
+  | "ARCHIVED";
 
 export type UceCampaignObjective =
-  | "BRAND_AWARENESS"
-  | "TRAFFIC_CLICKS"
-  | "SALES_CONVERSIONS";
+  | "PULSE"
+  | "PROOF"
+  | "PRODUCTION"
+  | "PUSH";
+
+export type CanonicalCampaignPayload = {
+  strategy: {
+    campaign_name: string;
+    publishing_schedule: "EVERGREEN" | "SCHEDULED";
+    publish_from: string | null;
+    publish_until: string | null;
+    core_objective: UceCampaignObjective;
+    platforms: ["INSTAGRAM"];
+    campaign_visibility: "PUBLIC" | "ELIGIBLE_CREATORS_ONLY" | "INVITE_ONLY";
+  };
+  targeting: {
+    creator_archetypes: string[];
+    minimum_followers: number;
+    maximum_followers: number | null;
+    audience_age_min: number;
+    audience_age_max: number;
+    audience_gender: "ALL" | "FEMALE" | "MALE";
+    audience_affinity_ids: string[];
+    audience_geographies: Array<{
+      scope: "LOCALITY" | "REGION" | "COUNTRY" | "GLOBAL";
+      label: string;
+      country_code: string | null;
+      locality: string | null;
+      region: string | null;
+      radius_km: number | null;
+      is_primary: boolean;
+    }>;
+  };
+  commercials: {
+    receives_brand_support: boolean;
+    brand_support_type:
+      | "PRODUCT"
+      | "SERVICE"
+      | "EXPERIENCE"
+      | "ACCESS_SUBSCRIPTION"
+      | "OTHER"
+      | null;
+    brand_support_estimated_value: number | null;
+    compensation_model: "FIXED" | "NEGOTIABLE";
+    commercial_offer: number;
+    total_campaign_budget: number;
+    advance_payment_percentage: 0 | 25 | 50 | 75 | 100;
+    payout_terms: "NET_7" | "NET_15" | "NET_30" | "NET_45" | "NET_60";
+  };
+};
+
+export type CanonicalCampaignDraftResponse = {
+  campaignId: string;
+  status: "DRAFT";
+  creationSource: "MANUAL" | "AI_RECOMMENDED";
+  draft: Partial<CanonicalCampaignPayload> & {
+    strategy?: Partial<CanonicalCampaignPayload["strategy"]>;
+    targeting?: Partial<CanonicalCampaignPayload["targeting"]>;
+    commercials?: Partial<CanonicalCampaignPayload["commercials"]>;
+  };
+};
+
+export type CanonicalCampaignDraftCreated = Omit<CanonicalCampaignDraftResponse, "draft">;
+
+export type CampaignCapability = {
+  available: boolean;
+  presentation: "ENABLED" | "DISABLED" | "HIDDEN";
+  reasonCategory?: string;
+};
+
+export type CanonicalCampaignPage = {
+  campaign: {
+    id: string;
+    name: string;
+    lifecycleStatus: UceCampaignStatus;
+    creationSource: "MANUAL" | "AI_RECOMMENDED";
+    productCount: number;
+    briefCount: number;
+    capabilities: Record<
+      "view" | "edit" | "share" | "pause" | "resume" | "complete" | "archive" | "publish" | "goLive",
+      CampaignCapability
+    >;
+  };
+  hydration: {
+    outcome: string;
+    executionReady: boolean;
+    primaryFocus: string;
+    postLiveReadinessBlocked: boolean;
+  };
+  productsBriefsSummary: {
+    state: "READY" | "EMPTY" | "UNAVAILABLE" | "ERROR";
+    label: string;
+    capability: CampaignCapability;
+    products: Array<{
+      campaignAssetId: string;
+      kind: "BRAND" | "OFFERING" | "OFFER";
+      name: string;
+      status: string;
+      briefs: Array<{ briefId: string; name: string; status: string }>;
+    }>;
+  };
+  workspaces: Array<{
+    workspace: string;
+    state: string;
+    instantiated: boolean;
+    visible: boolean;
+    count: number;
+    pendingCount?: number;
+    rejectedCount?: number;
+  }>;
+};
+
+export type CanonicalApplicant = {
+  applicationId: string;
+  campaignCreatorId: string;
+  name: string;
+  email?: string | null;
+  socialHandle?: string | null;
+  applicationStatus: string;
+  canonicalCampaignAssetId?: string | null;
+  canonicalBriefId?: string | null;
+  collaborationId?: string | null;
+};
+
+export type CanonicalApplicantsResponse = {
+  state: "READY" | "EMPTY" | "UNAVAILABLE" | "ERROR";
+  applicants: CanonicalApplicant[];
+};
+
+export type CampaignShareResponse = {
+  ok: boolean;
+  campaignId: string;
+  channel: "COPY_LINK" | "WHATSAPP" | "INSTAGRAM" | "NATIVE_SHARE";
+  requestId: string;
+  trackingToken: string;
+  sharePath: string;
+  replayed: boolean;
+};
 
 export type CampaignListAggregates = {
   total_active_spend: number;
@@ -135,6 +276,7 @@ export type CampaignProductRecord = {
   image_url: string | null;
   asset_payload?: unknown;
   created_at: string;
+  canonical_campaign_asset_id: string;
 };
 
 export type PromotionApplicability =
@@ -145,6 +287,7 @@ export type PromotionApplicability =
 export type CreateCampaignProductBody =
   | {
       asset_type: "INDIVIDUAL_PRODUCT_SKU";
+      canonical_offering_id: string;
       campaign_id: string;
       product_name: string;
       price: number;
@@ -157,6 +300,7 @@ export type CreateCampaignProductBody =
     }
   | {
       asset_type: "CURATED_COLLECTION_LINE";
+      canonical_offering_id: string;
       campaign_id: string;
       collection_name: string;
       collection_pdp_url: string;
@@ -175,6 +319,7 @@ export type CreateCampaignProductBody =
     }
   | {
       asset_type: "ACTIVE_SALE_PROMOTION";
+      canonical_brand_offer_id: string;
       campaign_id: string;
       offer_name: string;
       brief_description: string;
@@ -221,6 +366,8 @@ export type CampaignBriefRecord = {
   content_guidance_matrix?: unknown;
   parent_planner_logistics_snapshot?: unknown;
   created_at: string;
+  canonical_campaign_asset_id: string;
+  canonical_brief_id: string;
 };
 
 export type DeliverableFormatType =
@@ -286,6 +433,7 @@ export type CreateCampaignBriefGuidance = {
 export type CreateCampaignBriefBody = {
   campaign_id: string;
   product_id: string;
+  canonical_campaign_asset_id: string;
   brief_name: string;
   purpose: string;
   objective: string;

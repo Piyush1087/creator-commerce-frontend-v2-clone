@@ -2,7 +2,10 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 import { Alert, Button } from "../../../design-system/aurora";
-import { postCreatorApply } from "../../creator-uce/api/creator-uce-client";
+import {
+  fetchCreatorOpenCampaigns,
+  postCreatorApply,
+} from "../../creator-uce/api/creator-uce-client";
 import type { MarketplaceDetailResponse } from "../contracts/creator-campaigns.contracts";
 import { displayValue } from "../utils/display-value";
 import { OptionalMedia } from "./OptionalMedia";
@@ -42,7 +45,21 @@ export function CampaignApplicationWizard({
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const canonicalCampaign = (await fetchCreatorOpenCampaigns()).find(
+        (row) => row.campaign_id === campaign.campaign_id,
+      );
+      const canonicalAsset = canonicalCampaign?.canonical_assets.find(
+        (asset) => asset.briefs.length > 0,
+      );
+      const canonicalBrief = canonicalAsset?.briefs[0];
+      if (!canonicalAsset || !canonicalBrief) {
+        throw new Error(
+          "This campaign does not expose a valid canonical Campaign Asset and Brief selection.",
+        );
+      }
       await postCreatorApply(campaign.campaign_id, {
+        canonical_campaign_asset_id: canonicalAsset.campaign_asset_id,
+        canonical_brief_id: canonicalBrief.canonical_brief_id,
         brief_id: briefId,
         ...(productId ? { product_id: productId } : {}),
       });

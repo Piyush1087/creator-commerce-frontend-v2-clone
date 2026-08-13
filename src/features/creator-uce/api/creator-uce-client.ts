@@ -48,7 +48,12 @@ export async function fetchCreatorOpenCampaigns(): Promise<CreatorOpenCampaignRo
 
 export async function postCreatorApply(
   campaignId: string,
-  body: { brief_id: string; product_id?: string },
+  body: {
+    canonical_campaign_asset_id: string;
+    canonical_brief_id: string;
+    brief_id: string;
+    product_id?: string;
+  },
 ): Promise<CreatorApplyResponse> {
   const response = await fetch(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/apply`,

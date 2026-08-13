@@ -16,17 +16,19 @@ import { ProductDetailDrawer } from "../../../features/uce/components/ProductDet
 import {
   createCampaignBrief,
   createCampaignProduct,
+  executeCampaignLifecycle,
+  fetchCampaignAssetDetails,
+  fetchCampaignBriefDetails,
+  fetchCampaignPage,
   fetchCampaignShell,
   patchCampaignEssentials,
-  patchCampaignStatus,
 } from "../../../features/uce/api/brand-uce-client";
-import type { UceCampaignStatus } from "../../../features/uce/contracts/brand-uce.contracts";
 import { useUceApiJson } from "../../../features/uce/hooks/use-uce-api-json";
 import {
   mapShellToRepositoryBriefs,
   mapShellToRepositoryProducts,
 } from "../../../features/uce/mappers/map-shell-to-repository";
-import type { RepositoryBrief } from "../../../features/uce/types/repository";
+import type { RepositoryBrief, RepositoryProduct } from "../../../features/uce/types/repository";
 import { AUTH_ROUTES } from "../../../features/auth/constants";
 import "../../../features/uce/components/CampaignProductsBriefsRepository.css";
 import "../../../features/uce/components/CampaignShareRouterModal.css";
@@ -38,19 +40,26 @@ export function BrandUceCampaignDetailPage() {
   const { id: campaignId = "" } = useParams();
 
   const shellFetcher = useCallback(
-    () => fetchCampaignShell(campaignId),
+    async () => {
+      const [shell, page] = await Promise.all([
+        fetchCampaignShell(campaignId),
+        fetchCampaignPage(campaignId),
+      ]);
+      return { shell, page };
+    },
     [campaignId],
   );
   const { state, reload } = useUceApiJson(Boolean(campaignId), shellFetcher);
 
-  const shell = state.status === "ready" ? state.data : null;
+  const shell = state.status === "ready" ? state.data.shell : null;
+  const page = state.status === "ready" ? state.data.page : null;
   const products = useMemo(
-    () => (shell ? mapShellToRepositoryProducts(shell) : []),
-    [shell],
+    () => (shell ? mapShellToRepositoryProducts(shell, page ?? undefined) : []),
+    [page, shell],
   );
   const briefs = useMemo(
-    () => (shell ? mapShellToRepositoryBriefs(shell) : []),
-    [shell],
+    () => (shell ? mapShellToRepositoryBriefs(shell, page ?? undefined) : []),
+    [page, shell],
   );
 
   const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
@@ -59,7 +68,7 @@ export function BrandUceCampaignDetailPage() {
   const [isBriefSnapshotOpen, setIsBriefSnapshotOpen] = useState(false);
   const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
   const [briefWizardProductId, setBriefWizardProductId] = useState<string | null>(null);
-  const [viewProductId, setViewProductId] = useState<string | null>(null);
+  const [viewProduct, setViewProduct] = useState<RepositoryProduct | null>(null);
   const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
   const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
@@ -69,12 +78,11 @@ export function BrandUceCampaignDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
 
-  const viewProduct = products.find((p) => p.id === viewProductId) ?? null;
-
   const briefWizardProducts = useMemo(
     () =>
       products.map((p) => ({
         id: p.id,
+        canonicalAssetId: p.canonicalAssetId ?? "",
         name: p.name,
         sku: p.skuCode,
       })),
@@ -85,9 +93,16 @@ export function BrandUceCampaignDetailPage() {
     if (!shell) return;
     setStatusError(null);
     setStatusUpdating(true);
-    const next: UceCampaignStatus = nextActive ? "ACTIVE" : "PAUSED";
     try {
-      await patchCampaignStatus(shell.campaign_id, next);
+      const current = page?.campaign.lifecycleStatus;
+      const action = nextActive
+        ? current === "PAUSED"
+          ? "resume"
+          : current === "PUBLISHED"
+            ? "go-live"
+            : "publish"
+        : "pause";
+      await executeCampaignLifecycle(shell.campaign_id, action);
       await reload({ silent: true });
     } catch (err) {
       setStatusError(
@@ -135,7 +150,8 @@ export function BrandUceCampaignDetailPage() {
   if (state.status !== "ready") {
     return null;
   }
-  const loadedShell = state.data;
+  const loadedShell = state.data.shell;
+  const loadedPage = state.data.page;
   const campaignSlug = loadedShell.campaign_name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
@@ -225,12 +241,29 @@ export function BrandUceCampaignDetailPage() {
         briefs={briefs}
         onAddProduct={() => setIsLinkAssetOpen(true)}
         onViewProduct={(productId) => {
-          setViewProductId(productId);
-          setIsProductDetailOpen(true);
+          const product = products.find((candidate) => candidate.id === productId);
+          if (!product?.canonicalAssetId) {
+            setStatusError("Canonical Campaign Asset details are unavailable.");
+            return;
+          }
+          void fetchCampaignAssetDetails(loadedShell.campaign_id, product.canonicalAssetId)
+            .then((details) => {
+              setViewProduct({ ...product, name: details.name, assetType: details.kind ?? product.assetType });
+              setIsProductDetailOpen(true);
+            })
+            .catch((error: unknown) => setStatusError(error instanceof Error ? error.message : "Could not load Campaign Asset details."));
         }}
         onViewBrief={(brief) => {
-          setViewBrief(brief);
-          setIsBriefSnapshotOpen(true);
+          if (!brief.canonicalBriefId) {
+            setStatusError("Canonical Brief details are unavailable.");
+            return;
+          }
+          void fetchCampaignBriefDetails(loadedShell.campaign_id, brief.canonicalBriefId)
+            .then((details) => {
+              setViewBrief({ ...brief, name: details.name, creativeGuidelines: details.creativeGuidelines ?? brief.creativeGuidelines });
+              setIsBriefSnapshotOpen(true);
+            })
+            .catch((error: unknown) => setStatusError(error instanceof Error ? error.message : "Could not load Brief details."));
         }}
         onCreateBrief={(productId) => {
           setBriefWizardProductId(productId);
@@ -283,6 +316,8 @@ export function BrandUceCampaignDetailPage() {
         onClose={() => setIsShareRouterOpen(false)}
         campaignName={loadedShell.campaign_name}
         campaignSlug={campaignSlug}
+        campaignId={loadedPage.campaign.id}
+        shareAvailable={loadedPage.campaign.capabilities.share.available}
         products={products.map((p) => ({ id: p.id, name: p.name }))}
       />
     </div>

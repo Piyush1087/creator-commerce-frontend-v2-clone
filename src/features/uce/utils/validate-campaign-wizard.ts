@@ -17,26 +17,23 @@ import type { WizardData, WizardFieldErrors, WizardFieldKey } from "../types/cam
 const API_PATH_TO_FIELD: Record<string, WizardFieldKey> = {
   campaign_name: "name",
   core_objective: "objective",
-  timeline_type: "milestoneDays",
-  fixed_start_date: "startDate",
-  fixed_end_date: "endDate",
-  dynamic_days_limit: "milestoneDays",
-  platform_deliverables: "platforms",
-  industry_vertical: "industry",
+  publishing_schedule: "milestoneDays",
+  publish_from: "startDate",
+  publish_until: "endDate",
+  platforms: "platforms",
+  audience_affinity_ids: "industry",
   creator_archetypes: "archetypes",
-  follower_tiers: "followerTiers",
+  minimum_followers: "followerTiers",
+  maximum_followers: "followerTiers",
   audience_age_min: "ageMin",
   audience_age_max: "ageMax",
   audience_gender: "genderFocus",
-  target_locations: "targetLocations",
-  disqualifying_keywords: "disqualifyingKeywords",
-  compensation_type: "compensationType",
-  fixed_fee_amount: "flatRatePerCreator",
-  negotiable_min_fee: "negotiableMinFee",
-  negotiable_max_fee: "negotiableMaxFee",
-  total_campaign_budget_pool: "budget",
+  audience_geographies: "targetLocations",
+  compensation_model: "compensationType",
+  commercial_offer: "flatRatePerCreator",
+  total_campaign_budget: "budget",
   advance_payment_percentage: "advancePercent",
-  final_balance_terms: "payoutTerms",
+  payout_terms: "payoutTerms",
 };
 
 const STEP_1_FIELDS: WizardFieldKey[] = [
@@ -76,7 +73,7 @@ const SECTION_REQUIRED_MESSAGE: Record<string, string> = {
 function apiPathToWizardField(path: (string | number)[]): WizardFieldKey {
   const segments = path.filter((segment): segment is string => typeof segment === "string");
 
-  if (segments.includes("platform_deliverables")) {
+  if (segments.includes("platforms")) {
     return "platforms";
   }
 

@@ -49,7 +49,7 @@ export function CampaignWorkspaceZone1({
   statusUpdating = false,
 }: CampaignWorkspaceZone1Props) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const isActive = shell?.current_status === "ACTIVE";
+  const isActive = shell?.current_status === "LIVE";
 
   useEffect(() => {
     if (shell?.current_status) {

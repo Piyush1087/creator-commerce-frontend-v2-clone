@@ -1,6 +1,7 @@
 /** Campaign workspace repository view models (API-backed). */
 export type RepositoryProduct = {
   id: string;
+  canonicalAssetId?: string;
   name: string;
   skuCode: string | null;
   assetType?: string;
@@ -11,6 +12,8 @@ export type RepositoryProduct = {
 
 export type RepositoryBrief = {
   id: string;
+  canonicalBriefId?: string;
+  canonicalAssetId?: string;
   productId?: string | null;
   name: string;
   formatType: string;

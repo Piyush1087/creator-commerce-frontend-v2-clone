@@ -31,6 +31,7 @@ import "./BriefingWizardDrawer.css";
 
 export type BriefWizardProductOption = {
   id: string;
+  canonicalAssetId: string;
   name: string;
   sku: string | null;
 };
@@ -417,6 +418,8 @@ export function BriefingWizardDrawer({
     const body: CreateCampaignBriefBody = {
       campaign_id: campaignId,
       product_id: selectedProductId,
+      canonical_campaign_asset_id:
+        campaignProducts.find((product) => product.id === selectedProductId)?.canonicalAssetId ?? "",
       brief_name: briefName.trim(),
       purpose: purpose.trim(),
       objective: objective.trim(),

@@ -1,171 +1,68 @@
 import { z } from "zod";
 
-/** Aligned with backend `uce-wizard.schema.ts` and product docs (Zod Schema.md). */
-
-export const UceCampaignStatusSchema = z.enum([
-  "DRAFT",
-  "ACTIVE",
-  "PAUSED",
-  "COMPLETED",
-  "ARCHIVED",
-]);
-
-export const UceTimelineStructureSchema = z.enum([
-  "FIXED_DATES",
-  "DYNAMIC_MILESTONES",
-]);
-
-export const UceCampaignObjectiveSchema = z.enum([
-  "BRAND_AWARENESS",
-  "TRAFFIC_CLICKS",
-  "SALES_CONVERSIONS",
-]);
-
-export const UceCompensationTypeSchema = z.enum(["FIXED_FEE", "NEGOTIABLE"]);
-
-export const UcePayoutTermsSchema = z.enum([
-  "IMMEDIATE",
-  "NET_7",
-  "NET_15",
-  "NET_30",
-]);
-
-export const UceMediaPlatformSchema = z.enum([
-  "INSTAGRAM",
-  "TIKTOK",
-  "YOUTUBE",
-]);
+const objective = z.enum(["PULSE", "PROOF", "PRODUCTION", "PUSH"]);
+const geography = z.object({
+  scope: z.enum(["LOCALITY", "REGION", "COUNTRY", "GLOBAL"]),
+  label: z.string().min(1),
+  country_code: z.string().length(2).nullable(),
+  locality: z.string().min(1).nullable(),
+  region: z.string().min(1).nullable(),
+  radius_km: z.number().positive().nullable(),
+  is_primary: z.boolean(),
+});
 
 export const Step1StrategySchema = z
   .object({
-    campaign_name: z
-      .string()
-      .min(3, "Campaign naming profiles require at least 3 characters.")
-      .max(255),
-    timeline_type: UceTimelineStructureSchema,
-    fixed_start_date: z.string().datetime().optional().nullable(),
-    fixed_end_date: z.string().datetime().optional().nullable(),
-    dynamic_days_limit: z.number().int().positive().optional().nullable(),
-    core_objective: UceCampaignObjectiveSchema,
-    platform_deliverables: z
-      .array(
-        z.object({
-          platform: UceMediaPlatformSchema,
-          formats: z
-            .array(z.string())
-            .min(1, "Assign at least one deliverable layout variant."),
-        }),
-      )
-      .min(1, "The campaign build must specify platform deliverables targets."),
+    campaign_name: z.string().trim().min(3).max(60),
+    publishing_schedule: z.enum(["EVERGREEN", "SCHEDULED"]),
+    publish_from: z.string().datetime().nullable(),
+    publish_until: z.string().datetime().nullable(),
+    core_objective: objective,
+    platforms: z.tuple([z.literal("INSTAGRAM")]),
+    campaign_visibility: z.enum(["PUBLIC", "ELIGIBLE_CREATORS_ONLY", "INVITE_ONLY"]),
   })
   .superRefine((data, ctx) => {
-    if (data.timeline_type === "FIXED_DATES") {
-      if (!data.fixed_start_date) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Fixed configurations require a clear start timeline context.",
-          path: ["fixed_start_date"],
-        });
-      }
-      if (!data.fixed_end_date) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Fixed configurations require a clear termination deadline.",
-          path: ["fixed_end_date"],
-        });
-      }
-      if (
-        data.fixed_start_date &&
-        data.fixed_end_date &&
-        new Date(data.fixed_start_date) >= new Date(data.fixed_end_date)
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Campaign initiation timelines must precede specified end parameters.",
-          path: ["fixed_end_date"],
-        });
-      }
+    if (data.publishing_schedule === "SCHEDULED" && !data.publish_from) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_from"], message: "Choose a start date." });
     }
-    if (data.timeline_type === "DYNAMIC_MILESTONES" && !data.dynamic_days_limit) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Dynamic execution tracks require explicitly defined baseline days limits.",
-        path: ["dynamic_days_limit"],
-      });
+    if (data.publishing_schedule === "SCHEDULED" && !data.publish_until) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "Choose an end date." });
+    }
+    if (data.publish_from && data.publish_until && new Date(data.publish_until) < new Date(data.publish_from)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date must follow start date." });
     }
   });
 
 export const Step2TargetingSchema = z
   .object({
-    industry_vertical: z
-      .string()
-      .min(1, "Target enterprise industry categorization required."),
-    creator_archetypes: z
-      .array(z.string())
-      .min(1, "Map at least one creator demographic target profile orientation."),
-    follower_tiers: z
-      .array(z.string())
-      .min(1, "Specify targeted creator community scale ranges."),
-    audience_age_min: z
-      .number()
-      .int()
-      .min(18, "Minimum audience age is 18."),
-    audience_age_max: z.number().int().max(65, "Maximum audience age is 65."),
-    audience_gender: z.string().default("ALL"),
-    target_locations: z
-      .array(z.string())
-      .min(1, "Provide targeted operational territory distribution maps."),
-    disqualifying_keywords: z.array(z.string()).optional().default([]),
+    creator_archetypes: z.array(z.string().min(1)).min(1).max(5),
+    minimum_followers: z.number().int().min(0),
+    maximum_followers: z.number().int().min(0).nullable(),
+    audience_age_min: z.number().int().min(13).max(65),
+    audience_age_max: z.number().int().min(13).max(65),
+    audience_gender: z.enum(["ALL", "FEMALE", "MALE"]),
+    audience_affinity_ids: z.array(z.string().min(1)).max(5),
+    audience_geographies: z.array(geography).min(1),
   })
   .refine((data) => data.audience_age_min <= data.audience_age_max, {
-    message: "Minimum parameters framework cannot overtake defined max boundaries.",
-    path: ["audience_age_min"],
+    path: ["audience_age_max"],
+    message: "Maximum age must be at least the minimum age.",
   });
 
 export const Step3CommercialsSchema = z
   .object({
-    compensation_type: UceCompensationTypeSchema,
-    fixed_fee_amount: z.number().nonnegative().optional().default(0),
-    negotiable_min_fee: z.number().nonnegative().optional().default(0),
-    negotiable_max_fee: z.number().nonnegative().optional().default(0),
-    total_campaign_budget_pool: z
-      .number()
-      .positive("Campaign fiscal execution bounds must track valid monetary balances."),
-    advance_payment_percentage: z
-      .number()
-      .int()
-      .min(30, "System protection locks force advance escrow thresholds to at least 30%.")
-      .max(100),
-    final_balance_terms: UcePayoutTermsSchema,
+    receives_brand_support: z.boolean(),
+    brand_support_type: z.enum(["PRODUCT", "SERVICE", "EXPERIENCE", "ACCESS_SUBSCRIPTION", "OTHER"]).nullable(),
+    brand_support_estimated_value: z.number().min(0).nullable(),
+    compensation_model: z.enum(["FIXED", "NEGOTIABLE"]),
+    commercial_offer: z.number().min(0),
+    total_campaign_budget: z.number().min(0),
+    advance_payment_percentage: z.union([z.literal(0), z.literal(25), z.literal(50), z.literal(75), z.literal(100)]),
+    payout_terms: z.enum(["NET_7", "NET_15", "NET_30", "NET_45", "NET_60"]),
   })
-  .superRefine((data, ctx) => {
-    if (data.compensation_type === "FIXED_FEE" && data.fixed_fee_amount <= 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Fixed compensation models require positive creator fee settings.",
-        path: ["fixed_fee_amount"],
-      });
-    }
-    if (data.compensation_type === "NEGOTIABLE") {
-      if (data.negotiable_min_fee >= data.negotiable_max_fee) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Minimum boundaries must be strictly less than maximum budget caps.",
-          path: ["negotiable_min_fee"],
-        });
-      }
-      if (data.negotiable_max_fee <= 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Negotiation ceiling configurations require valid caps.",
-          path: ["negotiable_max_fee"],
-        });
-      }
-    }
+  .refine((data) => data.total_campaign_budget >= data.commercial_offer, {
+    path: ["total_campaign_budget"],
+    message: "Campaign budget must cover the creator offer.",
   });
 
 export const IntegratedCampaignWizardPayloadSchema = z.object({
@@ -174,10 +71,7 @@ export const IntegratedCampaignWizardPayloadSchema = z.object({
   commercials: Step3CommercialsSchema,
 });
 
-export type IntegratedCampaignWizardPayload = z.infer<
-  typeof IntegratedCampaignWizardPayloadSchema
->;
-
+export type IntegratedCampaignWizardPayload = z.infer<typeof IntegratedCampaignWizardPayloadSchema>;
 export type Step1StrategyPayload = z.infer<typeof Step1StrategySchema>;
 export type Step2TargetingPayload = z.infer<typeof Step2TargetingSchema>;
 export type Step3CommercialsPayload = z.infer<typeof Step3CommercialsSchema>;

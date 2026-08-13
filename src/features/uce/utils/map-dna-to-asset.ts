@@ -144,6 +144,7 @@ export function buildCreateAssetBody(
     if (!offering) throw new Error("Selected product was not found in Brand Centre.");
     return {
       asset_type: "INDIVIDUAL_PRODUCT_SKU",
+      canonical_offering_id: offering.id,
       campaign_id: campaignId,
       product_name: offering.name.trim(),
       price: parsePrice(offering as OfferingWithPrice),
@@ -167,6 +168,7 @@ export function buildCreateAssetBody(
         : [collection.id];
     return {
       asset_type: "CURATED_COLLECTION_LINE",
+      canonical_offering_id: collection.id,
       campaign_id: campaignId,
       collection_name: collection.name.trim(),
       collection_pdp_url: ensureUrl(collection.url, website),
@@ -221,6 +223,7 @@ function buildPromotionBody(
   }
   return {
     asset_type: "ACTIVE_SALE_PROMOTION",
+    canonical_brand_offer_id: offer.id,
     campaign_id: campaignId,
     offer_name: offer.offerName.trim(),
     brief_description: ensureDescription(offer.description, offer.offerName),
