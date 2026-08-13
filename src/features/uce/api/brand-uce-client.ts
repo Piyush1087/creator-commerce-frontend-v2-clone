@@ -140,6 +140,154 @@ export async function fetchCampaignShell(
   return (await readJsonOrThrow(response)) as CampaignShellResponse;
 }
 
+export async function fetchCampaignPageView(campaignId: string): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/page`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function fetchCampaignDiscoveryView(
+  campaignId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/discovery`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function fetchCampaignApplicationsView(
+  campaignId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function approveCampaignApplication(
+  campaignId: string,
+  applicationId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/approve`,
+    { method: "POST", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function rejectCampaignApplication(
+  campaignId: string,
+  applicationId: string,
+  reason?: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/reject`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ reason }),
+    },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function fetchCampaignProductDetails(
+  campaignId: string,
+  campaignAssetId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/products/${encodeURIComponent(campaignAssetId)}/details`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function fetchCampaignBriefDetails(
+  campaignId: string,
+  briefId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/briefs/${encodeURIComponent(briefId)}/details`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function fetchCampaignCreatorProfile(
+  campaignId: string,
+  campaignCreatorId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/creators/${encodeURIComponent(campaignCreatorId)}/profile`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function publishCampaign(campaignId: string): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/publish`,
+    { method: "POST", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function goLiveCampaign(campaignId: string): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/go-live`,
+    { method: "POST", headers: authHeaders() },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function executeCampaignShare(
+  campaignId: string,
+  channel: "COPY_LINK" | "WHATSAPP" | "INSTAGRAM" | "NATIVE_SHARE",
+  requestId: string,
+): Promise<{ sharePath: string; trackingToken: string }> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/share`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ channel, requestId }),
+    },
+  );
+  return (await readJsonOrThrow(response)) as {
+    sharePath: string;
+    trackingToken: string;
+  };
+}
+
+export async function composeCampaignOutreach(
+  campaignId: string,
+  campaignCreatorId: string,
+  brandInstruction?: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/outreach/compose`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ campaignCreatorId, brandInstruction }),
+    },
+  );
+  return readJsonOrThrow(response);
+}
+
 export async function patchCampaignStatus(
   campaignId: string,
   status: UceCampaignStatus,

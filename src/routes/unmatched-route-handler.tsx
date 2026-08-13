@@ -31,6 +31,7 @@ const KNOWN_APP_PATH_PREFIXES = [
   CREATOR_ONBOARDING_ROUTES.instagramCallback,
   "/creator/onboarding",
   "/brand/onboarding",
+  "/brand/intelligence",
   "/help",
 ] as const;
 
@@ -38,6 +39,7 @@ const KNOWN_APP_PATH_PREFIXES = [
 const GUEST_ONBOARDING_PATH_PREFIXES = [
   "/",
   "/brand/onboarding",
+  "/brand/intelligence",
   "/creator/onboarding",
   CREATOR_ONBOARDING_ROUTES.instagramCallback,
   PUBLIC_ROUTES.marketplace,

@@ -13,7 +13,20 @@ type GoogleAccountsId = {
     cancel_on_tap_outside?: boolean;
     ux_mode?: "popup" | "redirect";
     context?: "signin" | "signup" | "use";
+    use_fedcm_for_prompt?: boolean;
   }) => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: {
+      type?: "standard" | "icon";
+      theme?: "outline" | "filled_blue" | "filled_black";
+      size?: "large" | "medium" | "small";
+      text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+      shape?: "rectangular" | "pill" | "circle" | "square";
+      width?: number;
+      locale?: string;
+    },
+  ) => void;
   prompt: (
     momentListener?: (notification: {
       isNotDisplayed: () => boolean;
@@ -39,7 +52,7 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 
-function loadGisScript(): Promise<void> {
+export function loadGisScript(): Promise<void> {
   if (window.google?.accounts?.id) {
     return Promise.resolve();
   }
@@ -70,12 +83,20 @@ function loadGisScript(): Promise<void> {
   return scriptPromise;
 }
 
+export function getGoogleClientId(): string {
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
+}
+
 /**
- * Opens Google Identity Services and resolves with an ID token (JWT).
- * Requires VITE_GOOGLE_CLIENT_ID (same OAuth client as backend GOOGLE_CLIENT_ID).
+ * Mounts a Google Sign-In button that opens Google's account chooser / popup.
+ * Prefer this over One Tap `prompt()` — One Tap often fails silently in local/dev.
  */
-export async function requestGoogleIdToken(): Promise<string> {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+export async function mountGoogleIdButton(args: {
+  container: HTMLElement;
+  onCredential: (idToken: string) => void;
+  onError?: (error: Error) => void;
+}): Promise<() => void> {
+  const clientId = getGoogleClientId();
   if (!clientId) {
     throw new Error(
       "Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in the frontend env.",
@@ -88,67 +109,42 @@ export async function requestGoogleIdToken(): Promise<string> {
     throw new Error("Google Identity Services failed to initialize.");
   }
 
-  return new Promise<string>((resolve, reject) => {
-    let settled = false;
-    const finish = (err: Error | null, token?: string) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      try {
-        accountsId.cancel();
-      } catch {
-        /* ignore */
-      }
-      if (err || !token) {
-        reject(
-          err ??
-            new Error(
-              "Authentication cancelled. Please click again to retry or verify using your work email instead.",
-            ),
-        );
-        return;
-      }
-      resolve(token);
-    };
+  args.container.replaceChildren();
 
-    accountsId.initialize({
-      client_id: clientId,
-      ux_mode: "popup",
-      context: "signup",
-      cancel_on_tap_outside: true,
-      callback: (response) => {
-        const token = response.credential?.trim();
-        if (!token) {
-          finish(
-            new Error(
-              "Authentication cancelled. Please click again to retry or verify using your work email instead.",
-            ),
-          );
-          return;
-        }
-        finish(null, token);
-      },
-    });
-
-    accountsId.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        finish(
+  accountsId.initialize({
+    client_id: clientId,
+    ux_mode: "popup",
+    context: "signup",
+    cancel_on_tap_outside: true,
+    callback: (response) => {
+      const token = response.credential?.trim();
+      if (!token) {
+        args.onError?.(
           new Error(
             "Authentication cancelled. Please click again to retry or verify using your work email instead.",
           ),
         );
-      } else if (notification.isDismissedMoment()) {
-        const reason = notification.getDismissedReason();
-        if (reason === "credential_returned") {
-          return;
-        }
-        finish(
-          new Error(
-            "Authentication cancelled. Please click again to retry or verify using your work email instead.",
-          ),
-        );
+        return;
       }
-    });
+      args.onCredential(token);
+    },
   });
+
+  accountsId.renderButton(args.container, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "continue_with",
+    shape: "rectangular",
+    width: 320,
+  });
+
+  return () => {
+    try {
+      accountsId.cancel();
+    } catch {
+      /* ignore */
+    }
+    args.container.replaceChildren();
+  };
 }

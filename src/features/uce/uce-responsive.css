@@ -16,7 +16,8 @@
   }
 
   .campaign-workspace-canvas {
-    padding-bottom: 24px;
+    /* Gutters owned in BrandUceCampaignDetailPage.css; keep mobile bottom clearance. */
+    padding-bottom: calc(24px + var(--height-bottom-nav, 64px));
   }
 
   .campaign-list-tabs__header .aurora-tabs {
