@@ -1,11 +1,10 @@
 import { useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { Alert } from "../../../../design-system/aurora";
-import { fetchPipelineApplicants } from "../../api/brand-uce-client";
+import { fetchCanonicalApplicants } from "../../api/brand-uce-client";
 import { PipelineApplicantsTable } from "../PipelineApplicantsTable";
 import { useUceApiJson } from "../../hooks/use-uce-api-json";
 import { displayField, EMPTY_FIELD } from "../../utils/display-field";
-import { formatPercent } from "../../utils/uce-format";
 
 type ApplicantsTabPanelProps = {
   campaignId: string;
@@ -17,7 +16,7 @@ export function ApplicantsTabPanel({
   campaignName,
 }: ApplicantsTabPanelProps) {
   const fetcher = useCallback(
-    () => fetchPipelineApplicants(campaignId),
+    () => fetchCanonicalApplicants(campaignId),
     [campaignId],
   );
   const { state, reload } = useUceApiJson(Boolean(campaignId), fetcher);
@@ -42,15 +41,15 @@ export function ApplicantsTabPanel({
           <span className="uce-stat-label">Total</span>
           <strong>
             {state.status === "ready"
-              ? String(state.data.overview.total)
+              ? String(state.data.applicants.length)
               : EMPTY_FIELD}
           </strong>
         </div>
         <div className="uce-stat-card">
-          <span className="uce-stat-label">Mean match</span>
+          <span className="uce-stat-label">Pending</span>
           <strong>
             {state.status === "ready"
-              ? formatPercent(state.data.overview.mean_match_score)
+              ? String(state.data.applicants.filter((row) => row.applicationStatus === "PENDING").length)
               : EMPTY_FIELD}
           </strong>
         </div>
@@ -60,7 +59,7 @@ export function ApplicantsTabPanel({
       ) : state.status === "ready" ? (
         <PipelineApplicantsTable
           campaignId={campaignId}
-          rows={state.data.rows}
+          rows={state.data.applicants}
           onChanged={() => void reload()}
         />
       ) : null}

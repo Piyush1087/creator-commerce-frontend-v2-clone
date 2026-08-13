@@ -33,8 +33,18 @@ export function CreatorCampaignsPanel() {
 
   const handleApply = async (campaign: CreatorOpenCampaignRow) => {
     const brief = campaign.briefs[0];
+    const canonicalAsset = campaign.canonical_assets.find(
+      (asset) => asset.briefs.length > 0,
+    );
+    const canonicalBrief = canonicalAsset?.briefs[0];
     if (!brief) {
       setError("This campaign has no active brief to apply to.");
+      return;
+    }
+    if (!canonicalAsset || !canonicalBrief) {
+      setError(
+        "This campaign is missing its canonical Campaign Asset or Brief and cannot accept applications.",
+      );
       return;
     }
     setApplyingId(campaign.campaign_id);
@@ -43,6 +53,8 @@ export function CreatorCampaignsPanel() {
     try {
       const stockedProduct = campaign.products.find((p) => p.inventory_count > 0);
       await postCreatorApply(campaign.campaign_id, {
+        canonical_campaign_asset_id: canonicalAsset.campaign_asset_id,
+        canonical_brief_id: canonicalBrief.canonical_brief_id,
         brief_id: brief.brief_id,
         ...(stockedProduct ? { product_id: stockedProduct.product_id } : {}),
       });
@@ -89,7 +101,11 @@ export function CreatorCampaignsPanel() {
               <span className="bob-muted">Application pending or in review</span>
             ) : (
               <Button
-                disabled={applyingId === c.campaign_id || c.briefs.length === 0}
+                disabled={
+                  applyingId === c.campaign_id ||
+                  c.briefs.length === 0 ||
+                  !c.canonical_assets.some((asset) => asset.briefs.length > 0)
+                }
                 onClick={() => void handleApply(c)}
               >
                 {applyingId === c.campaign_id ? "Applying…" : "Apply"}

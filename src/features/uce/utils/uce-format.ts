@@ -11,14 +11,16 @@ export function buildCampaignDetailPath(campaignId: string): string {
 }
 
 const OBJECTIVE_LABELS: Record<UceCampaignObjective, string> = {
-  BRAND_AWARENESS: "Brand Awareness",
-  TRAFFIC_CLICKS: "Traffic & Clicks",
-  SALES_CONVERSIONS: "Sales & Conversions",
+  PULSE: "Pulse",
+  PROOF: "Proof",
+  PRODUCTION: "Production",
+  PUSH: "Push",
 };
 
 const STATUS_LABELS: Record<UceCampaignStatus, string> = {
   DRAFT: "Draft",
-  ACTIVE: "Active",
+  PUBLISHED: "Published",
+  LIVE: "Live",
   PAUSED: "Paused",
   COMPLETED: "Completed",
   ARCHIVED: "Archived",

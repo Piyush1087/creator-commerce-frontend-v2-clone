@@ -14,6 +14,18 @@ export type CreatorOpenCampaignProduct = {
   out_of_stock: boolean;
 };
 
+export type CreatorCanonicalCampaignBrief = {
+  canonical_brief_id: string;
+  brief_name: string | null;
+  deliverable_count: number;
+};
+
+export type CreatorCanonicalCampaignAsset = {
+  campaign_asset_id: string;
+  kind: "BRAND" | "OFFERING" | "OFFER";
+  briefs: CreatorCanonicalCampaignBrief[];
+};
+
 export type CreatorOpenCampaignRow = {
   campaign_id: string;
   campaign_name: string;
@@ -22,6 +34,7 @@ export type CreatorOpenCampaignRow = {
   already_applied: boolean;
   briefs: CreatorOpenCampaignBrief[];
   products: CreatorOpenCampaignProduct[];
+  canonical_assets: CreatorCanonicalCampaignAsset[];
 };
 
 export type CreatorApplyResponse = {

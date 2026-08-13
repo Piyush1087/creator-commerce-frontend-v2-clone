@@ -2,6 +2,12 @@ import { env } from "../../../shared/config/env";
 import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   CampaignBriefRecord,
+  CampaignShareResponse,
+  CanonicalApplicantsResponse,
+  CanonicalCampaignDraftResponse,
+  CanonicalCampaignDraftCreated,
+  CanonicalCampaignPage,
+  CanonicalCampaignPayload,
   CampaignListAggregates,
   CampaignListRow,
   CampaignProductRecord,
@@ -94,11 +100,66 @@ export class BrandUceWizardValidationError extends Error {
 export async function createCampaignFromWizard(
   payload: IntegratedCampaignWizardPayload,
 ): Promise<CampaignShellResponse> {
-  const response = await fetch(`${BASE}/campaigns/wizard`, {
+  const draft = await createCanonicalCampaignDraft();
+  for (const [section, values] of Object.entries(payload)) {
+    for (const [field, value] of Object.entries(values)) {
+      if (section === "strategy" && field === "platforms") continue;
+      await autosaveCanonicalCampaignField(
+        draft.campaignId,
+        `${section}.${field}`,
+        value,
+      );
+    }
+  }
+  return publishCanonicalCampaignDraft(draft.campaignId, payload);
+}
+
+export async function createCanonicalCampaignDraft(): Promise<CanonicalCampaignDraftCreated> {
+  const response = await fetch(`${BASE}/campaigns/canonical-drafts`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify(payload),
   });
+  return (await readJsonOrThrow(response)) as CanonicalCampaignDraftCreated;
+}
+
+export async function fetchCanonicalCampaignDraft(
+  campaignId: string,
+): Promise<CanonicalCampaignDraftResponse> {
+  const response = await fetch(
+    `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalCampaignDraftResponse;
+}
+
+export async function autosaveCanonicalCampaignField(
+  campaignId: string,
+  path: string,
+  value: unknown,
+): Promise<{ campaignId: string; savedPath: string; savedAt: string }> {
+  const response = await fetch(
+    `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/field`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ path, value }),
+    },
+  );
+  return (await readJsonOrThrow(response)) as { campaignId: string; savedPath: string; savedAt: string };
+}
+
+export async function publishCanonicalCampaignDraft(
+  campaignId: string,
+  payload: CanonicalCampaignPayload,
+): Promise<CampaignShellResponse> {
+  const response = await fetch(
+    `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/publish`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
 
   const text = await response.text();
   let body: unknown = undefined;
@@ -128,6 +189,119 @@ export async function createCampaignFromWizard(
   }
 
   return body as CampaignShellResponse;
+}
+
+export async function fetchCampaignPage(
+  campaignId: string,
+): Promise<CanonicalCampaignPage> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/page`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalCampaignPage;
+}
+
+export async function fetchCampaignAssetDetails(
+  campaignId: string,
+  campaignAssetId: string,
+): Promise<{ authority: "CANONICAL" | "LEGACY_COMPATIBILITY"; campaignAssetId: string; kind?: string; name: string; status: string }> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/products/${encodeURIComponent(campaignAssetId)}/details`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as {
+    authority: "CANONICAL" | "LEGACY_COMPATIBILITY";
+    campaignAssetId: string;
+    kind?: string;
+    name: string;
+    status: string;
+  };
+}
+
+export async function fetchCampaignBriefDetails(
+  campaignId: string,
+  briefId: string,
+): Promise<{ authority: "CANONICAL" | "LEGACY_COMPATIBILITY"; briefId: string; campaignAssetId: string; name: string; status: string; creativeGuidelines?: string | null }> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/briefs/${encodeURIComponent(briefId)}/details`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as {
+    authority: "CANONICAL" | "LEGACY_COMPATIBILITY";
+    briefId: string;
+    campaignAssetId: string;
+    name: string;
+    status: string;
+    creativeGuidelines?: string | null;
+  };
+}
+
+export async function fetchCanonicalApplicants(
+  campaignId: string,
+): Promise<CanonicalApplicantsResponse> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalApplicantsResponse;
+}
+
+export async function approveCanonicalApplication(
+  campaignId: string,
+  applicationId: string,
+): Promise<{ workflowCollaborationId: string }> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/approve`,
+    { method: "POST", headers: authHeaders(), body: "{}" },
+  );
+  return (await readJsonOrThrow(response)) as { workflowCollaborationId: string };
+}
+
+export async function rejectCanonicalApplication(
+  campaignId: string,
+  applicationId: string,
+  reason: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/reject`,
+    { method: "POST", headers: authHeaders(), body: JSON.stringify({ reason }) },
+  );
+  return readJsonOrThrow(response);
+}
+
+export async function shareCampaign(
+  campaignId: string,
+  channel: CampaignShareResponse["channel"],
+): Promise<CampaignShareResponse> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/share`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ channel, requestId: crypto.randomUUID() }),
+    },
+  );
+  return (await readJsonOrThrow(response)) as CampaignShareResponse;
+}
+
+export async function executeCampaignLifecycle(
+  campaignId: string,
+  action: "publish" | "go-live" | "pause" | "resume" | "complete" | "archive",
+): Promise<unknown> {
+  if (action === "publish" || action === "go-live") {
+    const response = await fetch(
+      `${BASE}/campaigns/${encodeURIComponent(campaignId)}/${action}`,
+      { method: "POST", headers: authHeaders(), body: "{}" },
+    );
+    return readJsonOrThrow(response);
+  }
+  const status: Record<"pause" | "resume" | "complete" | "archive", UceCampaignStatus> = {
+    pause: "PAUSED",
+    resume: "LIVE",
+    complete: "COMPLETED",
+    archive: "ARCHIVED",
+  };
+  return patchCampaignStatus(campaignId, status[action]);
 }
 
 export async function fetchCampaignShell(

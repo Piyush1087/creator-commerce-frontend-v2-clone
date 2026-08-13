@@ -7,97 +7,101 @@ import type {
 } from "../schemas/campaign-wizard-schema";
 
 const OBJECTIVE_TO_API: Record<string, Step1StrategyPayload["core_objective"]> = {
-  "Brand Awareness": "BRAND_AWARENESS",
-  "Traffic & Clicks": "TRAFFIC_CLICKS",
-  "Sales & Conversions": "SALES_CONVERSIONS",
+  "Brand Awareness": "PULSE",
+  "Traffic & Clicks": "PROOF",
+  "Content Production": "PRODUCTION",
+  "Sales & Conversions": "PUSH",
 };
-
-const PAYOUT_TO_API: Record<string, Step3CommercialsPayload["final_balance_terms"]> = {
-  "Immediate (Upon Approval)": "IMMEDIATE",
+const ARCHETYPE_TO_API: Record<string, string> = {
+  Aesthetic: "AESTHETIC_MINIMALIST",
+  Comedy: "ENTERTAINER",
+  Tech: "INDUSTRY_EXPERT",
+  Educational: "EDUCATOR",
+  Lifestyle: "LIFESTYLE_INTEGRATOR",
+  Fitness: "COACH",
+  Beauty: "PRODUCT_REVIEWER",
+};
+const AFFINITY_TO_API: Record<string, string> = {
+  fashion: "FASHION",
+  beauty: "BEAUTY",
+  tech: "TECHNOLOGY",
+  fitness: "FITNESS",
+  food: "FOOD",
+};
+const PAYOUT_TO_API: Record<string, Step3CommercialsPayload["payout_terms"]> = {
   "Net 7": "NET_7",
   "Net 15": "NET_15",
   "Net 30": "NET_30",
+  "Net 45": "NET_45",
+  "Net 60": "NET_60",
 };
-
-const GENDER_TO_API: Record<string, string> = {
-  All: "ALL",
-  "Female-Skewing": "FEMALE_SKEWING",
-  "Male-Skewing": "MALE_SKEWING",
+const COUNTRY_CODES: Record<string, string> = {
+  "United States": "US",
+  "United Kingdom": "GB",
+  India: "IN",
+  Canada: "CA",
+  Australia: "AU",
 };
-
-const PLATFORM_KEY_TO_API = {
-  instagram: "INSTAGRAM",
-  tiktok: "TIKTOK",
-  youtube: "YOUTUBE",
-} as const;
 
 function dateInputToIso(date: string, endOfDay: boolean): string | null {
   if (!date.trim()) return null;
   const parsed = new Date(`${date}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return null;
-  if (endOfDay) {
-    parsed.setHours(23, 59, 59, 999);
-  }
+  if (endOfDay) parsed.setHours(23, 59, 59, 999);
   return parsed.toISOString();
 }
 
 export function mapWizardToStep1Payload(data: WizardData): Step1StrategyPayload {
-  const platform_deliverables = (
-    Object.keys(data.platforms) as Array<keyof typeof PLATFORM_KEY_TO_API>
-  )
-    .filter((key) => data.platforms[key].enabled && data.platforms[key].formats.length > 0)
-    .map((key) => ({
-      platform: PLATFORM_KEY_TO_API[key],
-      formats: data.platforms[key].formats,
-    }));
-
   return {
     campaign_name: data.name.trim(),
-    timeline_type: data.timeline === "fixed" ? "FIXED_DATES" : "DYNAMIC_MILESTONES",
-    fixed_start_date:
-      data.timeline === "fixed" ? dateInputToIso(data.startDate, false) : null,
-    fixed_end_date:
-      data.timeline === "fixed" ? dateInputToIso(data.endDate, true) : null,
-    dynamic_days_limit:
-      data.timeline === "milestone"
-        ? Number.parseInt(data.milestoneDays, 10) || null
-        : null,
-    core_objective: (OBJECTIVE_TO_API[data.objective] ??
-      "") as Step1StrategyPayload["core_objective"],
-    platform_deliverables,
+    publishing_schedule: data.timeline === "fixed" ? "SCHEDULED" : "EVERGREEN",
+    publish_from: data.timeline === "fixed" ? dateInputToIso(data.startDate, false) : null,
+    publish_until: data.timeline === "fixed" ? dateInputToIso(data.endDate, true) : null,
+    core_objective: OBJECTIVE_TO_API[data.objective] ?? "PULSE",
+    platforms: ["INSTAGRAM"],
+    campaign_visibility: "PUBLIC",
   };
 }
 
 export function mapWizardToStep2Payload(data: WizardData): Step2TargetingPayload {
+  const tiers = data.followerTiers;
+  const minimum_followers = tiers.includes("Nano (1k-10k)") ? 1_000 : tiers.includes("Micro (10k-50k)") ? 10_000 : tiers.includes("Mid-Tier (50k-250k)") ? 50_000 : 250_000;
+  const maximum_followers = tiers.includes("Macro (250k+)") ? null : tiers.includes("Mid-Tier (50k-250k)") ? 250_000 : tiers.includes("Micro (10k-50k)") ? 50_000 : 10_000;
   return {
-    industry_vertical: data.industry,
-    creator_archetypes: data.archetypes,
-    follower_tiers: data.followerTiers,
+    creator_archetypes: data.archetypes.map((value) => ARCHETYPE_TO_API[value] ?? value),
+    minimum_followers,
+    maximum_followers,
     audience_age_min: data.ageMin,
     audience_age_max: data.ageMax,
-    audience_gender: GENDER_TO_API[data.genderFocus] ?? data.genderFocus,
-    target_locations: data.targetLocations,
-    disqualifying_keywords: data.disqualifyingKeywords,
+    audience_gender: data.genderFocus === "Female-Skewing" ? "FEMALE" : data.genderFocus === "Male-Skewing" ? "MALE" : "ALL",
+    audience_affinity_ids: data.industry ? [AFFINITY_TO_API[data.industry] ?? data.industry.toUpperCase()] : [],
+    audience_geographies: data.targetLocations.map((label, index) => ({
+      scope: COUNTRY_CODES[label] ? "COUNTRY" as const : "LOCALITY" as const,
+      label,
+      country_code: COUNTRY_CODES[label] ?? null,
+      locality: COUNTRY_CODES[label] ? null : label,
+      region: null,
+      radius_km: null,
+      is_primary: index === 0,
+    })),
   };
 }
 
 export function mapWizardToStep3Payload(data: WizardData): Step3CommercialsPayload {
-  const isFixed = data.compensationType === "fixed";
+  const offer = data.compensationType === "fixed" ? data.flatRatePerCreator : data.negotiableMinFee;
   return {
-    compensation_type: isFixed ? "FIXED_FEE" : "NEGOTIABLE",
-    fixed_fee_amount: isFixed ? data.flatRatePerCreator : 0,
-    negotiable_min_fee: isFixed ? 0 : data.negotiableMinFee,
-    negotiable_max_fee: isFixed ? 0 : data.negotiableMaxFee,
-    total_campaign_budget_pool: data.budget,
-    advance_payment_percentage: data.advancePercent,
-    final_balance_terms:
-      PAYOUT_TO_API[data.payoutTerms] ?? "IMMEDIATE",
+    receives_brand_support: false,
+    brand_support_type: null,
+    brand_support_estimated_value: null,
+    compensation_model: data.compensationType === "fixed" ? "FIXED" : "NEGOTIABLE",
+    commercial_offer: offer,
+    total_campaign_budget: data.budget,
+    advance_payment_percentage: data.advancePercent as 0 | 25 | 50 | 75 | 100,
+    payout_terms: PAYOUT_TO_API[data.payoutTerms] ?? "NET_7",
   };
 }
 
-export function mapWizardToIntegratedPayload(
-  data: WizardData,
-): IntegratedCampaignWizardPayload {
+export function mapWizardToIntegratedPayload(data: WizardData): IntegratedCampaignWizardPayload {
   return {
     strategy: mapWizardToStep1Payload(data),
     targeting: mapWizardToStep2Payload(data),

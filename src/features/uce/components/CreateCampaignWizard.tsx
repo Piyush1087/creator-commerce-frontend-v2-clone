@@ -8,10 +8,18 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  autosaveCanonicalCampaignField,
   BrandUceWizardValidationError,
-  createCampaignFromWizard,
+  createCanonicalCampaignDraft,
+  fetchCanonicalCampaignDraft,
+  publishCanonicalCampaignDraft,
 } from "../api/brand-uce-client";
-import { mapWizardToIntegratedPayload } from "../mappers/map-wizard-to-payload";
+import {
+  mapWizardToIntegratedPayload,
+  mapWizardToStep1Payload,
+  mapWizardToStep2Payload,
+  mapWizardToStep3Payload,
+} from "../mappers/map-wizard-to-payload";
 import { buildCampaignDetailPath } from "../utils/uce-format";
 import {
   ArrowLeft,
@@ -44,7 +52,12 @@ import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 import { AgeRangeSlider } from "./AgeRangeSlider";
 
-const OBJECTIVES = ["Brand Awareness", "Traffic & Clicks", "Sales & Conversions"];
+const OBJECTIVES = [
+  "Brand Awareness",
+  "Traffic & Clicks",
+  "Content Production",
+  "Sales & Conversions",
+];
 const INDUSTRIES = [
   { value: "fashion", label: "Fashion & Apparel" },
   { value: "beauty", label: "Beauty & Cosmetics" },
@@ -68,10 +81,11 @@ const ARCHETYPE_OPTIONS = [
   "Beauty",
 ];
 const PAYOUT_OPTIONS = [
-  "Immediate (Upon Approval)",
   "Net 7",
   "Net 15",
   "Net 30",
+  "Net 45",
+  "Net 60",
 ];
 
 const STEP_LABELS = [
@@ -113,8 +127,8 @@ const INITIAL_DATA: WizardData = {
   negotiableMinFee: 0,
   negotiableMaxFee: 0,
   budget: 0,
-  advancePercent: 30,
-  payoutTerms: "Immediate (Upon Approval)",
+  advancePercent: 25,
+  payoutTerms: "Net 7",
 };
 
 const PLATFORM_CONFIG = [
@@ -122,16 +136,6 @@ const PLATFORM_CONFIG = [
     key: "instagram" as const,
     label: "Instagram",
     formats: ["Reel", "Story", "Static Post"],
-  },
-  {
-    key: "tiktok" as const,
-    label: "TikTok",
-    formats: ["Video", "Story"],
-  },
-  {
-    key: "youtube" as const,
-    label: "YouTube",
-    formats: ["Long-form Video", "Short"],
   },
 ];
 
@@ -145,6 +149,65 @@ export function CreateCampaignWizard() {
   const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const initialize = async () => {
+      try {
+        const existingId = new URLSearchParams(window.location.search).get("draft");
+        const created = existingId ? null : await createCanonicalCampaignDraft();
+        const draft = await fetchCanonicalCampaignDraft(existingId ?? created!.campaignId);
+        if (cancelled) return;
+        setDraftId(draft.campaignId);
+        if (!existingId) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("draft", draft.campaignId);
+          window.history.replaceState({}, "", url);
+        }
+        const strategy = draft.draft.strategy;
+        const targeting = draft.draft.targeting;
+        const commercials = draft.draft.commercials;
+        setData((current) => ({
+          ...current,
+          name: strategy?.campaign_name ?? current.name,
+          objective:
+            strategy?.core_objective === "PULSE" ? "Brand Awareness" :
+            strategy?.core_objective === "PROOF" ? "Traffic & Clicks" :
+            strategy?.core_objective === "PRODUCTION" ? "Content Production" :
+            strategy?.core_objective === "PUSH" ? "Sales & Conversions" : current.objective,
+          timeline: strategy?.publishing_schedule === "EVERGREEN" ? "milestone" : current.timeline,
+          startDate: strategy?.publish_from?.slice(0, 10) ?? current.startDate,
+          endDate: strategy?.publish_until?.slice(0, 10) ?? current.endDate,
+          archetypes: targeting?.creator_archetypes ?? current.archetypes,
+          ageMin: targeting?.audience_age_min ?? current.ageMin,
+          ageMax: targeting?.audience_age_max ?? current.ageMax,
+          budget: commercials?.total_campaign_budget ?? current.budget,
+          advancePercent: commercials?.advance_payment_percentage ?? current.advancePercent,
+        }));
+      } catch (error) {
+        if (!cancelled) setDraftError(error instanceof Error ? error.message : "Could not initialize draft.");
+      }
+    };
+    void initialize();
+    return () => { cancelled = true; };
+  }, []);
+
+  const saveSection = async (section: "strategy" | "targeting" | "commercials") => {
+    if (!draftId) throw new Error("Campaign draft is still initializing.");
+    const values = section === "strategy"
+      ? mapWizardToStep1Payload(data)
+      : section === "targeting"
+        ? mapWizardToStep2Payload(data)
+        : mapWizardToStep3Payload(data);
+    for (const [field, value] of Object.entries(values)) {
+      // Platforms are validated at publish; the backend draft patch contract does
+      // not expose a strategy.platforms field path.
+      if (section === "strategy" && field === "platforms") continue;
+      await autosaveCanonicalCampaignField(draftId, `${section}.${field}`, value);
+    }
+  };
 
   const clearFieldError = (key: WizardFieldKey) => {
     setFieldErrors((prev) => {
@@ -188,6 +251,12 @@ export function CreateCampaignWizard() {
       }
       setFieldErrors({});
       setFormError(null);
+      try {
+        await saveSection(step === 1 ? "strategy" : "targeting");
+      } catch (error) {
+        setFormError(error instanceof Error ? error.message : "Could not autosave campaign draft.");
+        return;
+      }
       setStep((s) => s + 1);
       return;
     }
@@ -201,7 +270,12 @@ export function CreateCampaignWizard() {
     setFormError(null);
     setIsPublishing(true);
     try {
-      const shell = await createCampaignFromWizard(mapWizardToIntegratedPayload(data));
+      if (!draftId) throw new Error("Campaign draft is still initializing.");
+      await saveSection("commercials");
+      const shell = await publishCanonicalCampaignDraft(
+        draftId,
+        mapWizardToIntegratedPayload(data),
+      );
       navigate(buildCampaignDetailPath(shell.campaign_id));
     } catch (err) {
       if (err instanceof BrandUceWizardValidationError) {
@@ -244,10 +318,10 @@ export function CreateCampaignWizard() {
       <div className="create-wizard-workspace">
         <section className="create-wizard-form">
           <div className="create-wizard-form-inner">
-            {formError ? (
+            {formError || draftError ? (
               <div className="create-wizard-form-alert">
                 <Alert tone="error" title="Check required fields">
-                  {formError}
+                  {formError ?? draftError}
                 </Alert>
               </div>
             ) : null}
@@ -314,7 +388,7 @@ export function CreateCampaignWizard() {
               Back to Previous Step
             </Button>
           )}
-          <Button variant="primary" onClick={() => void handleContinue()} disabled={isPublishing}>
+          <Button variant="primary" onClick={() => void handleContinue()} disabled={isPublishing || !draftId}>
             {step === 3 ? (
               isPublishing ? "Creating campaign…" : "Save & Publish Campaign"
             ) : (
@@ -932,13 +1006,14 @@ function Step3Commercials({
               <input
                 type="number"
                 className="cw-input"
-                min={30}
+                min={0}
+                step={25}
                 max={100}
                 value={data.advancePercent}
                 onChange={(e) =>
                   patchData(
                     {
-                      advancePercent: Math.max(30, Number(e.target.value) || 30),
+                      advancePercent: Math.min(100, Math.max(0, Math.round((Number(e.target.value) || 0) / 25) * 25)),
                     },
                     "advancePercent",
                   )
@@ -948,7 +1023,7 @@ function Step3Commercials({
             </div>
             <div className="cw-advance-warning">
               <Info size={16} />
-              <span>30% minimum required</span>
+              <span>Canonical increments: 0%, 25%, 50%, 75%, or 100%</span>
             </div>
           </div>
           {data.budget > 0 && (

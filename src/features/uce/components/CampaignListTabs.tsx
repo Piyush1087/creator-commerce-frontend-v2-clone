@@ -8,7 +8,7 @@ import { Toggle } from "../../../design-system/aurora/components/Toggle";
 import {
   fetchCampaignList,
   fetchCampaignListAggregates,
-  patchCampaignStatus,
+  executeCampaignLifecycle,
 } from "../api/brand-uce-client";
 import type {
   CampaignListAggregates,
@@ -115,10 +115,16 @@ function OperationsTab() {
 
   const toggleStatus = async (row: CampaignListRow) => {
     setStatusError(null);
-    const next: UceCampaignStatus =
-      row.current_status === "ACTIVE" ? "PAUSED" : "ACTIVE";
     try {
-      await patchCampaignStatus(row.campaign_id, next);
+      const action = row.current_status === "LIVE"
+        ? "pause"
+        : row.current_status === "PAUSED"
+          ? "resume"
+          : row.current_status === "PUBLISHED"
+            ? "go-live"
+            : "publish";
+      const next: UceCampaignStatus = action === "pause" ? "PAUSED" : action === "publish" ? "PUBLISHED" : "LIVE";
+      await executeCampaignLifecycle(row.campaign_id, action);
       setLocalRows((prev) => {
         const base = prev ?? campaigns;
         return base.map((c) =>
@@ -183,9 +189,10 @@ function OperationsTab() {
             onChange={(e) => setObjectiveFilter(e.target.value)}
           >
             <option value="">All Objectives</option>
-            <option value="BRAND_AWARENESS">Brand Awareness</option>
-            <option value="TRAFFIC_CLICKS">Traffic & Clicks</option>
-            <option value="SALES_CONVERSIONS">Sales & Conversions</option>
+            <option value="PULSE">Pulse</option>
+            <option value="PROOF">Proof</option>
+            <option value="PRODUCTION">Production</option>
+            <option value="PUSH">Push</option>
           </select>
           <button
             type="button"
@@ -292,7 +299,7 @@ function OperationsTab() {
                               </span>
                             ) : (
                               <Toggle
-                                checked={campaign.current_status === "ACTIVE"}
+                                checked={campaign.current_status === "LIVE"}
                                 onChange={() => void toggleStatus(campaign)}
                                 label={formatStatus(campaign.current_status)}
                               />
