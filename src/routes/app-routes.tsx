@@ -39,6 +39,7 @@ import { CreatorOnboardingAppRoutes } from "./creator-onboarding-app";
 import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
 import { CreatorInstagramOAuthCallbackPage } from "../pages/creator/onboarding/creator-instagram-oauth-callback-page";
 import { CREATOR_ONBOARDING_ROUTES } from "../features/creator-onboarding/constants";
+import { CollaborationRouteGuard } from "../features/collaboration/components/CollaborationRouteGuard";
 import { UnmatchedRouteHandler } from "./unmatched-route-handler";
 
 export function AppRoutes() {
@@ -67,7 +68,14 @@ export function AppRoutes() {
         <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
         <Route path={AUTH_ROUTES.brandCollaborationPage} element={<BrandCollaborationPage />} />
-        <Route path={AUTH_ROUTES.brandCollaborations} element={<BrandCollaborationsPage />} />
+        <Route
+          path={AUTH_ROUTES.brandCollaborations}
+          element={
+            <CollaborationRouteGuard expectedRole="BRAND">
+              <BrandCollaborationsPage />
+            </CollaborationRouteGuard>
+          }
+        />
         <Route path={AUTH_ROUTES.brandPayouts} element={<BrandPayoutsPage />} />
         <Route path={AUTH_ROUTES.brandSettings} element={<BrandSettingsLayout />}>
           <Route index element={<Navigate to="general" replace />} />
@@ -94,7 +102,14 @@ export function AppRoutes() {
           path={AUTH_ROUTES.creatorCampaignsHistory}
           element={<CreatorCampaignsHistoryPage />}
         />
-        <Route path={AUTH_ROUTES.creatorCollaborations} element={<CreatorCollaborationsPage />} />
+        <Route
+          path={AUTH_ROUTES.creatorCollaborations}
+          element={
+            <CollaborationRouteGuard expectedRole="CREATOR">
+              <CreatorCollaborationsPage />
+            </CollaborationRouteGuard>
+          }
+        />
         <Route path={AUTH_ROUTES.creatorSettings} element={<CreatorSettingsLayout />}>
           <Route index element={<Navigate to="profile" replace />} />
           <Route path="profile" element={<CreatorSettingsProfilePage />} />

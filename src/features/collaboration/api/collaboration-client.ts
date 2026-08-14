@@ -1,6 +1,11 @@
 import { env } from "../../../shared/config/env";
 import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
-import type { CollaborationDetailResponse, CollaborationMessageRow, CollaborationThreadRow, CommandEnvelope, ListMessagesResponse, ListThreadsResponse } from "../contracts/collaboration.contracts";
+import type { CollaborationDetailResponse, CollaborationMessageRow, CollaborationThreadRow, CommandEnvelope } from "../contracts/collaboration.contracts";
+import {
+  parseCollaborationDetail,
+  parseCollaborationMessages,
+  parseCollaborationThreads,
+} from "../schemas/collaboration-read.schemas";
 import { parseCollaborationApiError } from "../utils/parse-collaboration-api-error";
 
 const BASE = `${env.apiUrl}/api/v1/collaboration`;
@@ -29,14 +34,14 @@ export async function fetchCollaborationThreads(params?: ListThreadsParams): Pro
   const query = new URLSearchParams();
   Object.entries(params ?? {}).forEach(([key, value]) => { if (value?.trim()) query.set(key, value.trim()); });
   const response = await fetch(`${BASE}/threads${query.size ? `?${query}` : ""}`, { headers: authHeaders() });
-  return ((await readJsonOrThrow(response)) as ListThreadsResponse).rows;
+  return parseCollaborationThreads(await readJsonOrThrow(response)).rows;
 }
 export async function fetchCollaborationThread(id: string): Promise<CollaborationDetailResponse> {
-  return (await readJsonOrThrow(await fetch(`${BASE}/threads/${id}`, { headers: authHeaders() }))) as CollaborationDetailResponse;
+  return parseCollaborationDetail(await readJsonOrThrow(await fetch(`${BASE}/threads/${id}`, { headers: authHeaders() })));
 }
 export async function fetchCollaborationMessages(id: string): Promise<CollaborationMessageRow[]> {
   const response = await fetch(`${BASE}/threads/${id}/messages`, { headers: authHeaders() });
-  return ((await readJsonOrThrow(response)) as ListMessagesResponse).messages;
+  return parseCollaborationMessages(await readJsonOrThrow(response)).messages;
 }
 export async function postCollaborationMessage(id: string, body: string): Promise<void> {
   await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/messages`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ body }) }));
@@ -54,7 +59,7 @@ export async function upsertCreatorBankDetails(payload: {
   }))) as { bank_details_id: string };
 }
 async function command(id: string, path: string, body: Record<string, unknown>): Promise<CollaborationDetailResponse> {
-  return (await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/${path}`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) }))) as CollaborationDetailResponse;
+  return parseCollaborationDetail(await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/${path}`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) })));
 }
 export const envelope = (expectedAggregateVersion: number, commandId = createCollaborationCommandId()): CommandEnvelope => ({ commandId, expectedAggregateVersion });
 export const acceptProposedFee = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-proposed-fee", e);
