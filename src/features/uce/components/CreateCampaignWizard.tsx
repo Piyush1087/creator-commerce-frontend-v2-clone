@@ -6,10 +6,8 @@ import {
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Info } from "lucide-react";
-
 import { Alert } from "../../../design-system/aurora";
-import { Button } from "../../../design-system/aurora/components/Button";
+
 import { AUTH_ROUTES } from "../../auth/constants";
 import {
   autosaveCanonicalCampaignField,
@@ -46,12 +44,25 @@ import {
 import { buildCampaignDetailPath } from "../utils/uce-format";
 import { AudienceAffinityPicker } from "./AudienceAffinityPicker";
 import { AudienceGeographyPicker } from "./AudienceGeographyPicker";
+import {
+  CampaignAutosaveStatus,
+  CampaignInitialization,
+  CampaignSummary,
+  CampaignWizardActions,
+  CampaignWizardFrame,
+} from "./create-campaign-frame/CreateCampaignFrame";
+import {
+  CAMPAIGNS_ROUTE,
+  getAutosavePresentation,
+  retryFailedAutosaves,
+  retryInitialization,
+  shouldShowValidationSummary,
+  type WizardInitializationState,
+} from "./create-campaign-frame/create-campaign-frame-model";
 import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 
 const DRAFT_STORAGE_KEY = "creator-shop:campaign:create:draft-id";
-const STEP_LABELS = ["Campaign Strategy", "Creator Strategy", "Commercial Strategy"] as const;
-
 const OBJECTIVES: Array<{
   value: CampaignObjective;
   label: string;
@@ -164,9 +175,11 @@ export function CreateCampaignWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [draftStatus, setDraftStatus] = useState("Preparing draft…");
+  const [initialization, setInitialization] = useState<WizardInitializationState>("loading");
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [validationAttemptedStep, setValidationAttemptedStep] = useState<1 | 2 | 3 | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
   if (!readinessRef.current) {
@@ -205,6 +218,8 @@ export function CreateCampaignWizard() {
     if (initStarted.current) return;
     initStarted.current = true;
 
+    setInitialization("loading");
+    hydrated.current = false;
     void (async () => {
       const storedId = window.localStorage.getItem(DRAFT_STORAGE_KEY);
       if (storedId) {
@@ -215,8 +230,8 @@ export function CreateCampaignWizard() {
           setDraftId(existing.campaignId);
           draftIdRef.current = existing.campaignId;
           readinessRef.current?.hydrate(existing.campaignId, merged.objective || null);
-          setDraftStatus("Draft resumed");
           hydrated.current = true;
+          setInitialization("ready");
           return;
         } catch {
           window.localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -229,14 +244,13 @@ export function CreateCampaignWizard() {
         setDraftId(created.campaignId);
         draftIdRef.current = created.campaignId;
         readinessRef.current?.hydrate(created.campaignId, null);
-        setDraftStatus("Draft created");
         hydrated.current = true;
-      } catch (error) {
-        setDraftStatus("Draft unavailable");
-        setFormError(error instanceof Error ? error.message : "Could not create Campaign draft.");
+        setInitialization("ready");
+      } catch {
+        setInitialization("failed");
       }
     })();
-  }, []);
+  }, [initializationAttempt]);
 
   const scheduleSave = (field: WizardFieldKey, snapshot: WizardData) => {
     if (!hydrated.current || !draftId || !draftIdRef.current) return;
@@ -344,19 +358,28 @@ return next;
   };
 
   const allAutosaveFields = [...STEP_FIELDS[1], ...STEP_FIELDS[2], ...STEP_FIELDS[3]];
-  const autosaveFailed = allAutosaveFields.some((field) => autosaveRef.current?.status(field) === "failed-retryable");
-  const autosavePending = allAutosaveFields.some((field) => {
-    const status = autosaveRef.current?.status(field);
-    return status === "dirty" || status === "saving";
-  });
-  const visibleDraftStatus = autosaveFailed ? "Save failed" : autosavePending ? "Saving" : draftStatus;
-  const retryFailedSaves = () => allAutosaveFields.forEach((field) => autosaveRef.current?.retry(field));
+  const autosaveStatuses = allAutosaveFields.map((field) => autosaveRef.current?.status(field) ?? "idle");
+  const autosavePresentation = getAutosavePresentation(autosaveStatuses);
+  const retryFailedSaves = () => retryFailedAutosaves(
+    allAutosaveFields,
+    (field) => autosaveRef.current?.status(field) ?? "idle",
+    (field) => autosaveRef.current?.retry(field),
+  );
 
   const applyValidationFailure = (errors: WizardFieldErrors, message: string) => {
     setFieldErrors(errors);
     setFormError(message);
     const errorStep = firstWizardErrorStep(errors);
+    const targetStep = errorStep ?? step;
+    setValidationAttemptedStep(targetStep);
     if (errorStep) setStep(errorStep);
+    window.requestAnimationFrame(() => {
+      const firstInvalid = document.querySelector<HTMLElement>(
+        ".cw-field--error input, .cw-field--error select, .cw-field--error button, .cw-field--error [tabindex]",
+      );
+      firstInvalid?.focus();
+      firstInvalid?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
   };
 
   const handleContinue = async () => {
@@ -369,7 +392,6 @@ return next;
     try {
       await saveCurrentStep();
     } catch (error) {
-      setDraftStatus("Save failed");
       setFormError(error instanceof Error ? error.message : "Could not save Campaign draft.");
       return;
     }
@@ -382,6 +404,7 @@ return next;
     if (step < 3) {
       setFieldErrors({});
       setFormError(null);
+      setValidationAttemptedStep(null);
       setStep((step + 1) as 1 | 2 | 3);
       return;
     }
@@ -420,65 +443,50 @@ return next;
 
   const stepProps: StepProps = { data, patchData, errors: fieldErrors, validateOnExit };
 
-  return (
-    <div className="create-wizard">
-      <div className="create-wizard-workspace">
-        <section className="create-wizard-form">
-          <div className="create-wizard-form-inner">
-            {formError ? (
-              <div className="create-wizard-form-alert">
-                <Alert tone="error" title="Check Campaign details">{formError}</Alert>
-              </div>
-            ) : null}
+  if (initialization !== "ready") {
+    return <CampaignInitialization state={initialization} onRetry={() => retryInitialization(() => {
+      initStarted.current = false;
+      setInitializationAttempt((attempt) => attempt + 1);
+    })} onBack={() => navigate(CAMPAIGNS_ROUTE)} />;
+  }
 
-            {step === 1 ? <StrategyStep {...stepProps} /> : null}
-            {step === 2 ? <CreatorStep {...stepProps} /> : null}
-            {step === 3 ? <CommercialStep {...stepProps} /> : null}
-          </div>
-        </section>
-
-        <aside className="create-wizard-ledger">
-          <div className="create-wizard-ledger-head">
-            <span className="cw-label cw-label--section">Campaign context</span>
-            <strong>{data.name.trim() || "Untitled Campaign"}</strong>
-          </div>
-          <div className="create-wizard-ledger-body">
-            <LedgerRow label="Objective" value={objectiveLabel} />
-            <LedgerRow label="Schedule" value={data.publishingSchedule === "EVERGREEN" ? "Evergreen" : "Scheduled"} />
-            <LedgerRow label="Platform" value="Instagram" />
-            <LedgerRow label="Visibility" value={VISIBILITY.find((item) => item.value === data.visibility)?.label ?? data.visibility} />
-            <LedgerRow label="Archetypes" value={data.archetypes.length ? data.archetypes.map(archetypeLabel).join(", ") : "Not selected"} />
-            <LedgerRow label="Affinities" value={data.affinityIds.length ? `${data.affinityIds.length} selected` : "Optional"} />
-            <LedgerRow label="Geography" value={data.audienceGeographies.length ? data.audienceGeographies.map((item) => item.label).join(", ") : "Not selected"} />
-            <LedgerRow label="Commercial offer" value={data.commercialOffer > 0 ? data.commercialOffer.toLocaleString() : "Not set"} />
-            <LedgerRow label="Total budget" value={data.totalCampaignBudget > 0 ? data.totalCampaignBudget.toLocaleString() : "Not set"} />
-            <LedgerRow label="Currency" value="Derived from Brand country" />
-            <LedgerRow label="Draft" value={visibleDraftStatus} />
-          </div>
-        </aside>
+  const summary = (
+    <CampaignSummary>
+      <div className="create-wizard-ledger-body">
+        {data.name.trim() ? <LedgerRow label="Campaign" value={data.name.trim()} /> : null}
+        {data.objective ? <LedgerRow label="Objective" value={objectiveLabel} /> : null}
+        <LedgerRow label="Schedule" value={data.publishingSchedule === "EVERGREEN" ? "Evergreen" : "Scheduled"} />
+        <LedgerRow label="Platform" value="Instagram" />
+        <LedgerRow label="Visibility" value={VISIBILITY.find((item) => item.value === data.visibility)?.label ?? data.visibility} />
+        {data.archetypes.length ? <LedgerRow label="Archetypes" value={data.archetypes.map(archetypeLabel).join(", ")} /> : null}
+        {data.affinityIds.length ? <LedgerRow label="Affinities" value={`${data.affinityIds.length} selected`} /> : null}
+        {data.audienceGeographies.length ? <LedgerRow label="Geography" value={data.audienceGeographies.map((item) => item.label).join(", ")} /> : null}
+        {data.commercialOffer > 0 ? <LedgerRow label="Commercial offer" value={data.commercialOffer.toLocaleString()} /> : null}
+        {data.totalCampaignBudget > 0 ? <LedgerRow label="Total budget" value={data.totalCampaignBudget.toLocaleString()} /> : null}
       </div>
+    </CampaignSummary>
+  );
 
-      <footer className="create-wizard-footer">
-        <div className="create-wizard-footer-hint">
-          <Info size={18} className="text-primary" />
-          <span>Step {step} of 3: {STEP_LABELS[step - 1]} · {draftStatus}</span>
-        </div>
-        <div className="create-wizard-footer-actions">
-          {autosaveFailed ? <Button variant="outline" onClick={retryFailedSaves}>Retry autosave</Button> : null}
-          <Button variant="ghost" onClick={() => navigate(AUTH_ROUTES.brandUceCampaigns)}>Cancel &amp; Exit</Button>
-          {step > 1 ? (
-            <Button variant="outline" onClick={() => { setFieldErrors({}); setFormError(null); setStep((step - 1) as 1 | 2 | 3); }}>
-              <ArrowLeft size={18} /> Back
-            </Button>
-          ) : null}
-          <Button variant="primary" disabled={isPublishing || !draftId || (step === 1 && !readinessRef.current?.canContinue(true))} onClick={() => void handleContinue()}>
-            {step === 3 ? (isPublishing ? "Publishing Campaign…" : "Save & Publish Campaign") : (
-              <>Next: {STEP_LABELS[step]} <ArrowRight size={18} /></>
-            )}
-          </Button>
-        </div>
-      </footer>
-    </div>
+  const primaryBlocked = !draftId || (step === 1 && !readinessRef.current?.canContinue(true));
+  return (
+    <CampaignWizardFrame
+      step={step}
+      autosave={<CampaignAutosaveStatus label={autosavePresentation.label} canRetry={autosavePresentation.canRetry} onRetry={retryFailedSaves} />}
+      validationSummary={shouldShowValidationSummary(validationAttemptedStep, step)}
+      summary={summary}
+      actions={<CampaignWizardActions step={step} busy={isPublishing} blocked={primaryBlocked} onSecondary={() => {
+        setFieldErrors({});
+        setFormError(null);
+        setValidationAttemptedStep(null);
+        if (step === 1) navigate(AUTH_ROUTES.brandUceCampaigns);
+        else setStep((step - 1) as 1 | 2 | 3);
+      }} onPrimary={() => void handleContinue()} />}
+    >
+      {formError && validationAttemptedStep !== step ? <div className="create-wizard-form-alert"><Alert tone="error" title="Check Campaign details">{formError}</Alert></div> : null}
+      {step === 1 ? <StrategyStep {...stepProps} /> : null}
+      {step === 2 ? <CreatorStep {...stepProps} /> : null}
+      {step === 3 ? <CommercialStep {...stepProps} /> : null}
+    </CampaignWizardFrame>
   );
 }
 
