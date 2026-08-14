@@ -1,0 +1,19 @@
+.commercial-strategy-step { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.commercial-strategy-step .create-wizard-step-head { margin-bottom: 0; }
+.commercial-section { display: flex; flex-direction: column; gap: 24px; padding: 24px; border: 1px solid var(--border-default); border-radius: var(--radius-card-standard); background: var(--surface-card); }
+.commercial-section__head h2 { margin: 0 0 4px; font-size: 24px; line-height: 1.2; }
+.commercial-section__head p { margin: 0; color: var(--text-muted); }
+.commercial-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; min-width: 0; }
+.commercial-fieldset { grid-column: 1 / -1; }
+.commercial-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.commercial-choice-grid--advance { grid-template-columns: repeat(5, minmax(56px, 1fr)); }
+.commercial-choice { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 8px 12px; border: 1px solid var(--border-default); border-radius: var(--radius-input); background: var(--surface-card); cursor: pointer; }
+.commercial-choice.is-selected { border-color: var(--color-primary); background: var(--surface-workflow); font-weight: 700; }
+.commercial-choice input { accent-color: var(--color-primary); }
+.commercial-currency-field { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; border: 1px solid var(--border-default); border-radius: var(--radius-input); background: var(--surface-card); overflow: hidden; }
+.commercial-currency-field:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+.commercial-currency-field > span, .commercial-currency-field > strong { padding: 0 14px; color: var(--text-muted); }
+.commercial-currency-field .cw-input { border: 0; border-radius: 0; box-shadow: none; padding-inline: 0; }
+.commercial-optional { margin-left: 8px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+@media (max-width: 767px) { .commercial-strategy-step { gap: 24px; } .commercial-section { padding: 24px; } .commercial-grid { grid-template-columns: 1fr; } .commercial-choice-grid--advance { grid-template-columns: repeat(5, minmax(44px, 1fr)); gap: 6px; } .commercial-choice-grid--advance .commercial-choice { min-width: 0; padding-inline: 4px; } }
+@media (max-width: 374px) { .commercial-choice-grid--advance { grid-template-columns: repeat(3, 1fr); } }

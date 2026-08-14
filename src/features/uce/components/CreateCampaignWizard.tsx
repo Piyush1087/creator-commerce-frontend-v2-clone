@@ -45,6 +45,8 @@ import { CampaignStrategyStep } from "./campaign-strategy/CampaignStrategyStep";
 import { campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES } from "./campaign-strategy/campaign-strategy-model";
 import { CreatorStrategyStep } from "./creator-strategy/CreatorStrategyStep";
 import { archetypeLabel, creatorStrategyCanContinue, creatorStrategySummary } from "./creator-strategy/creator-strategy-model";
+import { CommercialStrategyStep } from "./commercial-strategy/CommercialStrategyStep";
+import { commercialStrategyCanPublish, commercialStrategySummary } from "./commercial-strategy/commercial-strategy-model";
 import {
   CampaignAutosaveStatus,
   CampaignInitialization,
@@ -364,6 +366,11 @@ return next;
       return;
     }
 
+    if (step === 3 && readinessRef.current?.state().status !== "ready") {
+      setFormError("Campaign readiness must resolve before publishing.");
+      return;
+    }
+
     if (step < 3) {
       setFieldErrors({});
       setFormError(null);
@@ -390,8 +397,8 @@ return next;
       );
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
       navigate(buildCampaignDetailPath(shell.campaign_id));
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Could not publish Campaign.");
+    } catch {
+      setFormError("We couldn't publish this Campaign. Your saved details are still here. Try again.");
     } finally {
       setIsPublishing(false);
     }
@@ -420,11 +427,14 @@ return next;
     }
     return snapshot;
   }, data) : data;
+  const readinessState = readinessRef.current.state();
   const summaryRows = step === 1
     ? campaignStrategySummary(summaryData)
     : step === 2
       ? creatorStrategySummary(data)
-      : null;
+      : readinessState.status === "ready"
+        ? commercialStrategySummary(data, readinessState.currency)
+        : null;
   const summary = (
     <CampaignSummary>
       <div className="create-wizard-ledger-body">
@@ -448,7 +458,7 @@ return next;
     !readinessRef.current?.canContinue(true) ||
     campaignStrategyNavigationBlocked(readinessRef.current.state(), autosavePresentation.state === "failed") ||
     (validationAttemptedStep === 1 && Object.keys(fieldErrors).length > 0)
-  )) || (step === 2 && validationAttemptedStep === 2 && !creatorStrategyCanContinue(data));
+  )) || (step === 2 && validationAttemptedStep === 2 && !creatorStrategyCanContinue(data)) || (step === 3 && (readinessState.status !== "ready" || isPublishing || validationAttemptedStep === 3 && !commercialStrategyCanPublish(data)));
   return (
     <CampaignWizardFrame
       step={step}
@@ -466,7 +476,7 @@ return next;
       {formError && validationAttemptedStep !== step ? <div className="create-wizard-form-alert"><Alert tone="error" title="Check Campaign details">{formError}</Alert></div> : null}
       {step === 1 ? <CampaignStrategyStep {...stepProps} readiness={readinessRef.current.state()} retryReadiness={() => readinessRef.current?.retry()} /> : null}
       {step === 2 ? <CreatorStep {...stepProps} /> : null}
-      {step === 3 ? <CommercialStep {...stepProps} /> : null}
+      {step === 3 && readinessState.status === "ready" ? <CommercialStep {...stepProps} currency={readinessState.currency} /> : null}
     </CampaignWizardFrame>
   );
 }
@@ -541,7 +551,9 @@ function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
   ); */
 }
 
-function CommercialStep({ data, patchData, errors, validateOnExit }: StepProps) {
+function CommercialStep({ data, patchData, errors, validateOnExit, currency }: StepProps & { currency: "INR" | "USD" }) {
+  const useCommercialStrategyExperience: boolean = true;
+  if (useCommercialStrategyExperience) return <CommercialStrategyStep data={data} currency={currency} patchData={patchData} errors={errors} validateOnExit={validateOnExit} />;
   return (
     <div className="create-wizard-step">
       <header className="create-wizard-step-head">
