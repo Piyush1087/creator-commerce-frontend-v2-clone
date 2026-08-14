@@ -49,7 +49,7 @@ const AudienceGeographiesSchema = z
 
 export const CanonicalCampaignStrategySchema = z
   .object({
-    campaign_name: z.string().trim().min(3).max(60),
+    campaign_name: z.string().trim().min(3, "Enter a Campaign name.").max(60, "Campaign name must be 60 characters or fewer."),
     publishing_schedule: z.enum(["EVERGREEN", "SCHEDULED"]),
     publish_from: z.string().datetime().optional().nullable(),
     publish_until: z.string().datetime().optional().nullable(),
@@ -78,7 +78,7 @@ export const CanonicalCampaignStrategySchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_from"], message: "Start date cannot be in the past." });
     }
     if (data.publish_from && data.publish_until && new Date(data.publish_from) > new Date(data.publish_until)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "End date must be on or after the start date." });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["publish_until"], message: "Publish Until must be after Publish From." });
     }
   });
 

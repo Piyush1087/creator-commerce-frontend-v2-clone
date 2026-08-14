@@ -26,7 +26,6 @@ import { CanonicalCampaignReadinessController } from "../readiness/canonical-cam
 import type {
   AdvancePaymentPercentage,
   BrandSupportType,
-  CampaignObjective,
   CampaignVisibility,
   CompensationModel,
   PayoutTerms,
@@ -44,6 +43,8 @@ import {
 import { buildCampaignDetailPath } from "../utils/uce-format";
 import { AudienceAffinityPicker } from "./AudienceAffinityPicker";
 import { AudienceGeographyPicker } from "./AudienceGeographyPicker";
+import { CampaignStrategyStep } from "./campaign-strategy/CampaignStrategyStep";
+import { campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES } from "./campaign-strategy/campaign-strategy-model";
 import {
   CampaignAutosaveStatus,
   CampaignInitialization,
@@ -63,17 +64,6 @@ import "./CreateCampaignWizard.css";
 import "../uce-responsive.css";
 
 const DRAFT_STORAGE_KEY = "creator-shop:campaign:create:draft-id";
-const OBJECTIVES: Array<{
-  value: CampaignObjective;
-  label: string;
-  description: string;
-}> = [
-  { value: "PULSE", label: "Awareness & Reach", description: "Maximize unique reach and visibility." },
-  { value: "PROOF", label: "Trust & Validation", description: "Build credibility through meaningful engagement." },
-  { value: "PRODUCTION", label: "High-Quality Assets", description: "Generate reusable creator content." },
-  { value: "PUSH", label: "Direct Action", description: "Drive measurable action through Campaign links." },
-];
-
 const VISIBILITY: Array<{ value: CampaignVisibility; label: string }> = [
   { value: "PUBLIC", label: "Public" },
   { value: "ELIGIBLE_CREATORS_ONLY", label: "Eligible creators only" },
@@ -174,6 +164,7 @@ export function CreateCampaignWizard() {
   const revisions = useRef<Partial<Record<WizardFieldKey, number>>>({});
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
+  const [lastSavedData, setLastSavedData] = useState<WizardData>(INITIAL_DATA);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [initialization, setInitialization] = useState<WizardInitializationState>("loading");
   const [initializationAttempt, setInitializationAttempt] = useState(0);
@@ -199,6 +190,9 @@ export function CreateCampaignWizard() {
       350,
       () => setAutosaveVersion((version) => version + 1),
       (field, snapshot) => {
+        if (field in snapshot) {
+          setLastSavedData((previous) => ({ ...previous, [field]: snapshot[field as keyof WizardData] }));
+        }
         if (field !== "objective" || !draftIdRef.current || !snapshot.objective) return;
         readinessRef.current?.objectiveAccepted(draftIdRef.current, snapshot.objective);
       },
@@ -227,6 +221,7 @@ export function CreateCampaignWizard() {
           const existing = await fetchCanonicalCampaignDraft(storedId);
           const merged = mergeCanonicalDraftIntoWizardData(INITIAL_DATA, existing.draft);
           setData(merged);
+          setLastSavedData(merged);
           setDraftId(existing.campaignId);
           draftIdRef.current = existing.campaignId;
           readinessRef.current?.hydrate(existing.campaignId, merged.objective || null);
@@ -242,6 +237,7 @@ export function CreateCampaignWizard() {
         const created = await createCanonicalCampaignDraft();
         window.localStorage.setItem(DRAFT_STORAGE_KEY, created.campaignId);
         setDraftId(created.campaignId);
+        setLastSavedData(INITIAL_DATA);
         draftIdRef.current = created.campaignId;
         readinessRef.current?.hydrate(created.campaignId, null);
         hydrated.current = true;
@@ -435,7 +431,10 @@ return next;
   };
 
   const objectiveLabel = useMemo(
-    () => OBJECTIVES.find((item) => item.value === data.objective)?.label ?? "Not selected",
+    () => {
+      const objective = CAMPAIGN_OBJECTIVES.find((item) => item.value === data.objective);
+      return objective ? `${objective.name} — ${objective.outcome}` : "Not selected";
+    },
     [data.objective],
   );
   const archetypeLabel = (id: string) =>
@@ -450,24 +449,38 @@ return next;
     })} onBack={() => navigate(CAMPAIGNS_ROUTE)} />;
   }
 
+  const summaryData = step === 1 ? STEP_FIELDS[1].reduce((snapshot, field) => {
+    const status = autosaveRef.current?.status(field);
+    if ((status === "dirty" || status === "saving" || status === "failed-retryable") && field in lastSavedData) {
+      return { ...snapshot, [field]: lastSavedData[field as keyof WizardData] };
+    }
+    return snapshot;
+  }, data) : data;
+  const summaryRows = step === 1 ? campaignStrategySummary(summaryData) : null;
   const summary = (
     <CampaignSummary>
       <div className="create-wizard-ledger-body">
-        {data.name.trim() ? <LedgerRow label="Campaign" value={data.name.trim()} /> : null}
-        {data.objective ? <LedgerRow label="Objective" value={objectiveLabel} /> : null}
-        <LedgerRow label="Schedule" value={data.publishingSchedule === "EVERGREEN" ? "Evergreen" : "Scheduled"} />
-        <LedgerRow label="Platform" value="Instagram" />
-        <LedgerRow label="Visibility" value={VISIBILITY.find((item) => item.value === data.visibility)?.label ?? data.visibility} />
-        {data.archetypes.length ? <LedgerRow label="Archetypes" value={data.archetypes.map(archetypeLabel).join(", ")} /> : null}
-        {data.affinityIds.length ? <LedgerRow label="Affinities" value={`${data.affinityIds.length} selected`} /> : null}
-        {data.audienceGeographies.length ? <LedgerRow label="Geography" value={data.audienceGeographies.map((item) => item.label).join(", ")} /> : null}
-        {data.commercialOffer > 0 ? <LedgerRow label="Commercial offer" value={data.commercialOffer.toLocaleString()} /> : null}
-        {data.totalCampaignBudget > 0 ? <LedgerRow label="Total budget" value={data.totalCampaignBudget.toLocaleString()} /> : null}
+        {summaryRows ? summaryRows.map((row) => <LedgerRow key={row.label} label={row.label} value={row.value} />) : <>
+          {data.name.trim() ? <LedgerRow label="Campaign" value={data.name.trim()} /> : null}
+          {data.objective ? <LedgerRow label="Objective" value={objectiveLabel} /> : null}
+          <LedgerRow label="Schedule" value={data.publishingSchedule === "EVERGREEN" ? "Evergreen" : "Scheduled"} />
+          <LedgerRow label="Platform" value="Instagram" />
+          <LedgerRow label="Visibility" value={VISIBILITY.find((item) => item.value === data.visibility)?.label ?? data.visibility} />
+          {data.archetypes.length ? <LedgerRow label="Archetypes" value={data.archetypes.map(archetypeLabel).join(", ")} /> : null}
+          {data.affinityIds.length ? <LedgerRow label="Affinities" value={`${data.affinityIds.length} selected`} /> : null}
+          {data.audienceGeographies.length ? <LedgerRow label="Geography" value={data.audienceGeographies.map((item) => item.label).join(", ")} /> : null}
+          {data.commercialOffer > 0 ? <LedgerRow label="Commercial offer" value={data.commercialOffer.toLocaleString()} /> : null}
+          {data.totalCampaignBudget > 0 ? <LedgerRow label="Total budget" value={data.totalCampaignBudget.toLocaleString()} /> : null}
+        </>}
       </div>
     </CampaignSummary>
   );
 
-  const primaryBlocked = !draftId || (step === 1 && !readinessRef.current?.canContinue(true));
+  const primaryBlocked = !draftId || (step === 1 && (
+    !readinessRef.current?.canContinue(true) ||
+    campaignStrategyNavigationBlocked(readinessRef.current.state(), autosavePresentation.state === "failed") ||
+    (validationAttemptedStep === 1 && Object.keys(fieldErrors).length > 0)
+  ));
   return (
     <CampaignWizardFrame
       step={step}
@@ -483,61 +496,10 @@ return next;
       }} onPrimary={() => void handleContinue()} />}
     >
       {formError && validationAttemptedStep !== step ? <div className="create-wizard-form-alert"><Alert tone="error" title="Check Campaign details">{formError}</Alert></div> : null}
-      {step === 1 ? <StrategyStep {...stepProps} /> : null}
+      {step === 1 ? <CampaignStrategyStep {...stepProps} readiness={readinessRef.current.state()} retryReadiness={() => readinessRef.current?.retry()} /> : null}
       {step === 2 ? <CreatorStep {...stepProps} /> : null}
       {step === 3 ? <CommercialStep {...stepProps} /> : null}
     </CampaignWizardFrame>
-  );
-}
-
-function StrategyStep({ data, patchData, errors, validateOnExit }: StepProps) {
-  return (
-    <div className="create-wizard-step">
-      <header className="create-wizard-step-head">
-        <h1>Campaign Strategy</h1>
-        <p>Define the Campaign objective, publishing window and marketplace visibility.</p>
-      </header>
-      <div className="create-wizard-fields">
-        <WizardField label="Campaign Name" required error={getFieldError(errors, "name")}>
-          <input className="cw-input" maxLength={60} value={data.name} placeholder="e.g., Summer Skin Reset" onChange={(e) => patchData({ name: e.target.value }, "name")} onBlur={() => void validateOnExit("name")} />
-        </WizardField>
-
-        <WizardField label="Campaign Objective" required error={getFieldError(errors, "objective")}>
-          <select className="cw-input cw-select" value={data.objective} onChange={(e) => patchData({ objective: e.target.value as CampaignObjective }, "objective")} onBlur={() => void validateOnExit("objective")}>
-            <option value="">Select an objective</option>
-            {OBJECTIVES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-          {data.objective ? <p className="cw-hint">{OBJECTIVES.find((item) => item.value === data.objective)?.description}</p> : null}
-        </WizardField>
-
-        <WizardField label="Publishing Schedule" required error={getFieldError(errors, "publishingSchedule")}>
-          <div className="cw-timeline-panel">
-            <div className="cw-radio-row">
-              <label className="cw-radio"><input type="radio" checked={data.publishingSchedule === "EVERGREEN"} onChange={() => patchData({ publishingSchedule: "EVERGREEN", publishFrom: "", publishUntil: "" }, "publishingSchedule")} onBlur={() => void validateOnExit("publishingSchedule")} /> <span>Evergreen</span></label>
-              <label className="cw-radio"><input type="radio" checked={data.publishingSchedule === "SCHEDULED"} onChange={() => patchData({ publishingSchedule: "SCHEDULED" }, "publishingSchedule")} onBlur={() => void validateOnExit("publishingSchedule")} /> <span>Scheduled</span></label>
-            </div>
-            {data.publishingSchedule === "SCHEDULED" ? (
-              <div className="cw-date-row">
-                <label className="cw-date-field"><span>Start date</span><input type="date" className="cw-input cw-input--sm" value={data.publishFrom} onChange={(e) => patchData({ publishFrom: e.target.value }, "publishFrom")} onBlur={() => void validateOnExit("publishFrom")} /></label>
-                <label className="cw-date-field"><span>End date</span><input type="date" className="cw-input cw-input--sm" value={data.publishUntil} onChange={(e) => patchData({ publishUntil: e.target.value }, "publishUntil")} onBlur={() => void validateOnExit("publishUntil")} /></label>
-              </div>
-            ) : null}
-          </div>
-          {getFieldError(errors, "publishFrom") ? <p className="cw-field-error">{getFieldError(errors, "publishFrom")}</p> : null}
-          {getFieldError(errors, "publishUntil") ? <p className="cw-field-error">{getFieldError(errors, "publishUntil")}</p> : null}
-        </WizardField>
-
-        <WizardField label="Platform">
-          <div className="cw-timeline-panel"><strong>Instagram</strong><span className="cw-hint">Instagram is the supported MVP platform. Deliverables are defined inside Briefs, not Create Campaign.</span></div>
-        </WizardField>
-
-        <WizardField label="Campaign Visibility" required error={getFieldError(errors, "visibility")}>
-          <select className="cw-input cw-select" value={data.visibility} onChange={(e) => patchData({ visibility: e.target.value as CampaignVisibility }, "visibility")} onBlur={() => void validateOnExit("visibility")}>
-            {VISIBILITY.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </WizardField>
-      </div>
-    </div>
   );
 }
 
