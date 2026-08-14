@@ -17,6 +17,7 @@ import {
   fetchCanonicalCampaignDraft,
   publishCanonicalCampaignDraft,
 } from "../api/canonical-campaign-draft-client";
+import { CanonicalCampaignAutosaveController } from "../autosave/canonical-campaign-autosave-controller";
 import {
   canonicalDraftPatchForField,
   mergeCanonicalDraftIntoWizardData,
@@ -149,6 +150,13 @@ const INITIAL_DATA: WizardData = {
 export function CreateCampaignWizard() {
   const navigate = useNavigate();
   const initStarted = useRef(false);
+  const hydrated = useRef(false);
+  const draftIdRef = useRef<string | null>(null);
+  const autosaveRef = useRef<CanonicalCampaignAutosaveController<WizardData> | null>(null);
+  const [, setAutosaveVersion] = useState(0);
+  // Retained during the transition so the legacy unreachable branch remains type-safe.
+  const saveTimers = useRef<Partial<Record<WizardFieldKey, number>>>({});
+  const revisions = useRef<Partial<Record<WizardFieldKey, number>>>({});
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -156,6 +164,24 @@ export function CreateCampaignWizard() {
   const [fieldErrors, setFieldErrors] = useState<WizardFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  if (!autosaveRef.current) {
+    autosaveRef.current = new CanonicalCampaignAutosaveController<WizardData>(
+      async (field, snapshot) => {
+        const canonicalPatch = canonicalDraftPatchForField(field as WizardFieldKey, snapshot);
+        if (!draftIdRef.current || !canonicalPatch) return;
+        await autosaveCanonicalCampaignField(draftIdRef.current, canonicalPatch.path, canonicalPatch.value);
+      },
+      350,
+      () => setAutosaveVersion((version) => version + 1),
+    );
+  }
+
+  useEffect(() => {
+    draftIdRef.current = draftId;
+  }, [draftId]);
+
+  useEffect(() => () => autosaveRef.current?.dispose(), []);
 
   useEffect(() => {
     if (initStarted.current) return;
@@ -169,6 +195,7 @@ export function CreateCampaignWizard() {
           setData((current) => mergeCanonicalDraftIntoWizardData(current, existing.draft));
           setDraftId(existing.campaignId);
           setDraftStatus("Draft resumed");
+          hydrated.current = true;
           return;
         } catch {
           window.localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -180,6 +207,7 @@ export function CreateCampaignWizard() {
         window.localStorage.setItem(DRAFT_STORAGE_KEY, created.campaignId);
         setDraftId(created.campaignId);
         setDraftStatus("Draft created");
+        hydrated.current = true;
       } catch (error) {
         setDraftStatus("Draft unavailable");
         setFormError(error instanceof Error ? error.message : "Could not create Campaign draft.");
@@ -187,8 +215,68 @@ export function CreateCampaignWizard() {
     })();
   }, []);
 
+  const scheduleSave = (field: WizardFieldKey, snapshot: WizardData) => {
+    if (!hydrated.current || !draftId || !draftIdRef.current) return;
+    const typed = ["name", "minimumFollowers", "maximumFollowers", "audienceAgeMin", "audienceAgeMax", "brandSupportEstimatedValue", "commercialOffer", "totalCampaignBudget"].includes(field);
+    autosaveRef.current?.schedule(field, snapshot, !typed);
+    return;
+    /* Legacy implementation retained temporarily during migration.
+    const revision = (revisions.current[field] ?? 0) + 1;
+    revisions.current[field] = revision;
+    const existing = saveTimers.current[field];
+    if (existing) window.clearTimeout(existing);
+    const delay = field === "name" || field === "minimumFollowers" || field === "maximumFollowers" || field === "audienceAgeMin" || field === "audienceAgeMax" || field === "brandSupportEstimatedValue" || field === "commercialOffer" || field === "totalCampaignBudget" ? 350 : 0;
+    saveTimers.current[field] = window.setTimeout(() => {
+      void (async () => {
+        const canonicalPatch = canonicalDraftPatchForField(field, snapshot);
+        if (!canonicalPatch) return;
+        setDraftStatus("Saving…");
+        try {
+          await autosaveCanonicalCampaignField(draftId!, canonicalPatch.path, canonicalPatch.value);
+          if (revisions.current[field] === revision) setDraftStatus("Draft saved");
+        } catch {
+          if (revisions.current[field] === revision) {
+            setDraftStatus("Save failed");
+            setFormError("Could not autosave Campaign draft. Retry the changed field.");
+          }
+        }
+      })();
+    }, delay); */
+  };
+
   const patchData = (patch: Partial<WizardData>, touched?: WizardFieldKey) => {
-    setData((prev) => ({ ...prev, ...patch }));
+    const supersede = (field: WizardFieldKey) => {
+      revisions.current[field] = (revisions.current[field] ?? 0) + 1;
+      const timer = saveTimers.current[field];
+      if (timer) window.clearTimeout(timer);
+    };
+    if (patch.publishingSchedule === "EVERGREEN") {
+      autosaveRef.current?.forget("publishFrom");
+      autosaveRef.current?.forget("publishUntil");
+      supersede("publishFrom");
+      supersede("publishUntil");
+    }
+    if (patch.receivesBrandSupport === false) {
+      autosaveRef.current?.forget("brandSupportType");
+      autosaveRef.current?.forget("brandSupportEstimatedValue");
+      supersede("brandSupportType");
+      supersede("brandSupportEstimatedValue");
+    }
+    setData((prev) => {
+      const next = { ...prev, ...patch };
+
+if (touched) {
+  const local = validateCampaignWizardStep(wizardStepForField(touched), next);
+
+  if (local.success) {
+    scheduleSave(touched, next);
+  } else if (!local.fieldErrors[touched]) {
+    scheduleSave(touched, next);
+  }
+}
+
+return next;
+    });
     if (touched) {
       setFieldErrors((prev) => {
         if (!prev[touched]) return prev;
@@ -198,15 +286,6 @@ export function CreateCampaignWizard() {
       });
     }
     if (formError) setFormError(null);
-  };
-
-  const saveField = async (field: WizardFieldKey, snapshot: WizardData = data) => {
-    if (!draftId) return;
-    const patch = canonicalDraftPatchForField(field, snapshot);
-    if (!patch) return;
-    setDraftStatus("Saving…");
-    await autosaveCanonicalCampaignField(draftId, patch.path, patch.value);
-    setDraftStatus("Draft saved");
   };
 
   const validateOnExit = async (field: WizardFieldKey) => {
@@ -221,25 +300,31 @@ export function CreateCampaignWizard() {
       return next;
     });
 
-    if (!fieldError) {
-      try {
-        await saveField(field);
-      } catch (error) {
-        setDraftStatus("Save failed");
-        setFormError(error instanceof Error ? error.message : "Could not autosave Campaign draft.");
-      }
-    }
+    // Changes are persisted by patchData; blur validates only and never issues a duplicate PATCH.
   };
 
   const saveCurrentStep = async () => {
     if (!draftId) throw new Error("Campaign draft is not ready yet.");
+    const persisted = await autosaveRef.current?.flush(STEP_FIELDS[step]);
+    if (!persisted) throw new Error("Could not save all changed Campaign fields. Retry the failed field before continuing.");
+    return;
+    /* Legacy full-step loop intentionally disabled: flush owns persistence.
     setDraftStatus("Saving…");
     for (const field of STEP_FIELDS[step]) {
       const patch = canonicalDraftPatchForField(field, data);
-      if (patch) await autosaveCanonicalCampaignField(draftId, patch.path, patch.value);
+      if (patch) await autosaveCanonicalCampaignField(draftId!, patch!.path, patch!.value);
     }
-    setDraftStatus("Draft saved");
+    setDraftStatus("Draft saved"); */
   };
+
+  const allAutosaveFields = [...STEP_FIELDS[1], ...STEP_FIELDS[2], ...STEP_FIELDS[3]];
+  const autosaveFailed = allAutosaveFields.some((field) => autosaveRef.current?.status(field) === "failed-retryable");
+  const autosavePending = allAutosaveFields.some((field) => {
+    const status = autosaveRef.current?.status(field);
+    return status === "dirty" || status === "saving";
+  });
+  const visibleDraftStatus = autosaveFailed ? "Save failed" : autosavePending ? "Saving" : draftStatus;
+  const retryFailedSaves = () => allAutosaveFields.forEach((field) => autosaveRef.current?.retry(field));
 
   const applyValidationFailure = (errors: WizardFieldErrors, message: string) => {
     setFieldErrors(errors);
@@ -337,7 +422,7 @@ export function CreateCampaignWizard() {
             <LedgerRow label="Commercial offer" value={data.commercialOffer > 0 ? data.commercialOffer.toLocaleString() : "Not set"} />
             <LedgerRow label="Total budget" value={data.totalCampaignBudget > 0 ? data.totalCampaignBudget.toLocaleString() : "Not set"} />
             <LedgerRow label="Currency" value="Derived from Brand country" />
-            <LedgerRow label="Draft" value={draftStatus} />
+            <LedgerRow label="Draft" value={visibleDraftStatus} />
           </div>
         </aside>
       </div>
@@ -348,6 +433,7 @@ export function CreateCampaignWizard() {
           <span>Step {step} of 3: {STEP_LABELS[step - 1]} · {draftStatus}</span>
         </div>
         <div className="create-wizard-footer-actions">
+          {autosaveFailed ? <Button variant="outline" onClick={retryFailedSaves}>Retry autosave</Button> : null}
           <Button variant="ghost" onClick={() => navigate(AUTH_ROUTES.brandUceCampaigns)}>Cancel &amp; Exit</Button>
           {step > 1 ? (
             <Button variant="outline" onClick={() => { setFieldErrors({}); setFormError(null); setStep((step - 1) as 1 | 2 | 3); }}>
