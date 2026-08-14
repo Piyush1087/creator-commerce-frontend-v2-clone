@@ -20,6 +20,12 @@ Use this folder to keep external AI work organized before it becomes repo code.
    schemas, and design-system primitives.
 6. Run build and lint before considering it integrated.
 
+## Recent intakes
+
+- `2026-08-13-collaboration-clone-reconcile.md` — Canonical Collaboration UI
+  from frozen clone commit `3951003`. Feature-scoped CSS is an approved
+  prototype layout port; Aurora remains the primitive set.
+
 ## Naming Convention
 
 Use dated, descriptive files:
