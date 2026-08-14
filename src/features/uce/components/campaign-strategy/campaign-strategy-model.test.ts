@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { WizardData } from "../../types/campaign-wizard";
 import { validateCampaignWizardStep } from "../../utils/validate-campaign-wizard";
-import { campaignReadinessPresentation, campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES, kpiDisplayLabel, scheduleSelectionPatch, showScheduledDates } from "./campaign-strategy-model";
+import { campaignReadinessPresentation, campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES, kpiDisplayLabel, radioNavigationIndex, scheduleSelectionPatch, showScheduledDates } from "./campaign-strategy-model";
 
 const data = { name: " Summer Collection ", objective: "PULSE", publishingSchedule: "SCHEDULED", publishFrom: "2026-09-15", publishUntil: "2026-10-15", visibility: "ELIGIBLE_CREATORS_ONLY" } as WizardData;
 
@@ -26,6 +26,17 @@ describe("Campaign Strategy presentation", () => {
   it("clears scheduled dates when Evergreen is selected", () => {
     expect(scheduleSelectionPatch("EVERGREEN")).toEqual({ publishingSchedule: "EVERGREEN", publishFrom: "", publishUntil: "" });
     expect(scheduleSelectionPatch("SCHEDULED")).toEqual({ publishingSchedule: "SCHEDULED" });
+  });
+
+  it.each([
+    ["ArrowRight", 0, 1], ["ArrowDown", 1, 2], ["ArrowLeft", 0, 3],
+    ["ArrowUp", 2, 1], ["Home", 3, 0], ["End", 0, 3],
+  ])("moves custom radio focus for %s", (key, current, expected) => {
+    expect(radioNavigationIndex(key, current, 4)).toBe(expected);
+  });
+
+  it("ignores unrelated custom-radio keys", () => {
+    expect(radioNavigationIndex("Tab", 1, 4)).toBeNull();
   });
 
   it.each(["idle", "not-ready"] as const)("hides metrics for %s", (status) => {

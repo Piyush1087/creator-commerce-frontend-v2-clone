@@ -63,6 +63,10 @@ export function shouldShowValidationSummary(attemptedStep: WizardStep | null, st
   return attemptedStep === step;
 }
 
+export function validationScrollBehavior(prefersReducedMotion: boolean): ScrollBehavior {
+  return prefersReducedMotion ? "auto" : "smooth";
+}
+
 export function getInitialSummaryExpanded(isMobile: boolean) {
   return !isMobile;
 }

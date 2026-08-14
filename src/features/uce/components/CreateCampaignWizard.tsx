@@ -60,6 +60,7 @@ import {
   retryFailedAutosaves,
   retryInitialization,
   shouldShowValidationSummary,
+  validationScrollBehavior,
   type WizardInitializationState,
 } from "./create-campaign-frame/create-campaign-frame-model";
 import "./CreateCampaignWizard.css";
@@ -343,7 +344,8 @@ return next;
         ".cw-field--error input, .cw-field--error select, .cw-field--error button, .cw-field--error [tabindex]",
       );
       firstInvalid?.focus();
-      firstInvalid?.scrollIntoView({ block: "center", behavior: "smooth" });
+      const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+      firstInvalid?.scrollIntoView({ block: "center", behavior: validationScrollBehavior(prefersReducedMotion) });
     });
   };
 
@@ -486,7 +488,7 @@ function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
   /* return (
     <div className="create-wizard-step">
       <header className="create-wizard-step-head">
-        <h1>Creator Strategy</h1>
+        <h2>Creator Strategy</h2>
         <p>Define the creators and creator-audience profile this Campaign should target.</p>
       </header>
       <div className="create-wizard-fields create-wizard-fields--grid">
@@ -557,7 +559,7 @@ function CommercialStep({ data, patchData, errors, validateOnExit, currency }: S
   return (
     <div className="create-wizard-step">
       <header className="create-wizard-step-head">
-        <h1>Commercial Strategy</h1>
+        <h2>Commercial Strategy</h2>
         <p>Set Campaign-wide Brand support, creator offer, budget and payment terms.</p>
       </header>
       <div className="create-wizard-fields create-wizard-fields--grid">

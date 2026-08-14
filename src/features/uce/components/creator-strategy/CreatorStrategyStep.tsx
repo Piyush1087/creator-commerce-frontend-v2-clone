@@ -22,7 +22,7 @@ function GroupedNumber({ id, value, nullable, min, max, onChange, onBlur }: { id
 
 export function CreatorStrategyStep({ data, patchData, errors, validateOnExit }: Props) {
   return <div className="create-wizard-step creator-strategy-step">
-    <header className="create-wizard-step-head"><h1>Creator Strategy</h1><p>Define the creators and audience profile this Campaign should target.</p></header>
+    <header className="create-wizard-step-head"><h2>Creator Strategy</h2><p>Define the creators and audience profile this Campaign should target.</p></header>
     <section className="creator-strategy-section" aria-labelledby="creator-profile-heading"><div className="creator-strategy-section-head"><h2 id="creator-profile-heading">Creator Profile</h2><p>Choose the creator styles and follower range that fit this Campaign.</p></div><div className="creator-strategy-grid">
       <Field id="creator-archetypes" label="Creator Archetypes" required full error={getFieldError(errors, "archetypes")}><CreatorArchetypePicker value={data.archetypes} onChange={(archetypes) => patchData({ archetypes }, "archetypes")} onBlur={() => void validateOnExit("archetypes")} /></Field>
       <Field id="minimum-followers" label="Minimum followers" required error={getFieldError(errors, "minimumFollowers")}><GroupedNumber id="minimum-followers" value={data.minimumFollowers} min={0} onChange={(minimumFollowers) => patchData({ minimumFollowers: minimumFollowers ?? 0 }, "minimumFollowers")} onBlur={() => void validateOnExit("minimumFollowers")} /></Field>

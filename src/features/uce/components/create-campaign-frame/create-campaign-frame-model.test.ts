@@ -11,6 +11,7 @@ import {
   retryInitialization,
   shouldShowValidationSummary,
   toggleSummaryExpanded,
+  validationScrollBehavior,
 } from "./create-campaign-frame-model";
 
 describe("Create Campaign frame model", () => {
@@ -55,6 +56,11 @@ describe("Create Campaign frame model", () => {
     expect(shouldShowValidationSummary(null, 1)).toBe(false);
     expect(shouldShowValidationSummary(1, 1)).toBe(true);
     expect(shouldShowValidationSummary(1, 2)).toBe(false);
+  });
+
+  it("honors reduced motion when positioning the first invalid field", () => {
+    expect(validationScrollBehavior(false)).toBe("smooth");
+    expect(validationScrollBehavior(true)).toBe("auto");
   });
 
   it("uses the canonical Campaign list route", () => {
