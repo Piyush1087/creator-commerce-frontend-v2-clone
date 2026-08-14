@@ -41,10 +41,10 @@ import {
   wizardStepForField,
 } from "../utils/validate-campaign-wizard";
 import { buildCampaignDetailPath } from "../utils/uce-format";
-import { AudienceAffinityPicker } from "./AudienceAffinityPicker";
-import { AudienceGeographyPicker } from "./AudienceGeographyPicker";
 import { CampaignStrategyStep } from "./campaign-strategy/CampaignStrategyStep";
 import { campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES } from "./campaign-strategy/campaign-strategy-model";
+import { CreatorStrategyStep } from "./creator-strategy/CreatorStrategyStep";
+import { archetypeLabel, creatorStrategyCanContinue, creatorStrategySummary } from "./creator-strategy/creator-strategy-model";
 import {
   CampaignAutosaveStatus,
   CampaignInitialization,
@@ -69,39 +69,6 @@ const VISIBILITY: Array<{ value: CampaignVisibility; label: string }> = [
   { value: "ELIGIBLE_CREATORS_ONLY", label: "Eligible creators only" },
   { value: "INVITE_ONLY", label: "Invite only" },
 ];
-
-const ARCHETYPE_OPTIONS = [
-  ["TRENDSETTER", "Trendsetter"],
-  ["ENTERTAINER", "Entertainer"],
-  ["VIRAL_CREATOR", "Viral Creator"],
-  ["CHALLENGER", "Challenger"],
-  ["LIFESTYLE_INTEGRATOR", "Lifestyle Integrator"],
-  ["STORYTELLER", "Storyteller"],
-  ["EDUCATOR", "Educator"],
-  ["INDUSTRY_EXPERT", "Industry Expert"],
-  ["DEEP_DIVER", "Deep Diver"],
-  ["MYTH_BUSTER", "Myth Buster"],
-  ["RELATABLE_PEER", "Relatable Peer"],
-  ["COMMUNITY_BUILDER", "Community Builder"],
-  ["LOCAL_GUIDE", "Local Guide"],
-  ["CONVERSATION_STARTER", "Conversation Starter"],
-  ["ADVOCATE", "Advocate"],
-  ["PROBLEM_SOLVER", "Problem Solver"],
-  ["PRODUCT_REVIEWER", "Product Reviewer"],
-  ["DEAL_HUNTER", "Deal Hunter"],
-  ["COMPARISON_CREATOR", "Comparison Creator"],
-  ["CURATED_COLLECTOR", "Curated Collector"],
-  ["VISUAL_ARTIST", "Visual Artist"],
-  ["UGC_CREATOR", "UGC Creator"],
-  ["CINEMATIC_CREATOR", "Cinematic Creator"],
-  ["CREATIVE_DIRECTOR", "Creative Director"],
-  ["AESTHETIC_MINIMALIST", "Aesthetic Minimalist"],
-  ["FOUNDER_VOICE", "Founder Voice"],
-  ["COACH", "Coach"],
-  ["RESEARCHER", "Researcher"],
-  ["THOUGHT_LEADER", "Thought Leader"],
-  ["DEMONSTRATOR", "Demonstrator"],
-] as const;
 
 const ADVANCE_OPTIONS: AdvancePaymentPercentage[] = [0, 25, 50, 75, 100];
 const PAYOUT_OPTIONS: Array<{ value: PayoutTerms; label: string }> = [
@@ -437,9 +404,6 @@ return next;
     },
     [data.objective],
   );
-  const archetypeLabel = (id: string) =>
-    ARCHETYPE_OPTIONS.find(([value]) => value === id)?.[1] ?? id;
-
   const stepProps: StepProps = { data, patchData, errors: fieldErrors, validateOnExit };
 
   if (initialization !== "ready") {
@@ -456,7 +420,11 @@ return next;
     }
     return snapshot;
   }, data) : data;
-  const summaryRows = step === 1 ? campaignStrategySummary(summaryData) : null;
+  const summaryRows = step === 1
+    ? campaignStrategySummary(summaryData)
+    : step === 2
+      ? creatorStrategySummary(data)
+      : null;
   const summary = (
     <CampaignSummary>
       <div className="create-wizard-ledger-body">
@@ -480,7 +448,7 @@ return next;
     !readinessRef.current?.canContinue(true) ||
     campaignStrategyNavigationBlocked(readinessRef.current.state(), autosavePresentation.state === "failed") ||
     (validationAttemptedStep === 1 && Object.keys(fieldErrors).length > 0)
-  ));
+  )) || (step === 2 && validationAttemptedStep === 2 && !creatorStrategyCanContinue(data));
   return (
     <CampaignWizardFrame
       step={step}
@@ -504,7 +472,8 @@ return next;
 }
 
 function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
-  return (
+  return <CreatorStrategyStep data={data} patchData={patchData} errors={errors} validateOnExit={validateOnExit} />;
+  /* return (
     <div className="create-wizard-step">
       <header className="create-wizard-step-head">
         <h1>Creator Strategy</h1>
@@ -569,7 +538,7 @@ function CreatorStep({ data, patchData, errors, validateOnExit }: StepProps) {
         </WizardField>
       </div>
     </div>
-  );
+  ); */
 }
 
 function CommercialStep({ data, patchData, errors, validateOnExit }: StepProps) {

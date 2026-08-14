@@ -60,6 +60,7 @@ export function AudienceAffinityPicker({
 
       <input
         className="cw-input"
+        aria-label="Search affinities"
         value={query}
         disabled={value.length >= max}
         placeholder={value.length >= max ? `Maximum ${max} affinities selected` : "Search affinities"}
@@ -69,7 +70,7 @@ export function AudienceAffinityPicker({
       {value.length < max ? (
         <div className="cw-picker-results" role="listbox" aria-label="Audience affinity results">
           {results.slice(0, 12).map((item) => (
-            <button key={item.id} type="button" className="cw-picker-option" onClick={() => add(item.id)}>
+            <button key={item.id} type="button" role="option" aria-selected="false" className="cw-picker-option" onClick={() => add(item.id)}>
               <strong>{item.label}</strong>
               <span>{item.aliases.slice(0, 3).join(" · ")}</span>
             </button>

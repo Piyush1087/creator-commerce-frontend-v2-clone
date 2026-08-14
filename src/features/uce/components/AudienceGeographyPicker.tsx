@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { env } from "../../../shared/config/env";
 import type { CampaignAudienceGeography } from "../types/campaign-wizard";
+import { providerFailureCopy } from "./creator-strategy/creator-strategy-model";
 import "./CampaignCanonicalPickers.css";
 
 type GoogleAddressComponent = {
@@ -106,6 +107,7 @@ export function AudienceGeographyPicker({
   const valueRef = useRef(value);
   const onChangeRef = useRef(onChange);
   const [error, setError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const globalSelected = value.some((item) => item.scope === "GLOBAL");
 
   valueRef.current = value;
@@ -116,7 +118,7 @@ export function AudienceGeographyPicker({
     let autocomplete: HTMLElement | null = null;
 
     if (!env.googleMapsApiKey) {
-      setError("Google Maps Places is not configured. Set VITE_GOOGLE_MAPS_API_KEY before publishing a Campaign.");
+      setError(providerFailureCopy("configuration"));
       return;
     }
 
@@ -146,13 +148,13 @@ export function AudienceGeographyPicker({
               ]);
               setError(null);
             } catch {
-              setError("That location could not be normalized. Please select another Google Places result.");
+              setError(providerFailureCopy("result"));
             }
           })();
         }) as EventListener);
         hostRef.current.replaceChildren(autocomplete);
-      } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : "Google Maps could not be loaded.");
+      } catch {
+        if (!cancelled) setError(providerFailureCopy("network"));
       }
     })();
 
@@ -160,7 +162,7 @@ export function AudienceGeographyPicker({
       cancelled = true;
       autocomplete?.remove();
     };
-  }, []);
+  }, [loadAttempt]);
 
   return (
     <div className="cw-canonical-picker" onBlur={(event) => {
@@ -188,8 +190,8 @@ export function AudienceGeographyPicker({
       </button>
 
       <div ref={hostRef} className="cw-google-place-host" hidden={globalSelected} />
-      {error ? <p className="cw-field-error" role="alert">{error}</p> : null}
-      <p className="cw-hint">Choose Google Places results. City inputs are stored as locality; multiple selections represent multi-location targeting.</p>
+      {error ? <div className="cw-provider-failure" role="alert"><p>{error}</p><button type="button" onClick={() => { setError(null); setLoadAttempt((attempt) => attempt + 1); }}>Retry</button></div> : null}
+      <p className="cw-hint">Search and select a location from the results. Existing selections remain saved while you search.</p>
     </div>
   );
 }
