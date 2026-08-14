@@ -89,4 +89,17 @@ describe("CanonicalCampaignAutosaveController", () => {
     await vi.runAllTimersAsync();
     expect(save).not.toHaveBeenCalled();
   });
+
+  it("reports only the latest accepted mutation", async () => {
+    const accepted = vi.fn();
+    const controller = new CanonicalCampaignAutosaveController(
+      vi.fn().mockResolvedValue(undefined),
+      0,
+      undefined,
+      accepted,
+    );
+    controller.schedule("objective", "PULSE", true);
+    await controller.flush(["objective"]);
+    expect(accepted).toHaveBeenCalledWith("objective", "PULSE");
+  });
 });

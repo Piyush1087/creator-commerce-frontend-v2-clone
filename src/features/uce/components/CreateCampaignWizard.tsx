@@ -15,6 +15,7 @@ import {
   autosaveCanonicalCampaignField,
   createCanonicalCampaignDraft,
   fetchCanonicalCampaignDraft,
+  fetchCanonicalCampaignReadiness,
   publishCanonicalCampaignDraft,
 } from "../api/canonical-campaign-draft-client";
 import { CanonicalCampaignAutosaveController } from "../autosave/canonical-campaign-autosave-controller";
@@ -23,6 +24,7 @@ import {
   mergeCanonicalDraftIntoWizardData,
 } from "../mappers/canonical-campaign-draft";
 import { mapWizardToCanonicalPayload } from "../mappers/map-wizard-to-canonical-payload";
+import { CanonicalCampaignReadinessController } from "../readiness/canonical-campaign-readiness-controller";
 import type {
   AdvancePaymentPercentage,
   BrandSupportType,
@@ -153,7 +155,9 @@ export function CreateCampaignWizard() {
   const hydrated = useRef(false);
   const draftIdRef = useRef<string | null>(null);
   const autosaveRef = useRef<CanonicalCampaignAutosaveController<WizardData> | null>(null);
+  const readinessRef = useRef<CanonicalCampaignReadinessController | null>(null);
   const [, setAutosaveVersion] = useState(0);
+  const [, setReadinessVersion] = useState(0);
   // Retained during the transition so the legacy unreachable branch remains type-safe.
   const saveTimers = useRef<Partial<Record<WizardFieldKey, number>>>({});
   const revisions = useRef<Partial<Record<WizardFieldKey, number>>>({});
@@ -165,6 +169,13 @@ export function CreateCampaignWizard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
+  if (!readinessRef.current) {
+    readinessRef.current = new CanonicalCampaignReadinessController(
+      fetchCanonicalCampaignReadiness,
+      () => setReadinessVersion((version) => version + 1),
+    );
+  }
+
   if (!autosaveRef.current) {
     autosaveRef.current = new CanonicalCampaignAutosaveController<WizardData>(
       async (field, snapshot) => {
@@ -174,6 +185,10 @@ export function CreateCampaignWizard() {
       },
       350,
       () => setAutosaveVersion((version) => version + 1),
+      (field, snapshot) => {
+        if (field !== "objective" || !draftIdRef.current || !snapshot.objective) return;
+        readinessRef.current?.objectiveAccepted(draftIdRef.current, snapshot.objective);
+      },
     );
   }
 
@@ -181,7 +196,10 @@ export function CreateCampaignWizard() {
     draftIdRef.current = draftId;
   }, [draftId]);
 
-  useEffect(() => () => autosaveRef.current?.dispose(), []);
+  useEffect(() => () => {
+    autosaveRef.current?.dispose();
+    readinessRef.current?.dispose();
+  }, []);
 
   useEffect(() => {
     if (initStarted.current) return;
@@ -192,8 +210,11 @@ export function CreateCampaignWizard() {
       if (storedId) {
         try {
           const existing = await fetchCanonicalCampaignDraft(storedId);
-          setData((current) => mergeCanonicalDraftIntoWizardData(current, existing.draft));
+          const merged = mergeCanonicalDraftIntoWizardData(INITIAL_DATA, existing.draft);
+          setData(merged);
           setDraftId(existing.campaignId);
+          draftIdRef.current = existing.campaignId;
+          readinessRef.current?.hydrate(existing.campaignId, merged.objective || null);
           setDraftStatus("Draft resumed");
           hydrated.current = true;
           return;
@@ -206,6 +227,8 @@ export function CreateCampaignWizard() {
         const created = await createCanonicalCampaignDraft();
         window.localStorage.setItem(DRAFT_STORAGE_KEY, created.campaignId);
         setDraftId(created.campaignId);
+        draftIdRef.current = created.campaignId;
+        readinessRef.current?.hydrate(created.campaignId, null);
         setDraftStatus("Draft created");
         hydrated.current = true;
       } catch (error) {
@@ -261,6 +284,9 @@ export function CreateCampaignWizard() {
       autosaveRef.current?.forget("brandSupportEstimatedValue");
       supersede("brandSupportType");
       supersede("brandSupportEstimatedValue");
+    }
+    if (patch.objective !== undefined && draftIdRef.current) {
+      readinessRef.current?.objectiveChanged(draftIdRef.current, patch.objective || null);
     }
     setData((prev) => {
       const next = { ...prev, ...patch };
@@ -345,6 +371,11 @@ return next;
     } catch (error) {
       setDraftStatus("Save failed");
       setFormError(error instanceof Error ? error.message : "Could not save Campaign draft.");
+      return;
+    }
+
+    if (step === 1 && !readinessRef.current?.canContinue(true)) {
+      setFormError("Campaign KPI readiness must resolve before continuing.");
       return;
     }
 
@@ -440,7 +471,7 @@ return next;
               <ArrowLeft size={18} /> Back
             </Button>
           ) : null}
-          <Button variant="primary" disabled={isPublishing || !draftId} onClick={() => void handleContinue()}>
+          <Button variant="primary" disabled={isPublishing || !draftId || (step === 1 && !readinessRef.current?.canContinue(true))} onClick={() => void handleContinue()}>
             {step === 3 ? (isPublishing ? "Publishing Campaign…" : "Save & Publish Campaign") : (
               <>Next: {STEP_LABELS[step]} <ArrowRight size={18} /></>
             )}

@@ -23,6 +23,7 @@ export class CanonicalCampaignAutosaveController<T> {
     private readonly save: (key: AutosaveKey, value: T) => Promise<void>,
     private readonly delay = 350,
     private readonly onStatusChange?: () => void,
+    private readonly onAccepted?: (key: AutosaveKey, value: T) => void,
   ) {}
 
   schedule(key: AutosaveKey, value: T, immediate = false): void {
@@ -119,6 +120,7 @@ export class CanonicalCampaignAutosaveController<T> {
           latest.accepted = JSON.stringify(value);
           latest.status = "saved";
           this.notify();
+          this.onAccepted?.(key, value);
         }
       })
       .catch(() => {

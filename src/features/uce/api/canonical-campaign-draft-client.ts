@@ -16,18 +16,63 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length ? JSON.parse(text) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
-      typeof body === "object" && body !== null &&
+      typeof body === "object" &&
+      body !== null &&
       typeof (body as { message?: unknown }).message === "string"
         ? (body as { message: string }).message
         : `Request failed (${response.status}).`;
-    throw new Error(message);
+    throw new CanonicalDraftRequestError(message, response.status);
   }
   return body;
 }
+
+export class CanonicalDraftRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number | null,
+  ) {
+    super(message);
+    this.name = "CanonicalDraftRequestError";
+  }
+}
+
+export type CanonicalReadinessObjective =
+  | "PULSE"
+  | "PROOF"
+  | "PRODUCTION"
+  | "PUSH";
+export type CanonicalReadinessCurrency = "INR" | "USD";
+
+export type CanonicalCampaignReadinessResponse =
+  | {
+      campaignId: string;
+      objective: null;
+      status: "NOT_READY";
+      reason: "OBJECTIVE_REQUIRED";
+    }
+  | {
+      campaignId: string;
+      objective: CanonicalReadinessObjective;
+      status: "READY";
+      currency: CanonicalReadinessCurrency;
+      primaryKpi: string;
+      supportingKpis: string[];
+      revision: string;
+    }
+  | {
+      campaignId: string;
+      objective: CanonicalReadinessObjective;
+      status: "FAILED";
+      reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE";
+      retryable: false;
+      revision: string;
+    };
 
 export type CanonicalCampaignDraftPath =
   | "strategy.campaign_name"
@@ -80,6 +125,26 @@ export async function fetchCanonicalCampaignDraft(
     { method: "GET", headers: authHeaders() },
   );
   return (await readJsonOrThrow(response)) as CanonicalDraftEnvelope;
+}
+
+export async function fetchCanonicalCampaignReadiness(
+  campaignId: string,
+): Promise<CanonicalCampaignReadinessResponse> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/readiness`,
+      { method: "GET", headers: authHeaders() },
+    );
+  } catch {
+    throw new CanonicalDraftRequestError(
+      "Campaign readiness is temporarily unavailable.",
+      null,
+    );
+  }
+  return (await readJsonOrThrow(
+    response,
+  )) as CanonicalCampaignReadinessResponse;
 }
 
 export async function autosaveCanonicalCampaignField(
