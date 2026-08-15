@@ -46,18 +46,6 @@ export async function fetchCollaborationMessages(id: string): Promise<Collaborat
 export async function postCollaborationMessage(id: string, body: string): Promise<void> {
   await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/messages`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ body }) }));
 }
-export async function upsertCreatorBankDetails(payload: {
-  account_holder: string;
-  bank_name: string;
-  account_number: string;
-  ifsc_or_routing: string;
-}): Promise<{ bank_details_id: string }> {
-  return (await readJsonOrThrow(await fetch(`${BASE}/creator/bank-details`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  }))) as { bank_details_id: string };
-}
 async function command(id: string, path: string, body: Record<string, unknown>): Promise<CollaborationDetailResponse> {
   return parseCollaborationDetail(await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/${path}`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) })));
 }

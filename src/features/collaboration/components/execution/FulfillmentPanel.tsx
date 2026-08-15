@@ -1,9 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Alert, Button, SelectField, TextField } from "../../../../design-system/aurora";
+import { Alert, Button, TextField } from "../../../../design-system/aurora";
 import type { UserRole } from "../../../../shared/auth/user-role";
 import type { ProvideFulfillmentPayload, ReportFulfillmentIssuePayload } from "../../api/collaboration-client";
 import type { CollaborationBrandSupportType, CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
 import { collaborationCapabilities } from "../../utils/collaboration-capabilities";
+import {
+  buildFulfillmentIssuePayload,
+  FULFILLMENT_ISSUE_DESCRIPTION_MAX,
+} from "../../utils/collaboration-fulfillment-issue";
 import { FulfillmentIssueHistory } from "./FulfillmentIssueHistory";
 
 type Props = { detail: CollaborationDetailResponse; role: UserRole; busyAction: string | null; onProvide: (payload: ProvideFulfillmentPayload) => void; onConfirm: () => void; onReportIssue: (payload: ReportFulfillmentIssuePayload) => void; onRemediate: (evidenceRef: string) => void };
@@ -62,8 +66,9 @@ export function FulfillmentPanel({ detail, role, busyAction, onProvide, onConfir
   };
   const submitIssue = (event: FormEvent) => {
     event.preventDefault();
-    if (issueDescription.trim().length < 3) { setIssueError("Describe what needs attention."); return; }
-    setIssueError(undefined); onReportIssue({ issueCode: "FULFILLMENT_NOT_AS_EXPECTED", description: issueDescription.trim(), evidenceRef: trimmed(issueEvidence) });
+    const built = buildFulfillmentIssuePayload(issueDescription, issueEvidence);
+    if (!built.ok) { setIssueError(built.error); return; }
+    setIssueError(undefined); onReportIssue(built.payload);
   };
   const submitRemediation = (event: FormEvent) => {
     event.preventDefault();
@@ -119,8 +124,16 @@ export function FulfillmentPanel({ detail, role, busyAction, onProvide, onConfir
 
     {capabilities.has("report-fulfillment-issue") ? <form className="collab-command-form" onSubmit={submitIssue} aria-busy={busyAction === "report-fulfillment-issue"}>
       <h5>Report an issue</h5>
-      <SelectField label="Issue type" value="FULFILLMENT_NOT_AS_EXPECTED" options={[{ value: "FULFILLMENT_NOT_AS_EXPECTED", label: "Fulfillment not as expected" }]} disabled />
-      <TextField label="What needs attention?" multiline value={issueDescription} onChange={(event) => { setIssueDescription(event.target.value); setIssueError(undefined); }} error={issueError} disabled={busyAction !== null} />
+      <TextField
+        label="Describe the issue"
+        multiline
+        value={issueDescription}
+        onChange={(event) => { setIssueDescription(event.target.value); setIssueError(undefined); }}
+        error={issueError}
+        disabled={busyAction !== null}
+        maxLength={FULFILLMENT_ISSUE_DESCRIPTION_MAX}
+        helperText="Describe what needs attention. Evidence is optional."
+      />
       <TextField label="Evidence reference (optional)" value={issueEvidence} onChange={(event) => setIssueEvidence(event.target.value)} disabled={busyAction !== null} />
       <Button type="submit" variant="secondary" disabled={busyAction !== null} fullWidthOnMobile>{busyAction === "report-fulfillment-issue" ? "Reporting…" : "Report issue"}</Button>
     </form> : null}

@@ -1,5 +1,39 @@
 import { SideDrawer } from "../../../../design-system/aurora/components/SideDrawer";
 import type { CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
-export function BrandContextDrawer({ detail, open, onClose }: { detail: CollaborationDetailResponse; open: boolean; onClose: () => void }) {
-  return <SideDrawer isOpen={open} onClose={onClose} title={detail.identity.brand.displayName ?? "Brand"} subtitle="Current collaboration context"><p>{detail.sourceContext.campaign.name}</p><p>{detail.sourceContext.brief.title}</p><p>Additional Brand relationship context requires a dedicated canonical endpoint.</p></SideDrawer>;
+import { collaborationCounterpartMvpFields } from "../../utils/collaboration-counterpart-context";
+
+export function BrandContextDrawer({
+  detail,
+  open,
+  onClose,
+}: {
+  detail: CollaborationDetailResponse;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const fields = collaborationCounterpartMvpFields(detail, "CREATOR");
+  return (
+    <SideDrawer isOpen={open} onClose={onClose} title={fields.displayName} subtitle="Collaboration context">
+      <dl className="collab-facts">
+        {fields.campaignName ? (
+          <div>
+            <dt>Campaign</dt>
+            <dd>{fields.campaignName}</dd>
+          </div>
+        ) : null}
+        {fields.campaignAssetName ? (
+          <div>
+            <dt>Campaign asset</dt>
+            <dd>{fields.campaignAssetName}</dd>
+          </div>
+        ) : null}
+        {fields.briefTitle ? (
+          <div>
+            <dt>Brief</dt>
+            <dd>{fields.briefTitle}</dd>
+          </div>
+        ) : null}
+      </dl>
+    </SideDrawer>
+  );
 }
