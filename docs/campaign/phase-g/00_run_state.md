@@ -6,7 +6,14 @@
 Module: Campaign Page
 Actor: BRAND
 Supervisor mode: ENABLED
-Current stage: Consolidated G1 accepted; G2 eligible
+Current stage: G2.3 screen contracts complete; final Product review required
+Consolidated G1: ACCEPTED
+Final frontend checkpoint: e00f383b4bfb1181a42d31f16e26ce23e5797006
+Final backend checkpoint: 0f2c6c7b659d7305d36bd2ee0775973494d5a95e
+G2 eligibility: YES
+G2.1: COMPLETE / PRODUCT_APPROVED
+G2.2: COMPLETE / PRODUCT_APPROVED_WITH_AMENDMENT
+STITCH_REQUIRED: 6
 Stitch eligibility: NO
 Merge status: NOT_MERGED
 Deployment status: NOT_DEPLOYED
@@ -57,7 +64,7 @@ Frozen: HYBRID CANONICAL-CUTOVER policy supplied by Product on 2026-08-15.
 
 Migrated-schema runtime acceptance is closed on disposable `creator_shop_g1_clean_acceptance`; frozen `creator_shop_acceptance` remains unmodified. Frontend host Vitest is also closed: 3 files and 6/6 tests pass. Codex-local path resolution remains an environment limitation only.
 
-## 7. Current package result
+## 7. Historical initial consolidated package result
 
 ```text
 Stage: Consolidated G1 functional acceptance
@@ -73,7 +80,7 @@ Frontend focused tests: PASS — 3 files, 6/6 tests in normal host PowerShell
 Blocking findings: CAM-G1-CONS-001 read-error retry; CAM-G1-CONS-002 selected-workspace persistence; CAM-G1-CONS-003 authenticated responsive runtime evidence
 ```
 
-## 8. Supervisor decision
+## 8. Historical initial consolidated Supervisor decision
 
 ```text
 Decision: RETRY_CURRENT_PHASE
@@ -91,7 +98,7 @@ Execution completed: YES
 Result artifact/path: `docs/campaign/phase-g/10_consolidated_g1_functional_acceptance.md`
 ```
 
-## 10. G2 / Stitch gate
+## 10. Historical pre-repair G2 / Stitch gate
 
 ```text
 Consolidated G1 accepted: NO — NOT_ACCEPTED
@@ -129,8 +136,49 @@ CAM-G1-CONS-003: CLOSED
 Final frontend checkpoint: e00f383b4bfb1181a42d31f16e26ce23e5797006
 Final backend checkpoint: 0f2c6c7b659d7305d36bd2ee0775973494d5a95e
 G2 eligibility: YES
-G2 execution: NOT_STARTED
+G2.1: COMPLETE / PRODUCT_APPROVED
+G2.2: COMPLETE / PRODUCT_APPROVED_WITH_AMENDMENT
+STITCH_REQUIRED: 6
+G2.3 execution: COMPLETE
 Stitch invoked: NO
+Merge status: NOT_MERGED
+Deployment status: NOT_DEPLOYED
+```
+
+## 13. G2.1 + G2.2 UX / IA freeze recommendation
+
+```text
+G2.1 artifact: 11_g2_1_campaign_workspace_authority_matrix.md
+G2.1 status: COMPLETE / PRODUCT_APPROVED
+G2.2 artifact: 12_g2_2_ui_state_inventory_and_stitch_selection.md
+G2.2 status: COMPLETE / PRODUCT_APPROVED_WITH_AMENDMENT
+Functional states identified: 31
+Design-distinct families: 17
+Proposed Stitch-required states: 6
+Product decisions required: NONE
+Supervisor decision: ADVANCE_TO_G2_3
+Next eligible action: G2.3 screen-contract generation
+G2.3 generated: YES
+Stitch invoked: NO
+Frontend/backend implementation changed: NO
+Merge status: NOT_MERGED
+Deployment status: NOT_DEPLOYED
+```
+
+## 14. G2.3 screen-contract result
+
+```text
+G2.3 artifact: 13_g2_3_stitch_screen_contracts.md
+G2.3 status: COMPLETE
+Final Stitch screen count: 6
+Final states: CP-ST-01, CP-ST-02, CP-ST-03, CP-ST-04, CP-ST-05, CP-ST-07
+CP-ST-06: CODE_ONLY_VARIANT governed by CP-ST-01 and Aurora error/retry patterns
+Stitch worker input manifest: COMPLETE
+Product decisions required: NONE
+Supervisor decision: STOP_FOR_FINAL_PRODUCT_REVIEW
+Cross-chat handoff prompt created: NO
+Stitch invoked: NO
+Frontend/backend implementation changed: NO
 Merge status: NOT_MERGED
 Deployment status: NOT_DEPLOYED
 ```
