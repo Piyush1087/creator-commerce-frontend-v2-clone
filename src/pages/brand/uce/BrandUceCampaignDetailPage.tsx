@@ -2,16 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
-import {
-  CampaignPipelineWorkspace,
-  type PipelineTab,
-} from "../../../features/uce/components/CampaignPipelineWorkspace";
 import { CampaignProductsBriefsRepository } from "../../../features/uce/components/CampaignProductsBriefsRepository";
 import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
 import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
 import { CampaignAssetReconciliationCard } from "../../../features/uce/components/CampaignAssetReconciliationCard";
 import { CanonicalCampaignBriefsCard } from "../../../features/uce/components/CanonicalCampaignBriefsCard";
+import { CampaignParticipationCard } from "../../../features/uce/components/CampaignParticipationCard";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
 import {
   fetchCampaignShell,
@@ -51,7 +48,6 @@ export function BrandUceCampaignDetailPage() {
     [shell],
   );
 
-  const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [isBriefSnapshotOpen, setIsBriefSnapshotOpen] = useState(false);
   const [viewProductId, setViewProductId] = useState<string | null>(null);
@@ -190,12 +186,7 @@ export function BrandUceCampaignDetailPage() {
       />
 
       {loadedShell.capabilities.can_execute_campaign ? (
-        <CampaignPipelineWorkspace
-          campaignId={loadedShell.campaign_id}
-          campaignName={loadedShell.campaign_name}
-          activeTab={activeWorkspaceTab}
-          onTabChange={setWorkspaceTab}
-        />
+        <CampaignParticipationCard campaignId={loadedShell.campaign_id} />
       ) : null}
 
       <ProductDetailDrawer

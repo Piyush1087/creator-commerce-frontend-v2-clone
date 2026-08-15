@@ -168,6 +168,21 @@ export type CreateCanonicalCampaignBriefBody = {
   }>;
 };
 
+export type CampaignDiscoveryProjection = {
+  availability: "UNAVAILABLE";
+  message: string;
+  recommendations: [];
+};
+
+export type CampaignApplicationProjection = {
+  application_id: string;
+  status: "SUBMITTED" | "ACCEPTED" | "REJECTED";
+  creator: { creator_user_id: string; name: string | null; email: string };
+  brief: { brief_id: string; title: string };
+  collaboration_reference: { collaboration_id: string } | null;
+  created_at: string;
+};
+
 export type CampaignAssetKind = "BRAND" | "OFFERING" | "OFFER";
 
 export type CampaignAssetProjection = {

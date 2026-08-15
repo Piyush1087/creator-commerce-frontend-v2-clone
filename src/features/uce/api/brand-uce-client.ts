@@ -21,6 +21,8 @@ import type {
   CampaignAssetKind,
   CanonicalCampaignBrief,
   CreateCanonicalCampaignBriefBody,
+  CampaignApplicationProjection,
+  CampaignDiscoveryProjection,
 } from "../contracts/brand-uce.contracts";
 import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
 
@@ -181,6 +183,38 @@ export async function createCanonicalCampaignBrief(
     },
   );
   return (await readJsonOrThrow(response)) as CanonicalCampaignBrief;
+}
+
+export async function fetchCampaignDiscovery(
+  campaignId: string,
+): Promise<CampaignDiscoveryProjection> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/discovery`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CampaignDiscoveryProjection;
+}
+
+export async function fetchCampaignApplications(
+  campaignId: string,
+): Promise<CampaignApplicationProjection[]> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CampaignApplicationProjection[];
+}
+
+export async function decideCampaignApplication(
+  campaignId: string,
+  applicationId: string,
+  decision: "accept" | "reject",
+): Promise<CampaignApplicationProjection> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/${decision}`,
+    { method: "POST", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CampaignApplicationProjection;
 }
 
 export async function patchCampaignStatus(
