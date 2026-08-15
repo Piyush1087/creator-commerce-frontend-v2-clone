@@ -83,7 +83,7 @@ Phase: G2 (G2.1–G2.5 package)
 Status: ACCEPTED
 
 Starting frontend SHA: ee589033128ba082d9993f084d4ff592476c51ee
-Final frontend SHA:    (docs commit SHA after push)
+Final frontend SHA:    9eab0803bf0ce68453653d0dba48e3ae436169f7
 Starting backend SHA:  b7c726c8e7fba114ee7a0c2b09aac7aaae698ec5
 Final backend SHA:     b7c726c8e7fba114ee7a0c2b09aac7aaae698ec5
 
@@ -113,7 +113,7 @@ Files created/changed:
 - docs/collaboration/phase-g/16_g2_acceptance_summary.md
 
 Documentation file: 16_g2_acceptance_summary.md
-Commit SHA: (pending)
+Commit SHA: 9eab0803bf0ce68453653d0dba48e3ae436169f7
 
 Next phase: STOP
 Reason: G2 complete. Operator override prohibits autonomous G3 Stitch. Return to Product for Stitch authorization.
