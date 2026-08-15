@@ -5,6 +5,41 @@
 **Scope:** Integrated verification of accepted G1R + G1A + G1B + G1C only  
 **No G2, Stitch, redesign, merge, deployment, or production infrastructure**
 
+## Machine-parseable gate summary (autonomous playbook)
+
+```text
+G1 consolidated status: ACCEPTED WITH DEBT
+G2 entry: AUTHORIZED
+G2 entry note: Prior prose used AUTHORIZED WITH G1R DEBT; machine gate is AUTHORIZED with debt carried below.
+
+Starting frontend SHA: 293a3c9b4254580b4a873131df804e38a24a10a6
+Final frontend Phase-G tip: ee589033128ba082d9993f084d4ff592476c51ee
+Starting backend SHA: da6a185e88e330f51fa6d3f9345e9193c055f51c
+Final backend Phase-G tip: b7c726c8e7fba114ee7a0c2b09aac7aaae698ec5
+
+Unresolved source regressions: None
+Authority conflicts: None
+Environment blockers for G2 docs: None (runtime fixtures exist for Negotiation/Securement/Cancel path)
+
+G1R debt carried:
+- Brand-UCE prettier/ESLint formatting debt
+- Missing dedicated Brand-UCE approve integration test
+- Invalid/legacy deep-link unavailable presentation consistency
+- PAUSED/COMPLETED/TERMINATED + Fulfillment/Production-Publishing browser fixtures not in seed
+
+Deferred owners carried:
+- COL-G0-022 settlement adapter (Payout/Escrow)
+- Relationship-history / richer Intelligence
+- Fulfillment taxonomy productization
+- Campaign pipeline Application→Collaboration provision UI
+- Pause/resume command surface; provider/scheduler dependencies
+
+Visual debt moving to G2:
+- Information hierarchy, density, Aurora composition, breakpoint refinement
+- Consistent loading/empty/error/degraded visual treatment (preserve pane-local recovery semantics)
+- Screenshot pack under docs/collaboration/phase-g/g2-visual-observations/
+```
+
 ---
 
 ## 1. Final baselines
@@ -12,7 +47,7 @@
 | Field | Value |
 |---|---|
 | Starting frontend SHA | `293a3c9b4254580b4a873131df804e38a24a10a6` |
-| Final frontend Phase-G tip | `a1a9be58ad518d3a2929511094f2e19c008215f4` |
+| Final frontend Phase-G tip | `ee589033128ba082d9993f084d4ff592476c51ee` |
 | Frontend branch | `phase-g/collaboration-g1c-ownership-context` |
 | Starting backend SHA | `da6a185e88e330f51fa6d3f9345e9193c055f51c` |
 | Final backend Phase-G tip | `b7c726c8e7fba114ee7a0c2b09aac7aaae698ec5` |
@@ -299,9 +334,9 @@ Visual observations:
 
 ## 23. G2 entry decision
 
-**AUTHORIZED WITH G1R DEBT**
+**AUTHORIZED** (G1R debt carried — see gate summary and §21)
 
-Accepted G1 source baselines are intact. Consolidated runtime proof for access, messaging, counterpart, negotiation lock, Creator cancel, terminal read-only messaging, mobile nav, and automated gates is complete enough to authorize G2 visual work.
+Accepted G1 source baselines are intact. Consolidated runtime proof for access, messaging, counterpart, negotiation lock, Creator cancel, terminal read-only messaging, mobile nav, and automated gates is complete enough to authorize G2 UX/IA freeze work.
 
 G2 must not expand into Campaign pipeline provision, fulfillment taxonomy, or settlement adapter ownership.
 
