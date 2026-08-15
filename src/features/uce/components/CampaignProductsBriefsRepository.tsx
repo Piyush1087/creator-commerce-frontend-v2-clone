@@ -175,14 +175,16 @@ function ProductBlock({
         <BriefRow key={brief.id} brief={brief} onViewBrief={onViewBrief} nested />
       ))}
 
-      <button
-        type="button"
-        className="uce-add-brief-btn"
-        onClick={() => onCreateBrief(product.id)}
-      >
-        <Plus size={18} />
-        Create &amp; Add Strategic Brief to {product.name}
-      </button>
+      {allowLegacyWrites ? (
+        <button
+          type="button"
+          className="uce-add-brief-btn"
+          onClick={() => onCreateBrief(product.id)}
+        >
+          <Plus size={18} />
+          Create &amp; Add Strategic Brief to {product.name}
+        </button>
+      ) : null}
     </div>
   );
 }

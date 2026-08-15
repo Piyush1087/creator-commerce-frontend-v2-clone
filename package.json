@@ -9,6 +9,7 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test:g1a": "vitest run src/features/uce/components/CampaignAssetReconciliationCard.test.tsx",
+    "test:g1b": "vitest run src/features/uce/components/CanonicalCampaignBriefsCard.test.tsx",
     "preview": "vite preview"
   },
   "dependencies": {

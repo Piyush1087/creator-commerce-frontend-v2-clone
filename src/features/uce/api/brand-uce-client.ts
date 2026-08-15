@@ -19,6 +19,8 @@ import type {
   UpdateCampaignProductBody,
   SelectableCampaignAsset,
   CampaignAssetKind,
+  CanonicalCampaignBrief,
+  CreateCanonicalCampaignBriefBody,
 } from "../contracts/brand-uce.contracts";
 import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
 
@@ -164,6 +166,21 @@ export async function selectCampaignAsset(
     },
   );
   return (await readJsonOrThrow(response)) as CampaignAssetProjection;
+}
+
+export async function createCanonicalCampaignBrief(
+  campaignId: string,
+  body: CreateCanonicalCampaignBriefBody,
+): Promise<CanonicalCampaignBrief> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/canonical-briefs`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalCampaignBrief;
 }
 
 export async function patchCampaignStatus(

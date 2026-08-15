@@ -105,6 +105,8 @@ export type CampaignShellResponse = {
     can_select_campaign_asset: boolean;
     can_execute_campaign: boolean;
     legacy_products_read_only: boolean;
+    can_create_canonical_brief: boolean;
+    legacy_briefs_read_only: boolean;
   };
   zone_1_master: {
     timeline_type: string;
@@ -120,6 +122,7 @@ export type CampaignShellResponse = {
   zone_2_tactics: {
     products: CampaignShellProduct[];
     briefs: CampaignShellBrief[];
+    canonical_briefs: CanonicalCampaignBrief[];
   };
   performance_aggregate: {
     total_spend_to_date: number;
@@ -131,6 +134,37 @@ export type CampaignShellResponse = {
     key: string;
     label: string;
     satisfied: boolean;
+  }>;
+};
+
+export type CanonicalBriefDeliverable = {
+  deliverable_id: string;
+  format: string;
+  quantity: number;
+  creative_requirements: string;
+  publishing_required: boolean;
+};
+
+export type CanonicalCampaignBrief = {
+  brief_id: string;
+  campaign_asset_id: string;
+  title: string;
+  creative_requirements: string;
+  is_active: boolean;
+  deliverables: CanonicalBriefDeliverable[];
+  readiness: { ready: boolean; missing_requirements: string[] };
+  created_at: string;
+};
+
+export type CreateCanonicalCampaignBriefBody = {
+  campaign_asset_id: string;
+  title: string;
+  creative_requirements: string;
+  deliverables: Array<{
+    format: string;
+    quantity: number;
+    creative_requirements: string;
+    publishing_required: boolean;
   }>;
 };
 

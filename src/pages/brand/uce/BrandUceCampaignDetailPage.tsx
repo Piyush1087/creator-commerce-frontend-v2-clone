@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
-import { BriefingWizardDrawer } from "../../../features/uce/components/BriefingWizardDrawer";
 import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
 import {
   CampaignPipelineWorkspace,
@@ -12,9 +11,9 @@ import { CampaignShareRouterModal } from "../../../features/uce/components/Campa
 import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
 import { CampaignAssetReconciliationCard } from "../../../features/uce/components/CampaignAssetReconciliationCard";
+import { CanonicalCampaignBriefsCard } from "../../../features/uce/components/CanonicalCampaignBriefsCard";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
 import {
-  createCampaignBrief,
   fetchCampaignShell,
   patchCampaignEssentials,
   patchCampaignStatus,
@@ -55,28 +54,15 @@ export function BrandUceCampaignDetailPage() {
   const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [isBriefSnapshotOpen, setIsBriefSnapshotOpen] = useState(false);
-  const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
-  const [briefWizardProductId, setBriefWizardProductId] = useState<string | null>(null);
   const [viewProductId, setViewProductId] = useState<string | null>(null);
   const [viewBrief, setViewBrief] = useState<RepositoryBrief | null>(null);
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
   const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
   const [isSavingEssentials, setIsSavingEssentials] = useState(false);
-  const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
 
   const viewProduct = products.find((p) => p.id === viewProductId) ?? null;
-
-  const briefWizardProducts = useMemo(
-    () =>
-      products.map((p) => ({
-        id: p.id,
-        name: p.name,
-        sku: p.skuCode,
-      })),
-    [products],
-  );
 
   const handleStatusChange = async (nextActive: boolean) => {
     if (!shell) return;
@@ -137,54 +123,6 @@ export function BrandUceCampaignDetailPage() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
 
-  const briefWizard = (
-    <BriefingWizardDrawer
-      isOpen={isBriefWizardOpen}
-      onClose={() => {
-        setIsBriefWizardOpen(false);
-        setBriefWizardProductId(null);
-      }}
-      campaignId={loadedShell.campaign_id}
-      campaignName={loadedShell.campaign_name}
-      initialProductId={briefWizardProductId}
-      campaignProducts={briefWizardProducts}
-      archetypeOptions={
-        loadedShell.zone_1_targeting?.creator_archetypes ?? []
-      }
-      logisticsDefaults={{
-        deadlineDescriptor:
-          loadedShell.zone_1_master?.timeline_type === "DYNAMIC_ROLLING"
-            ? `Dynamic rolling (${loadedShell.zone_1_master.dynamic_days_limit ?? "n/a"} days)`
-            : "Fixed campaign end date",
-        fixedCalendarTargetDate:
-          loadedShell.zone_1_master?.fixed_end_date ??
-          new Date(Date.now() + 14 * 86400000).toISOString(),
-        baseEscrowPayout:
-          loadedShell.zone_1_commercials?.fixed_fee_amount ??
-          loadedShell.zone_1_commercials?.negotiable_min_fee ??
-          0,
-        commissionPercent:
-          loadedShell.zone_1_commercials?.advance_payment_percentage ?? 0,
-        samplesRequired: true,
-      }}
-      isSubmitting={isSavingBrief}
-      onSubmitBrief={async (body) => {
-        setIsSavingBrief(true);
-        try {
-          await createCampaignBrief(loadedShell.campaign_id, body);
-          await reload({ silent: true });
-        } finally {
-          setIsSavingBrief(false);
-        }
-      }}
-    />
-  );
-
-  /* Same pattern as Create Campaign: wizard is page content under real AppShell chrome */
-  if (isBriefWizardOpen) {
-    return briefWizard;
-  }
-
   return (
     <div className="campaign-workspace-canvas">
       {statusError ? (
@@ -230,10 +168,17 @@ export function BrandUceCampaignDetailPage() {
           setIsBriefSnapshotOpen(true);
         }}
         onCreateBrief={(productId) => {
-          setBriefWizardProductId(productId);
-          setIsBriefWizardOpen(true);
+          void productId;
         }}
         allowLegacyWrites={false}
+      />
+
+      <CanonicalCampaignBriefsCard
+        campaignId={loadedShell.campaign_id}
+        assets={loadedShell.campaign_assets}
+        briefs={loadedShell.zone_2_tactics.canonical_briefs}
+        canCreate={loadedShell.capabilities.can_create_canonical_brief}
+        onCreated={() => reload({ silent: true }).then(() => undefined)}
       />
 
       <CampaignAssetReconciliationCard
