@@ -34,7 +34,11 @@
 @media (prefers-reduced-motion: reduce) { .campaign-initialization__spinner { animation: none; } }
 
 @media (max-width: 767px) {
-  .campaign-frame { min-height: auto; padding: var(--space-sm); padding-bottom: calc(var(--height-bottom-nav) + 96px + env(safe-area-inset-bottom)); }
+  .campaign-frame {
+    min-height: auto;
+    padding: var(--space-sm);
+    padding-bottom: calc(var(--height-bottom-nav) + 128px + var(--space-md) + env(safe-area-inset-bottom));
+  }
   .campaign-frame__header { margin-bottom: var(--space-sm); }
   .campaign-frame__breadcrumb, .campaign-frame__title-row h1, .campaign-progress:not(.campaign-progress--compact) { display: none; }
   .campaign-frame__title-row { min-height: auto; align-items: start; }

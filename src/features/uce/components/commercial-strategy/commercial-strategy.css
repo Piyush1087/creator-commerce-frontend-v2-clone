@@ -15,5 +15,19 @@
 .commercial-currency-field > span, .commercial-currency-field > strong { padding: 0 14px; color: var(--text-muted); }
 .commercial-currency-field .cw-input { border: 0; border-radius: 0; box-shadow: none; padding-inline: 0; }
 .commercial-optional { margin-left: 8px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
-@media (max-width: 767px) { .commercial-strategy-step { gap: 24px; } .commercial-section { padding: 24px; } .commercial-grid { grid-template-columns: 1fr; } .commercial-choice-grid--advance { grid-template-columns: repeat(5, minmax(44px, 1fr)); gap: 6px; } .commercial-choice-grid--advance .commercial-choice { min-width: 0; padding-inline: 4px; } }
-@media (max-width: 374px) { .commercial-choice-grid--advance { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 767px) {
+  .commercial-strategy-step { gap: 24px; }
+  .commercial-section { padding: 24px; }
+  .commercial-grid { grid-template-columns: 1fr; }
+  .commercial-choice-grid--advance {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-sm);
+  }
+  .commercial-choice-grid--advance .commercial-choice {
+    min-width: 0;
+    min-height: 44px;
+    justify-content: flex-start;
+    gap: var(--space-xs);
+    padding-inline: var(--space-sm);
+  }
+}
