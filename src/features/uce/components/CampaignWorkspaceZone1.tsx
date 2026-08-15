@@ -50,6 +50,11 @@ export function CampaignWorkspaceZone1({
 }: CampaignWorkspaceZone1Props) {
   const [isExpanded, setIsExpanded] = useState(true);
   const isActive = shell?.current_status === "ACTIVE";
+  const canToggleLifecycle = Boolean(
+    shell?.capabilities.can_pause ||
+      shell?.capabilities.can_activate ||
+      shell?.capabilities.can_resume,
+  );
 
   useEffect(() => {
     if (shell?.current_status) {
@@ -121,7 +126,7 @@ export function CampaignWorkspaceZone1({
               <input
                 type="checkbox"
                 checked={isActive}
-                disabled={!shell || statusUpdating || shell.current_status === "COMPLETED" || shell.current_status === "ARCHIVED"}
+                disabled={!shell || statusUpdating || !canToggleLifecycle}
                 onChange={(e) => onStatusChange?.(e.target.checked)}
               />
               <span className="uce-active-toggle-track" />

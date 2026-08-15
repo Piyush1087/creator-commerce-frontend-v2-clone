@@ -107,6 +107,12 @@ export type CampaignShellResponse = {
     legacy_products_read_only: boolean;
     can_create_canonical_brief: boolean;
     legacy_briefs_read_only: boolean;
+    can_edit: boolean;
+    can_activate: boolean;
+    can_pause: boolean;
+    can_resume: boolean;
+    can_archive: boolean;
+    can_restore: boolean;
   };
   zone_1_master: {
     timeline_type: string;
@@ -135,6 +141,8 @@ export type CampaignShellResponse = {
     label: string;
     satisfied: boolean;
   }>;
+  readiness: { ready: boolean; missing_requirements: string[]; reconciliation_required: boolean };
+  workspace: { items: Array<{ id: "discovery" | "applications" | "collaborations" | "reporting"; visible: boolean; available: boolean; priority: number; count: number; unavailable_message?: string }> };
 };
 
 export type CanonicalBriefDeliverable = {

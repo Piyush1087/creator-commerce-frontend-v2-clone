@@ -9,6 +9,7 @@ import { CampaignWorkspaceZone1 } from "../../../features/uce/components/Campaig
 import { CampaignAssetReconciliationCard } from "../../../features/uce/components/CampaignAssetReconciliationCard";
 import { CanonicalCampaignBriefsCard } from "../../../features/uce/components/CanonicalCampaignBriefsCard";
 import { CampaignParticipationCard } from "../../../features/uce/components/CampaignParticipationCard";
+import { CampaignReadinessWorkspaceCard } from "../../../features/uce/components/CampaignReadinessWorkspaceCard";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
 import {
   fetchCampaignShell,
@@ -184,6 +185,8 @@ export function BrandUceCampaignDetailPage() {
         canSelect={loadedShell.capabilities.can_select_campaign_asset}
         onLinked={() => reload({ silent: true }).then(() => undefined)}
       />
+
+      <CampaignReadinessWorkspaceCard shell={loadedShell} />
 
       {loadedShell.capabilities.can_execute_campaign ? (
         <CampaignParticipationCard campaignId={loadedShell.campaign_id} />
