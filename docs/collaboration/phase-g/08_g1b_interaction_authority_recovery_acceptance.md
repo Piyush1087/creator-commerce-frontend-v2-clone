@@ -13,7 +13,7 @@
 |---|---|
 | Starting frontend SHA | `eafa4c071ae0da49739b7f531f59e536978dae42` |
 | Starting backend SHA | `efffc2701a61bbd49748a28608d54f927ee44a4e` |
-| Final frontend SHA | `7c994deeb16e78eae400914811364e5ee8fa4fb6` |
+| Final frontend SHA | `03e9e062c7fec5e3e95f144687f5ffd82e52e0a6` |
 | Final backend SHA | `c6e10aca0734587d9f637dbf42d59bdabe2a5671` |
 
 **Phase-G frontend baseline updated:** YES  
