@@ -267,7 +267,33 @@ Pipeline-dependent Application→Collaboration provision was intentionally bypas
 
 ## 22. Visual observations for G2
 
-No visual redesign performed. Loaded Negotiation / Securement / Cancelled states are available for G2 visual review. Realtime degraded banner remains a local/operational observation, not a G2 visual ticket by itself.
+No visual redesign was performed. A local screenshot evidence pack was
+captured under `docs/collaboration/phase-g/g2-visual-observations/`:
+
+| File | G2 reference state |
+|---|---|
+| `01_creator_cancelled_terminal.png` | Creator CANCELLED terminal, closed messaging/history, financial resolution |
+| `02_creator_active_negotiation.png` | Creator ACTIVE Negotiation, inbox/chat/composer/execution |
+| `03_creator_brand_context_drawer.png` | Creator → Brand MVP counterpart drawer |
+| `04_creator_mobile_inbox.png` | Creator mobile inbox + required bottom nav |
+| `05_creator_mobile_chat.png` | Creator mobile Chat step + execution transition |
+| `06_brand_negotiation_actions.png` | Brand accept/counter/decline actions |
+| `07_brand_creator_context_drawer.png` | Brand → Creator MVP counterpart drawer |
+| `08_brand_securement_funding.png` | Brand Securement + reserve decomposition/Fund CTA |
+| `09_creator_securement_cancel.png` | Creator Securement + capability-gated Cancel |
+
+Visual observations:
+
+- Desktop three-pane and mobile stepped composition are functionally usable.
+- Execution cards are information-dense; G2 owns hierarchy, spacing,
+  typography, Aurora composition, and breakpoint refinement.
+- Drawers correctly remain light MVP context rather than relationship history.
+- Loading/empty/error/degraded states need a consistent G2 visual treatment,
+  while preserving the accepted pane-local recovery semantics.
+- The degraded-realtime banner is local operational evidence, not by itself a
+  visual defect.
+- Stitch must preserve backend capability authority and may not invent
+  lifecycle, financial, bank, messaging, fulfillment, or settlement actions.
 
 ---
 
