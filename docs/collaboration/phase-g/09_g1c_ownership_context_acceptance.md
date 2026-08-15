@@ -13,7 +13,7 @@
 |---|---|
 | Starting frontend SHA | `70646fdc8996f6d2f497ccf47dca08a4656b128a` |
 | Starting backend SHA | `c6e10aca0734587d9f637dbf42d59bdabe2a5671` |
-| Final frontend SHA | (recorded after FE commit tip) |
+| Final frontend SHA | `7278e7585d65d4cd40fcfa9ffe1f59a4a11b456b` (implementation; branch tip includes docs SHA record) |
 | Final backend SHA | `da6a185e88e330f51fa6d3f9345e9193c055f51c` |
 
 **Phase-G frontend baseline updated:** YES  
@@ -104,7 +104,7 @@ Securement still links Creators to Settings/Payout (`AUTH_ROUTES.creatorSettings
 
 ## Merge / deployment status
 
-Not merged. Not deployed. **Not committed / not pushed.**
+Not merged. Not deployed. Committed and available on GitHub (`origin` + `piyush`).
 
 ---
 
