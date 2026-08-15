@@ -12,7 +12,7 @@
 | Field | Value |
 |---|---|
 | Starting frontend SHA | `293a3c9b4254580b4a873131df804e38a24a10a6` |
-| Final frontend Phase-G tip | `100188751c3a093105ab91246cb551bca8fce0cf` |
+| Final frontend Phase-G tip | `a1a9be58ad518d3a2929511094f2e19c008215f4` |
 | Frontend branch | `phase-g/collaboration-g1c-ownership-context` |
 | Starting backend SHA | `da6a185e88e330f51fa6d3f9345e9193c055f51c` |
 | Final backend Phase-G tip | `b7c726c8e7fba114ee7a0c2b09aac7aaae698ec5` |
