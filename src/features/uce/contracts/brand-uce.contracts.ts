@@ -95,6 +95,17 @@ export type CampaignShellResponse = {
   can_edit_essentials: boolean;
   total_inventory_allocated: number;
   pause_warning: string | null;
+  campaign_assets: CampaignAssetProjection[];
+  reconciliation: {
+    required: boolean;
+    title: string | null;
+    message: string | null;
+  };
+  capabilities: {
+    can_select_campaign_asset: boolean;
+    can_execute_campaign: boolean;
+    legacy_products_read_only: boolean;
+  };
   zone_1_master: {
     timeline_type: string;
     fixed_start_date: string | null;
@@ -121,6 +132,26 @@ export type CampaignShellResponse = {
     label: string;
     satisfied: boolean;
   }>;
+};
+
+export type CampaignAssetKind = "BRAND" | "OFFERING" | "OFFER";
+
+export type CampaignAssetProjection = {
+  campaign_asset_id: string;
+  kind: CampaignAssetKind;
+  status: "ACTIVE" | "PAUSED";
+  entity_id: string;
+  label: string;
+  subtype: string | null;
+  image_url: string | null;
+};
+
+export type SelectableCampaignAsset = {
+  kind: CampaignAssetKind;
+  entity_id: string;
+  label: string;
+  subtype: string | null;
+  image_url: string | null;
 };
 
 export type CampaignProductRecord = {

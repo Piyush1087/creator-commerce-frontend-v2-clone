@@ -2,6 +2,7 @@ import { env } from "../../../shared/config/env";
 import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
 import type {
   CampaignBriefRecord,
+  CampaignAssetProjection,
   CampaignListAggregates,
   CampaignListRow,
   CampaignProductRecord,
@@ -16,6 +17,8 @@ import type {
   UceCampaignObjective,
   UceCampaignStatus,
   UpdateCampaignProductBody,
+  SelectableCampaignAsset,
+  CampaignAssetKind,
 } from "../contracts/brand-uce.contracts";
 import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
 
@@ -138,6 +141,29 @@ export async function fetchCampaignShell(
     headers: authHeaders(),
   });
   return (await readJsonOrThrow(response)) as CampaignShellResponse;
+}
+
+export async function fetchSelectableCampaignAssets(): Promise<SelectableCampaignAsset[]> {
+  const response = await fetch(`${BASE}/campaign-assets/selectable`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+  return (await readJsonOrThrow(response)) as SelectableCampaignAsset[];
+}
+
+export async function selectCampaignAsset(
+  campaignId: string,
+  selection: { kind: CampaignAssetKind; entity_id: string },
+): Promise<CampaignAssetProjection> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/assets`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(selection),
+    },
+  );
+  return (await readJsonOrThrow(response)) as CampaignAssetProjection;
 }
 
 export async function patchCampaignStatus(

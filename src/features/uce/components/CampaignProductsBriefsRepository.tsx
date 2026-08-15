@@ -16,6 +16,7 @@ type CampaignProductsBriefsRepositoryProps = {
   onViewProduct: (productId: string) => void;
   onViewBrief: (brief: RepositoryBrief) => void;
   onCreateBrief: (productId: string) => void;
+  allowLegacyWrites?: boolean;
 };
 
 export function CampaignProductsBriefsRepository({
@@ -25,6 +26,7 @@ export function CampaignProductsBriefsRepository({
   onViewProduct,
   onViewBrief,
   onCreateBrief,
+  allowLegacyWrites = true,
 }: CampaignProductsBriefsRepositoryProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -39,14 +41,14 @@ export function CampaignProductsBriefsRepository({
           </span>
         </div>
         <div className="uce-repo-header-actions">
-          <button
+          {allowLegacyWrites ? <button
             type="button"
             className="uce-repo-add-btn uce-repo-add-btn--header"
             onClick={onAddProduct}
           >
             <Plus size={18} />
             Add New Product Portfolio
-          </button>
+          </button> : null}
           <button
             type="button"
             className="uce-repo-chevron-btn"
@@ -64,10 +66,10 @@ export function CampaignProductsBriefsRepository({
             <div className="uce-repo-empty">
               <Package size={32} strokeWidth={1.5} />
               <p>No products linked to this campaign yet.</p>
-              <button type="button" className="uce-repo-add-btn" onClick={onAddProduct}>
+              {allowLegacyWrites ? <button type="button" className="uce-repo-add-btn" onClick={onAddProduct}>
                 <Plus size={18} />
                 Link your first product
-              </button>
+              </button> : null}
             </div>
           ) : (
             <>
@@ -79,16 +81,17 @@ export function CampaignProductsBriefsRepository({
                   onViewProduct={onViewProduct}
                   onViewBrief={onViewBrief}
                   onCreateBrief={onCreateBrief}
+                  allowLegacyWrites={allowLegacyWrites}
                 />
               ))}
-              <button
+              {allowLegacyWrites ? <button
                 type="button"
                 className="uce-repo-dashed-add"
                 onClick={onAddProduct}
               >
                 <Plus size={20} />
                 Add New Product Portfolio to Campaign Execution Matrix
-              </button>
+              </button> : null}
             </>
           )}
 
@@ -96,7 +99,7 @@ export function CampaignProductsBriefsRepository({
             <section className="uce-repo-campaign-briefs">
               <h3 className="uce-repo-campaign-briefs-title">Unlinked campaign briefs</h3>
               <p className="uce-repo-campaign-briefs-note">
-                Legacy briefs without a parent product link.
+                Briefs without an Asset link.
               </p>
               {briefs
                 .filter((b) => !b.productId)
@@ -121,12 +124,14 @@ function ProductBlock({
   onViewProduct,
   onViewBrief,
   onCreateBrief,
+  allowLegacyWrites,
 }: {
   product: RepositoryProduct;
   briefs: RepositoryBrief[];
   onViewProduct: (productId: string) => void;
   onViewBrief: (brief: RepositoryBrief) => void;
   onCreateBrief: (productId: string) => void;
+  allowLegacyWrites: boolean;
 }) {
   const productInitials = product.name
     .split(" ")
@@ -155,14 +160,14 @@ function ProductBlock({
           </div>
         </div>
         <div className="uce-product-row-actions">
-          <button
+          {allowLegacyWrites ? <button
             type="button"
             className="uce-text-action-btn"
             onClick={() => onViewProduct(product.id)}
           >
             <Eye size={16} />
             View Product
-          </button>
+          </button> : null}
         </div>
       </div>
 

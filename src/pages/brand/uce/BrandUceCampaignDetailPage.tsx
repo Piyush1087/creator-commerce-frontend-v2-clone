@@ -11,11 +11,10 @@ import { CampaignProductsBriefsRepository } from "../../../features/uce/componen
 import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
 import { CampaignHeroEditDrawer } from "../../../features/uce/components/CampaignHeroEditDrawer";
 import { CampaignWorkspaceZone1 } from "../../../features/uce/components/CampaignWorkspaceZone1";
-import { LinkAssetDrawer } from "../../../features/uce/components/LinkAssetDrawer";
+import { CampaignAssetReconciliationCard } from "../../../features/uce/components/CampaignAssetReconciliationCard";
 import { ProductDetailDrawer } from "../../../features/uce/components/ProductDetailDrawer";
 import {
   createCampaignBrief,
-  createCampaignProduct,
   fetchCampaignShell,
   patchCampaignEssentials,
   patchCampaignStatus,
@@ -54,7 +53,6 @@ export function BrandUceCampaignDetailPage() {
   );
 
   const [activeWorkspaceTab, setWorkspaceTab] = useState<PipelineTab>("prospects");
-  const [isLinkAssetOpen, setIsLinkAssetOpen] = useState(false);
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false);
   const [isBriefSnapshotOpen, setIsBriefSnapshotOpen] = useState(false);
   const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
@@ -64,7 +62,6 @@ export function BrandUceCampaignDetailPage() {
   const [isShareRouterOpen, setIsShareRouterOpen] = useState(false);
   const [isHeroEditOpen, setIsHeroEditOpen] = useState(false);
   const [isSavingEssentials, setIsSavingEssentials] = useState(false);
-  const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isSavingBrief, setIsSavingBrief] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -223,7 +220,7 @@ export function BrandUceCampaignDetailPage() {
       <CampaignProductsBriefsRepository
         products={products}
         briefs={briefs}
-        onAddProduct={() => setIsLinkAssetOpen(true)}
+        onAddProduct={() => undefined}
         onViewProduct={(productId) => {
           setViewProductId(productId);
           setIsProductDetailOpen(true);
@@ -236,32 +233,25 @@ export function BrandUceCampaignDetailPage() {
           setBriefWizardProductId(productId);
           setIsBriefWizardOpen(true);
         }}
+        allowLegacyWrites={false}
       />
 
-      <CampaignPipelineWorkspace
+      <CampaignAssetReconciliationCard
         campaignId={loadedShell.campaign_id}
-        campaignName={loadedShell.campaign_name}
-        activeTab={activeWorkspaceTab}
-        onTabChange={setWorkspaceTab}
+        assets={loadedShell.campaign_assets}
+        reconciliation={loadedShell.reconciliation}
+        canSelect={loadedShell.capabilities.can_select_campaign_asset}
+        onLinked={() => reload({ silent: true }).then(() => undefined)}
       />
 
-      <LinkAssetDrawer
-        isOpen={isLinkAssetOpen}
-        onClose={() => setIsLinkAssetOpen(false)}
-        campaignId={loadedShell.campaign_id}
-        campaignName={loadedShell.campaign_name}
-        linkedProductNames={products.map((p) => p.name)}
-        isSubmitting={isSavingProduct}
-        onCreateProduct={async (body) => {
-          setIsSavingProduct(true);
-          try {
-            await createCampaignProduct(loadedShell.campaign_id, body);
-            await reload({ silent: true });
-          } finally {
-            setIsSavingProduct(false);
-          }
-        }}
-      />
+      {loadedShell.capabilities.can_execute_campaign ? (
+        <CampaignPipelineWorkspace
+          campaignId={loadedShell.campaign_id}
+          campaignName={loadedShell.campaign_name}
+          activeTab={activeWorkspaceTab}
+          onTabChange={setWorkspaceTab}
+        />
+      ) : null}
 
       <ProductDetailDrawer
         isOpen={isProductDetailOpen}
