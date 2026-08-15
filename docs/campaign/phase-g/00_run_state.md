@@ -6,7 +6,7 @@
 Module: Campaign Page
 Actor: BRAND
 Supervisor mode: ENABLED
-Current stage: G1B Supervisor review complete
+Current stage: G1C Supervisor review complete
 Stitch eligibility: NO
 Merge status: NOT_MERGED
 Deployment status: NOT_DEPLOYED
@@ -34,12 +34,13 @@ Backend local path: `C:\Users\piyus\Documents\Codex\2026-08-15\you-are-starting-
 | G0.3 | `04_g0_3_authority_freeze.md` | ACCEPTED | `7e5750240c554aca6e651c31de371a8bd25ec3dc` | `5bce1f948e23774f16c7f2c65a309cc4e0a7fe71` | Product policy and G1 package order frozen |
 | G1A | `05_g1a_canonical_asset_reconciliation.md` | ACCEPTED_WITH_DEBT | `b81f600d9a55a83ead8b423d379996b3864810fe` | `694b1c75c29298738c8b20ad03b35d05a4175138` | Immutable canonical Asset selection and reconciliation checkpoints; runtime-schema/frontend-test execution debt retained |
 | G1B | `06_g1b_canonical_brief_deliverable.md` | ACCEPTED_WITH_DEBT | `59fe932f71441ec4449ba83ea614a698561f1795` | `a3fa13d40c5cc5b9b4e5f09c59f38a1020790ff9` | Immutable canonical Brief/Deliverable checkpoints; schema-runtime and frontend-runner debt retained |
+| G1C | `07_g1c_discovery_applicants_collaboration_cutover.md` | ACCEPTED_WITH_DEBT | `49b2d34ca7f48b0701ed0adf235661862344e4fd` | `471d78bbd651ffadb1afbf13cf921f11214feef0` | Immutable Application and Collaboration-reference checkpoints; schema-runtime/frontend-runner debt retained |
 
 ## 4. Finding ledger
 
 ```text
 Total findings: 8
-P0 open: 3
+P0 open: 0
 P1 open: 3
 P2 open: 1
 P3 open: 1
@@ -56,16 +57,16 @@ No current blocker prevents source advancement. The acceptance database intentio
 ## 7. Current package result
 
 ```text
-Stage: G1B
+Stage: G1C
 Status: ACCEPTED_WITH_DEBT
-Starting frontend SHA: d0f0c5f55ddb84239c9c4d65be87da0cc6762bb8
-Final frontend SHA: 59fe932f71441ec4449ba83ea614a698561f1795
-Starting backend SHA: 694b1c75c29298738c8b20ad03b35d05a4175138
-Final backend SHA: a3fa13d40c5cc5b9b4e5f09c59f38a1020790ff9
-Findings addressed: CAM-G0-002; required Campaign Asset ownership; deliverable-grain writes; canonical readiness projection; compatibility Brief write cutoff
-Findings remaining: later G1 Application, Collaboration, lifecycle, workspace, reporting and consolidated acceptance packages; DEPLOYED_DATA_EVIDENCE_REQUIRED
-Tests/checks run: backend G1B tests 6/6; G1A regression 5/5; backend typecheck/build; frontend typecheck; scoped frontend/new-backend lint; Prisma validate/generate; frontend production build once before final presentation-only guard; migration/diff review
-Checks not run: migration-backed runtime acceptance (migration intentionally not applied); frontend focused Vitest execution and repeat final build (managed sandbox path-resolution failure)
+Starting frontend SHA: 144929d67c67e3825cf4451bee8eaa1671968f1b
+Final frontend SHA: 49b2d34ca7f48b0701ed0adf235661862344e4fd
+Starting backend SHA: a3fa13d40c5cc5b9b4e5f09c59f38a1020790ff9
+Final backend SHA: 471d78bbd651ffadb1afbf13cf921f11214feef0
+Findings addressed: CAM-G0-003; Discovery consumer boundary; canonical Application decision authority; independent Collaboration reference boundary; legacy pipeline operational write cutoff
+Findings remaining: G1D lifecycle/readiness/workspace/reporting, consolidated functional acceptance, and DEPLOYED_DATA_EVIDENCE_REQUIRED
+Tests/checks run: backend G1C tests 5/5; G1A regression 5/5; G1B regression 6/6; backend typecheck/build; frontend typecheck/scoped lint/build via short worktree mapping; Prisma validate/generate; migration/diff review
+Checks not run: migration-backed runtime acceptance (migration intentionally not applied); frontend focused Vitest execution (managed sandbox path-resolution failure)
 Migration blocker: none for source advancement; schema-backed runtime acceptance remains deferred
 ```
 
@@ -73,18 +74,18 @@ Migration blocker: none for source advancement; schema-backed runtime acceptance
 
 ```text
 Decision: ADVANCE_AUTONOMOUSLY
-Reason: G1B is accepted with bounded validation debt; no new Product semantics or authority conflict was found.
-Next eligible stage: G1C, but it is not generated or executed in this package.
+Reason: G1C is accepted with bounded validation debt; no new Product semantics or authority conflict was found.
+Next eligible stage: G1D, but it is not generated or executed in this package.
 ```
 
 ## 9. Generated next prompt
 
 ```text
 Generated: NO
-Stage/package: G1C
+Stage/package: G1D
 Prompt artifact/path: not generated in this package
 Execution authorized automatically: NO in this package
-Reason: the approved G1B instruction explicitly prohibits executing G1C in the same package.
+Reason: the approved G1C instruction explicitly prohibits executing G1D in the same package.
 ```
 
 ## 10. G2 / Stitch gate
