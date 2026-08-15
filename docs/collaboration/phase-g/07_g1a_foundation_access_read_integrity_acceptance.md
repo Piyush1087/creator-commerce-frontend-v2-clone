@@ -13,10 +13,10 @@
 |---|---|
 | Starting frontend SHA | `44b201cea549376c240c4bef7a663dc2c04ebde2` |
 | Starting backend SHA | `efffc2701a61bbd49748a28608d54f927ee44a4e` |
-| Final frontend SHA | uncommitted on `phase-g/collaboration-g1a-foundation-access-read-integrity` |
+| Final frontend SHA | `eafa4c071ae0da49739b7f531f59e536978dae42` |
 | Final backend SHA | `efffc2701a61bbd49748a28608d54f927ee44a4e` (unchanged) |
 
-**Phase-G frontend baseline updated:** NO until this branch is committed.
+**Phase-G frontend baseline updated:** YES
 
 ---
 
@@ -107,7 +107,7 @@ None.
 
 ## Merge / deployment status
 
-Not merged. Not deployed. Not pushed.
+Not merged. Not deployed. Committed and available on GitHub (`origin` + `piyush`).
 
 ## Final disposition
 

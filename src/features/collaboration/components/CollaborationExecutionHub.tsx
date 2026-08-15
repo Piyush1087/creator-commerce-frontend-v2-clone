@@ -3,11 +3,40 @@ import { useNavigate } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import type { UserRole } from "../../../shared/auth/user-role";
-import { acceptCounterOffer, acceptProposedFee, approveDeliverable, authorizePublishing, CollaborationCommandError, confirmFulfillment, counterOffer, declineNegotiation, declinePublishing, endCollaborationByBrand, envelope, provideFulfillment, provideFulfillmentRemediation, rejectFinalDeliverable, reportFulfillmentIssue, requestDeliverableRevision, requestEscrowFunding, requestPublishingCorrection, submitCollaborationFeedback, submitCorrectedPublishingEvidence, submitDeliverable, submitPublishingEvidence, verifyPublishing, type ProvideFulfillmentPayload, type ReportFulfillmentIssuePayload } from "../api/collaboration-client";
+import {
+  acceptCounterOffer,
+  acceptProposedFee,
+  approveDeliverable,
+  authorizePublishing,
+  cancelCollaborationByCreator,
+  CollaborationCommandError,
+  confirmFulfillment,
+  counterOffer,
+  declineNegotiation,
+  declinePublishing,
+  endCollaborationByBrand,
+  envelope,
+  provideFulfillment,
+  provideFulfillmentRemediation,
+  rejectFinalDeliverable,
+  reportFulfillmentIssue,
+  requestDeliverableRevision,
+  requestEscrowFunding,
+  requestPublishingCorrection,
+  submitCollaborationFeedback,
+  submitCorrectedPublishingEvidence,
+  submitDeliverable,
+  submitPublishingEvidence,
+  verifyPublishing,
+  type ProvideFulfillmentPayload,
+  type ReportFulfillmentIssuePayload,
+} from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
-import { collaborationLifecycleLabel, collaborationStageLabel, actionRequiredLabel } from "../utils/stage-labels";
+import { collaborationCapabilities } from "../utils/collaboration-capabilities";
+import { actionRequiredLabel, collaborationLifecycleLabel, collaborationStageLabel } from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
 import { CompletedPanel } from "./execution/CompletedPanel";
+import { CreatorCancellationCard } from "./execution/CreatorCancellationCard";
 import { FulfillmentPanel } from "./execution/FulfillmentPanel";
 import { NegotiationPanel, type NegotiationAction } from "./execution/NegotiationPanel";
 import { ProductionPanel } from "./execution/ProductionPanel";
@@ -15,26 +44,57 @@ import { PublishingSettlementPanel } from "./execution/PublishingSettlementPanel
 import { ResolutionCard } from "./execution/ResolutionCard";
 import { SecurementPanel } from "./execution/SecurementPanel";
 
-type Props = { role: UserRole; detail: CollaborationDetailResponse | null; collaborationId: string | null; onRefresh: () => Promise<void>; onDetailUpdated: (detail: CollaborationDetailResponse) => void; onError: (message: string) => void; onStale?: () => void };
+type Props = {
+  role: UserRole;
+  detail: CollaborationDetailResponse | null;
+  collaborationId: string | null;
+  onRefresh: () => Promise<void>;
+  onDetailUpdated: (detail: CollaborationDetailResponse) => void;
+  onError: (message: string) => void;
+  onStale?: () => void;
+};
 
-export function CollaborationExecutionHub({ role, detail, collaborationId, onRefresh, onDetailUpdated, onError, onStale }: Props) {
+export function CollaborationExecutionHub({
+  role,
+  detail,
+  collaborationId,
+  onRefresh,
+  onDetailUpdated,
+  onError,
+  onStale,
+}: Props) {
   const navigate = useNavigate();
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  if (!collaborationId || !detail) return <div className="collab-empty">Select a thread to view execution actions.</div>;
+  if (!collaborationId || !detail) {
+    return <div className="collab-empty">Select a thread to view execution actions.</div>;
+  }
+
+  const capabilities = collaborationCapabilities(detail);
+  const showCreatorCancel = role === "CREATOR" && capabilities.has("cancel");
 
   const run = async (actionKey: string, action: () => Promise<CollaborationDetailResponse>) => {
-    setBusyAction(actionKey); setActionError(null); onError("");
-    try { onDetailUpdated(await action()); await onRefresh(); }
-    catch (error) {
+    setBusyAction(actionKey);
+    setActionError(null);
+    onError("");
+    try {
+      onDetailUpdated(await action());
+      await onRefresh();
+    } catch (error) {
       if (error instanceof CollaborationCommandError && error.stale) {
-        setActionError(null); onStale?.(); await onRefresh();
+        setActionError(null);
+        onStale?.();
+        await onRefresh();
       } else {
         const message = error instanceof Error ? error.message : "Action failed.";
         setActionError(message);
+        onError(message);
       }
-    } finally { setBusyAction(null); }
+    } finally {
+      setBusyAction(null);
+    }
   };
+
   const commandEnvelope = () => envelope(detail.workflow.aggregateVersion);
   const negotiationAction = (action: NegotiationAction) => {
     if (action === "accept-proposal") return run(action, () => acceptProposedFee(collaborationId, commandEnvelope()));
@@ -45,32 +105,204 @@ export function CollaborationExecutionHub({ role, detail, collaborationId, onRef
 
   let panel: JSX.Element;
   switch (detail.workflow.stage) {
-    case "NEGOTIATION": panel = <NegotiationPanel detail={detail} role={role} busyAction={busyAction} onCounter={(amount) => void run("counter", () => counterOffer(collaborationId, commandEnvelope(), amount))} onAction={(action) => void negotiationAction(action)} />; break;
-    case "SECUREMENT": panel = <SecurementPanel detail={detail} role={role} busyAction={busyAction} onFund={() => void run("fund-escrow", () => requestEscrowFunding(collaborationId, commandEnvelope()))} onManagePayoutDetails={() => navigate(AUTH_ROUTES.creatorSettingsPayouts)} />; break;
-    case "FULFILLMENT": panel = <FulfillmentPanel detail={detail} role={role} busyAction={busyAction} onProvide={(payload: ProvideFulfillmentPayload) => void run("provide-fulfillment", () => provideFulfillment(collaborationId, commandEnvelope(), payload))} onConfirm={() => void run("confirm-fulfillment", () => confirmFulfillment(collaborationId, commandEnvelope()))} onReportIssue={(payload: ReportFulfillmentIssuePayload) => void run("report-fulfillment-issue", () => reportFulfillmentIssue(collaborationId, commandEnvelope(), payload))} onRemediate={(evidenceRef) => void run("remediate-fulfillment", () => provideFulfillmentRemediation(collaborationId, commandEnvelope(), evidenceRef))} />; break;
-    case "PRODUCTION": panel = <ProductionPanel detail={detail} role={role} busyAction={busyAction}
-      onSubmit={(deliverableExecutionId, assetRef, creatorNote) => void run(`submit:${deliverableExecutionId}`, () => submitDeliverable(collaborationId, commandEnvelope(), { deliverableExecutionId, assetRef, creatorNote }))}
-      onApprove={(deliverableExecutionId, submissionVersionId) => void run(`approve:${deliverableExecutionId}:${submissionVersionId}`, () => approveDeliverable(collaborationId, commandEnvelope(), deliverableExecutionId, submissionVersionId))}
-      onRequestRevision={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`revision:${deliverableExecutionId}:${submissionVersionId}`, () => requestDeliverableRevision(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
-      onRejectFinal={(deliverableExecutionId, submissionVersionId, brandFeedback) => void run(`reject:${deliverableExecutionId}:${submissionVersionId}`, () => rejectFinalDeliverable(collaborationId, commandEnvelope(), { deliverableExecutionId, submissionVersionId, brandFeedback }))}
-    />; break;
-    case "PUBLISHING_SETTLEMENT": panel = <PublishingSettlementPanel detail={detail} role={role} busyAction={busyAction}
-      onAuthorize={(deliverableExecutionId) => void run(`authorize:${deliverableExecutionId}`, () => authorizePublishing(collaborationId, commandEnvelope(), deliverableExecutionId))}
-      onDecline={(deliverableExecutionId) => void run(`decline:${deliverableExecutionId}`, () => declinePublishing(collaborationId, commandEnvelope(), deliverableExecutionId))}
-      onSubmitEvidence={(deliverableExecutionId, evidenceRef, platform, creatorNote) => void run(`submit-evidence:${deliverableExecutionId}`, () => submitPublishingEvidence(collaborationId, commandEnvelope(), { deliverableExecutionId, evidenceRef, platform, creatorNote }))}
-      onSubmitCorrection={(deliverableExecutionId, evidenceRef, platform, creatorNote) => void run(`submit-correction:${deliverableExecutionId}`, () => submitCorrectedPublishingEvidence(collaborationId, commandEnvelope(), { deliverableExecutionId, evidenceRef, platform, creatorNote }))}
-      onVerify={(deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef) => void run(`verify:${deliverableExecutionId}:${publishingEvidenceId}`, () => verifyPublishing(collaborationId, commandEnvelope(), deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef))}
-      onRequestCorrection={(deliverableExecutionId, publishingEvidenceId, correctionReason) => void run(`correct:${deliverableExecutionId}:${publishingEvidenceId}`, () => requestPublishingCorrection(collaborationId, commandEnvelope(), { deliverableExecutionId, publishingEvidenceId, correctionReason }))}
-    />; break;
+    case "NEGOTIATION":
+      panel = (
+        <NegotiationPanel
+          detail={detail}
+          role={role}
+          busyAction={busyAction}
+          onCounter={(amount) => void run("counter", () => counterOffer(collaborationId, commandEnvelope(), amount))}
+          onAction={(action) => void negotiationAction(action)}
+        />
+      );
+      break;
+    case "SECUREMENT":
+      panel = (
+        <SecurementPanel
+          detail={detail}
+          role={role}
+          busyAction={busyAction}
+          onFund={() => void run("fund-escrow", () => requestEscrowFunding(collaborationId, commandEnvelope()))}
+          onManagePayoutDetails={() => navigate(AUTH_ROUTES.creatorSettingsPayouts)}
+        />
+      );
+      break;
+    case "FULFILLMENT":
+      panel = (
+        <FulfillmentPanel
+          detail={detail}
+          role={role}
+          busyAction={busyAction}
+          onProvide={(payload: ProvideFulfillmentPayload) =>
+            void run("provide-fulfillment", () => provideFulfillment(collaborationId, commandEnvelope(), payload))
+          }
+          onConfirm={() => void run("confirm-fulfillment", () => confirmFulfillment(collaborationId, commandEnvelope()))}
+          onReportIssue={(payload: ReportFulfillmentIssuePayload) =>
+            void run("report-fulfillment-issue", () => reportFulfillmentIssue(collaborationId, commandEnvelope(), payload))
+          }
+          onRemediate={(evidenceRef) =>
+            void run("remediate-fulfillment", () =>
+              provideFulfillmentRemediation(collaborationId, commandEnvelope(), evidenceRef),
+            )
+          }
+        />
+      );
+      break;
+    case "PRODUCTION":
+      panel = (
+        <ProductionPanel
+          detail={detail}
+          role={role}
+          busyAction={busyAction}
+          onSubmit={(deliverableExecutionId, assetRef, creatorNote) =>
+            void run(`submit:${deliverableExecutionId}`, () =>
+              submitDeliverable(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                assetRef,
+                creatorNote,
+              }),
+            )
+          }
+          onApprove={(deliverableExecutionId, submissionVersionId) =>
+            void run(`approve:${deliverableExecutionId}:${submissionVersionId}`, () =>
+              approveDeliverable(collaborationId, commandEnvelope(), deliverableExecutionId, submissionVersionId),
+            )
+          }
+          onRequestRevision={(deliverableExecutionId, submissionVersionId, brandFeedback) =>
+            void run(`revision:${deliverableExecutionId}:${submissionVersionId}`, () =>
+              requestDeliverableRevision(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                submissionVersionId,
+                brandFeedback,
+              }),
+            )
+          }
+          onRejectFinal={(deliverableExecutionId, submissionVersionId, brandFeedback) =>
+            void run(`reject:${deliverableExecutionId}:${submissionVersionId}`, () =>
+              rejectFinalDeliverable(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                submissionVersionId,
+                brandFeedback,
+              }),
+            )
+          }
+        />
+      );
+      break;
+    case "PUBLISHING_SETTLEMENT":
+      panel = (
+        <PublishingSettlementPanel
+          detail={detail}
+          role={role}
+          busyAction={busyAction}
+          onAuthorize={(deliverableExecutionId) =>
+            void run(`authorize:${deliverableExecutionId}`, () =>
+              authorizePublishing(collaborationId, commandEnvelope(), deliverableExecutionId),
+            )
+          }
+          onDecline={(deliverableExecutionId) =>
+            void run(`decline:${deliverableExecutionId}`, () =>
+              declinePublishing(collaborationId, commandEnvelope(), deliverableExecutionId),
+            )
+          }
+          onSubmitEvidence={(deliverableExecutionId, evidenceRef, platform, creatorNote) =>
+            void run(`submit-evidence:${deliverableExecutionId}`, () =>
+              submitPublishingEvidence(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                evidenceRef,
+                platform,
+                creatorNote,
+              }),
+            )
+          }
+          onSubmitCorrection={(deliverableExecutionId, evidenceRef, platform, creatorNote) =>
+            void run(`submit-correction:${deliverableExecutionId}`, () =>
+              submitCorrectedPublishingEvidence(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                evidenceRef,
+                platform,
+                creatorNote,
+              }),
+            )
+          }
+          onVerify={(deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef) =>
+            void run(`verify:${deliverableExecutionId}:${publishingEvidenceId}`, () =>
+              verifyPublishing(
+                collaborationId,
+                commandEnvelope(),
+                deliverableExecutionId,
+                publishingEvidenceId,
+                complianceEvidenceRef,
+              ),
+            )
+          }
+          onRequestCorrection={(deliverableExecutionId, publishingEvidenceId, correctionReason) =>
+            void run(`correct:${deliverableExecutionId}:${publishingEvidenceId}`, () =>
+              requestPublishingCorrection(collaborationId, commandEnvelope(), {
+                deliverableExecutionId,
+                publishingEvidenceId,
+                correctionReason,
+              }),
+            )
+          }
+        />
+      );
+      break;
   }
 
   const terminal = detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED";
   const completed = detail.lifecycle.state === "COMPLETED";
   const paused = detail.lifecycle.state === "PAUSED";
-  return <div className="collab-pane__scroll collab-pane__scroll--execution">
-    <header className="collab-exec-card collab-exec-card--summary"><p className="collab-exec-card__kicker">{collaborationLifecycleLabel(detail.lifecycle.state)}{!terminal && !completed ? ` · ${collaborationStageLabel(detail.workflow.stage)}` : ""}</p>{!terminal && !completed ? <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p> : <p>No execution action required</p>}</header>
-    {!terminal && !completed && !paused ? <BlockingCard detail={detail} /> : null}
-    {actionError && !completed ? <Alert tone="error" title="Action could not be completed">{actionError}</Alert> : null}
-    {terminal ? <ResolutionCard detail={detail} /> : completed ? <CompletedPanel detail={detail} feedbackBusy={busyAction === "submit-feedback"} feedbackError={busyAction === null ? actionError : null} onSubmitFeedback={(rating, reviewText) => void run("submit-feedback", () => submitCollaborationFeedback(collaborationId, commandEnvelope(), rating, reviewText))} /> : paused ? <section className="collab-exec-card"><h4>Paused</h4><p>This collaboration is temporarily paused.</p></section> : panel}
-  </div>;
+
+  return (
+    <div className="collab-pane__scroll collab-pane__scroll--execution">
+      <header className="collab-exec-card collab-exec-card--summary">
+        <p className="collab-exec-card__kicker">
+          {collaborationLifecycleLabel(detail.lifecycle.state)}
+          {!terminal && !completed ? ` · ${collaborationStageLabel(detail.workflow.stage)}` : ""}
+        </p>
+        {!terminal && !completed ? (
+          <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p>
+        ) : (
+          <p>No execution action required</p>
+        )}
+      </header>
+      {!terminal && !completed && !paused ? <BlockingCard detail={detail} /> : null}
+      {actionError && !completed && busyAction !== "cancel" ? (
+        <Alert tone="error" title="Action could not be completed">
+          {actionError}
+        </Alert>
+      ) : null}
+      {terminal ? (
+        <ResolutionCard detail={detail} />
+      ) : completed ? (
+        <CompletedPanel
+          detail={detail}
+          feedbackBusy={busyAction === "submit-feedback"}
+          feedbackError={busyAction === null ? actionError : null}
+          onSubmitFeedback={(rating, reviewText) =>
+            void run("submit-feedback", () =>
+              submitCollaborationFeedback(collaborationId, commandEnvelope(), rating, reviewText),
+            )
+          }
+        />
+      ) : paused ? (
+        <section className="collab-exec-card">
+          <h4>Paused</h4>
+          <p>This collaboration is temporarily paused.</p>
+        </section>
+      ) : (
+        panel
+      )}
+      {showCreatorCancel && !terminal && !completed ? (
+        <CreatorCancellationCard
+          busy={busyAction === "cancel"}
+          actionError={busyAction === null || busyAction === "cancel" ? actionError : null}
+          onCancel={() =>
+            void run("cancel", () => cancelCollaborationByCreator(collaborationId, commandEnvelope()))
+          }
+        />
+      ) : null}
+    </div>
+  );
 }
