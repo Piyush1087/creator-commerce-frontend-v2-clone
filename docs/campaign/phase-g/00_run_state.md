@@ -6,7 +6,7 @@
 Module: Campaign Page
 Actor: BRAND
 Supervisor mode: ENABLED
-Current stage: G1B prompt generated
+Current stage: G1B Supervisor review complete
 Stitch eligibility: NO
 Merge status: NOT_MERGED
 Deployment status: NOT_DEPLOYED
@@ -33,6 +33,7 @@ Backend local path: `C:\Users\piyus\Documents\Codex\2026-08-15\you-are-starting-
 | G0.2 | `03_g0_2_migration_ownership_investigation.md` | ACCEPTED_WITH_DEBT | `7e5750240c554aca6e651c31de371a8bd25ec3dc` | `5bce1f948e23774f16c7f2c65a309cc4e0a7fe71` | Retained debt: DEPLOYED_DATA_EVIDENCE_REQUIRED |
 | G0.3 | `04_g0_3_authority_freeze.md` | ACCEPTED | `7e5750240c554aca6e651c31de371a8bd25ec3dc` | `5bce1f948e23774f16c7f2c65a309cc4e0a7fe71` | Product policy and G1 package order frozen |
 | G1A | `05_g1a_canonical_asset_reconciliation.md` | ACCEPTED_WITH_DEBT | `b81f600d9a55a83ead8b423d379996b3864810fe` | `694b1c75c29298738c8b20ad03b35d05a4175138` | Immutable canonical Asset selection and reconciliation checkpoints; runtime-schema/frontend-test execution debt retained |
+| G1B | `06_g1b_canonical_brief_deliverable.md` | ACCEPTED_WITH_DEBT | `59fe932f71441ec4449ba83ea614a698561f1795` | `a3fa13d40c5cc5b9b4e5f09c59f38a1020790ff9` | Immutable canonical Brief/Deliverable checkpoints; schema-runtime and frontend-runner debt retained |
 
 ## 4. Finding ledger
 
@@ -55,16 +56,16 @@ No current blocker prevents source advancement. The acceptance database intentio
 ## 7. Current package result
 
 ```text
-Stage: G1A
+Stage: G1B
 Status: ACCEPTED_WITH_DEBT
-Starting frontend SHA: 7e5750240c554aca6e651c31de371a8bd25ec3dc
-Final frontend SHA: b81f600d9a55a83ead8b423d379996b3864810fe
-Starting backend SHA: 5bce1f948e23774f16c7f2c65a309cc4e0a7fe71
-Final backend SHA: 694b1c75c29298738c8b20ad03b35d05a4175138
-Findings addressed: CAM-G0-001; explicit canonical Asset selection; active reconciliation-required state; Campaign Page legacy Product write cutoff
-Findings remaining: later G1 Brief, Application, Collaboration and lifecycle packages; DEPLOYED_DATA_EVIDENCE_REQUIRED
-Tests/checks run: backend focused tests 5/5; backend typecheck/build; frontend typecheck/build; scoped frontend lint; scoped new-backend-file lint; Prisma validate/generate; migration and diff inspection
-Checks not run: migration-backed runtime acceptance (migration intentionally not applied); frontend focused Vitest execution (managed sandbox path-resolution failure)
+Starting frontend SHA: d0f0c5f55ddb84239c9c4d65be87da0cc6762bb8
+Final frontend SHA: 59fe932f71441ec4449ba83ea614a698561f1795
+Starting backend SHA: 694b1c75c29298738c8b20ad03b35d05a4175138
+Final backend SHA: a3fa13d40c5cc5b9b4e5f09c59f38a1020790ff9
+Findings addressed: CAM-G0-002; required Campaign Asset ownership; deliverable-grain writes; canonical readiness projection; compatibility Brief write cutoff
+Findings remaining: later G1 Application, Collaboration, lifecycle, workspace, reporting and consolidated acceptance packages; DEPLOYED_DATA_EVIDENCE_REQUIRED
+Tests/checks run: backend G1B tests 6/6; G1A regression 5/5; backend typecheck/build; frontend typecheck; scoped frontend/new-backend lint; Prisma validate/generate; frontend production build once before final presentation-only guard; migration/diff review
+Checks not run: migration-backed runtime acceptance (migration intentionally not applied); frontend focused Vitest execution and repeat final build (managed sandbox path-resolution failure)
 Migration blocker: none for source advancement; schema-backed runtime acceptance remains deferred
 ```
 
@@ -72,18 +73,18 @@ Migration blocker: none for source advancement; schema-backed runtime acceptance
 
 ```text
 Decision: ADVANCE_AUTONOMOUSLY
-Reason: G1A is accepted with bounded validation debt; no Product/authority conflict makes G1B source work unsafe.
-Next eligible stage: G1B canonical Brief and deliverable ownership.
+Reason: G1B is accepted with bounded validation debt; no new Product semantics or authority conflict was found.
+Next eligible stage: G1C, but it is not generated or executed in this package.
 ```
 
 ## 9. Generated next prompt
 
 ```text
-Generated: YES
-Stage/package: G1B canonical Brief and deliverable ownership
-Prompt artifact/path: `docs/campaign/phase-g/prompts/06_g1b_canonical_brief_deliverable.md`
-Execution authorized automatically: YES (not executed in this turn)
-Reason: G1A is accepted with bounded validation debt and the frozen G0.3 authority defines the next additive package.
+Generated: NO
+Stage/package: G1C
+Prompt artifact/path: not generated in this package
+Execution authorized automatically: NO in this package
+Reason: the approved G1B instruction explicitly prohibits executing G1C in the same package.
 ```
 
 ## 10. G2 / Stitch gate
