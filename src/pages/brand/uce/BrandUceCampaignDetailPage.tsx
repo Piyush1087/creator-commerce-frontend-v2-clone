@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Alert } from "../../../design-system/aurora";
+import { Alert, Button } from "../../../design-system/aurora";
 import { BriefSnapshotDrawer } from "../../../features/uce/components/BriefSnapshotDrawer";
 import { CampaignProductsBriefsRepository } from "../../../features/uce/components/CampaignProductsBriefsRepository";
 import { CampaignShareRouterModal } from "../../../features/uce/components/CampaignShareRouterModal";
@@ -105,6 +105,9 @@ export function BrandUceCampaignDetailPage() {
         <Alert tone="error" title="Could not load campaign">
           {state.message}
         </Alert>
+        <Button type="button" onClick={() => void reload()}>
+          Retry
+        </Button>
         <Link to={AUTH_ROUTES.brandUceCampaigns} className="uce-back-to-list-link">
           Back to campaigns
         </Link>
@@ -186,11 +189,25 @@ export function BrandUceCampaignDetailPage() {
         onLinked={() => reload({ silent: true }).then(() => undefined)}
       />
 
-      <CampaignReadinessWorkspaceCard shell={loadedShell} />
-
-      {loadedShell.capabilities.can_execute_campaign ? (
-        <CampaignParticipationCard campaignId={loadedShell.campaign_id} />
-      ) : null}
+      <CampaignReadinessWorkspaceCard
+        shell={loadedShell}
+        renderWorkspace={(workspace) => {
+          if (workspace === "reporting") {
+            return (
+              <Alert tone="warning" title="Reporting unavailable">
+                Reporting is not available for this Campaign yet.
+              </Alert>
+            );
+          }
+          if (!loadedShell.capabilities.can_execute_campaign) return null;
+          return (
+            <CampaignParticipationCard
+              campaignId={loadedShell.campaign_id}
+              workspace={workspace}
+            />
+          );
+        }}
+      />
 
       <ProductDetailDrawer
         isOpen={isProductDetailOpen}

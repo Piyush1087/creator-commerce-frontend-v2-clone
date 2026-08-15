@@ -11,24 +11,32 @@ import type {
   CampaignDiscoveryProjection,
 } from "../contracts/brand-uce.contracts";
 
-type Props = { campaignId: string };
+type Props = {
+  campaignId: string;
+  workspace: "discovery" | "applications" | "collaborations";
+};
 
-export function CampaignParticipationCard({ campaignId }: Props) {
+export function CampaignParticipationCard({ campaignId, workspace }: Props) {
   const [discovery, setDiscovery] = useState<CampaignDiscoveryProjection | null>(null);
   const [applications, setApplications] = useState<CampaignApplicationProjection[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(
-    () =>
-      Promise.all([fetchCampaignDiscovery(campaignId), fetchCampaignApplications(campaignId)])
+    () => {
+      setLoading(true);
+      setError(null);
+      return Promise.all([fetchCampaignDiscovery(campaignId), fetchCampaignApplications(campaignId)])
       .then(([nextDiscovery, nextApplications]) => {
         setDiscovery(nextDiscovery);
         setApplications(nextApplications);
       })
       .catch((cause: unknown) =>
         setError(cause instanceof Error ? cause.message : "Participation details could not be loaded."),
-      ),
+      )
+      .finally(() => setLoading(false));
+    },
     [campaignId],
   );
 
@@ -37,10 +45,18 @@ export function CampaignParticipationCard({ campaignId }: Props) {
   }, [load]);
 
   return (
-    <Card eyebrow="Participation" title="Discovery & applications">
-      {discovery ? <Alert tone="warning" title="Recommendations unavailable">{discovery.message}</Alert> : null}
-      {applications.length === 0 ? <p>No applications have been received yet.</p> : null}
-      {applications.map((application) => (
+    <Card eyebrow="Campaign workspace" title={workspace}>
+      {loading ? <p>Loading workspace…</p> : null}
+      {error ? (
+        <Alert tone="error" title="Could not load workspace">
+          {error} <Button type="button" onClick={() => void load()}>Retry</Button>
+        </Alert>
+      ) : null}
+      {!loading && !error && workspace === "discovery" && discovery ? (
+        <Alert tone="warning" title="Recommendations unavailable">{discovery.message}</Alert>
+      ) : null}
+      {!loading && !error && workspace === "applications" && applications.length === 0 ? <p>No applications have been received yet.</p> : null}
+      {!loading && !error && workspace === "applications" ? applications.map((application) => (
         <article key={application.application_id}>
           <strong>{application.creator.name ?? application.creator.email}</strong>
           <p>{application.brief.title} · {application.status}</p>
@@ -78,8 +94,18 @@ export function CampaignParticipationCard({ campaignId }: Props) {
             </div>
           ) : null}
         </article>
-      ))}
-      {error ? <Alert tone="error" title="Could not update participation">{error}</Alert> : null}
+      )) : null}
+      {!loading && !error && workspace === "collaborations" ? (
+        applications.some((application) => application.collaboration_reference) ? (
+          <ul>
+            {applications.filter((application) => application.collaboration_reference).map((application) => (
+              <li key={application.application_id}>
+                {application.creator.name ?? application.creator.email} · Collaboration reference {application.collaboration_reference?.collaboration_id}
+              </li>
+            ))}
+          </ul>
+        ) : <p>No Collaborations are linked to this Campaign yet.</p>
+      ) : null}
     </Card>
   );
 }

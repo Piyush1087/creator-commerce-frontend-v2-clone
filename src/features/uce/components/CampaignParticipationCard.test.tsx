@@ -13,7 +13,7 @@ describe("CampaignParticipationCard", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ application_id: "app-1", status: "ACCEPTED" }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ availability: "UNAVAILABLE", message: "Recommendations are not available.", recommendations: [] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
-    render(<CampaignParticipationCard campaignId="campaign-1" />);
+    render(<CampaignParticipationCard campaignId="campaign-1" workspace="applications" />);
     await waitFor(() => expect(screen.getByText("Creator")).toBeTruthy());
     fireEvent.click(screen.getByText("Accept application"));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(5));

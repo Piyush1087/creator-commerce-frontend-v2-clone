@@ -20,7 +20,7 @@ export function SelectField({
   return (
     <label className="aurora-field">
       <span className="aurora-field__label">{label}</span>
-      <select className="aurora-select" {...props}>
+      <select aria-label={label} className="aurora-select" {...props}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
