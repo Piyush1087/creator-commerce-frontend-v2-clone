@@ -29,3 +29,26 @@ Normal host PowerShell executed all five bounded-G1E frontend files: 5/5 files a
 A new browser session authenticated the seeded F6C Brand using local stub OTP against `creator_shop_g1_clean_acceptance`. At the 390×844 acceptance viewport the Campaign list and ready fixture `10000000-0000-4000-8000-000000000011` loaded; Discovery was the backend-priority default; Applications selection changed actual composition and persisted as `?workspace=applications`; re-entry restored it; an invalid/unavailable `?workspace=reporting` fell back to Discovery; lifecycle and readiness controls remained accessible; Reporting remained disabled with truthful unavailable copy; document and body widths matched the usable viewport; and the AppShell menu opened and closed. `CAM-G1-CONS-003` is closed.
 
 Final immutable source checkpoints: frontend `e00f383b4bfb1181a42d31f16e26ce23e5797006`; backend `0f2c6c7b659d7305d36bd2ee0775973494d5a95e`.
+
+## G-R3 reconciliation amendment — affected acceptance scope
+
+`11A_campaign_page_authority_reconciliation.md` controls this amendment. Existing G1E evidence remains accepted for primary-read retry/recovery, URL-backed selection persistence/restoration mechanics, canonical Campaign Asset/Brief authority, lifecycle/readiness distinction, and responsive/mobile interaction principles.
+
+The following historical acceptance is superseded and must not be used as final Campaign Page authority:
+
+- `Applications` as the canonical workspace identity;
+- Reporting as a disabled or unavailable workspace;
+- `?workspace=applications` as the canonical Applicants selection; and
+- the historical Reporting-workspace fallback.
+
+The amended acceptance scope requires deterministic validation that:
+
+- the canonical operational workspace identities are Discovery, Applicants, and Collaborations only;
+- Reporting is absent from the workspace selector and its availability is represented through Campaign Performance in the Attention Layer;
+- `?workspace=reporting` and the superseded `?workspace=applications` values fall back deterministically to a valid canonical workspace;
+- an absent, invalid, or unavailable selection follows the same deterministic fallback contract;
+- a not-ready Campaign does not expose operational workspace capability, while a ready Campaign activates applicable workspaces;
+- Reporting availability never changes the count or identity of Campaign workspaces; and
+- Collaboration remains independently owned/referenced rather than becoming Campaign-owned workflow state.
+
+This is an authority and acceptance-scope amendment only. It does not claim new runtime evidence, alter the recorded historical checkpoints, authorize frontend/backend implementation, or authorize Stitch invocation.

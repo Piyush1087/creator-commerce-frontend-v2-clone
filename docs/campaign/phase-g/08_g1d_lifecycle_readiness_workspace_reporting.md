@@ -10,7 +10,35 @@ Backend Campaign shell now authoritatively supplies lifecycle capabilities, cano
 
 Readiness consumes active canonical Assets, canonical Briefs, and campaign budget. It does not use legacy Product/Brief/pipeline counts. A Campaign that is already ACTIVE remains ACTIVE if it later loses readiness; readiness instead disables activation/resume capability and reports missing requirements.
 
-Workspace projection supplies Discovery, Applications, Collaborations, and Reporting visibility, priority, availability, counts, and unavailable copy. Reporting is unavailable rather than fabricated or sourced from legacy UCE snapshots.
+Workspace projection historically supplied Discovery, Applications, Collaborations, and Reporting visibility, priority, availability, counts, and unavailable copy. Reporting was unavailable rather than fabricated or sourced from legacy UCE snapshots.
+
+## G-R2 reconciliation amendment — Campaign Page read/projection contract
+
+`11A_campaign_page_authority_reconciliation.md` is the controlling reconciliation authority for this amendment. This section supersedes the historical Campaign Page workspace and Reporting assertions above; all other accepted G1D lifecycle, readiness, canonical Asset/Brief, and legacy-write-cutoff evidence remains preserved.
+
+The authoritative Campaign Page projection is conceptually:
+
+```text
+CampaignPageProjection
+├── campaign (identity, lifecycle, capabilities, core facts)
+├── campaignSummary
+├── productsBriefsSummary
+├── attention (performance, budget, actionables)
+└── workspaces (discovery, applicants, collaborations)
+```
+
+The canonical workspace set contains exactly three operational identities: **Discovery**, **Applicants**, and **Collaborations**. `Applications` is superseded as a Campaign Page workspace label. Reporting and Setup are not workspaces: Reporting belongs to the Campaign Attention Layer, while Product/Campaign Asset and Brief composition belongs to Campaign configuration exposed through the Header and its drawers.
+
+Projection obligations are bounded as follows:
+
+- workspace operability is readiness/capability-aware; a not-ready Campaign must not present an operational workspace as usable;
+- Product/Campaign Asset and Brief retain their existing canonical hierarchy;
+- Campaign Header/read-drawer facts, Campaign Summary, and performance are exposed only when authoritative, otherwise through truthful unavailable states;
+- Budget exposes total, authoritative committed creator compensation, and remaining only when that commitment authority is available; no remaining value is guessed;
+- Actionables are a deterministic/Intelligence projection, not a new task aggregate; and
+- this read-model amendment does not prescribe Prisma persistence changes.
+
+Historical `?workspace=reporting` is a superseded URL value. Selection mechanics are retained, but the amended frontend/backend contract must deterministically fall back to a valid canonical workspace for absent, invalid, unavailable, or superseded selections.
 
 ## Evidence
 
