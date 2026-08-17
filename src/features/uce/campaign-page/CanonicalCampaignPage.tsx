@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Alert, Badge, Button, Card } from "../../../design-system/aurora";
+import { Alert } from "../../../design-system/aurora";
 import {
   approveCampaignApplication,
   composeCampaignOutreach,
@@ -14,65 +14,74 @@ import {
   rejectCampaignApplication,
 } from "../api/brand-uce-client";
 import { CampaignDetailsDrawer } from "./CampaignDetailsDrawer";
-import { CreatorCard } from "./CreatorCard";
+import { CampaignAttentionPanel } from "./CampaignAttentionPanel";
+import { CampaignAssetsBriefsPanel } from "./CampaignAssetsBriefsPanel";
+import { CampaignFeatureHeader } from "./CampaignFeatureHeader";
+import {
+  ApplicantsWorkspaceContent,
+  CollaborationWorkspaceContent,
+  DiscoveryWorkspaceContent,
+} from "./CampaignWorkspaceContent";
+import { CampaignWorkspaceShell } from "./CampaignWorkspaceShell";
+import { CanonicalAssetDrawer } from "./CanonicalAssetDrawer";
+import { CanonicalBriefDrawer } from "./CanonicalBriefDrawer";
 import { CreatorProfileDrawer } from "./CreatorProfileDrawer";
 import { OutreachComposerDrawer } from "./OutreachComposerDrawer";
 import { ReportingDrawer } from "./ReportingDrawer";
+import {
+  canCreateCanonicalBrief,
+  canEditCanonicalBrief,
+  canLinkCanonicalAsset,
+  isCapabilityEnabled,
+  resolveInitialWorkspace,
+  surfaceStateMessage,
+} from "./campaign-page-model";
 import type {
   ApplicantsWorkspaceView,
   CampaignDetailsView,
   CampaignPageView,
-  Capability,
+  CampaignWorkspaceId,
+  CanonicalCampaignAsset,
+  CanonicalCampaignBriefSummary,
   CreatorProfileView,
   DiscoveryWorkspaceView,
   OutreachComposerView,
 } from "./types";
+import { WorkspaceStatePanel } from "./WorkspaceStatePanel";
 import "./campaign-page.css";
-
-function canRender(capability: Capability | undefined) {
-  return capability && capability.presentation !== "HIDDEN";
-}
-
-function isEnabled(capability: Capability | undefined) {
-  return Boolean(capability?.available && capability.presentation === "ENABLED");
-}
 
 export function CanonicalCampaignPage({
   view,
   onReload,
-  onAddProduct,
-  onAddBrief,
-  onOpenProduct,
-  onOpenBrief,
+  onOpenLegacyProduct,
+  onOpenLegacyBrief,
   onOpenShareFallback,
 }: {
   view: CampaignPageView;
-  onReload: () => void;
-  onAddProduct: () => void;
-  onAddBrief: (campaignAssetId: string) => void;
-  onOpenProduct?: (campaignAssetId: string) => void | Promise<void>;
-  onOpenBrief?: (
+  onReload: () => Promise<void>;
+  onOpenLegacyProduct?: (campaignAssetId: string) => void | Promise<void>;
+  onOpenLegacyBrief?: (
     briefId: string,
     campaignAssetId: string,
   ) => void | Promise<void>;
   onOpenShareFallback?: () => void;
 }) {
-  const [workspace, setWorkspace] = useState<"DISCOVERY" | "APPLICANTS" | "COLLABORATIONS">(
-    () => {
-      const visible = view.workspaces.filter((w) => w.visible);
-      const focused = visible.find((w) => w.workspace === view.hydration.primaryFocus);
-      return focused?.workspace ?? visible[0]?.workspace ?? "DISCOVERY";
-    },
+  const [workspace, setWorkspace] = useState<CampaignWorkspaceId>(() =>
+    resolveInitialWorkspace(view),
   );
   const [notice, setNotice] = useState<string>();
   const [discovery, setDiscovery] = useState<DiscoveryWorkspaceView>();
+  const [discoveryError, setDiscoveryError] = useState<string>();
   const [applicants, setApplicants] = useState<ApplicantsWorkspaceView>();
+  const [applicantsError, setApplicantsError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState<string>();
-  const [details, setDetails] = useState<CampaignDetailsView | undefined>(view.details);
+  const [details, setDetails] = useState<CampaignDetailsView | undefined>(
+    view.details,
+  );
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -82,47 +91,90 @@ export function CanonicalCampaignPage({
   const [outreachOpen, setOutreachOpen] = useState(false);
   const [outreachLoading, setOutreachLoading] = useState(false);
   const [outreachError, setOutreachError] = useState<string>();
-  const [outreachComposer, setOutreachComposer] = useState<OutreachComposerView>();
+  const [outreachComposer, setOutreachComposer] =
+    useState<OutreachComposerView>();
   const [outreachSubject, setOutreachSubject] = useState("");
   const [outreachBody, setOutreachBody] = useState("");
 
   const [reportOpen, setReportOpen] = useState(false);
+  const [assetDrawerOpen, setAssetDrawerOpen] = useState(false);
+  const [briefDrawer, setBriefDrawer] = useState<{
+    asset: CanonicalCampaignAsset;
+    brief?: CanonicalCampaignBriefSummary;
+  }>();
 
   const visibleWorkspaces = useMemo(
-    () => view.workspaces.filter((w) => w.visible && w.expand.presentation !== "HIDDEN"),
+    () => view.workspaces.filter((w) => w.visible),
     [view.workspaces],
+  );
+
+  const workspaceProjection = visibleWorkspaces.find(
+    (item) => item.workspace === workspace,
   );
 
   useEffect(() => {
     const current = visibleWorkspaces.find((w) => w.workspace === workspace);
     if (!current) {
-      setWorkspace(visibleWorkspaces[0]?.workspace ?? "DISCOVERY");
+      setWorkspace(visibleWorkspaces[0]?.workspace ?? "discovery");
     }
   }, [visibleWorkspaces, workspace]);
 
   useEffect(() => {
-    if (workspace === "DISCOVERY" && !discovery) {
-      void fetchCampaignDiscoveryView(view.campaign.id)
-        .then((data) => setDiscovery(data as DiscoveryWorkspaceView))
-        .catch((error) =>
-          setNotice(error instanceof Error ? error.message : "Discovery failed."),
-        );
+    setDiscovery(undefined);
+    setDiscoveryError(undefined);
+    setApplicants(undefined);
+    setApplicantsError(undefined);
+  }, [view.campaign.id]);
+
+  const loadDiscovery = useCallback(async () => {
+    setDiscoveryError(undefined);
+    setDiscovery(undefined);
+    try {
+      setDiscovery(await fetchCampaignDiscoveryView(view.campaign.id));
+    } catch (error) {
+      setDiscoveryError(
+        error instanceof Error ? error.message : "Discovery failed.",
+      );
     }
-    if (workspace === "APPLICANTS" && !applicants) {
-      void fetchCampaignApplicationsView(view.campaign.id)
-        .then((data) => setApplicants(data as ApplicantsWorkspaceView))
-        .catch((error) =>
-          setNotice(error instanceof Error ? error.message : "Applicants failed."),
-        );
+  }, [view.campaign.id]);
+
+  const loadApplicants = useCallback(async () => {
+    setApplicantsError(undefined);
+    setApplicants(undefined);
+    try {
+      setApplicants(await fetchCampaignApplicationsView(view.campaign.id));
+    } catch (error) {
+      setApplicantsError(
+        error instanceof Error ? error.message : "Applicants failed.",
+      );
     }
-  }, [workspace, discovery, applicants, view.campaign.id]);
+  }, [view.campaign.id]);
+
+  useEffect(() => {
+    if (workspaceProjection?.state === "UNAVAILABLE") return;
+    if (workspace === "discovery" && !discovery && !discoveryError) {
+      void loadDiscovery();
+    }
+    if (workspace === "applicants" && !applicants && !applicantsError) {
+      void loadApplicants();
+    }
+  }, [
+    applicants,
+    applicantsError,
+    discovery,
+    discoveryError,
+    loadApplicants,
+    loadDiscovery,
+    workspace,
+    workspaceProjection?.state,
+  ]);
 
   const run = async (label: string, action: () => Promise<unknown>) => {
     setBusy(true);
     setNotice(undefined);
     try {
       await action();
-      onReload();
+      await onReload();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : `${label} failed.`);
     } finally {
@@ -135,7 +187,7 @@ export function CanonicalCampaignPage({
     setDetailsLoading(true);
     setDetailsError(undefined);
     try {
-      const refreshed = (await fetchCampaignPageView(view.campaign.id)) as CampaignPageView;
+      const refreshed = await fetchCampaignPageView(view.campaign.id);
       setDetails(refreshed.details);
     } catch (error) {
       setDetailsError(
@@ -190,332 +242,202 @@ export function CanonicalCampaignPage({
     }
   };
 
+  const lifecycleActions = [
+    {
+      label: "Publish",
+      capability: view.campaign.capabilities.publish,
+      action: () => publishCampaign(view.campaign.id),
+    },
+    {
+      label: "Go live",
+      capability: view.campaign.capabilities.goLive,
+      action: () => goLiveCampaign(view.campaign.id),
+    },
+    {
+      label: "Pause",
+      capability: view.campaign.capabilities.pause,
+      action: () => patchCampaignStatus(view.campaign.id, "PAUSED"),
+    },
+    {
+      label: "Resume",
+      capability: view.campaign.capabilities.resume,
+      action: () => patchCampaignStatus(view.campaign.id, "LIVE"),
+    },
+  ];
+  const primaryLifecycleAction = lifecycleActions.find((item) =>
+    isCapabilityEnabled(item.capability),
+  );
+  const terminalCampaign =
+    view.campaign.lifecycleStatus === "COMPLETED" ||
+    view.campaign.lifecycleStatus === "ARCHIVED";
+
   return (
-    <section className="canonical-campaign-page">
-      <header className="canonical-campaign-page__header">
-        <div>
-          <p className="canonical-campaign-page__eyebrow">Campaign</p>
-          <div className="canonical-campaign-page__title-row">
-            <h1>{view.campaign.name}</h1>
-            <Badge>{view.campaign.lifecycleStatus}</Badge>
-          </div>
-          <p className="canonical-campaign-page__meta">
-            {view.campaign.productCount} Products · {view.campaign.briefCount} Briefs ·{" "}
-            {view.hydration.outcome}
-          </p>
-        </div>
-        <div className="canonical-campaign-page__actions">
-          {canRender(view.campaign.capabilities.view) && (
-            <Button
-              disabled={!isEnabled(view.campaign.capabilities.view) || busy}
-              onClick={() => void openCampaignDetails()}
-              variant="outline"
-            >
-              View
-            </Button>
-          )}
-          {canRender(view.campaign.capabilities.publish) && (
-            <Button
-              disabled={!isEnabled(view.campaign.capabilities.publish) || busy}
-              onClick={() => void run("Publish", () => publishCampaign(view.campaign.id))}
-            >
-              Publish
-            </Button>
-          )}
-          {canRender(view.campaign.capabilities.goLive) && (
-            <Button
-              disabled={!isEnabled(view.campaign.capabilities.goLive) || busy}
-              onClick={() => void run("Go live", () => goLiveCampaign(view.campaign.id))}
-            >
-              Go live
-            </Button>
-          )}
-          {canRender(view.campaign.capabilities.pause) && (
-            <Button
-              disabled={!isEnabled(view.campaign.capabilities.pause) || busy}
-              onClick={() =>
-                void run("Pause", () => patchCampaignStatus(view.campaign.id, "PAUSED"))
+    <section
+      className={`canonical-campaign-page${terminalCampaign ? " canonical-campaign-page--read-only" : ""}`}
+    >
+      <CampaignFeatureHeader
+        actionsDisabled={busy}
+        canShare={isCapabilityEnabled(view.share.capability)}
+        canViewDetails={isCapabilityEnabled(view.campaign.capabilities.view)}
+        onShare={() => onOpenShareFallback?.()}
+        onViewDetails={() => void openCampaignDetails()}
+        primaryAction={
+          primaryLifecycleAction
+            ? {
+                disabled: busy,
+                label: primaryLifecycleAction.label,
+                onClick: () =>
+                  void run(
+                    primaryLifecycleAction.label,
+                    primaryLifecycleAction.action,
+                  ),
               }
-              variant="outline"
-            >
-              Pause
-            </Button>
-          )}
-          {canRender(view.campaign.capabilities.resume) && (
-            <Button
-              disabled={!isEnabled(view.campaign.capabilities.resume) || busy}
-              onClick={() =>
-                void run("Resume", () => patchCampaignStatus(view.campaign.id, "LIVE"))
-              }
-              variant="outline"
-            >
-              Resume
-            </Button>
-          )}
-          {canRender(view.share.capability) && (
-            <Button
-              disabled={!isEnabled(view.share.capability) || busy}
-              onClick={() => onOpenShareFallback?.()}
-            >
-              Share
-            </Button>
-          )}
-        </div>
-      </header>
+            : undefined
+        }
+        view={view}
+      />
 
-      {notice && (
-        <Alert title="Campaign notice" tone="warning">
-          {notice}
+      {terminalCampaign ? (
+        <Alert title="Read-only Campaign" tone="warning">
+          This Campaign is {view.campaign.lifecycleStatus}. Backend capability
+          rules keep operational changes unavailable.
         </Alert>
-      )}
-      {view.hydration.postLiveReadinessBlocked && (
-        <Alert title="Readiness blocked" tone="warning">
-          Post-live readiness blocked. Restore Product/Brief readiness to continue
-          execution.
-        </Alert>
-      )}
+      ) : null}
 
-      <div className="canonical-campaign-page__layout">
-        <div className="canonical-campaign-page__primary">
-          <Card title="Campaign Overview">
-            <div className="canonical-campaign-page__overview-row">
-              <div>
-                <p className="canonical-campaign-page__empty">Objective</p>
-                <strong>{view.details?.objective ?? "—"}</strong>
-              </div>
-              <div>
-                <p className="canonical-campaign-page__empty">Creation source</p>
-                <strong>{view.campaign.creationSource}</strong>
-              </div>
-              <Button onClick={() => void openCampaignDetails()} variant="outline">
-                View details
-              </Button>
-            </div>
-          </Card>
+      <CampaignAttentionPanel
+        notice={notice}
+        onCreateBrief={(asset) => setBriefDrawer({ asset })}
+        onLinkAsset={() => setAssetDrawerOpen(true)}
+        onSelectWorkspace={setWorkspace}
+        view={view}
+      />
 
-          <Card title="Campaign Copilot">
-            {view.copilotSummary.state === "READY" ? (
-              <>
-                <p>{view.copilotSummary.summary}</p>
-                <div className="canonical-campaign-page__stack">
-                  {view.copilotSummary.actions.map((action) => (
-                    <Button
-                      key={action.id}
-                      onClick={() =>
-                        setWorkspace(
-                          action.action === "APPLICANTS" ? "APPLICANTS" : "DISCOVERY",
-                        )
-                      }
-                      variant="outline"
-                    >
-                      {action.context ?? action.label}
-                    </Button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p>Campaign Copilot is unavailable for this state.</p>
-            )}
-          </Card>
+      <CampaignAssetsBriefsPanel
+        onCreateBrief={(asset) => setBriefDrawer({ asset })}
+        onEditBrief={(asset, brief) => setBriefDrawer({ asset, brief })}
+        onLinkAsset={() => setAssetDrawerOpen(true)}
+        onOpenLegacyBrief={onOpenLegacyBrief}
+        onOpenLegacyProduct={onOpenLegacyProduct}
+        view={view}
+      />
 
-          <Card title="Performance">
-            {view.performanceSummary.state === "READY" ? (
-              <div className="canonical-campaign-page__stack">
-                <div className="canonical-campaign-page__metrics">
-                  {view.performanceSummary.metrics.map((metric) => (
-                    <div key={metric.metricId}>
-                      <span>{metric.label}</span>
-                      <strong>{metric.value}</strong>
-                    </div>
-                  ))}
-                </div>
-                {canRender(view.performanceSummary.capability) ? (
-                  <Button
-                    disabled={!isEnabled(view.performanceSummary.capability) || busy}
-                    onClick={() => setReportOpen(true)}
-                    variant="outline"
-                  >
-                    View report
-                  </Button>
-                ) : null}
-              </div>
-            ) : (
-              <p>Reporting is unavailable for this state.</p>
-            )}
-          </Card>
-
-          <Card title="Products & Briefs">
-            <div className="canonical-campaign-page__stack">
-              {view.productsBriefsSummary.products.map((product) => (
-                <article
-                  className="canonical-campaign-page__asset"
-                  key={product.campaignAssetId}
-                >
-                  <div className="canonical-campaign-page__asset-header">
-                    <div className="canonical-campaign-page__asset-title">
-                      <strong>{product.name}</strong>
-                      {product.status ? <Badge tone="neutral">{product.status}</Badge> : null}
-                    </div>
-                    <Button
-                      onClick={() => void onOpenProduct?.(product.campaignAssetId)}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      View product
-                    </Button>
-                  </div>
-
-                  <div className="canonical-campaign-page__brief-list">
-                    {product.briefs.length === 0 ? (
-                      <p className="canonical-campaign-page__empty">No briefs</p>
-                    ) : (
-                      product.briefs.map((brief) => (
-                        <div
-                          className="canonical-campaign-page__brief-row"
-                          key={brief.briefId}
-                        >
-                          <div className="canonical-campaign-page__asset-title">
-                            <span>{brief.name}</span>
-                            {brief.status ? (
-                              <Badge tone="neutral">{brief.status}</Badge>
-                            ) : null}
-                          </div>
-                          <Button
-                            onClick={() =>
-                              void onOpenBrief?.(
-                                brief.briefId,
-                                product.campaignAssetId,
-                              )
-                            }
-                            size="sm"
-                            type="button"
-                            variant="ghost"
-                          >
-                            View brief
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => onAddBrief(product.campaignAssetId)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Add Brief
-                  </Button>
-                </article>
-              ))}
-              <Button onClick={onAddProduct} fullWidthOnMobile>
-                Add Product
-              </Button>
-            </div>
-          </Card>
-        </div>
-
-        <div className="canonical-campaign-page__workspaces">
-          {visibleWorkspaces.map((item) => (
-            <Card
-              key={item.workspace}
-              title={`${item.workspace}${item.count != null ? ` (${item.count})` : ""}`}
-            >
-              <Button
-                disabled={!item.expand.available}
-                onClick={() => setWorkspace(item.workspace)}
-                variant={workspace === item.workspace ? "primary" : "outline"}
+      <CampaignWorkspaceShell
+        activeWorkspace={workspace}
+        onSelect={setWorkspace}
+        workspaces={visibleWorkspaces}
+      >
+        {workspaceProjection
+          ? [workspaceProjection].map((item) => (
+              <div
+                className="canonical-campaign-page__workspace-content"
+                key={item.workspace}
               >
-                {workspace === item.workspace ? "Expanded" : "Open"}
-              </Button>
-              {workspace === item.workspace && item.workspace === "DISCOVERY" && (
-                <div className="canonical-campaign-page__stack">
-                  {!discovery ? (
-                    <p>Loading Discovery…</p>
-                  ) : discovery.state !== "READY" ? (
-                    <p>No prospects yet.</p>
-                  ) : (
-                    discovery.creators.map((creator) => (
-                      <CreatorCard
-                        key={creator.campaignCreatorId}
-                        avatarInitials={creator.avatarInitials}
-                        busy={busy}
-                        category={creator.category}
-                        contextLabel={creator.contextLabel}
-                        engagement={creator.engagement}
-                        followers={creator.followers}
-                        name={creator.name}
-                        onPrimaryAction={() => void openOutreach(creator.campaignCreatorId)}
-                        onSecondaryAction={() => void openCreatorProfile(creator.campaignCreatorId)}
-                        primaryActionLabel="Outreach"
-                        secondaryActionLabel="Profile"
-                      />
-                    ))
-                  )}
-                </div>
-              )}
-              {workspace === item.workspace && item.workspace === "APPLICANTS" && (
-                <div className="canonical-campaign-page__stack">
-                  {!applicants ? (
-                    <p>Loading Applicants…</p>
-                  ) : applicants.state !== "READY" ? (
-                    <p>No applicants yet.</p>
-                  ) : (
-                    applicants.applicants.map((applicant) => (
-                      <CreatorCard
-                        key={applicant.applicationId}
-                        applicationStatus={applicant.applicationStatus}
-                        avatarInitials={applicant.avatarInitials}
-                        busy={busy}
-                        category={applicant.category}
-                        engagement={applicant.engagement}
-                        followers={applicant.followers}
-                        name={applicant.name}
-                        onPrimaryAction={() =>
-                          void run("Approve", async () => {
-                            await approveCampaignApplication(
+                {item.state === "UNAVAILABLE" ? (
+                  <WorkspaceStatePanel
+                    kind="unavailable"
+                    title={`${item.workspace[0].toUpperCase()}${item.workspace.slice(1)} unavailable`}
+                  >
+                    <p>
+                      {surfaceStateMessage(
+                        item.state,
+                        `${item.workspace[0].toUpperCase()}${item.workspace.slice(1)}`,
+                      ) ?? "This workspace is unavailable."}
+                      {item.workspace === "applicants" && item.count
+                        ? ` ${item.count} existing Application record(s) remain visible as compatibility context.`
+                        : ""}
+                    </p>
+                  </WorkspaceStatePanel>
+                ) : item.workspace === "discovery" ? (
+                  <DiscoveryWorkspaceContent
+                    busy={busy}
+                    discovery={discovery}
+                    error={discoveryError}
+                    onOpenProfile={(campaignCreatorId) =>
+                      void openCreatorProfile(campaignCreatorId)
+                    }
+                    onOpenOutreach={(campaignCreatorId) =>
+                      void openOutreach(campaignCreatorId)
+                    }
+                    onRetry={() => void loadDiscovery()}
+                  />
+                ) : item.workspace === "applicants" ? (
+                  <>
+                    {item.pendingCount != null || item.rejectedCount != null ? (
+                      <p className="canonical-campaign-page__workspace-summary">
+                        {item.pendingCount ?? 0} pending ·{" "}
+                        {item.rejectedCount ?? 0} rejected
+                      </p>
+                    ) : null}
+                    <ApplicantsWorkspaceContent
+                      applicants={applicants}
+                      busy={busy}
+                      error={applicantsError}
+                      onApprove={(applicationId) =>
+                        void run("Approve", async () => {
+                          await approveCampaignApplication(
+                            view.campaign.id,
+                            applicationId,
+                          );
+                          setApplicants(
+                            await fetchCampaignApplicationsView(
                               view.campaign.id,
-                              applicant.applicationId,
-                            );
-                            setApplicants(
-                              (await fetchCampaignApplicationsView(
-                                view.campaign.id,
-                              )) as ApplicantsWorkspaceView,
-                            );
-                          })
-                        }
-                        onSecondaryAction={() =>
-                          void run("Reject", async () => {
-                            await rejectCampaignApplication(
+                            ),
+                          );
+                        })
+                      }
+                      onOpenProfile={(campaignCreatorId) =>
+                        void openCreatorProfile(campaignCreatorId)
+                      }
+                      onReject={(applicationId) =>
+                        void run("Reject", async () => {
+                          await rejectCampaignApplication(
+                            view.campaign.id,
+                            applicationId,
+                            "Not a fit for this campaign",
+                          );
+                          setApplicants(
+                            await fetchCampaignApplicationsView(
                               view.campaign.id,
-                              applicant.applicationId,
-                              "Not a fit for this campaign",
-                            );
-                            setApplicants(
-                              (await fetchCampaignApplicationsView(
-                                view.campaign.id,
-                              )) as ApplicantsWorkspaceView,
-                            );
-                          })
-                        }
-                        onTertiaryAction={() => void openCreatorProfile(applicant.campaignCreatorId)}
-                        primaryActionLabel="Approve"
-                        secondaryActionLabel="Reject"
-                        tertiaryActionLabel="Profile"
-                      />
-                    ))
-                  )}
-                </div>
-              )}
-              {workspace === item.workspace && item.workspace === "COLLABORATIONS" ? (
-                <p className="canonical-campaign-page__empty">
-                  Collaboration detail remains independently owned by the Collaboration module.
-                </p>
-              ) : null}
-            </Card>
-          ))}
-        </div>
-      </div>
+                            ),
+                          );
+                        })
+                      }
+                      onRetry={() => void loadApplicants()}
+                    />
+                  </>
+                ) : (
+                  <CollaborationWorkspaceContent
+                    count={item.count}
+                    state={item.state}
+                  />
+                )}
+              </div>
+            ))
+          : null}
+      </CampaignWorkspaceShell>
+
+      <CanonicalAssetDrawer
+        campaignId={view.campaign.id}
+        campaignName={view.campaign.name}
+        canWrite={canLinkCanonicalAsset(view)}
+        isOpen={assetDrawerOpen}
+        onChanged={onReload}
+        onClose={() => setAssetDrawerOpen(false)}
+      />
+
+      <CanonicalBriefDrawer
+        asset={briefDrawer?.asset}
+        brief={briefDrawer?.brief}
+        campaignId={view.campaign.id}
+        canWrite={
+          briefDrawer?.brief
+            ? canEditCanonicalBrief(view)
+            : canCreateCanonicalBrief(view)
+        }
+        isOpen={Boolean(briefDrawer)}
+        onChanged={onReload}
+        onClose={() => setBriefDrawer(undefined)}
+      />
 
       <CampaignDetailsDrawer
         campaignName={view.campaign.name}
