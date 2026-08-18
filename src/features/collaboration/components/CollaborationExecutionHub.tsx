@@ -256,17 +256,13 @@ export function CollaborationExecutionHub({
 
   return (
     <div className="collab-pane__scroll collab-pane__scroll--execution">
-      <header className="collab-exec-card collab-exec-card--summary">
+      {!terminal && !completed ? <header className="collab-exec-card collab-exec-card--summary">
         <p className="collab-exec-card__kicker">
           {collaborationLifecycleLabel(detail.lifecycle.state)}
-          {!terminal && !completed ? ` · ${collaborationStageLabel(detail.workflow.stage)}` : ""}
+          {` · ${collaborationStageLabel(detail.workflow.stage)}`}
         </p>
-        {!terminal && !completed ? (
-          <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p>
-        ) : (
-          <p>No execution action required</p>
-        )}
-      </header>
+        <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p>
+      </header> : null}
       {!terminal && !completed && !paused ? <BlockingCard detail={detail} /> : null}
       {actionError && !completed && busyAction !== "cancel" ? (
         <Alert tone="error" title="Action could not be completed">

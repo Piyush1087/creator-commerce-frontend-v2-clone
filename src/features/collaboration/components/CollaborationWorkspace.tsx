@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, SendHorizontal } from "lucide-react";
+import { AlertTriangle, LoaderCircle, RefreshCw, SendHorizontal, WifiOff } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Alert, Button, TextField } from "../../../design-system/aurora";
 import { loadAuthSession } from "../../../shared/auth/auth-session";
@@ -349,7 +349,7 @@ function OperationalCollaborationWorkspace({
       <div className="collab-pane__scroll">
         {paneErrors.inbox ? (
           <Alert tone="error" title="Collaborations could not be loaded">
-            {paneErrors.inbox}
+            The Inbox could not be refreshed. Previously loaded collaborations remain visible where available.
             <Button variant="secondary" onClick={() => void loadThreads()}>
               Retry
             </Button>
@@ -467,9 +467,14 @@ function OperationalCollaborationWorkspace({
         </Button>
       </header>
       <div className="collab-chat-feed">
+        {detail && isCompatibilityDetail(detail) ? (
+          <Alert tone="warning" title="Limited collaboration details">
+            Some execution details are unavailable, but the conversation history remains accessible.
+          </Alert>
+        ) : null}
         {paneErrors.detail || paneErrors.contract || paneErrors.messages ? (
-          <Alert tone="error" title="Conversation could not be loaded">
-            {paneErrors.contract ?? paneErrors.detail ?? paneErrors.messages}
+          <Alert tone="error" title={detail ? "Conversation could not be refreshed" : "Conversation could not be loaded"}>
+            {detail ? `The last saved conversation remains visible. Last updated ${new Date(detail.updatedAt).toLocaleString()}.` : "Collaboration details are temporarily unavailable."}
             <Button
               variant="secondary"
               onClick={() => void hydrate(selectedId)}
@@ -513,7 +518,10 @@ function OperationalCollaborationWorkspace({
       </div>
       {paneErrors.send ? (
         <Alert tone="error" title="Message could not be sent">
-          {paneErrors.send}
+          Your draft is still available. Retry when you are ready.
+          <Button variant="secondary" disabled={!canSend} onClick={() => void send()}>
+            Retry send
+          </Button>
         </Alert>
       ) : null}
       {composerMode === "read_only" ? (
@@ -540,6 +548,8 @@ function OperationalCollaborationWorkspace({
           <Button disabled={!canSend} onClick={() => void send()}>
             {sending ? (
               "Sending…"
+            ) : paneErrors.send ? (
+              "Retry send"
             ) : (
               <>
                 <SendHorizontal size={17} aria-hidden="true" /> Send
@@ -588,12 +598,21 @@ function OperationalCollaborationWorkspace({
       </header>
       {unavailable ? (
         <div className="collab-empty">Select an available collaboration.</div>
+      ) : hydrating && !detail ? (
+        <div className="collab-state-surface collab-state-surface--compact" role="status">
+          <LoaderCircle className="collab-state-surface__spinner" size={28} aria-hidden="true" />
+          <h3>Loading execution details</h3>
+          <p>The persisted collaboration workspace is being prepared.</p>
+        </div>
       ) : detail && isCompatibilityDetail(detail) ? (
         <div className="collab-pane__scroll collab-pane__scroll--execution">
-          <Alert tone="warning" title="Limited collaboration details">
-            Some details and actions are unavailable because this collaboration
-            was created using an earlier workflow.
-          </Alert>
+          <section className="collab-state-surface collab-state-surface--limited">
+            <span className="collab-state-surface__icon" aria-hidden="true"><AlertTriangle size={26} /></span>
+            <p className="collab-deliverable__eyebrow">Read-only execution</p>
+            <h3>Limited collaboration details</h3>
+            <p>Some execution details and actions are unavailable for this collaboration. Known conversation history remains accessible.</p>
+            <span className="collab-status-pill">No execution actions available</span>
+          </section>
         </div>
       ) : (
         <CollaborationExecutionHub
@@ -622,33 +641,34 @@ function OperationalCollaborationWorkspace({
   return (
     <div className="collab-workspace">
       {realtime === "degraded" ? (
-        <p className="collab-workspace__notice" role="status">
-          Realtime updates temporarily unavailable. Persisted collaboration data
-          remains available. Use Refresh to reload the latest saved state.
-        </p>
+        <div className="collab-realtime-banner" role="status">
+          <WifiOff size={18} aria-hidden="true" />
+          <span><strong>Realtime updates are delayed.</strong> Persisted collaboration data remains usable while reconnection continues.</span>
+          <Button variant="secondary" onClick={() => void refreshAll()}><RefreshCw size={14} aria-hidden="true" /> Refresh</Button>
+        </div>
       ) : null}
       {stale ? (
         <p className="collab-workspace__notice">
           This collaboration changed. Showing the latest saved state.
         </p>
       ) : null}
-      {unavailable ? (
-        <Alert tone="warning" title="Collaboration unavailable">
-          This collaboration may no longer be available or you may not have
-          access.
-        </Alert>
-      ) : null}
-      {paneErrors.execution ? (
-        <p role="alert" className="collab-workspace__alert">
-          {paneErrors.execution}
-        </p>
-      ) : null}
       <div className="collab-workspace__desktop">
         <section className="collab-pane collab-pane--list">{listPane}</section>
-        {!selectedId && !unavailable ? (
+        {unavailable ? (
+          <section className="collab-workspace__empty-surface collab-workspace__unavailable-surface">
+            <span className="collab-workspace__empty-icon collab-workspace__empty-icon--warning" aria-hidden="true"><AlertTriangle size={34} /></span>
+            <h2>Collaboration unavailable</h2>
+            <p>This collaboration may no longer be available or you may not have access. No other collaboration was selected in its place.</p>
+            <Button variant="secondary" onClick={backToCollaborations}>Back to Collaborations</Button>
+          </section>
+        ) : !selectedId ? (
           <CollaborationEmptyWorkspace
             state={
-              !loadingInbox && threads.length === 0
+              loadingInbox
+                ? "loading"
+                : paneErrors.inbox && threads.length === 0
+                ? "read-error"
+                : threads.length === 0
                 ? "empty-inbox"
                 : "no-selection"
             }

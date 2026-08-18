@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { AlertTriangle, LoaderCircle, MessageCircle } from "lucide-react";
 
 import {
   collaborationEmptyWorkspaceCopy,
@@ -15,7 +15,7 @@ export function CollaborationEmptyWorkspace({
   return (
     <section className="collab-workspace__empty-surface">
       <span className="collab-workspace__empty-icon" aria-hidden="true">
-        <MessageCircle size={38} strokeWidth={1.6} />
+        {state === "loading" ? <LoaderCircle className="collab-state-surface__spinner" size={34} strokeWidth={1.6} /> : state === "read-error" ? <AlertTriangle size={34} strokeWidth={1.6} /> : <MessageCircle size={38} strokeWidth={1.6} />}
       </span>
       <h2>{copy.title}</h2>
       <p>{copy.body}</p>

@@ -12,5 +12,9 @@ describe("Collaboration empty workspace copy", () => {
       title: "No collaborations yet",
       body: "New collaboration conversations will appear in the Inbox when they are available.",
     });
+    expect(collaborationEmptyWorkspaceCopy("read-error")).toEqual({
+      title: "Collaboration Inbox unavailable",
+      body: "Collaborations could not be loaded. Use Retry in the Inbox to try again.",
+    });
   });
 });
