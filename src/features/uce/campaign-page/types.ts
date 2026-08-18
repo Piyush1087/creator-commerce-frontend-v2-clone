@@ -8,6 +8,45 @@ export interface Capability {
   reasonCategory?: string;
 }
 
+export interface CampaignDetailsView {
+  state: SurfaceState;
+  objective: string | null;
+  platforms: unknown;
+  visibilityScopes: string[];
+  compensationType: string | null;
+  budgetPool: number | null;
+  timelineType: string | null;
+}
+
+export type CanonicalCampaignAssetKind = "BRAND" | "OFFERING" | "OFFER";
+
+export interface LinkedCampaignAsset {
+  kind: CanonicalCampaignAssetKind;
+  entity_id: string;
+  label: string;
+  subtype: string | null;
+  image_url: string | null;
+  campaign_asset_id: string;
+  status: "ACTIVE" | "PAUSED";
+}
+
+export interface CanonicalBriefRecord {
+  brief_id: string;
+  campaign_asset_id: string;
+  title: string;
+  creative_requirements: string;
+  is_active: boolean;
+  deliverables: Array<{
+    deliverable_id: string;
+    format: string;
+    quantity: number;
+    creative_requirements: string;
+    publishing_required: boolean;
+  }>;
+  readiness: { ready: boolean; missing_requirements: string[] };
+  created_at: string;
+}
+
 export interface CampaignPageView {
   campaign: {
     id: string;
@@ -61,15 +100,7 @@ export interface CampaignPageView {
     expand: Capability;
   }>;
   share: { capability: Capability; supportedChannels: ShareChannel[] };
-  details?: {
-    state: SurfaceState;
-    objective: string | null;
-    platforms: unknown;
-    visibilityScopes: string[];
-    compensationType: string | null;
-    budgetPool: number | null;
-    timelineType: string | null;
-  };
+  details?: CampaignDetailsView;
 }
 
 export interface DiscoveryWorkspaceView {

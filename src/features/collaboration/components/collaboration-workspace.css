@@ -1040,6 +1040,29 @@
   }
 }
 
+.collab-context-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-default, #e5e7eb);
+}
+
+.collab-context-actions > p {
+  margin: 0;
+  color: var(--text-muted, #68716d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.collab-context-actions .aurora-button {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+}
+
 .collab-thread {
   width: 100%;
   text-align: left;

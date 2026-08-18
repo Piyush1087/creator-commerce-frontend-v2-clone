@@ -18,6 +18,11 @@ import type {
   UpdateCampaignProductBody,
 } from "../contracts/brand-uce.contracts";
 import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
+import type {
+  CampaignPageView,
+  CanonicalBriefRecord,
+  LinkedCampaignAsset,
+} from "../campaign-page/types";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json",
@@ -140,7 +145,7 @@ export async function fetchCampaignShell(
   return (await readJsonOrThrow(response)) as CampaignShellResponse;
 }
 
-export async function fetchCampaignPageView(campaignId: string): Promise<unknown> {
+export async function fetchCampaignPageView(campaignId: string): Promise<CampaignPageView> {
   const response = await fetch(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/page`,
     {
@@ -148,7 +153,27 @@ export async function fetchCampaignPageView(campaignId: string): Promise<unknown
       headers: authHeaders(),
     },
   );
-  return readJsonOrThrow(response);
+  return (await readJsonOrThrow(response)) as CampaignPageView;
+}
+
+export async function fetchCanonicalCampaignAssets(
+  campaignId: string,
+): Promise<LinkedCampaignAsset[]> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/assets`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as LinkedCampaignAsset[];
+}
+
+export async function fetchCanonicalCampaignBriefs(
+  campaignId: string,
+): Promise<CanonicalBriefRecord[]> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/canonical-briefs`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalBriefRecord[];
 }
 
 export async function fetchCampaignDiscoveryView(

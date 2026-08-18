@@ -47,11 +47,16 @@ import {
 import { CollaborationEmptyWorkspace } from "./CollaborationEmptyWorkspace";
 import { CollaborationExecutionHub } from "./CollaborationExecutionHub";
 import { CollaborationStageProgress } from "./CollaborationStageProgress";
+import { CampaignContextDetailsDrawer } from "../../uce/campaign-page/CampaignContextDetailsDrawer";
+import { CanonicalAssetDetailsDrawer } from "../../uce/campaign-page/CanonicalAssetDetailsDrawer";
+import { CanonicalBriefDetailsDrawer } from "../../uce/campaign-page/CanonicalBriefDetailsDrawer";
 import { BrandContextDrawer } from "./context/BrandContextDrawer";
 import { CreatorContextDrawer } from "./context/CreatorContextDrawer";
+import { collaborationCanonicalContextReferences } from "../utils/collaboration-context-references";
 import "./collaboration-workspace.css";
 
 type MobileStep = 1 | 2 | 3;
+type CampaignContextDetail = "campaign" | "asset" | "brief";
 
 function formatInboxTimestamp(value: string | null): string | null {
   if (!value) return null;
@@ -130,11 +135,15 @@ function OperationalCollaborationWorkspace({
   );
   const [stale, setStale] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  const [campaignContextDetail, setCampaignContextDetail] = useState<CampaignContextDetail | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const selected =
     threads.find((row) => row.collaborationId === selectedId) ?? null;
   const composerMode = collaborationComposerMode(detail);
   const canSend = collaborationCanSendMessage(detail, draft, sending);
+  const contextReferences = detail
+    ? collaborationCanonicalContextReferences(detail)
+    : { campaignId: null, campaignAssetId: null, briefId: null };
 
   const loadThreads = useCallback(async () => {
     setLoadingInbox(true);
@@ -233,6 +242,8 @@ function OperationalCollaborationWorkspace({
 
   useEffect(() => {
     if (selectedId) {
+      setContextOpen(false);
+      setCampaignContextDetail(null);
       setDetail(null);
       setMessages([]);
       setDraft("");
@@ -250,6 +261,16 @@ function OperationalCollaborationWorkspace({
       setMessages([]);
     }
   }, [hydrate, selectedId]);
+
+  const openCampaignContextDetail = (target: CampaignContextDetail) => {
+    setContextOpen(false);
+    setCampaignContextDetail(target);
+  };
+
+  const closeCampaignContextDetail = () => {
+    setCampaignContextDetail(null);
+    setContextOpen(true);
+  };
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -751,6 +772,9 @@ function OperationalCollaborationWorkspace({
           detail={detail}
           open={contextOpen}
           onClose={() => setContextOpen(false)}
+          onOpenCampaign={contextReferences.campaignId ? () => openCampaignContextDetail("campaign") : undefined}
+          onOpenCampaignAsset={contextReferences.campaignAssetId ? () => openCampaignContextDetail("asset") : undefined}
+          onOpenBrief={contextReferences.briefId ? () => openCampaignContextDetail("brief") : undefined}
         />
       ) : null}
       {detail && role === "CREATOR" ? (
@@ -758,6 +782,33 @@ function OperationalCollaborationWorkspace({
           detail={detail}
           open={contextOpen}
           onClose={() => setContextOpen(false)}
+        />
+      ) : null}
+      {detail && role === "BRAND" && contextReferences.campaignId ? (
+        <CampaignContextDetailsDrawer
+          campaignId={contextReferences.campaignId}
+          campaignName={detail.sourceContext.campaign.name}
+          isOpen={campaignContextDetail === "campaign"}
+          onClose={closeCampaignContextDetail}
+        />
+      ) : null}
+      {detail && role === "BRAND" && contextReferences.campaignId && contextReferences.campaignAssetId ? (
+        <CanonicalAssetDetailsDrawer
+          campaignId={contextReferences.campaignId}
+          campaignAssetId={contextReferences.campaignAssetId}
+          campaignName={detail.sourceContext.campaign.name}
+          isOpen={campaignContextDetail === "asset"}
+          onClose={closeCampaignContextDetail}
+        />
+      ) : null}
+      {detail && role === "BRAND" && contextReferences.campaignId && contextReferences.campaignAssetId && contextReferences.briefId ? (
+        <CanonicalBriefDetailsDrawer
+          campaignId={contextReferences.campaignId}
+          campaignAssetId={contextReferences.campaignAssetId}
+          briefId={contextReferences.briefId}
+          campaignName={detail.sourceContext.campaign.name}
+          isOpen={campaignContextDetail === "brief"}
+          onClose={closeCampaignContextDetail}
         />
       ) : null}
     </div>
