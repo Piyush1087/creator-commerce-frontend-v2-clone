@@ -17,11 +17,16 @@ import type {
   UceCampaignStatus,
   UpdateCampaignProductBody,
 } from "../contracts/brand-uce.contracts";
-import type { IntegratedCampaignWizardPayload } from "../schemas/campaign-wizard-schema";
+import type { CanonicalCampaignWizardPayload } from "../schemas/canonical-campaign-wizard-schema";
 import type {
-  CampaignPageView,
   CanonicalBriefRecord,
+  CanonicalBriefWriteBody,
+  ApplicantsWorkspaceView,
+  CampaignPageView,
+  CreateCanonicalBriefBody,
+  DiscoveryWorkspaceView,
   LinkedCampaignAsset,
+  SelectableCampaignAsset,
 } from "../campaign-page/types";
 
 const JSON_HEADERS = {
@@ -43,7 +48,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -97,9 +104,9 @@ export class BrandUceWizardValidationError extends Error {
 }
 
 export async function createCampaignFromWizard(
-  payload: IntegratedCampaignWizardPayload,
+  payload: CanonicalCampaignWizardPayload,
 ): Promise<CampaignShellResponse> {
-  const response = await fetch(`${BASE}/campaigns/wizard`, {
+  const response = await fetch(`${BASE}/campaigns/canonical-wizard`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(payload),
@@ -110,7 +117,9 @@ export async function createCampaignFromWizard(
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
 
   if (!response.ok) {
@@ -125,7 +134,10 @@ export async function createCampaignFromWizard(
         ? (body as { issues: unknown }).issues
         : undefined;
 
-    if (response.status === 422 && issues !== undefined) {
+    if (
+      (response.status === 400 || response.status === 422) &&
+      issues !== undefined
+    ) {
       throw new BrandUceWizardValidationError(message, issues);
     }
 
@@ -138,14 +150,19 @@ export async function createCampaignFromWizard(
 export async function fetchCampaignShell(
   campaignId: string,
 ): Promise<CampaignShellResponse> {
-  const response = await fetch(`${BASE}/campaigns/${encodeURIComponent(campaignId)}`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
   return (await readJsonOrThrow(response)) as CampaignShellResponse;
 }
 
-export async function fetchCampaignPageView(campaignId: string): Promise<CampaignPageView> {
+export async function fetchCampaignPageView(
+  campaignId: string,
+): Promise<CampaignPageView> {
   const response = await fetch(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/page`,
     {
@@ -154,6 +171,29 @@ export async function fetchCampaignPageView(campaignId: string): Promise<Campaig
     },
   );
   return (await readJsonOrThrow(response)) as CampaignPageView;
+}
+
+export async function fetchCampaignDiscoveryView(
+  campaignId: string,
+): Promise<DiscoveryWorkspaceView> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/discovery`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
+  return (await readJsonOrThrow(response)) as DiscoveryWorkspaceView;
+}
+
+export async function fetchSelectableCampaignAssets(): Promise<
+  SelectableCampaignAsset[]
+> {
+  const response = await fetch(`${BASE}/campaign-assets/selectable`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+  return (await readJsonOrThrow(response)) as SelectableCampaignAsset[];
 }
 
 export async function fetchCanonicalCampaignAssets(
@@ -166,6 +206,17 @@ export async function fetchCanonicalCampaignAssets(
   return (await readJsonOrThrow(response)) as LinkedCampaignAsset[];
 }
 
+export async function linkCanonicalCampaignAsset(
+  campaignId: string,
+  body: Pick<SelectableCampaignAsset, "kind" | "entity_id">,
+): Promise<LinkedCampaignAsset> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/assets`,
+    { method: "POST", headers: authHeaders(), body: JSON.stringify(body) },
+  );
+  return (await readJsonOrThrow(response)) as LinkedCampaignAsset;
+}
+
 export async function fetchCanonicalCampaignBriefs(
   campaignId: string,
 ): Promise<CanonicalBriefRecord[]> {
@@ -176,22 +227,32 @@ export async function fetchCanonicalCampaignBriefs(
   return (await readJsonOrThrow(response)) as CanonicalBriefRecord[];
 }
 
-export async function fetchCampaignDiscoveryView(
+export async function createCanonicalCampaignBrief(
   campaignId: string,
-): Promise<unknown> {
+  body: CreateCanonicalBriefBody,
+): Promise<CanonicalBriefRecord> {
   const response = await fetch(
-    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/discovery`,
-    {
-      method: "GET",
-      headers: authHeaders(),
-    },
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/canonical-briefs`,
+    { method: "POST", headers: authHeaders(), body: JSON.stringify(body) },
   );
-  return readJsonOrThrow(response);
+  return (await readJsonOrThrow(response)) as CanonicalBriefRecord;
+}
+
+export async function updateCanonicalCampaignBrief(
+  campaignId: string,
+  briefId: string,
+  body: CanonicalBriefWriteBody,
+): Promise<CanonicalBriefRecord> {
+  const response = await fetch(
+    `${BASE}/campaigns/${encodeURIComponent(campaignId)}/canonical-briefs/${encodeURIComponent(briefId)}`,
+    { method: "PATCH", headers: authHeaders(), body: JSON.stringify(body) },
+  );
+  return (await readJsonOrThrow(response)) as CanonicalBriefRecord;
 }
 
 export async function fetchCampaignApplicationsView(
   campaignId: string,
-): Promise<unknown> {
+): Promise<ApplicantsWorkspaceView> {
   const response = await fetch(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications`,
     {
@@ -199,7 +260,7 @@ export async function fetchCampaignApplicationsView(
       headers: authHeaders(),
     },
   );
-  return readJsonOrThrow(response);
+  return (await readJsonOrThrow(response)) as ApplicantsWorkspaceView;
 }
 
 export async function approveCampaignApplication(

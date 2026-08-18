@@ -17,7 +17,9 @@
   .campaign-workspace-canvas {
     padding: 24px 16px;
     /* Clear fixed AppShell bottom nav */
-    padding-bottom: calc(24px + var(--height-bottom-nav, 64px));
+    padding-bottom: calc(
+      24px + var(--height-bottom-nav, 64px) + env(safe-area-inset-bottom, 0px)
+    );
   }
 }
 
@@ -150,8 +152,17 @@
   border-radius: 10px;
 }
 
-.product-text strong { display: block; font-size: 15px; color: #0f172a; }
-.product-text span { font-size: 12px; color: #64748b; margin-top: 2px; display: block; }
+.product-text strong {
+  display: block;
+  font-size: 15px;
+  color: #0f172a;
+}
+.product-text span {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  display: block;
+}
 
 .product-logistics {
   display: flex;
@@ -183,7 +194,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .brief-main {
@@ -248,7 +259,7 @@
 .seg-tab.active {
   background: white;
   color: #0f172a;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .pipeline-canvas {

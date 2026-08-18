@@ -1,6 +1,10 @@
-import { Alert, Badge, Button, SideDrawer } from "../../../design-system/aurora";
+import {
+  Alert,
+  Badge,
+  Button,
+  SideDrawer,
+} from "../../../design-system/aurora";
 import type { CampaignDetailsView } from "./types";
-import "./campaign-page.css";
 
 export function CampaignDetailsDrawer({
   campaignName,
@@ -51,10 +55,24 @@ export function CampaignDetailsDrawer({
               Campaign strategy
             </h3>
             <dl className="canonical-campaign-drawer__details">
-              <div><dt>Objective</dt><dd>{details.objective ?? "—"}</dd></div>
-              <div><dt>Timeline</dt><dd>{details.timelineType ?? "—"}</dd></div>
-              <div><dt>Visibility</dt><dd>{details.visibilityScopes.join(", ") || "—"}</dd></div>
-              <div><dt>Platforms</dt><dd>{details.platforms ? JSON.stringify(details.platforms) : "—"}</dd></div>
+              <div>
+                <dt>Objective</dt>
+                <dd>{details.objective ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Timeline</dt>
+                <dd>{details.timelineType ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Visibility</dt>
+                <dd>{details.visibilityScopes.join(", ") || "—"}</dd>
+              </div>
+              <div>
+                <dt>Platforms</dt>
+                <dd>
+                  {details.platforms ? JSON.stringify(details.platforms) : "—"}
+                </dd>
+              </div>
             </dl>
           </section>
           <section className="canonical-campaign-drawer__panel">
@@ -62,8 +80,14 @@ export function CampaignDetailsDrawer({
               Commercial context
             </h3>
             <dl className="canonical-campaign-drawer__details">
-              <div><dt>Compensation</dt><dd>{details.compensationType ?? "—"}</dd></div>
-              <div><dt>Budget pool</dt><dd>{details.budgetPool ?? "—"}</dd></div>
+              <div>
+                <dt>Compensation</dt>
+                <dd>{details.compensationType ?? "—"}</dd>
+              </div>
+              <div>
+                <dt>Budget pool</dt>
+                <dd>{details.budgetPool ?? "—"}</dd>
+              </div>
             </dl>
           </section>
         </div>

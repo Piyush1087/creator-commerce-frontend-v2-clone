@@ -7,4 +7,5 @@ export const env = resolvePublicRuntimeEnv({
   stage: import.meta.env.VITE_STAGE,
   razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
   publicAppUrl: import.meta.env.VITE_PUBLIC_APP_URL,
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
 });
