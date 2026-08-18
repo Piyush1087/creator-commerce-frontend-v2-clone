@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, LoaderCircle, RefreshCw, SendHorizontal, WifiOff } from "lucide-react";
+import { AlertTriangle, ArrowLeft, LoaderCircle, RefreshCw, SendHorizontal, WifiOff } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Alert, Button, TextField } from "../../../design-system/aurora";
 import { loadAuthSession } from "../../../shared/auth/auth-session";
@@ -458,13 +458,6 @@ function OperationalCollaborationWorkspace({
           </button>
           {refreshControl}
         </div>
-        <Button
-          className="collab-show-mobile-only collab-chat-head__hub-cta"
-          variant="secondary"
-          onClick={() => setMobileStep(3)}
-        >
-          Open execution hub
-        </Button>
       </header>
       <div className="collab-chat-feed">
         {detail && isCompatibilityDetail(detail) ? (
@@ -688,15 +681,56 @@ function OperationalCollaborationWorkspace({
         {mobileStep > 1 ? (
           <div className="collab-mobile-bar">
             <Button
-              variant="secondary"
+              className="collab-mobile-bar__back"
+              variant="ghost"
+              size="sm"
               onClick={() => setMobileStep((mobileStep - 1) as MobileStep)}
             >
-              Back
+              <ArrowLeft size={18} aria-hidden="true" /> Back
             </Button>
-            {refreshControl}
+            <button
+              type="button"
+              className="collab-mobile-bar__counterpart"
+              onClick={() => setContextOpen(true)}
+            >
+              <span className="collab-chat-head__avatar">
+                {(counterpart?.displayName ?? "C").slice(0, 1).toUpperCase()}
+              </span>
+              <span>
+                <strong>{counterpart?.displayName ?? "Collaboration"}</strong>
+                {counterpart?.handle ? (
+                  <small>@{counterpart.handle.replace(/^@/, "")}</small>
+                ) : null}
+              </span>
+            </button>
+            {mobileStep === 2 ? (
+              <Button
+                className="collab-mobile-bar__switch"
+                size="sm"
+                onClick={() => setMobileStep(3)}
+              >
+                Execute
+              </Button>
+            ) : (
+              <Button
+                className="collab-mobile-bar__switch"
+                variant="secondary"
+                size="sm"
+                onClick={() => setMobileStep(2)}
+              >
+                Chat
+              </Button>
+            )}
           </div>
         ) : null}
-        {mobileStep === 1 ? (
+        {unavailable ? (
+          <section className="collab-workspace__empty-surface collab-workspace__unavailable-surface">
+            <span className="collab-workspace__empty-icon collab-workspace__empty-icon--warning" aria-hidden="true"><AlertTriangle size={34} /></span>
+            <h2>Collaboration unavailable</h2>
+            <p>This collaboration may no longer be available or you may not have access. No other collaboration was selected in its place.</p>
+            <Button variant="secondary" onClick={backToCollaborations}>Back to Collaborations</Button>
+          </section>
+        ) : mobileStep === 1 ? (
           <section className="collab-pane collab-pane--list">
             {listPane}
           </section>

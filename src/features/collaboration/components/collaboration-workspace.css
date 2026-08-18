@@ -775,12 +775,65 @@
 
 .collab-mobile-bar {
   flex-shrink: 0;
-  display: flex;
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
+  gap: 0.625rem;
+  min-height: 60px;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border-default, #e5e7eb);
   background: #fff;
+}
+
+.collab-mobile-bar__back,
+.collab-mobile-bar__switch {
+  min-height: 42px;
+}
+
+.collab-mobile-bar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-inline: 0.35rem;
+}
+
+.collab-mobile-bar__counterpart {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 0.55rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collab-mobile-bar__counterpart > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.collab-mobile-bar__counterpart strong,
+.collab-mobile-bar__counterpart small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collab-mobile-bar__counterpart strong {
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.collab-mobile-bar__counterpart small {
+  color: var(--text-muted, #68716d);
+  font-size: 0.75rem;
 }
 
 .collab-empty {
@@ -964,9 +1017,7 @@
 
 @media (max-width: 1023px) {
   .collab-workspace {
-    height: calc(
-      100dvh - var(--height-header, 72px) - var(--height-bottom-nav, 64px)
-    );
+    height: calc(100dvh - var(--height-header, 72px));
   }
 
   .collab-pane--list,
@@ -982,6 +1033,10 @@
 
   .collab-pane__head .aurora-field {
     margin-bottom: 0;
+  }
+
+  .collab-workspace__mobile .collab-chat-head {
+    display: none;
   }
 }
 
@@ -1763,6 +1818,198 @@
   background: var(--surface-warning, #fff7df);
 }
 @media (max-width: 767px) {
+  .collab-workspace {
+    width: 100%;
+    max-width: 100%;
+    height: calc(
+      100dvh - var(--height-header, 72px) - 44px -
+        var(--height-bottom-nav, 64px)
+    );
+  }
+  .collab-mobile-bar {
+    gap: 0.4rem;
+    min-height: 58px;
+    padding: 0.4rem 0.65rem;
+  }
+  .collab-mobile-bar__back,
+  .collab-mobile-bar__switch {
+    min-height: 44px;
+    padding-inline: 0.55rem;
+  }
+  .collab-mobile-bar__counterpart {
+    gap: 0.45rem;
+  }
+  .collab-mobile-bar__counterpart .collab-chat-head__avatar {
+    width: 34px;
+    height: 34px;
+  }
+  .collab-mobile-bar__counterpart strong {
+    font-size: 0.8125rem;
+  }
+  .collab-mobile-bar__counterpart small {
+    font-size: 0.7rem;
+  }
+  .collab-pane__head {
+    padding: 1rem;
+  }
+  .collab-pane--list .collab-pane__head {
+    padding: 1.1rem 1rem 0.9rem;
+  }
+  .collab-pane--list .aurora-field__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .collab-thread {
+    min-height: 88px;
+    padding: 0.9rem 1rem;
+  }
+  .collab-thread__snippet {
+    display: none;
+  }
+  .collab-thread__footer {
+    margin-top: 0.4rem;
+  }
+  .collab-thread__avatar {
+    width: 42px;
+    height: 42px;
+  }
+  .collab-chat-feed {
+    gap: 1rem;
+    padding: 1rem 0.875rem 1.25rem;
+  }
+  .collab-msg--user {
+    max-width: 88%;
+    font-size: 0.875rem;
+  }
+  .collab-msg--system {
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.8125rem;
+  }
+  .collab-composer {
+    gap: 0.5rem;
+    padding: 0.7rem 0.75rem calc(0.7rem + env(safe-area-inset-bottom));
+  }
+  .collab-composer input,
+  .collab-composer .aurora-button {
+    min-height: 44px;
+  }
+  .collab-composer--readonly {
+    padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+  }
+  .collab-pane__head--execution {
+    padding: 0.9rem 1rem 0.85rem;
+  }
+  .collab-pane__head--execution .collab-pane__head-meta {
+    display: none;
+  }
+  .collab-pane__head--execution .collab-execution-action {
+    margin-top: 0.35rem;
+  }
+  .collab-stage-progress {
+    margin-top: 0.85rem;
+  }
+  .collab-stage-progress__label {
+    margin-top: 0.35rem;
+    font-size: 0.5rem;
+    letter-spacing: 0;
+  }
+  .collab-pane__scroll--execution {
+    padding: 1rem 0.75rem 1.5rem;
+  }
+  .collab-exec-card {
+    padding: 1.5rem;
+  }
+  .collab-stage-card,
+  .collab-support-card > header,
+  .collab-deliverable__command,
+  .collab-deliverable__review,
+  .collab-publishing-card__command,
+  .collab-publishing-card__verification,
+  .collab-command-form--stage,
+  .collab-resolution__financial,
+  .collab-feedback__form {
+    padding: 1.5rem;
+  }
+  .collab-stage-card__header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .collab-stage-card__status {
+    grid-column: 1 / -1;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .collab-stage-card__lead,
+  .collab-exec-card > p:not(.collab-deliverable__eyebrow),
+  .collab-command-form p,
+  .collab-publishing-card__intent span,
+  .collab-publishing-card__authorization span {
+    font-size: 0.875rem !important;
+    line-height: 1.5;
+  }
+  .collab-deliverable,
+  .collab-publishing-card,
+  .collab-fulfillment {
+    display: flex;
+    flex-direction: column;
+  }
+  .collab-deliverable > .collab-deliverable__header,
+  .collab-publishing-card > .collab-publishing-card__header,
+  .collab-fulfillment > .collab-stage-card__header {
+    order: 0;
+  }
+  .collab-deliverable > .collab-deliverable__review,
+  .collab-deliverable > .collab-deliverable__command,
+  .collab-deliverable > .collab-final-review,
+  .collab-publishing-card > .collab-publishing-card__command,
+  .collab-publishing-card > .collab-publishing-card__verification {
+    order: 1;
+  }
+  .collab-deliverable > .aurora-alert,
+  .collab-publishing-card > .aurora-alert {
+    order: 2;
+  }
+  .collab-deliverable > .collab-deliverable__summary,
+  .collab-publishing-card > .collab-publishing-card__authorization {
+    order: 3;
+  }
+  .collab-deliverable > .collab-facts--stage,
+  .collab-deliverable > .collab-deliverable__empty,
+  .collab-publishing-card > .collab-publishing-card__evidence,
+  .collab-publishing-card > .collab-publishing-card__intent {
+    order: 4;
+  }
+  .collab-deliverable > details,
+  .collab-publishing-card > details {
+    order: 5;
+  }
+  .collab-fulfillment > .collab-stage-card__lead {
+    order: 1;
+  }
+  .collab-fulfillment > .collab-support-card {
+    order: 2;
+  }
+  .collab-fulfillment > .collab-stage-actions,
+  .collab-fulfillment > .collab-command-form--stage:not(.collab-command-form--secondary) {
+    order: 3;
+  }
+  .collab-fulfillment > .collab-fulfillment-history {
+    order: 4;
+  }
+  .collab-fulfillment > .collab-command-form--secondary {
+    order: 5;
+  }
+  .collab-fulfillment > .collab-issue-history,
+  .collab-fulfillment > .aurora-alert {
+    order: 6;
+  }
   .collab-exec-actions,
   .collab-exec-actions > button,
   .collab-exec-card > button {
@@ -1797,15 +2044,12 @@
     justify-content: flex-start;
     max-width: 100%;
   }
-  .collab-deliverable__summary,
   .collab-publishing-card__evidence {
     grid-template-columns: minmax(0, 1fr);
   }
-  .collab-deliverable__summary div:nth-child(even),
   .collab-publishing-card__evidence div:nth-child(even) {
     border-left: 0;
   }
-  .collab-deliverable__summary div + div,
   .collab-publishing-card__evidence div + div {
     border-top: 1px solid #e5e9e7;
   }
@@ -1814,6 +2058,10 @@
   }
   .collab-publishing-card__verification > header > span {
     white-space: normal;
+  }
+  .collab-publishing-card__verification > .collab-command-form:first-of-type > .aurora-button {
+    order: -1;
+    margin-bottom: 0.35rem;
   }
   .collab-publishing-history,
   .collab-publishing-evidence {
@@ -1838,15 +2086,45 @@
     grid-column: 1 / -1;
     justify-self: start;
   }
-  .collab-terminal-summary,
   .collab-resolution__amounts {
     grid-template-columns: minmax(0, 1fr);
   }
-  .collab-terminal-summary div:nth-child(even) {
-    border-left: 0;
+  .collab-completed-card .collab-terminal-card__reason {
+    display: none;
   }
-  .collab-terminal-summary div + div {
-    border-top: 1px solid #e4e8e6;
+  .collab-completed .collab-settlement .collab-facts--stage,
+  .collab-resolution-stack .collab-terminal-settlement .collab-facts--stage {
+    display: none;
+  }
+  .collab-terminal-chat-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #dfe3e1;
+    border-radius: 12px;
+    background: #f7f9f8;
+    color: #536059;
+  }
+  .collab-terminal-chat-note > span {
+    display: grid;
+    gap: 0.2rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .collab-terminal-chat-note strong {
+    color: #26332d;
+  }
+  .collab-workspace .aurora-alert__icon {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .collab-realtime-banner {
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+  }
+  .collab-realtime-banner > span {
+    font-size: 0.8125rem;
   }
   .collab-exec-card {
     min-width: 0;
