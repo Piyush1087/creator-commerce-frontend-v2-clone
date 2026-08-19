@@ -5,6 +5,7 @@ export { Card } from "./components/Card";
 export { ProgressBar } from "./components/ProgressBar";
 export { SelectField } from "./components/SelectField";
 export { SelectionCard } from "./components/SelectionCard";
+export { SideDrawer } from "./components/SideDrawer";
 export { Tabs } from "./components/Tabs";
 export { TextField } from "./components/TextField";
 export { Toggle } from "./components/Toggle";

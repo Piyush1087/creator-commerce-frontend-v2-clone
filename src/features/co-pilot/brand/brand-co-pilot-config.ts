@@ -24,7 +24,7 @@ export const BRAND_CO_PILOT_INTENT_TEMPLATES: CoPilotIntentTemplate[] = [
     id: "collab-pipeline",
     label: "Collaboration status",
     templateString:
-      "Show me all creators currently stuck in Stage 3 Logistics or Stage 4 Production.",
+      "Show me all creators currently stuck in Fulfillment or Production.",
     associatedScope: "GLOBAL",
   },
   {

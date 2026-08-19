@@ -13,7 +13,7 @@ export function BrandContextDrawer({
 }) {
   const fields = collaborationCounterpartMvpFields(detail, "CREATOR");
   return (
-    <SideDrawer isOpen={open} onClose={onClose} title={fields.displayName} subtitle="Collaboration context">
+    <SideDrawer closeLabel="Close Collaboration context" isOpen={open} onClose={onClose} title={fields.displayName} subtitle="Collaboration context">
       <dl className="collab-facts">
         {fields.campaignName ? (
           <div>

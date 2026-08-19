@@ -4,9 +4,15 @@ import { resolvePublicRuntimeEnv } from "./resolve-env";
 
 describe("Public runtime env", () => {
   it("preserves local DEV behavior when API URL is missing", () => {
-    expect(resolvePublicRuntimeEnv({ dev: true })).toMatchObject({
+    expect(
+      resolvePublicRuntimeEnv({
+        dev: true,
+        googleMapsApiKey: "  maps-key  ",
+      }),
+    ).toMatchObject({
       apiUrl: "",
       socketUrl: "http://localhost:3000",
+      googleMapsApiKey: "maps-key",
     });
   });
 
