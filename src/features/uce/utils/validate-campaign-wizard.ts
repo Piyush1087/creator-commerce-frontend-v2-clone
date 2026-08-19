@@ -1,101 +1,61 @@
 import type { ZodError } from "zod";
 
 import {
-  IntegratedCampaignWizardPayloadSchema,
-  Step1StrategySchema,
-  Step2TargetingSchema,
-  Step3CommercialsSchema,
-} from "../schemas/campaign-wizard-schema";
-import {
-  mapWizardToIntegratedPayload,
-  mapWizardToStep1Payload,
-  mapWizardToStep2Payload,
-  mapWizardToStep3Payload,
-} from "../mappers/map-wizard-to-payload";
+  CanonicalCampaignStrategySchema,
+  CanonicalCommercialPolicySchema,
+  CanonicalCreatorStrategySchema,
+  CanonicalCampaignWizardPayloadSchema,
+} from "../schemas/canonical-campaign-wizard-schema";
+import { mapWizardToCanonicalPayload } from "../mappers/map-wizard-to-canonical-payload";
 import type { WizardData, WizardFieldErrors, WizardFieldKey } from "../types/campaign-wizard";
 
 const API_PATH_TO_FIELD: Record<string, WizardFieldKey> = {
   campaign_name: "name",
   core_objective: "objective",
-  timeline_type: "milestoneDays",
-  fixed_start_date: "startDate",
-  fixed_end_date: "endDate",
-  dynamic_days_limit: "milestoneDays",
-  platform_deliverables: "platforms",
-  industry_vertical: "industry",
+  publishing_schedule: "publishingSchedule",
+  publish_from: "publishFrom",
+  publish_until: "publishUntil",
+  campaign_visibility: "visibility",
   creator_archetypes: "archetypes",
-  follower_tiers: "followerTiers",
-  audience_age_min: "ageMin",
-  audience_age_max: "ageMax",
-  audience_gender: "genderFocus",
-  target_locations: "targetLocations",
-  disqualifying_keywords: "disqualifyingKeywords",
-  compensation_type: "compensationType",
-  fixed_fee_amount: "flatRatePerCreator",
-  negotiable_min_fee: "negotiableMinFee",
-  negotiable_max_fee: "negotiableMaxFee",
-  total_campaign_budget_pool: "budget",
-  advance_payment_percentage: "advancePercent",
-  final_balance_terms: "payoutTerms",
+  minimum_followers: "minimumFollowers",
+  maximum_followers: "maximumFollowers",
+  audience_age_min: "audienceAgeMin",
+  audience_age_max: "audienceAgeMax",
+  audience_gender: "audienceGender",
+  audience_affinity_ids: "affinityIds",
+  audience_geographies: "audienceGeographies",
+  receives_brand_support: "receivesBrandSupport",
+  brand_support_type: "brandSupportType",
+  brand_support_estimated_value: "brandSupportEstimatedValue",
+  compensation_model: "compensationModel",
+  commercial_offer: "commercialOffer",
+  total_campaign_budget: "totalCampaignBudget",
+  advance_payment_percentage: "advancePaymentPercentage",
+  payout_terms: "payoutTerms",
 };
 
 const STEP_1_FIELDS: WizardFieldKey[] = [
   "name",
   "objective",
-  "startDate",
-  "endDate",
-  "milestoneDays",
-  "platforms",
+  "publishingSchedule",
+  "publishFrom",
+  "publishUntil",
+  "visibility",
 ];
-
 const STEP_2_FIELDS: WizardFieldKey[] = [
-  "industry",
   "archetypes",
-  "followerTiers",
-  "ageMin",
-  "ageMax",
-  "genderFocus",
-  "targetLocations",
-  "disqualifyingKeywords",
+  "minimumFollowers",
+  "maximumFollowers",
+  "audienceAgeMin",
+  "audienceAgeMax",
+  "audienceGender",
+  "affinityIds",
+  "audienceGeographies",
 ];
-
-const INTEGRATED_SECTIONS = new Set(["strategy", "targeting", "commercials"]);
-
-const SECTION_TO_WIZARD_FIELD: Record<string, WizardFieldKey> = {
-  strategy: "name",
-  targeting: "industry",
-  commercials: "budget",
-};
-
-const SECTION_REQUIRED_MESSAGE: Record<string, string> = {
-  strategy: "Complete strategy details on step 1 before publishing.",
-  targeting: "Complete targeting details on step 2 before publishing.",
-  commercials: "Complete commercial terms on step 3 before publishing.",
-};
 
 function apiPathToWizardField(path: (string | number)[]): WizardFieldKey {
-  const segments = path.filter((segment): segment is string => typeof segment === "string");
-
-  if (segments.includes("platform_deliverables")) {
-    return "platforms";
-  }
-
-  if (
-    segments.length >= 2 &&
-    INTEGRATED_SECTIONS.has(segments[0] ?? "")
-  ) {
-    const apiField = segments[1];
-    if (apiField) {
-      return API_PATH_TO_FIELD[apiField] ?? "_form";
-    }
-  }
-
-  const leaf = segments[segments.length - 1];
-  if (leaf) {
-    return API_PATH_TO_FIELD[leaf] ?? "_form";
-  }
-
-  return "_form";
+  const leaf = [...path].reverse().find((segment): segment is string => typeof segment === "string");
+  return leaf ? API_PATH_TO_FIELD[leaf] ?? "_form" : "_form";
 }
 
 export function wizardStepForField(key: WizardFieldKey): 1 | 2 | 3 {
@@ -106,49 +66,26 @@ export function wizardStepForField(key: WizardFieldKey): 1 | 2 | 3 {
 
 export function zodErrorToFieldErrors(error: ZodError): WizardFieldErrors {
   const fieldErrors: WizardFieldErrors = {};
-
   for (const issue of error.issues) {
     const key = apiPathToWizardField(issue.path);
-
-    if (!fieldErrors[key]) {
-      fieldErrors[key] = issue.message;
-    }
+    if (!fieldErrors[key]) fieldErrors[key] = issue.message;
   }
-
   return fieldErrors;
 }
 
 function walkFlattenedFieldErrors(
   node: Record<string, unknown>,
-  prefix: string[],
+  prefix: string[] = [],
 ): WizardFieldErrors {
   const fieldErrors: WizardFieldErrors = {};
-
   for (const [key, value] of Object.entries(node)) {
-    if (
-      Array.isArray(value) &&
-      value.length > 0 &&
-      value.every((entry) => typeof entry === "string")
-    ) {
-      const path = [...prefix, key];
-      let wizardKey = apiPathToWizardField(path);
-      let message = value[0];
-
-      if (
-        prefix.length === 0 &&
-        SECTION_TO_WIZARD_FIELD[key] &&
-        message === "Required"
-      ) {
-        wizardKey = SECTION_TO_WIZARD_FIELD[key]!;
-        message = SECTION_REQUIRED_MESSAGE[key] ?? message;
-      }
-
-      if (!fieldErrors[wizardKey]) {
-        fieldErrors[wizardKey] = message;
+    if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+      if (value.length > 0) {
+        const wizardKey = apiPathToWizardField([...prefix, key]);
+        if (!fieldErrors[wizardKey]) fieldErrors[wizardKey] = value[0] as string;
       }
       continue;
     }
-
     if (value && typeof value === "object" && !Array.isArray(value)) {
       Object.assign(
         fieldErrors,
@@ -156,47 +93,43 @@ function walkFlattenedFieldErrors(
       );
     }
   }
-
   return fieldErrors;
 }
 
 export function flattenIssuesToFieldErrors(issues: unknown): WizardFieldErrors {
-  if (!issues || typeof issues !== "object") {
-    return {};
-  }
-
-  const record = issues as {
+  if (!issues || typeof issues !== "object") return {};
+  const issueRecord = issues as {
+    issues?: Array<{ path?: Array<string | number>; message?: string }>;
+    fieldErrors?: Record<string, unknown>;
     formErrors?: unknown;
-    fieldErrors?: unknown;
   };
 
-  const fieldErrors =
-    record.fieldErrors && typeof record.fieldErrors === "object"
-      ? walkFlattenedFieldErrors(record.fieldErrors as Record<string, unknown>, [])
-      : {};
-
-  if (
-    Array.isArray(record.formErrors) &&
-    record.formErrors.length > 0 &&
-    typeof record.formErrors[0] === "string" &&
-    !fieldErrors._form
-  ) {
-    fieldErrors._form = record.formErrors[0];
+  if (Array.isArray(issueRecord.issues)) {
+    const fieldErrors: WizardFieldErrors = {};
+    for (const issue of issueRecord.issues) {
+      const key = apiPathToWizardField(issue.path ?? []);
+      if (!fieldErrors[key] && issue.message) fieldErrors[key] = issue.message;
+    }
+    return fieldErrors;
   }
 
+  const fieldErrors = issueRecord.fieldErrors
+    ? walkFlattenedFieldErrors(issueRecord.fieldErrors)
+    : {};
+  if (
+    Array.isArray(issueRecord.formErrors) &&
+    typeof issueRecord.formErrors[0] === "string" &&
+    !fieldErrors._form
+  ) {
+    fieldErrors._form = issueRecord.formErrors[0];
+  }
   return fieldErrors;
 }
 
-export function firstWizardFieldError(
-  fieldErrors: WizardFieldErrors,
-  fallback: string,
-): string {
+export function firstWizardFieldError(fieldErrors: WizardFieldErrors, fallback: string): string {
   for (const key of Object.keys(fieldErrors) as WizardFieldKey[]) {
-    if (key !== "_form" && fieldErrors[key]) {
-      return fieldErrors[key]!;
-    }
+    if (key !== "_form" && fieldErrors[key]) return fieldErrors[key]!;
   }
-
   return fieldErrors._form ?? fallback;
 }
 
@@ -205,23 +138,66 @@ export function firstWizardErrorStep(fieldErrors: WizardFieldErrors): 1 | 2 | 3 
     if (key === "_form") continue;
     return wizardStepForField(key);
   }
-
   return null;
 }
 
 export type WizardValidationResult =
   | { success: true }
-  | {
-      success: false;
-      fieldErrors: WizardFieldErrors;
-      formError: string;
-    };
+  | { success: false; fieldErrors: WizardFieldErrors; formError: string };
 
 function failure(error: ZodError): WizardValidationResult {
   const fieldErrors = zodErrorToFieldErrors(error);
-  const formError =
-    error.issues[0]?.message ?? "Please fix the highlighted fields before continuing.";
-  return { success: false, fieldErrors, formError };
+  return {
+    success: false,
+    fieldErrors,
+    formError: error.issues[0]?.message ?? "Please fix the highlighted fields before continuing.",
+  };
+}
+
+function strategyInput(data: WizardData) {
+  return {
+    campaign_name: data.name.trim(),
+    publishing_schedule: data.publishingSchedule,
+    publish_from:
+      data.publishingSchedule === "SCHEDULED" && data.publishFrom
+        ? new Date(`${data.publishFrom}T00:00:00.000Z`).toISOString()
+        : null,
+    publish_until:
+      data.publishingSchedule === "SCHEDULED" && data.publishUntil
+        ? new Date(`${data.publishUntil}T23:59:59.999Z`).toISOString()
+        : null,
+    core_objective: data.objective,
+    platforms: ["INSTAGRAM"],
+    campaign_visibility: data.visibility,
+  };
+}
+
+function targetingInput(data: WizardData) {
+  return {
+    creator_archetypes: data.archetypes,
+    minimum_followers: data.minimumFollowers,
+    maximum_followers: data.maximumFollowers,
+    audience_age_min: data.audienceAgeMin,
+    audience_age_max: data.audienceAgeMax,
+    audience_gender: data.audienceGender,
+    audience_affinity_ids: data.affinityIds,
+    audience_geographies: data.audienceGeographies,
+  };
+}
+
+function commercialInput(data: WizardData) {
+  return {
+    receives_brand_support: data.receivesBrandSupport,
+    brand_support_type: data.receivesBrandSupport ? data.brandSupportType : null,
+    brand_support_estimated_value: data.receivesBrandSupport
+      ? data.brandSupportEstimatedValue
+      : null,
+    compensation_model: data.compensationModel,
+    commercial_offer: data.commercialOffer,
+    total_campaign_budget: data.totalCampaignBudget,
+    advance_payment_percentage: data.advancePaymentPercentage,
+    payout_terms: data.payoutTerms,
+  };
 }
 
 export function validateCampaignWizardStep(
@@ -229,24 +205,31 @@ export function validateCampaignWizardStep(
   data: WizardData,
 ): WizardValidationResult {
   if (step === 1) {
-    const parsed = Step1StrategySchema.safeParse(mapWizardToStep1Payload(data));
+    const parsed = CanonicalCampaignStrategySchema.safeParse(strategyInput(data));
     return parsed.success ? { success: true } : failure(parsed.error);
   }
   if (step === 2) {
-    const parsed = Step2TargetingSchema.safeParse(mapWizardToStep2Payload(data));
+    const parsed = CanonicalCreatorStrategySchema.safeParse(targetingInput(data));
     return parsed.success ? { success: true } : failure(parsed.error);
   }
-  const parsed = Step3CommercialsSchema.safeParse(mapWizardToStep3Payload(data));
+  const parsed = CanonicalCommercialPolicySchema.safeParse(commercialInput(data));
   return parsed.success ? { success: true } : failure(parsed.error);
 }
 
-export function validateFullCampaignWizard(
-  data: WizardData,
-): WizardValidationResult {
-  const parsed = IntegratedCampaignWizardPayloadSchema.safeParse(
-    mapWizardToIntegratedPayload(data),
-  );
-  return parsed.success ? { success: true } : failure(parsed.error);
+export function validateFullCampaignWizard(data: WizardData): WizardValidationResult {
+  try {
+    const parsed = CanonicalCampaignWizardPayloadSchema.safeParse(
+      mapWizardToCanonicalPayload(data),
+    );
+    return parsed.success ? { success: true } : failure(parsed.error);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid Campaign data.";
+    return {
+      success: false,
+      fieldErrors: { _form: message },
+      formError: message,
+    };
+  }
 }
 
 export function getFieldError(

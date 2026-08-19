@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Button, TextField } from "../../../design-system/aurora";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
-import { upsertCreatorBankDetails } from "../../collaboration/api/collaboration-client";
+import { upsertCreatorPayoutBank } from "../../settings/api/creator-settings-client";
 
 type CreatorBankDetailsDrawerProps = {
   open: boolean;
@@ -18,8 +18,8 @@ export function CreatorBankDetailsDrawer({
   mode = "add",
 }: CreatorBankDetailsDrawerProps) {
   const [accountHolder, setAccountHolder] = useState("");
-  const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
   const [ifscOrRouting, setIfscOrRouting] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,14 +33,19 @@ export function CreatorBankDetailsDrawer({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (accountNumber.trim() !== confirmAccountNumber.trim()) {
+      setError("Account number and confirmation must match.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await upsertCreatorBankDetails({
-        account_holder: accountHolder.trim(),
-        bank_name: bankName.trim(),
-        account_number: accountNumber.trim(),
-        ifsc_or_routing: ifscOrRouting.trim(),
+      // Settings/Payout is the canonical bank writer (creates settlement profile).
+      await upsertCreatorPayoutBank({
+        beneficiaryLegalName: accountHolder.trim(),
+        accountNumber: accountNumber.trim(),
+        confirmAccountNumber: confirmAccountNumber.trim(),
+        routingIfscSwift: ifscOrRouting.trim().toUpperCase(),
       });
       onSaved();
       onClose();
@@ -62,15 +67,15 @@ export function CreatorBankDetailsDrawer({
           required
         />
         <TextField
-          label="Bank name"
-          value={bankName}
-          onChange={(e) => setBankName(e.target.value)}
-          required
-        />
-        <TextField
           label="Account number"
           value={accountNumber}
           onChange={(e) => setAccountNumber(e.target.value)}
+          required
+        />
+        <TextField
+          label="Confirm account number"
+          value={confirmAccountNumber}
+          onChange={(e) => setConfirmAccountNumber(e.target.value)}
           required
         />
         <TextField

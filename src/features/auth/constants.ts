@@ -50,9 +50,13 @@ export function getHomeRouteForRole(role: UserRole | null): string {
 }
 
 export function getCollaborationsRouteForRole(role: UserRole | null): string {
-  return role === "CREATOR"
-    ? AUTH_ROUTES.creatorCollaborations
-    : AUTH_ROUTES.brandCollaborations;
+  if (role === "CREATOR") {
+    return AUTH_ROUTES.creatorCollaborations;
+  }
+  if (role === "BRAND") {
+    return AUTH_ROUTES.brandCollaborations;
+  }
+  return AUTH_ROUTES.login;
 }
 
 export function collaborationsThreadUrl(threadId: string): string {

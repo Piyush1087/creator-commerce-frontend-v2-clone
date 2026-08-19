@@ -1,0 +1,14 @@
+import { Check, CircleCheckBig, LockKeyhole } from "lucide-react";
+import type { CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
+import { SettlementCard } from "../publishing/SettlementCard";
+import { FeedbackPanel } from "./FeedbackPanel";
+
+type Props = { detail: CollaborationDetailResponse; feedbackBusy: boolean; feedbackError: string | null; onSubmitFeedback: (rating: number, reviewText?: string) => void };
+export function CompletedPanel({ detail, feedbackBusy, feedbackError, onSubmitFeedback }: Props) {
+  const verified = detail.deliverables.filter((item) => item.publishing?.state === "COMPLIANCE_VERIFIED").length;
+  const notRequired = detail.deliverables.filter((item) => !item.publishingRequired || item.publishing?.state === "PUBLISHING_NOT_REQUIRED").length;
+  const approved = detail.deliverables.filter((item) => item.state === "APPROVED").length;
+  const autoApproved = detail.deliverables.filter((item) => item.state === "AUTO_APPROVED").length;
+  const creatorFee = detail.commercial?.agreedCreatorFee;
+  return <section className="collab-completed" aria-labelledby="collab-completed-title"><article className="collab-exec-card collab-completed-card"><header className="collab-terminal-card__header"><span className="collab-terminal-card__icon collab-terminal-card__icon--success" aria-hidden="true"><CircleCheckBig size={21} /></span><div><p className="collab-deliverable__eyebrow">Completed</p><h4 id="collab-completed-title">Collaboration completed</h4></div><span className="collab-status-pill collab-status-pill--approved">Complete</span></header><p className="collab-terminal-card__reason">All canonical execution requirements are complete. Normal execution actions are closed.</p><div className="collab-completed-card__checks"><span><Check size={16} aria-hidden="true" />{detail.deliverables.length} deliverables completed</span><span><Check size={16} aria-hidden="true" />{verified} publishing verified · {notRequired} not required</span></div><dl className="collab-terminal-summary"><div><dt>Creator fee</dt><dd>{creatorFee == null ? "Not projected" : `${detail.commercial?.currency ?? ""} ${creatorFee}`.trim()}</dd></div><div><dt>Approved by Brand</dt><dd>{approved}</dd></div><div><dt>Auto-approved</dt><dd>{autoApproved}</dd></div><div><dt>Completed</dt><dd>{detail.lifecycle.completedAt ? new Date(detail.lifecycle.completedAt).toLocaleString() : "Completed"}</dd></div></dl></article><SettlementCard detail={detail} /><FeedbackPanel detail={detail} busy={feedbackBusy} actionError={feedbackError} onSubmit={onSubmitFeedback} /><div className="collab-terminal-chat-note collab-show-mobile-only" role="status"><LockKeyhole size={18} aria-hidden="true" /><span><strong>Messaging is closed for this collaboration.</strong>You can still view the conversation history.</span></div></section>;
+}

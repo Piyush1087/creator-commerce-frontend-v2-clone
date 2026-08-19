@@ -1,229 +1,79 @@
 import { env } from "../../../shared/config/env";
 import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
-import type {
-  CollaborationDetailResponse,
-  CollaborationMessageRow,
-  CollaborationThreadRow,
-  ListMessagesResponse,
-  ListThreadsResponse,
-} from "../contracts/collaboration.contracts";
+import type { CollaborationDetailResponse, CollaborationMessageRow, CollaborationThreadRow, CommandEnvelope } from "../contracts/collaboration.contracts";
+import {
+  parseCollaborationDetail,
+  parseCollaborationMessages,
+  parseCollaborationThreads,
+} from "../schemas/collaboration-read.schemas";
 import { parseCollaborationApiError } from "../utils/parse-collaboration-api-error";
 
 const BASE = `${env.apiUrl}/api/v1/collaboration`;
-
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
+const authHeaders = (): Record<string, string> => ({ ...JSON_HEADERS, ...authAuthorizationHeader() });
 
-function authHeaders(): Record<string, string> {
-  return { ...JSON_HEADERS, ...authAuthorizationHeader() };
+export class CollaborationCommandError extends Error {
+  constructor(message: string, readonly status: number, readonly code: string | null) { super(message); }
+  get stale(): boolean { return this.status === 409 || this.code === "STALE_AGGREGATE_VERSION"; }
 }
-
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
   let body: unknown;
-  try {
-    body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
-  } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
-  }
+  try { body = text ? JSON.parse(text) : undefined; } catch { throw new CollaborationCommandError("The server returned an invalid response.", response.status, null); }
   if (!response.ok) {
-    throw new Error(parseCollaborationApiError(body, response.status));
+    const code = typeof body === "object" && body && "code" in body && typeof (body as { code?: unknown }).code === "string" ? (body as { code: string }).code : null;
+    throw new CollaborationCommandError(parseCollaborationApiError(body, response.status), response.status, code);
   }
   return body;
 }
+export const createCollaborationCommandId = (): string =>
+  globalThis.crypto?.randomUUID?.() ?? `collaboration-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export type ListThreadsParams = {
-  campaign_id?: string;
-  brief_id?: string;
-  stage?: string;
-  search?: string;
-};
-
-export async function fetchCollaborationThreads(
-  params?: ListThreadsParams,
-): Promise<CollaborationThreadRow[]> {
+export type ListThreadsParams = { campaign_id?: string; brief_id?: string; stage?: string; search?: string };
+export async function fetchCollaborationThreads(params?: ListThreadsParams): Promise<CollaborationThreadRow[]> {
   const query = new URLSearchParams();
-  if (params?.campaign_id) query.set("campaign_id", params.campaign_id);
-  if (params?.brief_id) query.set("brief_id", params.brief_id);
-  if (params?.stage) query.set("stage", params.stage);
-  if (params?.search?.trim()) query.set("search", params.search.trim());
-  const qs = query.toString();
-  const response = await fetch(`${BASE}/threads${qs ? `?${qs}` : ""}`, {
-    headers: authHeaders(),
-  });
-  const json = (await readJsonOrThrow(response)) as ListThreadsResponse;
-  return json.rows;
+  Object.entries(params ?? {}).forEach(([key, value]) => { if (value?.trim()) query.set(key, value.trim()); });
+  const response = await fetch(`${BASE}/threads${query.size ? `?${query}` : ""}`, { headers: authHeaders() });
+  return parseCollaborationThreads(await readJsonOrThrow(response)).rows;
 }
-
-export async function fetchCollaborationThread(
-  collaborationId: string,
-): Promise<CollaborationDetailResponse> {
-  const response = await fetch(`${BASE}/threads/${collaborationId}`, {
-    headers: authHeaders(),
-  });
-  return (await readJsonOrThrow(response)) as CollaborationDetailResponse;
+export async function fetchCollaborationThread(id: string): Promise<CollaborationDetailResponse> {
+  return parseCollaborationDetail(await readJsonOrThrow(await fetch(`${BASE}/threads/${id}`, { headers: authHeaders() })));
 }
-
-export async function fetchCollaborationMessages(
-  collaborationId: string,
-): Promise<CollaborationMessageRow[]> {
-  const response = await fetch(`${BASE}/threads/${collaborationId}/messages`, {
-    headers: authHeaders(),
-  });
-  const json = (await readJsonOrThrow(response)) as ListMessagesResponse;
-  return json.messages;
+export async function fetchCollaborationMessages(id: string): Promise<CollaborationMessageRow[]> {
+  const response = await fetch(`${BASE}/threads/${id}/messages`, { headers: authHeaders() });
+  return parseCollaborationMessages(await readJsonOrThrow(response)).messages;
 }
-
-async function postAction(
-  path: string,
-  body?: Record<string, unknown>,
-): Promise<CollaborationDetailResponse> {
-  const response = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return (await readJsonOrThrow(response)) as CollaborationDetailResponse;
+export async function postCollaborationMessage(id: string, body: string): Promise<void> {
+  await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/messages`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ body }) }));
 }
-
-export async function postCollaborationMessage(
-  collaborationId: string,
-  body: string,
-): Promise<void> {
-  const response = await fetch(`${BASE}/threads/${collaborationId}/messages`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ body }),
-  });
-  await readJsonOrThrow(response);
+async function command(id: string, path: string, body: Record<string, unknown>): Promise<CollaborationDetailResponse> {
+  return parseCollaborationDetail(await readJsonOrThrow(await fetch(`${BASE}/threads/${id}/${path}`, { method: "POST", headers: authHeaders(), body: JSON.stringify(body) })));
 }
-
-export async function submitCreatorQuote(
-  collaborationId: string,
-  total_quote: number,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/negotiation/quote`, {
-    total_quote,
-  });
-}
-
-export async function submitBrandCounterOffer(
-  collaborationId: string,
-  counter_offer: number,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/negotiation/counter-offer`, {
-    counter_offer,
-  });
-}
-
-export async function acceptCollaborationCommercials(
-  collaborationId: string,
-  final_quote?: number,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/negotiation/accept`, {
-    ...(final_quote !== undefined ? { final_quote } : {}),
-  });
-}
-
-export async function fundCollaborationEscrow(
-  collaborationId: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/securement/fund-escrow`, {});
-}
-
-export async function dispatchCollaborationLogistics(
-  collaborationId: string,
-  payload: {
-    tracking_id?: string;
-    courier_name?: string;
-    digital_access_credentials?: string;
-    redemption_code?: string;
-  },
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/logistics/dispatch`, payload);
-}
-
-export async function confirmCollaborationReceipt(
-  collaborationId: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/logistics/confirm-receipt`);
-}
-
-export async function submitCollaborationMedia(
-  collaborationId: string,
-  payload: { media_url: string; phase?: "SCRIPTING" | "MEDIA"; deliverable_type?: string },
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/production/submit`, {
-    phase: payload.phase ?? "MEDIA",
-    media_url: payload.media_url,
-    deliverable_type: payload.deliverable_type,
-  });
-}
-
-export async function reviewCollaborationMedia(
-  collaborationId: string,
-  decision: "APPROVED" | "REJECTED",
-  brand_feedback?: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/production/review`, {
-    decision,
-    brand_feedback,
-  });
-}
-
-export async function submitCollaborationLivePost(
-  collaborationId: string,
-  live_post_url: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/posting/live-url`, {
-    live_post_url,
-  });
-}
-
-export async function verifyCollaborationCompliance(
-  collaborationId: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/posting/verify-compliance`);
-}
-
-export async function uploadAdvanceReceipt(
-  collaborationId: string,
-  receipt_url: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/securement/advance-receipt`, {
-    receipt_url,
-  });
-}
-
-export async function confirmManualAdvance(
-  collaborationId: string,
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/securement/confirm-manual-advance`);
-}
-
-export async function reportFulfillmentIssue(
-  collaborationId: string,
-  payload: { issue_type: string; description: string },
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/logistics/report-issue`, payload);
-}
-
-export async function submitCollaborationReview(
-  collaborationId: string,
-  payload: { rating: number; review_text?: string },
-): Promise<CollaborationDetailResponse> {
-  return postAction(`/threads/${collaborationId}/feedback/review`, payload);
-}
-
-export async function upsertCreatorBankDetails(payload: {
-  account_holder: string;
-  bank_name: string;
-  account_number: string;
-  ifsc_or_routing: string;
-}): Promise<{ bank_details_id: string }> {
-  const response = await fetch(`${BASE}/creator/bank-details`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  });
-  return (await readJsonOrThrow(response)) as { bank_details_id: string };
-}
+export const envelope = (expectedAggregateVersion: number, commandId = createCollaborationCommandId()): CommandEnvelope => ({ commandId, expectedAggregateVersion });
+export const acceptProposedFee = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-proposed-fee", e);
+export const counterOffer = (id: string, e: CommandEnvelope, counterFee: number) => command(id, "negotiation/counter-offer", { ...e, counterFee });
+export const acceptCounterOffer = (id: string, e: CommandEnvelope) => command(id, "negotiation/accept-counter-offer", e);
+export const declineNegotiation = (id: string, e: CommandEnvelope) => command(id, "negotiation/decline", e);
+export const requestEscrowFunding = (id: string, e: CommandEnvelope) => command(id, "securement/request-escrow-funding", e);
+export type ProvideFulfillmentPayload = { shipmentTrackingRef?: string; courierName?: string; accessEvidenceRef?: string; redemptionCode?: string; serviceEvidenceRef?: string; genericFulfillmentEvidence?: { description: string; evidenceRef?: string } };
+export type ReportFulfillmentIssuePayload = { issueCode: string; description: string; evidenceRef?: string };
+export const provideFulfillment = (id: string, e: CommandEnvelope, payload: ProvideFulfillmentPayload) => command(id, "fulfillment/provide", { ...e, ...payload });
+export const confirmFulfillment = (id: string, e: CommandEnvelope) => command(id, "fulfillment/confirm", e);
+export const reportFulfillmentIssue = (id: string, e: CommandEnvelope, payload: ReportFulfillmentIssuePayload) => command(id, "fulfillment/report-issue", { ...e, ...payload });
+export const provideFulfillmentRemediation = (id: string, e: CommandEnvelope, remediationEvidenceRef: string) => command(id, "fulfillment/remediate", { ...e, remediationEvidenceRef });
+export const submitDeliverable = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; assetRef: string; creatorNote?: string; submissionMetadata?: Record<string, unknown> }) => command(id, "production/submit-deliverable", { ...e, ...payload });
+export const approveDeliverable = (id: string, e: CommandEnvelope, deliverableExecutionId: string, submissionVersionId: string) => command(id, "production/approve-deliverable", { ...e, deliverableExecutionId, submissionVersionId });
+export const requestDeliverableRevision = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; submissionVersionId: string; brandFeedback: string }) => command(id, "production/request-revision", { ...e, ...payload });
+export const rejectFinalDeliverable = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; submissionVersionId: string; brandFeedback: string }) => command(id, "production/reject-final", { ...e, ...payload });
+export const authorizePublishing = (id: string, e: CommandEnvelope, deliverableExecutionId: string) => command(id, "publishing/authorize", { ...e, deliverableExecutionId });
+export const declinePublishing = (id: string, e: CommandEnvelope, deliverableExecutionId: string) => command(id, "publishing/decline", { ...e, deliverableExecutionId });
+export const submitPublishingEvidence = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; evidenceRef: string; platform?: string; creatorNote?: string }) => command(id, "publishing/evidence", { ...e, ...payload });
+export const submitCorrectedPublishingEvidence = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; evidenceRef: string; platform?: string; creatorNote?: string }) => command(id, "publishing/corrected-evidence", { ...e, ...payload });
+export const verifyPublishing = (id: string, e: CommandEnvelope, deliverableExecutionId: string, publishingEvidenceId: string, complianceEvidenceRef?: string) => command(id, "publishing/verify", { ...e, deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef });
+export const requestPublishingCorrection = (id: string, e: CommandEnvelope, payload: { deliverableExecutionId: string; publishingEvidenceId: string; correctionReason: string }) => command(id, "publishing/request-correction", { ...e, ...payload });
+export const endCollaborationByBrand = (id: string, e: CommandEnvelope) => command(id, "end-by-brand", e);
+export const cancelCollaborationByCreator = (id: string, e: CommandEnvelope) => command(id, "cancel-by-creator", e);
+export const submitCollaborationFeedback = async (id: string, e: CommandEnvelope, rating: number, reviewText?: string) => {
+  await command(id, "feedback/review", { collaborationId: id, ...e, rating, reviewText });
+  return fetchCollaborationThread(id);
+};

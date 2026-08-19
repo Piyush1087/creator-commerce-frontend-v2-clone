@@ -1,235 +1,43 @@
-export type CollaborationStage =
-
-  | "STAGE_1_NEGOTIATION"
-
-  | "STAGE_2_SECUREMENT"
-
-  | "STAGE_3_LOGISTICS"
-
-  | "STAGE_4_CONTENT_REVIEW"
-
-  | "STAGE_5_PUBLISHING"
-
-  | "STAGE_6_FEEDBACK_SYNC";
-
-
-
-export type CollaborationPayoutMode = "ESCROW" | "MANUAL" | "BARTER";
-
-
-
-export type CollaborationThreadRow = {
-
-  collaboration_id: string;
-
-  brand_profile_id: string;
-
-  creator_user_id: string;
-
-  campaign_id: string;
-
-  campaign_name: string;
-
-  brief_id: string;
-
-  brief_title: string;
-
-  creator_display_name: string | null;
-
-  creator_handle: string | null;
-
-  brand_name: string;
-
-  current_stage: CollaborationStage;
-
-  payout_mode: CollaborationPayoutMode;
-
-  industry: string;
-
-  negotiation_round: number;
-
-  fulfillment_issue_count: number;
-
-  revision_count: number;
-
-  unread_count: number;
-
-  last_message_snippet: string | null;
-
-  last_message_at: string | null;
-
-  is_paused: boolean;
-
-  is_terminated: boolean;
-
-};
-
-
-
-export type CollaborationCommercials = {
-
-  initial_quote: number;
-
-  brand_counter_offer: number | null;
-
-  final_quote: number;
-
-  product_retail_value: number;
-
-  is_final_offer: boolean;
-
-  advance_30_amount: number;
-
-  balance_70_amount: number;
-
-  total_quote: number;
-
-  escrow_status: string | null;
-
-  advance_receipt_url: string | null;
-
-  creator_bank_details_id: string | null;
-
-};
-
-
-
+export type CollaborationLifecycle = "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED" | "TERMINATED";
+export type CollaborationStage = "NEGOTIATION" | "SECUREMENT" | "FULFILLMENT" | "PRODUCTION" | "PUBLISHING_SETTLEMENT";
+export type CollaborationStageStatus = "NOT_STARTED" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | "SKIPPED";
+export type CollaborationActor = "BRAND" | "CREATOR" | "SYSTEM" | "ADMIN" | "NONE";
+export type CollaborationNegotiationState = "NOT_REQUIRED" | "AWAITING_BRAND_DECISION" | "AWAITING_CREATOR_DECISION" | "LOCKED" | "FAILED";
+export type CollaborationSecurementState = "NOT_REQUIRED" | "AWAITING_ESCROW_FUNDING" | "PROCESSING_FUNDING" | "AWAITING_PAYOUT_DETAILS" | "AWAITING_BRAND_PAYMENT" | "AWAITING_CREATOR_CONFIRMATION" | "PAYMENT_DISPUTED" | "COMPLETED" | "BLOCKED";
+export type CollaborationBrandSupportType = "PRODUCT" | "SERVICE" | "EXPERIENCE" | "ACCESS_SUBSCRIPTION" | "OTHER";
+export type CollaborationFulfillmentState = "NOT_STARTED" | "AWAITING_BRAND_FULFILLMENT" | "AWAITING_CREATOR_CONFIRMATION" | "REMEDIATION_REQUIRED" | "COMPLETED" | "SKIPPED" | "HARD_STOP" | "BLOCKED";
+export type CollaborationGenericFulfillmentEvidence = { description: string; evidenceRef?: string | null; metadata?: unknown };
+export type CollaborationFulfillmentIssue = { sequence: number; issueCode: string; description: string; evidenceRef: string | null; reportedAt: string; remediationEvidenceRef: string | null; remediationAt: string | null };
+export type CollaborationAvailableAction = "PostCollaborationMessage" | "AcceptProposedFee" | "CounterOffer" | "AcceptCounterOffer" | "DeclineNegotiation" | "RequestEscrowFunding" | "SubmitManualPaymentEvidence" | "ConfirmManualPaymentReceipt" | "DisputeManualPayment" | "ProvideFulfillment" | "ConfirmFulfillment" | "ReportFulfillmentIssue" | "ProvideFulfillmentRemediation" | "SubmitDeliverable" | "ApproveDeliverable" | "RequestDeliverableRevision" | "RejectFinalDeliverable" | "AuthorizePublishing" | "DeclinePublishing" | "SubmitPublishingEvidence" | "VerifyPublishing" | "RequestPublishingCorrection" | "SubmitCorrectedPublishingEvidence" | "EndCollaborationByBrand" | "CancelCollaborationByCreator" | "SubmitCollaborationFeedback";
+export type CollaborationWorkflow = { stage: CollaborationStage; status: CollaborationStageStatus; actionRequiredBy: CollaborationActor; availableActions: CollaborationAvailableAction[]; aggregateVersion: number };
+export type CollaborationIdentitySummary = { id: string; displayName: string | null; handle?: string | null; kind?: "BRAND" | "CREATOR" };
+export type CollaborationFinancialResolution = { status: string; outcome: string; creatorEntitlementAmount: number | null; brandRefundEntitlementAmount: number | null; creatorGrossEntitlementAmount: number | null; creatorCommercialRefundAmount?: number | null; platformCommissionRetainedAmount?: number | null; platformCommissionRefundAmount?: number | null; platformCommissionGstRetainedAmount?: number | null; platformCommissionGstRefundAmount?: number | null; brandCommercialRefundEntitlementAmount: number | null; currency: string | null; reasonCode: string | null; reasonText: string | null; residualObligations: unknown; decidedAt: string | null; resolvedAt: string | null; residualSettlementPending: boolean };
+export type CollaborationThreadRow = { collaborationId: string; projectionSource: "CANONICAL" | "LEGACY_COMPATIBILITY"; counterpart: CollaborationIdentitySummary; sourceContext: { campaign: { id: string; name: string }; campaignAsset: Record<string, unknown> | null; brief: { id: string; title: string } }; lifecycle: CollaborationLifecycle; workflow: CollaborationWorkflow; blocking: { category: string; reason: string | null } | null; resolution: CollaborationFinancialResolution | null; inbox: { unreadCount: number; lastMessageSnippet: string | null; lastMessageAt: string | null }; progress: { stageIndex: number; stageCount: number }; updatedAt: string; legacyCompatibility: { applied: true; reason: string; fields: string[] } | null };
+export type CollaborationSubmissionVersion = { submissionVersionId: string; versionNumber: number; assetRef: string; creatorNote: string | null; submissionMetadata: Record<string, unknown> | null; submittedAt: string; reviewDeadlineAt: string; reviewState: string; brandFeedback: string | null; reviewedAt: string | null; autoApprovedAt: string | null; supersededAt: string | null };
+export type CollaborationPublishingEvidence = { publishingEvidenceId: string; sequence: number; evidenceRef: string; platform: string | null; creatorNote: string | null; evidenceMetadata: Record<string, unknown> | null; submittedAt: string; correctionReason: string | null; reviewedAt: string | null; complianceEvidenceRef: string | null; verifiedAt: string | null };
+export type CollaborationDeliverable = { deliverableExecutionId: string; sourceBriefDeliverableId: string; definitionSnapshot: Record<string, unknown>; displayOrder: number; state: "AWAITING_SUBMISSION" | "UNDER_REVIEW" | "REVISION_REQUESTED" | "APPROVED" | "AUTO_APPROVED" | "HARD_STOP"; revisionRequestCount: number; revisionsRemaining: number; publishingRequired: boolean; actionRequiredBy: CollaborationActor; activeSubmissionVersionId: string | null; latestSubmissionVersion: CollaborationSubmissionVersion | null; submissionVersions: CollaborationSubmissionVersion[]; productionApprovalState: string; approvedAt: string | null; autoApprovedAt: string | null; hardStoppedAt: string | null; publishing: { state: "PUBLISHING_NOT_REQUIRED" | "AWAITING_PUBLISHING" | "EVIDENCE_SUBMITTED" | "CORRECTION_REQUIRED" | "COMPLIANCE_VERIFIED" | "BLOCKED"; authorizationState: "NOT_REQUIRED" | "NOT_AUTHORIZED" | "AUTHORIZED"; authorizedAt: string | null; evidenceHistory: CollaborationPublishingEvidence[]; activeEvidence: CollaborationPublishingEvidence | null; correctionReason: string | null; complianceVerifiedAt: string | null; blockedReason: string | null } | null; availableActions: CollaborationAvailableAction[] };
+export type CollaborationFeedbackSubmission = { authorRole: "BRAND" | "CREATOR"; rating: number; reviewText: string | null; submittedAt: string };
 export type CollaborationDetailResponse = {
-
-  thread: {
-
-    id: string;
-
-    currentStage: CollaborationStage;
-
-    payoutMode: CollaborationPayoutMode;
-
-    industry: string;
-
-    negotiationRound: number;
-
-    fulfillmentIssueCount: number;
-
-    revisionCount: number;
-
-    isTerminated: boolean;
-
-    isPaused: boolean;
-
-    creatorHandle: string;
-
-    campaign: { name: string };
-
-    brief: { internalTitle: string; creativeGuidelines: string };
-
-    brandProfile: { name: string };
-
-    creatorUser: {
-
-      name: string | null;
-
-      email: string;
-
-      creatorProfile: {
-
-        displayName: string | null;
-
-        instagramHandle: string | null;
-
-      } | null;
-
-    };
-
-  };
-
-  commercials: CollaborationCommercials | null;
-
-  logistics: {
-
-    trackingId: string | null;
-
-    courierName: string | null;
-
-    digitalAccessCredentials: string | null;
-
-    redemptionCode: string | null;
-
-    isReceivedConfirmed: boolean;
-
-    lastReportedIssue: string | null;
-
-    issueDescription: string | null;
-
-  } | null;
-
-  finalization: {
-
-    livePostUrl: string | null;
-
-    isComplianceVerified: boolean;
-
-    brandRating: number | null;
-
-    creatorRating: number | null;
-
-    brandReviewText: string | null;
-
-    creatorReviewText: string | null;
-
-    reviewsVisible: boolean;
-
-  } | null;
-
-  media: Array<{
-
-    id: string;
-
-    phase: string;
-
-    status: string;
-
-    mediaUrl: string;
-
-    versionNumber: number;
-
-    brandFeedback: string | null;
-
-  }>;
-
+  projectionSource: "CANONICAL" | "LEGACY_COMPATIBILITY";
+  identity: { collaborationId: string; sourceApplicationId: string | null; campaignId: string; campaignCreatorId: string | null; campaignAssetId: string | null; briefId: string; brand: CollaborationIdentitySummary; creator: CollaborationIdentitySummary };
+  sourceContext: { campaign: { id: string; name: string }; campaignAsset: Record<string, unknown> | null; brief: { id: string; title: string; creativeGuidelines: string }; executionSnapshot: Record<string, unknown> | null };
+  lifecycle: { state: CollaborationLifecycle; completedAt: string | null; endedFromStage: CollaborationStage | null; endedReason: { code: string; text: string | null } | null; endedByActorClass: CollaborationActor | null; endedByUserId: string | null; endedAt: string | null };
+  workflow: CollaborationWorkflow;
+  commercial: { negotiationState: CollaborationNegotiationState; applicationProposedFee: number | null; brandCounterFee: number | null; agreedCreatorFee: number | null; currency: string; advancePercentage: number; advanceAmount: number | null; balanceAmount: number | null; pricingTierSnapshot: string | null; businessCountryCodeSnapshot: string | null; financialPolicyVersionSnapshot: string | null; platformCommissionRate: number | null; platformCommissionAmount: number | null; platformCommissionGstRate: number | null; platformCommissionGstAmount: number | null; nonCashConsideration: unknown; termsLocked: boolean; termsLockedAt: string | null } | null;
+  securement: { paymentRail: "PLATFORM_ESCROW" | "MANUAL"; state: CollaborationSecurementState | null; requiredSecuredAmount: number | null; confirmedSecuredAmount: number | null; currency: string; escrowLockRef: string | null } | null;
+  fulfillment: { applies: boolean | null; brandSupportType: CollaborationBrandSupportType | null; brandSupportEstimatedValue: number | null; state: CollaborationFulfillmentState; issueCount: number; evidence: { shipmentTrackingRef: string | null; courierName: string | null; accessEvidenceRef: string | null; redemptionCode: string | null; serviceEvidenceRef: string | null; genericFulfillmentEvidence: CollaborationGenericFulfillmentEvidence | null; brandFulfilledAt: string | null }; confirmation: { creatorConfirmedAt: string | null; completedAt: string | null; hardStoppedAt: string | null }; issues: CollaborationFulfillmentIssue[] } | null;
+  deliverables: CollaborationDeliverable[];
+  publishing: Array<Record<string, unknown>>;
+  publishingComplete: boolean;
+  settlement: { state: "NOT_ELIGIBLE" | "ELIGIBLE" | "PROCESSING" | "SETTLED" | "BLOCKED"; eligibleAt?: string | null; processingAt?: string | null; creatorSettlementAmount?: number | null; brandRefundAmount?: number | null; currency?: string | null; creatorPayoutState?: string; brandRefundState?: string; settledAt?: string | null; blockedAt?: string | null; blockedReason?: string | null; residualSettlementPending: boolean; actionRequiredBy: CollaborationActor };
+  resolution: CollaborationFinancialResolution | null;
+  feedback: { visibility: "HIDDEN" | "REVEALED"; windowOpenedAt: string; revealDeadlineAt: string; revealedAt: string | null; viewerSubmission: CollaborationFeedbackSubmission | null; counterpartSubmitted: boolean; counterpartSubmission: CollaborationFeedbackSubmission | null; revealedSubmissions: { brand: CollaborationFeedbackSubmission | null; creator: CollaborationFeedbackSubmission | null } | null } | null;
+  blocking: { category: string; reason: string | null } | null;
+  inbox: { unreadCount: number; lastMessageSnippet: string | null; lastMessageAt: string | null };
+  legacyCompatibility: { applied: true; reason: string; fields: string[] } | null;
+  updatedAt: string;
 };
-
-
-
-export type CollaborationMessageRow = {
-
-  message_id: string;
-
-  kind: "USER" | "SYSTEM";
-
-  body: string;
-
-  sender_user_id: string | null;
-
-  system_event_tag: string | null;
-
-  created_at: string;
-
-};
-
-
-
-export type ListThreadsResponse = {
-
-  rows: CollaborationThreadRow[];
-
-};
-
-
-
-export type ListMessagesResponse = {
-
-  messages: CollaborationMessageRow[];
-
-};
-
-
+export type CollaborationMessageRow = { message_id: string; kind: "USER" | "SYSTEM"; body: string; sender_user_id: string | null; system_event_tag: string | null; created_at: string };
+export type ListThreadsResponse = { rows: CollaborationThreadRow[] };
+export type ListMessagesResponse = { messages: CollaborationMessageRow[] };
+export type CommandEnvelope = { commandId: string; expectedAggregateVersion: number };

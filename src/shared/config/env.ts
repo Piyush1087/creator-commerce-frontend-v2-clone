@@ -1,29 +1,11 @@
-const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
-
-const LOCAL_API_ORIGIN = "http://localhost:3000";
+import { resolvePublicRuntimeEnv } from "./resolve-env";
 
 /** Local dev defaults to same-origin `/api` via Vite proxy to avoid CORS preflight issues. */
-export const env = {
-  apiUrl:
-    configuredApiUrl && configuredApiUrl.length > 0
-      ? configuredApiUrl
-      : import.meta.env.DEV
-        ? ""
-        : LOCAL_API_ORIGIN,
-  /**
-   * Socket.IO must hit Nest directly in local dev. Routing through the Vite dev server
-   * (`window.location.origin` + `/socket.io` proxy) spams `[vite] ws proxy error` when
-   * the API is not running. Nest CORS already allows localhost:5173.
-   */
-  socketUrl:
-    configuredApiUrl && configuredApiUrl.length > 0
-      ? configuredApiUrl
-      : LOCAL_API_ORIGIN,
-  stage: import.meta.env.VITE_STAGE || "local",
-  razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID?.trim() || "",
-  /**
-   * Public browser origin for OAuth redirects (e.g. ngrok HTTPS URL).
-   * Meta often rejects saving http://localhost redirect URIs.
-   */
-  publicAppUrl: import.meta.env.VITE_PUBLIC_APP_URL?.trim().replace(/\/$/, "") || "",
-};
+export const env = resolvePublicRuntimeEnv({
+  apiUrl: import.meta.env.VITE_API_URL,
+  dev: import.meta.env.DEV,
+  stage: import.meta.env.VITE_STAGE,
+  razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
+  publicAppUrl: import.meta.env.VITE_PUBLIC_APP_URL,
+  googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+});

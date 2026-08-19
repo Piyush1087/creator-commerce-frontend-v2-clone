@@ -1,7 +1,6 @@
 import {
   Megaphone,
   MessageCircle,
-  BarChart3,
   Home,
   Store,
   UserRound,
@@ -40,7 +39,7 @@ export const brandBottomNavItems: BottomNavItem[] = [
   },
 ];
 
-/** Master Spec: Home · Insights · Profile (+ Campaigns) */
+/** Phase G: Home · Campaigns · Collaborations · Profile */
 export const creatorBottomNavItems: BottomNavItem[] = [
   {
     label: "Home",
@@ -48,19 +47,19 @@ export const creatorBottomNavItems: BottomNavItem[] = [
     path: AUTH_ROUTES.creatorHome,
   },
   {
-    label: "Insights",
-    icon: BarChart3,
-    path: AUTH_ROUTES.creatorAnalytics,
+    label: "Campaigns",
+    icon: Megaphone,
+    path: AUTH_ROUTES.creatorCampaigns,
+  },
+  {
+    label: "Collaborations",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.creatorCollaborations,
   },
   {
     label: "Profile",
     icon: UserRound,
     path: AUTH_ROUTES.creatorMediaKit,
-  },
-  {
-    label: "Campaigns",
-    icon: Megaphone,
-    path: AUTH_ROUTES.creatorCampaigns,
   },
 ];
 
@@ -81,6 +80,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.creatorAnalytics,
   AUTH_ROUTES.creatorMediaKit,
   AUTH_ROUTES.creatorCampaigns,
+  AUTH_ROUTES.creatorCollaborations,
 ] as const;
 
 export function isBottomNavItemActive(pathname: string, item: BottomNavItem): boolean {

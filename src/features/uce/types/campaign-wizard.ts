@@ -1,57 +1,78 @@
-export type TimelineType = "fixed" | "milestone";
+export type PublishingSchedule = "EVERGREEN" | "SCHEDULED";
+export type CampaignObjective = "PULSE" | "PROOF" | "PRODUCTION" | "PUSH";
+export type CampaignVisibility = "PUBLIC" | "ELIGIBLE_CREATORS_ONLY" | "INVITE_ONLY";
+export type AudienceGender = "ALL" | "FEMALE" | "MALE";
+export type CompensationModel = "FIXED" | "NEGOTIABLE";
+export type BrandSupportType =
+  | "PRODUCT"
+  | "SERVICE"
+  | "EXPERIENCE"
+  | "ACCESS_SUBSCRIPTION"
+  | "OTHER";
+export type AdvancePaymentPercentage = 0 | 25 | 50 | 75 | 100;
+export type PayoutTerms = "NET_7" | "NET_15" | "NET_30" | "NET_45" | "NET_60";
 
-export type CompensationType = "fixed" | "negotiable";
+/**
+ * Campaign audience geography aligned to the frozen Brand Intelligence market-geography object.
+ * CITY input is normalized to LOCALITY; multiple records represent multi-location targeting.
+ */
+export type CampaignAudienceGeography = {
+  scope: "LOCALITY" | "REGION" | "COUNTRY" | "GLOBAL";
+  label: string;
+  country_code: string | null;
+  locality: string | null;
+  region: string | null;
+  radius_km: number | null;
+  is_primary: boolean;
+};
 
 export type WizardData = {
   name: string;
-  objective: string;
-  timeline: TimelineType;
-  startDate: string;
-  endDate: string;
-  milestoneDays: string;
-  platforms: {
-    instagram: { enabled: boolean; formats: string[] };
-    tiktok: { enabled: boolean; formats: string[] };
-    youtube: { enabled: boolean; formats: string[] };
-  };
-  industry: string;
-  followerTiers: string[];
+  objective: CampaignObjective | "";
+  publishingSchedule: PublishingSchedule;
+  publishFrom: string;
+  publishUntil: string;
+  visibility: CampaignVisibility;
   archetypes: string[];
-  targetLocations: string[];
-  disqualifyingKeywords: string[];
-  ageMin: number;
-  ageMax: number;
-  genderFocus: string;
-  compensationType: CompensationType;
-  flatRatePerCreator: number;
-  negotiableMinFee: number;
-  negotiableMaxFee: number;
-  budget: number;
-  advancePercent: number;
-  payoutTerms: string;
+  minimumFollowers: number;
+  maximumFollowers: number | null;
+  audienceAgeMin: number;
+  audienceAgeMax: number;
+  audienceGender: AudienceGender;
+  affinityIds: string[];
+  audienceGeographies: CampaignAudienceGeography[];
+  receivesBrandSupport: boolean;
+  brandSupportType: BrandSupportType | null;
+  brandSupportEstimatedValue: number | null;
+  compensationModel: CompensationModel;
+  commercialOffer: number;
+  totalCampaignBudget: number;
+  advancePaymentPercentage: AdvancePaymentPercentage;
+  payoutTerms: PayoutTerms;
 };
 
 export type WizardFieldKey =
   | "name"
   | "objective"
-  | "startDate"
-  | "endDate"
-  | "milestoneDays"
-  | "platforms"
-  | "industry"
+  | "publishingSchedule"
+  | "publishFrom"
+  | "publishUntil"
+  | "visibility"
   | "archetypes"
-  | "followerTiers"
-  | "targetLocations"
-  | "ageMin"
-  | "ageMax"
-  | "genderFocus"
-  | "disqualifyingKeywords"
-  | "compensationType"
-  | "flatRatePerCreator"
-  | "negotiableMinFee"
-  | "negotiableMaxFee"
-  | "budget"
-  | "advancePercent"
+  | "minimumFollowers"
+  | "maximumFollowers"
+  | "audienceAgeMin"
+  | "audienceAgeMax"
+  | "audienceGender"
+  | "affinityIds"
+  | "audienceGeographies"
+  | "receivesBrandSupport"
+  | "brandSupportType"
+  | "brandSupportEstimatedValue"
+  | "compensationModel"
+  | "commercialOffer"
+  | "totalCampaignBudget"
+  | "advancePaymentPercentage"
   | "payoutTerms"
   | "_form";
 
