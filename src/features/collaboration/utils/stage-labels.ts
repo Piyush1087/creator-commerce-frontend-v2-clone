@@ -5,7 +5,7 @@ const STAGE_LABELS: Record<CollaborationStage, string> = {
   SECUREMENT: "Securement",
   FULFILLMENT: "Fulfillment",
   PRODUCTION: "Production",
-  PUBLISHING_SETTLEMENT: "Publishing & Settlement",
+  PUBLISHING_SETTLEMENT: "Publishing",
 };
 const LIFECYCLE_LABELS: Record<CollaborationLifecycle, string> = {
   ACTIVE: "In progress", PAUSED: "Paused", COMPLETED: "Completed", CANCELLED: "Cancelled", TERMINATED: "Ended",

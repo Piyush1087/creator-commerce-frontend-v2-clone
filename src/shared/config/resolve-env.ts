@@ -6,6 +6,7 @@ export type PublicRuntimeEnvInput = {
   stage?: string;
   razorpayKeyId?: string;
   publicAppUrl?: string;
+  googleMapsApiKey?: string;
 };
 
 export type PublicRuntimeEnv = {
@@ -14,6 +15,7 @@ export type PublicRuntimeEnv = {
   stage: string;
   razorpayKeyId: string;
   publicAppUrl: string;
+  googleMapsApiKey: string;
 };
 
 function productionApiOrigin(value: string | undefined): string {
@@ -47,5 +49,6 @@ export function resolvePublicRuntimeEnv(input: PublicRuntimeEnvInput): PublicRun
     stage: input.stage || "local",
     razorpayKeyId: input.razorpayKeyId?.trim() || "",
     publicAppUrl: input.publicAppUrl?.trim().replace(/\/$/, "") || "",
+    googleMapsApiKey: input.googleMapsApiKey?.trim() || "",
   };
 }

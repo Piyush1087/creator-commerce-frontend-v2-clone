@@ -1,4 +1,5 @@
 import { CreateCampaignWizard } from "../../../features/uce/components/CreateCampaignWizard";
+import "../../../features/uce/components/CreateCampaignWizardCanonical.css";
 import "../../../features/uce/uce-responsive.css";
 import "./BrandUceCampaignCreatePage.css";
 
