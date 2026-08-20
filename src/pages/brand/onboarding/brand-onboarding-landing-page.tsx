@@ -1,5 +1,5 @@
-import { LandingPageView } from "../../../features/brand-onboarding/components/landing-page-view";
+import { CanonicalGatekeeperLandingView } from "../../../features/brand-onboarding/components/canonical-gatekeeper-landing-view";
 
 export function BrandOnboardingLandingPage() {
-  return <LandingPageView />;
+  return <CanonicalGatekeeperLandingView />;
 }
