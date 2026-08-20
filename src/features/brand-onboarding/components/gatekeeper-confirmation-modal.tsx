@@ -49,6 +49,11 @@ export function GatekeeperConfirmationModal({
   const [editingIndustry, setEditingIndustry] = useState(false);
   const dialogRef = useRef<HTMLElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const isStartingRef = useRef(isStarting);
+
+  onCloseRef.current = onClose;
+  isStartingRef.current = isStarting;
 
   useEffect(() => {
     if (!open) return;
@@ -62,9 +67,9 @@ export function GatekeeperConfirmationModal({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (!dialogRef.current) return;
-      if (event.key === "Escape" && !isStarting) {
+      if (event.key === "Escape" && !isStartingRef.current) {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -94,7 +99,7 @@ export function GatekeeperConfirmationModal({
       document.removeEventListener("keydown", onKeyDown);
       previousFocusRef.current?.focus();
     };
-  }, [isStarting, onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 
