@@ -22,6 +22,18 @@ describe("Gatekeeper runtime adapter", () => {
     expect(result.provisionalIndustry).toBe("D2C");
   });
 
+  it("does not invent recovery actions for canonical results", () => {
+    const result = parseGatekeeperResult({
+      decision: {
+        outcome: "DOMAIN_UNREACHABLE",
+        reason_code: "DOMAIN_UNREACHABLE",
+        recovery_actions: [],
+        manual_review_eligible: false,
+      },
+    });
+    expect(result.recoveryActions).toEqual([]);
+  });
+
   it("maps legacy waitlist transport into canonical unsupported presentation", () => {
     const result = parseGatekeeperResult({
       outcome: "waitlist",
