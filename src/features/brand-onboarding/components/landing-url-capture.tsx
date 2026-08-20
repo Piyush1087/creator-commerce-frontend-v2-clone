@@ -24,6 +24,14 @@ import {
 } from "../contracts/gatekeeper.contracts";
 import { mapGatekeeperResultToViewState } from "../mappers/map-gatekeeper-result";
 import { urlSchema } from "../schemas/url-schema";
+import {
+  CLASSIFICATION_REVIEW_REQUEST_RECEIVED_MESSAGE,
+  isGatekeeperRecoveryActionAvailable,
+  navigateToGatekeeperSupportDestination,
+  ORG_ACCESS_REQUEST_RECEIVED_MESSAGE,
+  submitGatekeeperRecoveryRequestForResult,
+  visibleGatekeeperRecoveryActions,
+} from "../services/gatekeeper-recovery";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
 import { GatekeeperConfirmationModal } from "./gatekeeper-confirmation-modal";
 import "./gatekeeper-reconciliation.css";
@@ -97,12 +105,16 @@ export function LandingUrlCapture() {
   const [email, setEmail] = useState("");
   const [recoveryAuthorized, setRecoveryAuthorized] = useState(false);
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
+  const [recoverySubmitting, setRecoverySubmitting] = useState(false);
+  const [recoverySubmissionSucceeded, setRecoverySubmissionSucceeded] =
+    useState(false);
   const modalReturnFocusRef = useRef<HTMLElement | null>(null);
 
   const busy =
     journeyState === "SUBMITTING" ||
     journeyState === "RESOLVING" ||
-    journeyState === "STARTING_SURFACE_SCAN";
+    journeyState === "STARTING_SURFACE_SCAN" ||
+    recoverySubmitting;
 
   const viewState = useMemo(
     () => (result ? mapGatekeeperResultToViewState(result) : null),
@@ -111,11 +123,7 @@ export function LandingUrlCapture() {
 
   const visibleRecoveryActions = useMemo(() => {
     if (!result) return [];
-    return result.recoveryActions.filter(
-      (action) =>
-        action !== "REQUEST_CLASSIFICATION_REVIEW" ||
-        result.manualReviewEligible,
-    );
+    return visibleGatekeeperRecoveryActions(result);
   }, [result]);
 
   const validate = (): string | null => {
@@ -146,6 +154,8 @@ export function LandingUrlCapture() {
     setEmail("");
     setRecoveryAuthorized(false);
     setEmailFeedback(null);
+    setRecoverySubmitting(false);
+    setRecoverySubmissionSucceeded(false);
   };
 
   const updateLegalAcceptance = (accepted: boolean) => {
@@ -176,7 +186,8 @@ export function LandingUrlCapture() {
       setRecoveryIndustry(next.provisionalIndustry);
 
       if (next.outcome === "ADMITTED") {
-        const detected = next.provisionalIndustry as SupportedGatekeeperIndustry | null;
+        const detected =
+          next.provisionalIndustry as SupportedGatekeeperIndustry | null;
         if (!detected || !SUPPORTED_GATEKEEPER_INDUSTRIES.includes(detected)) {
           const failure = localTechnicalFailure(
             "The admission response is missing a supported Industry confirmation value.",
@@ -195,7 +206,9 @@ export function LandingUrlCapture() {
       setJourneyState(next.outcome);
     } catch (error) {
       const failure = localTechnicalFailure(
-        error instanceof Error ? error.message : "We couldn’t finish this check.",
+        error instanceof Error
+          ? error.message
+          : "We couldn’t finish this check.",
         normalizedInput,
       );
       setResult(failure);
@@ -204,7 +217,7 @@ export function LandingUrlCapture() {
   };
 
   const handleRecoveryAction = async (action: GatekeeperRecoveryAction) => {
-    if (!result) return;
+    if (!result || !isGatekeeperRecoveryActionAvailable(result, action)) return;
 
     switch (action) {
       case "RETRY":
@@ -247,22 +260,35 @@ export function LandingUrlCapture() {
         setEmailExpansion("waitlist");
         setRecoveryAuthorized(false);
         setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
         return;
       case "REQUEST_CLASSIFICATION_REVIEW":
-        if (!result.manualReviewEligible) return;
         setEmailExpansion("review");
         setRecoveryAuthorized(false);
         setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
         return;
       case "REQUEST_ORG_ACCESS":
         setEmailExpansion("org");
         setRecoveryAuthorized(false);
         setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
         return;
       case "CONTACT_SUPPORT":
-        setEmailFeedback(
-          "The support destination is not configured for this Gatekeeper build yet.",
-        );
+        setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
+        setRecoverySubmitting(true);
+        try {
+          await navigateToGatekeeperSupportDestination();
+        } catch (error) {
+          setEmailFeedback(
+            error instanceof Error
+              ? error.message
+              : "The Gatekeeper support destination is unavailable.",
+          );
+        } finally {
+          setRecoverySubmitting(false);
+        }
         return;
       case "CONTINUE":
         return;
@@ -270,6 +296,8 @@ export function LandingUrlCapture() {
   };
 
   const submitEmailRecovery = async () => {
+    if (recoverySubmitting || recoverySubmissionSucceeded) return;
+
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setEmailFeedback("Enter a valid email address.");
@@ -291,6 +319,7 @@ export function LandingUrlCapture() {
         return;
       }
       try {
+        setRecoverySubmitting(true);
         await postDiscoveryWaitlist({
           email: trimmed,
           industry,
@@ -302,24 +331,66 @@ export function LandingUrlCapture() {
           sourceUrl: result.normalizedUrl ?? url,
         });
         setEmailFeedback("Thanks — your waitlist request was submitted.");
+        setRecoverySubmissionSucceeded(true);
       } catch (error) {
         setEmailFeedback(
           error instanceof Error
             ? error.message
             : "Could not submit the waitlist request.",
         );
+      } finally {
+        setRecoverySubmitting(false);
       }
       return;
     }
 
-    // These recovery actions are canonical, but this frontend repository does
-    // not yet expose the corresponding transport clients. Do not invent an API
-    // path or claim a successful request.
-    setEmailFeedback(
+    const action =
       emailExpansion === "review"
-        ? "Classification-review request transport is not wired in this environment yet."
-        : "Organization-access request transport is not wired in this environment yet.",
-    );
+        ? "REQUEST_CLASSIFICATION_REVIEW"
+        : "REQUEST_ORG_ACCESS";
+
+    try {
+      setRecoverySubmitting(true);
+      const submission = await submitGatekeeperRecoveryRequestForResult({
+        result,
+        action,
+        requesterEmail: trimmed,
+        authorizedRepresentativeAttested: recoveryAuthorized,
+      });
+      if (submission.status === "MISSING_CONTEXT") {
+        setEmailFeedback(
+          "This request is missing Gatekeeper session context. Retry the website check.",
+        );
+        return;
+      }
+      if (submission.status === "NOT_PERMITTED") {
+        setEmailFeedback(
+          "The current Gatekeeper result does not permit this request. Retry the website check.",
+        );
+        return;
+      }
+      if (submission.status === "ATTESTATION_REQUIRED") {
+        setEmailFeedback(
+          "Confirm that you are authorized to make this request.",
+        );
+        return;
+      }
+
+      setEmailFeedback(
+        action === "REQUEST_CLASSIFICATION_REVIEW"
+          ? CLASSIFICATION_REVIEW_REQUEST_RECEIVED_MESSAGE
+          : ORG_ACCESS_REQUEST_RECEIVED_MESSAGE,
+      );
+      setRecoverySubmissionSucceeded(true);
+    } catch (error) {
+      setEmailFeedback(
+        error instanceof Error
+          ? error.message
+          : "Could not submit this Gatekeeper recovery request.",
+      );
+    } finally {
+      setRecoverySubmitting(false);
+    }
   };
 
   const confirmIndustry = async () => {
@@ -337,9 +408,7 @@ export function LandingUrlCapture() {
         selectedIndustry,
       });
       setResult(confirmation.gatekeeper);
-      setRecoveryIndustry(
-        confirmation.confirmedIndustry ?? selectedIndustry,
-      );
+      setRecoveryIndustry(confirmation.confirmedIndustry ?? selectedIndustry);
 
       if (confirmation.gatekeeper.outcome !== "ADMITTED") {
         setModalOpen(false);
@@ -438,13 +507,17 @@ export function LandingUrlCapture() {
               checked={ownershipAccepted}
               disabled={busy}
               aria-invalid={errors.ownership ? true : undefined}
-              aria-describedby={errors.ownership ? "gk-ownership-error" : undefined}
+              aria-describedby={
+                errors.ownership ? "gk-ownership-error" : undefined
+              }
               onChange={(event) => {
                 setOwnershipAccepted(event.target.checked);
                 setErrors((current) => ({ ...current, ownership: undefined }));
               }}
             />
-            <span>I confirm I own or am authorized to represent this brand.</span>
+            <span>
+              I confirm I own or am authorized to represent this brand.
+            </span>
           </label>
           {errors.ownership ? (
             <p id="gk-ownership-error" className="gk-form-error" role="alert">
@@ -472,19 +545,11 @@ export function LandingUrlCapture() {
             />
             <span>
               I agree to the{" "}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href="/terms" target="_blank" rel="noreferrer">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a
-                href="/privacy"
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href="/privacy" target="_blank" rel="noreferrer">
                 Privacy Policy
               </a>
               .
@@ -509,6 +574,7 @@ export function LandingUrlCapture() {
         <section
           className={`gk-recovery gk-recovery--${viewState.tone}`}
           aria-live="polite"
+          aria-busy={recoverySubmitting || undefined}
         >
           <div className="gk-recovery__status">
             {viewState.tone === "error" ? (
@@ -531,6 +597,7 @@ export function LandingUrlCapture() {
                   key={action}
                   type="button"
                   variant={index === 0 ? "primary" : "secondary"}
+                  disabled={recoverySubmitting}
                   onClick={() => void handleRecoveryAction(action)}
                 >
                   {action === "RETRY" ? (
@@ -543,9 +610,7 @@ export function LandingUrlCapture() {
           ) : null}
 
           {!emailExpansion && emailFeedback ? (
-            <p role="status" aria-live="polite">
-              {emailFeedback}
-            </p>
+            <p role="alert">{emailFeedback}</p>
           ) : null}
 
           {emailExpansion ? (
@@ -563,6 +628,7 @@ export function LandingUrlCapture() {
                 aria-label="Work email address"
                 placeholder="Work email address"
                 value={email}
+                disabled={recoverySubmitting || recoverySubmissionSucceeded}
                 onChange={(event) => {
                   setEmail(event.target.value);
                   setEmailFeedback(null);
@@ -574,6 +640,7 @@ export function LandingUrlCapture() {
                   <input
                     type="checkbox"
                     checked={recoveryAuthorized}
+                    disabled={recoverySubmitting || recoverySubmissionSucceeded}
                     onChange={(event) => {
                       setRecoveryAuthorized(event.target.checked);
                       setEmailFeedback(null);
@@ -583,25 +650,32 @@ export function LandingUrlCapture() {
                 </label>
               ) : null}
 
-              <div className="gk-recovery__actions">
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={() => void submitEmailRecovery()}
-                >
-                  Submit request
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => resetRecoveryInteraction()}
-                >
-                  Cancel
-                </Button>
-              </div>
+              {!recoverySubmissionSucceeded ? (
+                <div className="gk-recovery__actions">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={recoverySubmitting}
+                    onClick={() => void submitEmailRecovery()}
+                  >
+                    {recoverySubmitting ? "Submitting…" : "Submit request"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={recoverySubmitting}
+                    onClick={() => resetRecoveryInteraction()}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : null}
 
               {emailFeedback ? (
-                <p role="status" aria-live="polite">
+                <p
+                  role={recoverySubmissionSucceeded ? "status" : "alert"}
+                  aria-live="polite"
+                >
                   {emailFeedback}
                 </p>
               ) : null}
@@ -613,11 +687,7 @@ export function LandingUrlCapture() {
       {detectedIndustry && result ? (
         <GatekeeperConfirmationModal
           open={modalOpen}
-          domain={
-            result.normalizedDomain ??
-            result.normalizedUrl ??
-            url
-          }
+          domain={result.normalizedDomain ?? result.normalizedUrl ?? url}
           detectedIndustry={detectedIndustry}
           selectedIndustry={selectedIndustry}
           isStarting={journeyState === "STARTING_SURFACE_SCAN"}

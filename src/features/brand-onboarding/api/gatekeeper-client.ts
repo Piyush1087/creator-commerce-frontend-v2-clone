@@ -1,5 +1,11 @@
 import { env } from "../../../shared/config/env";
-import type { SupportedGatekeeperIndustry } from "../contracts/gatekeeper.contracts";
+import type {
+  GatekeeperRecoveryRequestInput,
+  GatekeeperRecoveryRequestResponse,
+  GatekeeperRecoveryRequestType,
+  GatekeeperSupportDestination,
+  SupportedGatekeeperIndustry,
+} from "../contracts/gatekeeper.contracts";
 import {
   isResolveProceed,
   parseGatekeeperResult,
@@ -21,21 +27,115 @@ export type GatekeeperSubmission = {
   privacyPolicyAcceptance: true;
 };
 
-async function postJson(path: string, body: unknown): Promise<unknown> {
+async function requestJson(path: string, init: RequestInit): Promise<unknown> {
   const response = await fetch(`${env.apiUrl}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    ...init,
+    headers:
+      init.body === undefined
+        ? init.headers
+        : { "Content-Type": "application/json", ...init.headers },
   });
   const text = await response.text();
   let parsed: unknown;
   try {
     parsed = text ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) throw httpErrorFromResponse(response, parsed);
   return parsed;
+}
+
+async function postJson(path: string, body: unknown): Promise<unknown> {
+  return requestJson(path, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function parseRecoveryRequestResponse(
+  value: unknown,
+  expectedType: GatekeeperRecoveryRequestType,
+  expectedLeadId: string,
+): GatekeeperRecoveryRequestResponse {
+  if (!isRecord(value) || !isRecord(value.request)) {
+    throw new Error("The server returned an invalid recovery request receipt.");
+  }
+
+  const request = value.request;
+  if (
+    !isNonEmptyString(request.id) ||
+    request.type !== expectedType ||
+    request.status !== "RECEIVED" ||
+    request.discoveryLeadId !== expectedLeadId ||
+    !isNonEmptyString(request.normalizedDomain) ||
+    !isNonEmptyString(request.submittedAt) ||
+    Number.isNaN(Date.parse(request.submittedAt))
+  ) {
+    throw new Error("The server returned an invalid recovery request receipt.");
+  }
+
+  return {
+    request: {
+      id: request.id,
+      type: expectedType,
+      status: "RECEIVED",
+      discoveryLeadId: expectedLeadId,
+      normalizedDomain: request.normalizedDomain,
+      submittedAt: request.submittedAt,
+    },
+  };
+}
+
+function parseSupportDestination(value: unknown): GatekeeperSupportDestination {
+  if (!isRecord(value) || !isRecord(value.support)) {
+    throw new Error(
+      "The support destination could not be verified. Please try again later.",
+    );
+  }
+
+  const support = value.support;
+  if (support.type !== "URL" || !isNonEmptyString(support.href)) {
+    throw new Error(
+      "The support destination could not be verified. Please try again later.",
+    );
+  }
+
+  try {
+    const url = new URL(support.href);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error("Unsupported support URL protocol.");
+    }
+  } catch {
+    throw new Error(
+      "The support destination could not be verified. Please try again later.",
+    );
+  }
+
+  return { type: "URL", href: support.href };
+}
+
+async function submitRecoveryRequest(
+  path: string,
+  expectedType: GatekeeperRecoveryRequestType,
+  input: GatekeeperRecoveryRequestInput,
+): Promise<GatekeeperRecoveryRequestResponse> {
+  const { leadId, ...body } = input;
+  const response = await postJson(
+    `/api/v1/discovery/${encodeURIComponent(leadId)}/${path}`,
+    body,
+  );
+  return parseRecoveryRequestResponse(response, expectedType, leadId);
 }
 
 export async function runGatekeeperAdmission(submission: GatekeeperSubmission) {
@@ -70,4 +170,31 @@ export async function confirmGatekeeperIndustry(input: {
     },
   );
   return parseIndustryConfirmation(response);
+}
+
+export async function requestGatekeeperOrganizationAccess(
+  input: GatekeeperRecoveryRequestInput,
+): Promise<GatekeeperRecoveryRequestResponse> {
+  return submitRecoveryRequest(
+    "request-org-access",
+    "REQUEST_ORG_ACCESS",
+    input,
+  );
+}
+
+export async function requestGatekeeperClassificationReview(
+  input: GatekeeperRecoveryRequestInput,
+): Promise<GatekeeperRecoveryRequestResponse> {
+  return submitRecoveryRequest(
+    "request-classification-review",
+    "REQUEST_CLASSIFICATION_REVIEW",
+    input,
+  );
+}
+
+export async function fetchGatekeeperSupportDestination(): Promise<GatekeeperSupportDestination> {
+  const response = await requestJson("/api/v1/discovery/support", {
+    method: "GET",
+  });
+  return parseSupportDestination(response);
 }

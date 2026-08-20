@@ -30,6 +30,40 @@ export const GATEKEEPER_RECOVERY_ACTIONS = [
 export type GatekeeperRecoveryAction =
   (typeof GATEKEEPER_RECOVERY_ACTIONS)[number];
 
+export const GATEKEEPER_RECOVERY_REQUEST_TYPES = [
+  "REQUEST_ORG_ACCESS",
+  "REQUEST_CLASSIFICATION_REVIEW",
+] as const;
+
+export type GatekeeperRecoveryRequestType =
+  (typeof GATEKEEPER_RECOVERY_REQUEST_TYPES)[number];
+
+export type GatekeeperRecoveryRequestInput = {
+  leadId: string;
+  requesterEmail: string;
+  authorizedRepresentativeAttested: true;
+  requesterName?: string;
+  requesterNote?: string;
+};
+
+export type GatekeeperRecoveryRequestReceipt = {
+  id: string;
+  type: GatekeeperRecoveryRequestType;
+  status: "RECEIVED";
+  discoveryLeadId: string;
+  normalizedDomain: string;
+  submittedAt: string;
+};
+
+export type GatekeeperRecoveryRequestResponse = {
+  request: GatekeeperRecoveryRequestReceipt;
+};
+
+export type GatekeeperSupportDestination = {
+  type: "URL";
+  href: string;
+};
+
 export const SUPPORTED_GATEKEEPER_INDUSTRIES = [
   "D2C",
   "SAAS_AI",
