@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, Clock3, ShieldCheck, X } from "lucide-react";
 
 import { Button } from "../../../design-system/aurora";
@@ -30,6 +30,9 @@ type Props = {
   onClose: () => void;
 };
 
+const FOCUSABLE =
+  'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function GatekeeperConfirmationModal({
   open,
   domain,
@@ -44,10 +47,54 @@ export function GatekeeperConfirmationModal({
   onClose,
 }: Props) {
   const [editingIndustry, setEditingIndustry] = useState(false);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (open) setEditingIndustry(false);
-  }, [open]);
+    if (!open) return;
+    setEditingIndustry(false);
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+
+    const frame = window.requestAnimationFrame(() => {
+      const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? dialogRef.current)?.focus();
+    });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!dialogRef.current) return;
+      if (event.key === "Escape" && !isStarting) {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [isStarting, onClose, open]);
 
   if (!open) return null;
 
@@ -72,11 +119,13 @@ export function GatekeeperConfirmationModal({
   return (
     <div className="gk-modal-backdrop" role="presentation">
       <section
+        ref={dialogRef}
         className="gk-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="gk-confirm-title"
         aria-describedby="gk-confirm-description"
+        tabIndex={-1}
       >
         <button
           type="button"
@@ -117,7 +166,11 @@ export function GatekeeperConfirmationModal({
 
           {editingIndustry ? (
             <div className="gk-industry-editor">
-              <div className="gk-industry-options" role="group" aria-label="Supported Industries">
+              <div
+                className="gk-industry-options"
+                role="group"
+                aria-label="Supported Industries"
+              >
                 {SUPPORTED_GATEKEEPER_INDUSTRIES.map((industry) => (
                   <button
                     key={industry}
@@ -129,6 +182,7 @@ export function GatekeeperConfirmationModal({
                     }
                     onClick={() => onSelectIndustry(industry)}
                     disabled={isStarting}
+                    aria-pressed={selectedIndustry === industry}
                   >
                     {selectedIndustry === industry ? <Check size={15} aria-hidden /> : null}
                     {SUPPORTED_GATEKEEPER_INDUSTRY_LABELS[industry]}
@@ -137,7 +191,11 @@ export function GatekeeperConfirmationModal({
               </div>
               <div className="gk-coming-soon">
                 <span className="gk-label">Coming soon</span>
-                <div className="gk-industry-options" role="group" aria-label="Coming soon Industries">
+                <div
+                  className="gk-industry-options"
+                  role="group"
+                  aria-label="Coming soon Industries"
+                >
                   {COMING_SOON_INDUSTRIES.map((industry) => (
                     <button
                       key={industry.value}
@@ -149,6 +207,7 @@ export function GatekeeperConfirmationModal({
                       }
                       onClick={() => onSelectIndustry(industry.value)}
                       disabled={isStarting}
+                      aria-pressed={selectedIndustry === industry.value}
                     >
                       {industry.label}
                     </button>
@@ -204,14 +263,20 @@ export function GatekeeperConfirmationModal({
             <ShieldCheck size={18} aria-hidden />
             <span>
               <strong>No extra access required now</strong>
-              <small>A domain-linked work email and Meta / Instagram access may be useful later, but are not required to start.</small>
+              <small>
+                A domain-linked work email and Meta / Instagram access may be useful
+                later, but are not required to start.
+              </small>
             </span>
           </div>
           <div>
             <Check size={18} aria-hidden />
             <span>
               <strong>You stay in control</strong>
-              <small>You’ll review the resulting Intelligence before it becomes part of your working brand context.</small>
+              <small>
+                You’ll review the resulting Intelligence before it becomes part of
+                your working brand context.
+              </small>
             </span>
           </div>
         </div>
