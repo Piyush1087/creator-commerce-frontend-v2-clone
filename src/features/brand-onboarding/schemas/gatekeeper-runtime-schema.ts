@@ -146,9 +146,13 @@ export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult 
 
   const legacyMap: Record<string, GatekeeperFrontendResult> = {
     blocked: {
-      outcome: "HARD_BLOCKED",
+      outcome:
+        stringValue(root.code) === "BLOCKED_INDUSTRY"
+          ? "HARD_BLOCKED"
+          : "DOMAIN_INVALID",
       reasonCode: stringValue(root.code, root.reason),
-      recoveryActions: [],
+      recoveryActions:
+        stringValue(root.code) === "BLOCKED_INDUSTRY" ? [] : ["RETRY"],
       manualReviewEligible: false,
       normalizedUrl,
       normalizedDomain: domain,
@@ -263,11 +267,16 @@ export function parseIndustryConfirmation(
   const gatekeeper = parseGatekeeperResult(value);
   const handoff = record(candidate.handoff);
   const confirmation =
+    record(candidate.confirmation) ??
     record(candidate.industry_confirmation) ??
     record(candidate.industryConfirmation) ??
     record(root.industryConfirmation);
+  const surfaceHandoff =
+    record(root.surface_handoff) ?? record(root.surfaceHandoff);
 
   const surfaceEligible = booleanValue(
+    confirmation?.surface_eligible,
+    confirmation?.surfaceEligible,
     candidate.surface_eligible,
     candidate.surfaceEligible,
     handoff?.surface_eligible,
@@ -278,6 +287,9 @@ export function parseIndustryConfirmation(
   if (surfaceEligible === null) {
     throw new Error("Industry confirmation response is missing Surface eligibility.");
   }
+  if (surfaceEligible && !surfaceHandoff) {
+    throw new Error("Industry confirmation response is missing the Surface handoff.");
+  }
 
   return {
     gatekeeper,
@@ -286,6 +298,8 @@ export function parseIndustryConfirmation(
       confirmation?.confirmedIndustry,
       candidate.confirmed_industry,
       candidate.confirmedIndustry,
+      surfaceHandoff?.confirmed_industry,
+      surfaceHandoff?.confirmedIndustry,
       handoff?.confirmed_industry,
       handoff?.confirmedIndustry,
     ),

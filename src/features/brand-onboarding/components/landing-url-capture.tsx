@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AlertCircle, CircleAlert, Info, Link2, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -27,33 +27,6 @@ import { urlSchema } from "../schemas/url-schema";
 import { saveBrandOnboardingSession } from "../session/onboarding-session";
 import { GatekeeperConfirmationModal } from "./gatekeeper-confirmation-modal";
 import "./gatekeeper-reconciliation.css";
-
-/**
- * Kept temporarily so the existing LandingPageView compiles while its legacy
- * orchestration is removed in a later cleanup-only pass. Gatekeeper state is no
- * longer inferred from these presentation modes.
- */
-export type LandingUrlCaptureMode =
-  | "default"
-  | "syntax_error"
-  | "infra_retry"
-  | "blocked_locked"
-  | "resume"
-  | "verification_required"
-  | "org_claimed"
-  | "brand_active"
-  | "waitlist";
-
-type LandingUrlCaptureProps = {
-  isBusy?: boolean;
-  mode?: LandingUrlCaptureMode;
-  lockedUrl?: string;
-  primaryLabel?: string;
-  primaryDisabled?: boolean;
-  feedback?: { tone: "error" | "warning" | "success"; message: string } | null;
-  helperText?: string | null;
-  onPrimaryAction?: (url: string) => void | Promise<void>;
-};
 
 type ClientErrors = {
   url?: string;
@@ -106,9 +79,9 @@ function localTechnicalFailure(
   };
 }
 
-export function LandingUrlCapture(props: LandingUrlCaptureProps) {
+export function LandingUrlCapture() {
   const navigate = useNavigate();
-  const [url, setUrl] = useState(props.lockedUrl ?? "");
+  const [url, setUrl] = useState("");
   const [ownershipAccepted, setOwnershipAccepted] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [errors, setErrors] = useState<ClientErrors>({});
@@ -124,15 +97,9 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
   const [email, setEmail] = useState("");
   const [recoveryAuthorized, setRecoveryAuthorized] = useState(false);
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (props.lockedUrl && journeyState === "IDLE") {
-      setUrl(props.lockedUrl);
-    }
-  }, [journeyState, props.lockedUrl]);
+  const modalReturnFocusRef = useRef<HTMLElement | null>(null);
 
   const busy =
-    props.isBusy === true ||
     journeyState === "SUBMITTING" ||
     journeyState === "RESOLVING" ||
     journeyState === "STARTING_SURFACE_SCAN";
@@ -181,10 +148,16 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
     setEmailFeedback(null);
   };
 
+  const updateLegalAcceptance = (accepted: boolean) => {
+    setLegalAccepted(accepted);
+    setErrors((current) => ({ ...current, legal: undefined }));
+  };
+
   const beginAdmission = async () => {
     const normalizedInput = validate();
     if (!normalizedInput) return;
 
+    modalReturnFocusRef.current = document.activeElement as HTMLElement | null;
     setResult(null);
     setRecoveryIndustry(null);
     resetRecoveryInteraction();
@@ -464,6 +437,8 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
               type="checkbox"
               checked={ownershipAccepted}
               disabled={busy}
+              aria-invalid={errors.ownership ? true : undefined}
+              aria-describedby={errors.ownership ? "gk-ownership-error" : undefined}
               onChange={(event) => {
                 setOwnershipAccepted(event.target.checked);
                 setErrors((current) => ({ ...current, ownership: undefined }));
@@ -472,20 +447,28 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
             <span>I confirm I own or am authorized to represent this brand.</span>
           </label>
           {errors.ownership ? (
-            <p className="gk-form-error" role="alert">
+            <p id="gk-ownership-error" className="gk-form-error" role="alert">
               {errors.ownership}
             </p>
           ) : null}
 
-          <label className="gk-check">
+          <div
+            className="gk-check gk-check--legal"
+            onClick={(event) => {
+              const target = event.target as HTMLElement;
+              if (!target.closest("a, input")) {
+                updateLegalAcceptance(!legalAccepted);
+              }
+            }}
+          >
             <input
               type="checkbox"
+              aria-label="I agree to the Terms of Service and Privacy Policy"
               checked={legalAccepted}
               disabled={busy}
-              onChange={(event) => {
-                setLegalAccepted(event.target.checked);
-                setErrors((current) => ({ ...current, legal: undefined }));
-              }}
+              aria-invalid={errors.legal ? true : undefined}
+              aria-describedby={errors.legal ? "gk-legal-error" : undefined}
+              onChange={(event) => updateLegalAcceptance(event.target.checked)}
             />
             <span>
               I agree to the{" "}
@@ -493,7 +476,6 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
                 href="/terms"
                 target="_blank"
                 rel="noreferrer"
-                onClick={(event) => event.stopPropagation()}
               >
                 Terms of Service
               </a>{" "}
@@ -502,15 +484,14 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
                 href="/privacy"
                 target="_blank"
                 rel="noreferrer"
-                onClick={(event) => event.stopPropagation()}
               >
                 Privacy Policy
               </a>
               .
             </span>
-          </label>
+          </div>
           {errors.legal ? (
-            <p className="gk-form-error" role="alert">
+            <p id="gk-legal-error" className="gk-form-error" role="alert">
               {errors.legal}
             </p>
           ) : null}
@@ -559,6 +540,12 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
                 </Button>
               ))}
             </div>
+          ) : null}
+
+          {!emailExpansion && emailFeedback ? (
+            <p role="status" aria-live="polite">
+              {emailFeedback}
+            </p>
           ) : null}
 
           {emailExpansion ? (
@@ -635,6 +622,7 @@ export function LandingUrlCapture(props: LandingUrlCaptureProps) {
           selectedIndustry={selectedIndustry}
           isStarting={journeyState === "STARTING_SURFACE_SCAN"}
           error={startError}
+          returnFocusTarget={modalReturnFocusRef.current}
           onSelectIndustry={setSelectedIndustry}
           onResetIndustry={() => setSelectedIndustry(detectedIndustry)}
           onConfirmSupported={confirmIndustry}

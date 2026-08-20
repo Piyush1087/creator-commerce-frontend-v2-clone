@@ -57,16 +57,85 @@ describe("Gatekeeper runtime adapter", () => {
 
   it("preserves supported override disagreement metadata", () => {
     const confirmation = parseIndustryConfirmation({
-      decision: { outcome: "ADMITTED", recovery_actions: ["CONTINUE"], manual_review_eligible: false },
-      assessment: { provisional_industry: "D2C" },
       leadId: "lead-1",
-      confirmedIndustry: "SAAS_AI",
-      confirmationSource: "USER_CONFIRMED_OVERRIDE",
-      industryDisagreementFlag: true,
-      surfaceEligible: true,
+      gatekeeper_result: {
+        decision: { outcome: "ADMITTED", recovery_actions: ["CONTINUE"], manual_review_eligible: false },
+        assessment: { provisional_industry: "D2C" },
+        confirmation: {
+          confirmed_industry: "SAAS_AI",
+          confirmation_source: "USER_CONFIRMED_OVERRIDE",
+          industry_disagreement_flag: true,
+          surface_eligible: true,
+        },
+      },
+      surface_handoff: {
+        normalized_url: "https://brand.com",
+        normalized_domain: "brand.com",
+        confirmed_industry: "SAAS_AI",
+        gatekeeper_completed: true,
+      },
     });
     expect(confirmation.surfaceEligible).toBe(true);
     expect(confirmation.industryDisagreementFlag).toBe(true);
     expect(confirmation.confirmationSource).toBe("USER_CONFIRMED_OVERRIDE");
+  });
+
+  it("parses the exact unsupported confirmation shape without requiring a handoff", () => {
+    const confirmation = parseIndustryConfirmation({
+      leadId: "lead-1",
+      gatekeeper_result: {
+        decision: {
+          outcome: "UNSUPPORTED",
+          reason_code: "UNSUPPORTED_INDUSTRY",
+          recovery_actions: ["JOIN_WAITLIST", "REQUEST_CLASSIFICATION_REVIEW"],
+          manual_review_eligible: true,
+        },
+        assessment: { provisional_industry: "D2C" },
+        confirmation: {
+          confirmed_industry: "MEDIA",
+          confirmation_source: "USER_CONFIRMED_UNSUPPORTED",
+          industry_disagreement_flag: false,
+          surface_eligible: false,
+        },
+      },
+      surface_handoff: null,
+    });
+
+    expect(confirmation.gatekeeper.outcome).toBe("UNSUPPORTED");
+    expect(confirmation.confirmedIndustry).toBe("MEDIA");
+    expect(confirmation.surfaceEligible).toBe(false);
+  });
+
+  it("rejects an admitted confirmation that omits the required Surface handoff", () => {
+    expect(() =>
+      parseIndustryConfirmation({
+        leadId: "lead-1",
+        gatekeeper_result: {
+          decision: {
+            outcome: "ADMITTED",
+            recovery_actions: ["CONTINUE"],
+            manual_review_eligible: false,
+          },
+          confirmation: {
+            confirmed_industry: "D2C",
+            confirmation_source: "AI_ASSESSED_ACCEPTED",
+            industry_disagreement_flag: false,
+            surface_eligible: true,
+          },
+        },
+        surface_handoff: null,
+      }),
+    ).toThrow(/Surface handoff/);
+  });
+
+  it("maps legacy resolve URL rejection to DOMAIN_INVALID with retry", () => {
+    const result = parseGatekeeperResult({
+      outcome: "blocked",
+      code: "PRIVATE_OR_LOCAL_HOST",
+      message: "Private hosts cannot be scanned.",
+    });
+
+    expect(result.outcome).toBe("DOMAIN_INVALID");
+    expect(result.recoveryActions).toEqual(["RETRY"]);
   });
 });

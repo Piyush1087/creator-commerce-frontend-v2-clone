@@ -38,7 +38,7 @@
   padding-top: 14px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767.98px) {
   .gk-industry-current {
     align-items: flex-start;
   }

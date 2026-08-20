@@ -7,14 +7,8 @@ import {
   SUPPORTED_GATEKEEPER_INDUSTRY_LABELS,
   type SupportedGatekeeperIndustry,
 } from "../contracts/gatekeeper.contracts";
+import { COMING_SOON_INDUSTRIES } from "./gatekeeper-industry-options";
 import "./gatekeeper-confirmation-adjustments.css";
-
-export const COMING_SOON_INDUSTRIES = [
-  { value: "REAL_ESTATE", label: "Real Estate" },
-  { value: "EDUCATION", label: "Education" },
-  { value: "MEDIA_ENTERTAINMENT", label: "Media & Entertainment" },
-  { value: "B2B_AGENCY", label: "B2B / Agency" },
-] as const;
 
 type Props = {
   open: boolean;
@@ -23,6 +17,7 @@ type Props = {
   selectedIndustry: string;
   isStarting: boolean;
   error?: string | null;
+  returnFocusTarget?: HTMLElement | null;
   onSelectIndustry: (industry: string) => void;
   onResetIndustry: () => void;
   onConfirmSupported: () => void | Promise<void>;
@@ -40,6 +35,7 @@ export function GatekeeperConfirmationModal({
   selectedIndustry,
   isStarting,
   error,
+  returnFocusTarget,
   onSelectIndustry,
   onResetIndustry,
   onConfirmSupported,
@@ -58,7 +54,8 @@ export function GatekeeperConfirmationModal({
   useEffect(() => {
     if (!open) return;
     setEditingIndustry(false);
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    previousFocusRef.current =
+      returnFocusTarget ?? (document.activeElement as HTMLElement | null);
 
     const frame = window.requestAnimationFrame(() => {
       const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE);
@@ -99,7 +96,7 @@ export function GatekeeperConfirmationModal({
       document.removeEventListener("keydown", onKeyDown);
       previousFocusRef.current?.focus();
     };
-  }, [open]);
+  }, [open, returnFocusTarget]);
 
   if (!open) return null;
 
@@ -132,6 +129,7 @@ export function GatekeeperConfirmationModal({
         aria-describedby="gk-confirm-description"
         tabIndex={-1}
       >
+        <span className="gk-modal__handle" aria-hidden />
         <button
           type="button"
           className="gk-icon-button"
