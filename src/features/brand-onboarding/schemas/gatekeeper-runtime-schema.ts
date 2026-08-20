@@ -59,26 +59,6 @@ function canonicalOutcome(value: unknown): GatekeeperOutcome | null {
   return parsed.success ? parsed.data : null;
 }
 
-function recoveryDefaults(outcome: GatekeeperOutcome): GatekeeperRecoveryAction[] {
-  switch (outcome) {
-    case "RESUME_AVAILABLE":
-      return ["RESUME"];
-    case "EXISTING_BRAND":
-      return ["SIGN_IN"];
-    case "ORG_CLAIMED":
-      return ["REQUEST_ORG_ACCESS"];
-    case "VERIFICATION_REQUIRED":
-      return ["VERIFY_DOMAIN"];
-    case "DOMAIN_UNREACHABLE":
-    case "TECHNICAL_FAILURE":
-      return ["RETRY"];
-    case "ADMITTED":
-      return ["CONTINUE"];
-    default:
-      return [];
-  }
-}
-
 export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult {
   const root = record(value);
   const candidate = canonicalCandidate(value);
@@ -93,12 +73,6 @@ export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult 
   const outcome = canonicalOutcome(value);
 
   if (outcome) {
-    const actions = parseActions(
-      decision?.recovery_actions ??
-        decision?.recoveryActions ??
-        candidate.recovery_actions ??
-        candidate.recoveryActions,
-    );
     return {
       outcome,
       reasonCode: stringValue(
@@ -107,7 +81,12 @@ export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult 
         candidate.reason_code,
         candidate.reasonCode,
       ),
-      recoveryActions: actions.length ? actions : recoveryDefaults(outcome),
+      recoveryActions: parseActions(
+        decision?.recovery_actions ??
+          decision?.recoveryActions ??
+          candidate.recovery_actions ??
+          candidate.recoveryActions,
+      ),
       manualReviewEligible:
         booleanValue(
           decision?.manual_review_eligible,
@@ -153,6 +132,10 @@ export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult 
     };
   }
 
+  // Temporary compatibility layer for the pre-canonical resolve/validate transport.
+  // These actions are derived only because the legacy transport does not carry the
+  // canonical recovery_actions array. Remove this branch once the canonical result
+  // is the only deployed response shape.
   const legacyOutcome = stringValue(root.outcome);
   const normalizedUrl = stringValue(root.normalizedUrl, root.url);
   const domain = stringValue(root.domain);
@@ -164,7 +147,7 @@ export function parseGatekeeperResult(value: unknown): GatekeeperFrontendResult 
   const legacyMap: Record<string, GatekeeperFrontendResult> = {
     blocked: {
       outcome: "HARD_BLOCKED",
-      reasonCode: stringValue(root.reason),
+      reasonCode: stringValue(root.code, root.reason),
       recoveryActions: [],
       manualReviewEligible: false,
       normalizedUrl,
@@ -273,7 +256,9 @@ export function parseIndustryConfirmation(
 ): GatekeeperIndustryConfirmation {
   const root = record(value);
   const candidate = canonicalCandidate(value);
-  if (!root || !candidate) throw new Error("Unexpected Industry confirmation response.");
+  if (!root || !candidate) {
+    throw new Error("Unexpected Industry confirmation response.");
+  }
 
   const gatekeeper = parseGatekeeperResult(value);
   const handoff = record(candidate.handoff);
