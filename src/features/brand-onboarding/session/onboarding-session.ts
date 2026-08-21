@@ -1,10 +1,15 @@
 const STORAGE_KEY = "ccs.brandOnboarding.v1";
+const BRAND_PREVIEW_PENDING_STORAGE_KEY = "ccs.brandPreview.pending.v1";
 
 export type BrandOnboardingSessionV1 = {
   leadId: string;
-  brandProfileId?: string;
+  brandProfileId: string;
   normalizedUrl: string;
-  confirmedIndustry?: "D2C" | "SAAS_AI" | "HEALTHCARE" | "OFFLINE_SERVICES";
+};
+
+export type BrandPreviewPendingSessionV1 = {
+  leadId: string;
+  normalizedUrl: string;
 };
 
 export function saveBrandOnboardingSession(session: BrandOnboardingSessionV1): void {
@@ -25,28 +30,18 @@ export function loadBrandOnboardingSession(): BrandOnboardingSessionV1 | null {
       leadId?: unknown;
       brandProfileId?: unknown;
       normalizedUrl?: unknown;
-      confirmedIndustry?: unknown;
     };
     if (
       typeof v.leadId !== "string" ||
-      typeof v.normalizedUrl !== "string" ||
-      (v.brandProfileId !== undefined && typeof v.brandProfileId !== "string")
+      typeof v.brandProfileId !== "string" ||
+      typeof v.normalizedUrl !== "string"
     ) {
       return null;
     }
-    const confirmedIndustry =
-      v.confirmedIndustry === "D2C" ||
-      v.confirmedIndustry === "SAAS_AI" ||
-      v.confirmedIndustry === "HEALTHCARE" ||
-      v.confirmedIndustry === "OFFLINE_SERVICES"
-        ? v.confirmedIndustry
-        : undefined;
-
     return {
       leadId: v.leadId,
       brandProfileId: v.brandProfileId,
       normalizedUrl: v.normalizedUrl,
-      confirmedIndustry,
     };
   } catch {
     return null;
@@ -55,4 +50,34 @@ export function loadBrandOnboardingSession(): BrandOnboardingSessionV1 | null {
 
 export function clearBrandOnboardingSession(): void {
   sessionStorage.removeItem(STORAGE_KEY);
+}
+
+export function saveBrandPreviewPendingSession(
+  session: BrandPreviewPendingSessionV1,
+): void {
+  sessionStorage.setItem(BRAND_PREVIEW_PENDING_STORAGE_KEY, JSON.stringify(session));
+}
+
+export function loadBrandPreviewPendingSession(): BrandPreviewPendingSessionV1 | null {
+  const raw = sessionStorage.getItem(BRAND_PREVIEW_PENDING_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+    const v = parsed as { leadId?: unknown; normalizedUrl?: unknown };
+    if (typeof v.leadId !== "string" || typeof v.normalizedUrl !== "string") {
+      return null;
+    }
+    return { leadId: v.leadId, normalizedUrl: v.normalizedUrl };
+  } catch {
+    return null;
+  }
+}
+
+export function clearBrandPreviewPendingSession(): void {
+  sessionStorage.removeItem(BRAND_PREVIEW_PENDING_STORAGE_KEY);
 }
