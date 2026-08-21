@@ -61,7 +61,7 @@ export function AnalysisRecoveryView({
             aria-busy={retrying}
           >
             <RotateCcw size={16} aria-hidden />
-            {retrying ? "Trying again…" : "Try again"}
+            Try again
           </Button>
         ) : null}
       </section>
