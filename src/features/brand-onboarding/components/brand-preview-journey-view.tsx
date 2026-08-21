@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   getBrandPreviewRuntime,
+  isBrandPreviewRuntimeContractError,
   retryBrandPreviewRuntime,
 } from "../api/brand-preview-client";
 import type {
@@ -36,8 +37,10 @@ function displayDomainFromUrl(value: string): string {
     return new URL(value).hostname.replace(/^www\./i, "");
   } catch {
     return (
-      value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0] ||
-      "yourbrand.com"
+      value
+        .replace(/^https?:\/\//i, "")
+        .replace(/^www\./i, "")
+        .split("/")[0] || "yourbrand.com"
     );
   }
 }
@@ -50,7 +53,10 @@ export function BrandPreviewJourneyView() {
   const pendingSession = useMemo(() => loadBrandPreviewPendingSession(), []);
 
   const leadId =
-    locationState?.leadId ?? pendingSession?.leadId ?? storedSession?.leadId ?? "";
+    locationState?.leadId ??
+    pendingSession?.leadId ??
+    storedSession?.leadId ??
+    "";
   const normalizedUrl =
     locationState?.url ??
     pendingSession?.normalizedUrl ??
@@ -67,6 +73,8 @@ export function BrandPreviewJourneyView() {
   const [slow, setSlow] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [startingVerification, setStartingVerification] = useState(false);
+  const [recoveringContractFailure, setRecoveringContractFailure] =
+    useState(false);
   const pollTimerRef = useRef<number | null>(null);
   const slowTimerRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
@@ -93,21 +101,26 @@ export function BrandPreviewJourneyView() {
     }, SLOW_ANALYSIS_THRESHOLD_MS);
   }, [stopSlowTimer]);
 
-  const focusStateHeading = useCallback((state: BrandPreviewViewState["state"]) => {
-    const id =
-      state === "PREVIEW_READY"
-        ? "bp-preview-title"
-        : state === "ANALYSIS_RECOVERABLE_FAILURE" || state === "PREVIEW_NOT_READY"
-          ? "bp-recovery-title"
-          : "bp-analysis-title";
-    window.requestAnimationFrame(() => {
-      document.getElementById(id)?.focus();
-    });
-  }, []);
+  const focusStateHeading = useCallback(
+    (state: BrandPreviewViewState["state"]) => {
+      const id =
+        state === "PREVIEW_READY"
+          ? "bp-preview-title"
+          : state === "ANALYSIS_RECOVERABLE_FAILURE" ||
+              state === "PREVIEW_NOT_READY"
+            ? "bp-recovery-title"
+            : "bp-analysis-title";
+      window.requestAnimationFrame(() => {
+        document.getElementById(id)?.focus();
+      });
+    },
+    [],
+  );
 
   const applyProjection = useCallback(
     (projection: BrandPreviewRuntimeProjection) => {
       const mapped = mapBrandPreviewRuntimeToViewState(projection);
+      setRecoveringContractFailure(false);
       setViewState(mapped);
 
       if (mapped.state === "FAST_ANALYSIS_ACTIVE") {
@@ -143,8 +156,17 @@ export function BrandPreviewJourneyView() {
           void poll();
         }, POLL_INTERVAL_MS);
       }
-    } catch {
+    } catch (error) {
       if (!mountedRef.current) return;
+      if (isBrandPreviewRuntimeContractError(error)) {
+        stopPolling();
+        stopSlowTimer();
+        setSlow(false);
+        setRecoveringContractFailure(true);
+        setViewState({ state: "ANALYSIS_RECOVERABLE_FAILURE", canRetry: true });
+        focusStateHeading("ANALYSIS_RECOVERABLE_FAILURE");
+        return;
+      }
       // Transport health is not Preview state authority. Retain the current
       // truthful analysis presentation and refetch instead of inventing a
       // terminal customer-facing state.
@@ -152,7 +174,7 @@ export function BrandPreviewJourneyView() {
         void poll();
       }, POLL_INTERVAL_MS * 2);
     }
-  }, [applyProjection, leadId]);
+  }, [applyProjection, focusStateHeading, leadId, stopPolling, stopSlowTimer]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -188,6 +210,15 @@ export function BrandPreviewJourneyView() {
   const handleRetry = async () => {
     if (!leadId || retrying) return;
     setRetrying(true);
+    if (recoveringContractFailure) {
+      setRecoveringContractFailure(false);
+      setViewState({ state: "FAST_ANALYSIS_ACTIVE", phase: null });
+      focusStateHeading("FAST_ANALYSIS_ACTIVE");
+      startSlowTimer();
+      await poll();
+      if (mountedRef.current) setRetrying(false);
+      return;
+    }
     try {
       const projection = await retryBrandPreviewRuntime(leadId);
       if (!mountedRef.current) return;

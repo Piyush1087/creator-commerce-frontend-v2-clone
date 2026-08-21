@@ -32,7 +32,8 @@ const phaseSchema = z.enum([
 const completenessSchema = z.enum(["NORMAL", "PARTIAL"]);
 
 const requiredText = (max: number) => z.string().trim().min(1).max(max);
-const optionalText = (max: number) => z.string().trim().min(1).max(max).nullable().optional();
+const optionalText = (max: number) =>
+  z.string().trim().min(1).max(max).nullable().optional();
 
 function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -71,9 +72,11 @@ function normalizeOpportunity(value: unknown): BrandPreviewOpportunity {
 function normalizeArchetype(value: unknown): BrandPreviewArchetype {
   const item = record(value);
   return {
-    archetypeId: z.string().trim().min(1).parse(
-      first(item, "archetypeId", "archetype_id"),
-    ),
+    archetypeId: z
+      .string()
+      .trim()
+      .min(1)
+      .parse(first(item, "archetypeId", "archetype_id")),
     label: requiredText(40).parse(first(item, "label")),
     rationale: requiredText(220).parse(first(item, "rationale")),
   };
@@ -84,12 +87,21 @@ function normalizePreview(value: unknown): BrandPreviewPayload {
   const identity = record(first(raw, "identity"));
   const understandingRaw = first(raw, "understanding");
   const understanding = record(understandingRaw);
-  const audiencesRaw = first(raw, "audiences");
+  const audiencesRaw = first(raw, "audience_groups", "audiences");
   const audiencesObject = record(audiencesRaw);
-  const opportunitiesRaw = first(raw, "opportunities");
+  const opportunitiesRaw = first(
+    raw,
+    "creator_marketing_opportunities",
+    "opportunities",
+  );
   const opportunitiesObject = record(opportunitiesRaw);
-  const creatorRaw = first(raw, "creatorStartingPoint", "creator_starting_point");
+  const creatorRaw = first(
+    raw,
+    "creatorStartingPoint",
+    "creator_starting_point",
+  );
   const creator = record(creatorRaw);
+  const backendArchetypes = first(raw, "creator_archetype_recommendations");
 
   const audiencesSource = Array.isArray(audiencesRaw)
     ? audiencesRaw
@@ -97,9 +109,16 @@ function normalizePreview(value: unknown): BrandPreviewPayload {
   const opportunitiesSource = Array.isArray(opportunitiesRaw)
     ? opportunitiesRaw
     : first(opportunitiesObject, "items");
-  const archetypesSource = first(creator, "archetypes");
+  const archetypesSource = Array.isArray(backendArchetypes)
+    ? backendArchetypes
+    : first(creator, "archetypes");
 
-  const audiences = z.array(z.unknown()).min(1).max(3).parse(audiencesSource).map(normalizeAudience);
+  const audiences = z
+    .array(z.unknown())
+    .min(1)
+    .max(3)
+    .parse(audiencesSource)
+    .map(normalizeAudience);
   const opportunities = z
     .array(z.unknown())
     .min(1)
@@ -113,31 +132,43 @@ function normalizePreview(value: unknown): BrandPreviewPayload {
     .parse(archetypesSource)
     .map(normalizeArchetype);
 
+  const backendNarrative = first(
+    raw,
+    "brand_understanding_narrative",
+    "brandUnderstandingNarrative",
+  );
   const narrativeCandidate =
-    typeof understandingRaw === "string"
-      ? understandingRaw
-      : first(understanding, "narrative");
+    backendNarrative !== undefined
+      ? backendNarrative
+      : typeof understandingRaw === "string"
+        ? understandingRaw
+        : first(understanding, "narrative");
+  const backendDescriptor = first(raw, "brand_descriptor", "brandDescriptor");
+  const descriptorCandidate =
+    backendDescriptor !== undefined
+      ? backendDescriptor
+      : first(identity, "brandDescriptor", "brand_descriptor");
 
   return {
     identity: {
-      brandName: requiredText(160).parse(first(identity, "brandName", "brand_name")),
+      brandName: requiredText(160).parse(
+        first(identity, "brandName", "brand_name"),
+      ),
       brandLogo:
         optionalText(2048).parse(
           first(identity, "brandLogo", "brand_logo", "logoUrl", "logo_url"),
         ) ?? null,
-      websiteUrl: z.string().url().parse(
-        first(identity, "websiteUrl", "website_url"),
-      ),
+      websiteUrl: z
+        .string()
+        .url()
+        .parse(first(identity, "websiteUrl", "website_url")),
       displayDomain: requiredText(255).parse(
         first(identity, "displayDomain", "display_domain"),
       ),
       confirmedIndustry: industrySchema.parse(
         first(identity, "confirmedIndustry", "confirmed_industry"),
       ),
-      brandDescriptor:
-        optionalText(90).parse(
-          first(identity, "brandDescriptor", "brand_descriptor"),
-        ) ?? null,
+      brandDescriptor: optionalText(90).parse(descriptorCandidate) ?? null,
     },
     understanding: {
       narrative: requiredText(1200).parse(narrativeCandidate),
@@ -175,9 +206,11 @@ export function parseBrandPreviewRuntimeProjection(
     const verification = record(
       first(raw, "verificationContext", "verification_context"),
     );
-    const brandProfileId = z.string().trim().min(1).parse(
-      first(verification, "brandProfileId", "brand_profile_id"),
-    );
+    const brandProfileId = z
+      .string()
+      .trim()
+      .min(1)
+      .parse(first(verification, "brandProfileId", "brand_profile_id"));
     return {
       state,
       phase,

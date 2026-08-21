@@ -31,6 +31,81 @@ const oneArchetype = {
     "Qualified clinicians who communicate clearly can make complex fertility concepts easier to understand.",
 };
 
+// Sanitized from the backend's public PREVIEW_READY projection. The field
+// names intentionally stay backend-native so this fixture guards the API seam.
+function backendReadyProjection(
+  completeness: "NORMAL" | "PARTIAL",
+  options: { descriptor?: string | null; logo?: string | null } = {},
+) {
+  const repeatedCount = completeness === "NORMAL" ? 2 : 1;
+  return {
+    runId: "run-public-projection-1",
+    state: "PREVIEW_READY",
+    phase: "PREPARING_PREVIEW",
+    completeness,
+    retryAllowed: false,
+    preview: {
+      identity: {
+        brand_name: "Northstar Trail",
+        logo_url: options.logo ?? null,
+        website_url: "https://northstartrail.example",
+        display_domain: "northstartrail.example",
+        confirmed_industry: "D2C",
+      },
+      brand_descriptor:
+        options.descriptor === undefined
+          ? "Practical trail guidance for people building confidence outdoors"
+          : options.descriptor,
+      brand_understanding_narrative:
+        "Northstar Trail makes outdoor progress feel practical and attainable. Creator marketing can turn expert guidance into useful proof for people choosing their next step.",
+      audience_groups: [
+        {
+          id: "audience-public-1",
+          label: "Confidence-building explorers",
+          why_it_matters:
+            "They need credible, practical guidance before choosing new outdoor products.",
+          evidence_refs: ["internal-ref-not-for-frontend"],
+        },
+        {
+          id: "audience-public-2",
+          label: "Experienced weekend hikers",
+          why_it_matters:
+            "They influence peers through grounded advice from repeat experience.",
+        },
+      ].slice(0, repeatedCount),
+      creator_marketing_opportunities: [
+        {
+          title: "Turn guidance into visible progress",
+          why_it_matters:
+            "Creators can demonstrate useful decisions in real outdoor contexts.",
+          confidence: 0.91,
+        },
+        {
+          title: "Build trust through field-tested proof",
+          why_it_matters:
+            "Credible demonstrations can make product value easier to assess.",
+        },
+      ].slice(0, repeatedCount),
+      creator_archetype_recommendations: [
+        {
+          archetype_id: "EDUCATOR",
+          label: "Outdoor educators",
+          rationale:
+            "Clear explainers can make technical choices useful to newer explorers.",
+          provider: "internal-provider-not-for-frontend",
+        },
+        {
+          archetype_id: "PRACTITIONER",
+          label: "Field-tested practitioners",
+          rationale:
+            "Experienced practitioners can show how advice holds up in real use.",
+        },
+      ].slice(0, repeatedCount),
+    },
+    verificationContext: { brandProfileId: "brand-profile-public-1" },
+  };
+}
+
 function readyProjection(overrides: Record<string, unknown> = {}) {
   return {
     state: "PREVIEW_READY",
@@ -86,6 +161,49 @@ describe("parseBrandPreviewRuntimeProjection", () => {
     expect(parsed.verificationContext?.brandProfileId).toBe("brand-profile-1");
   });
 
+  it("normalizes the exact backend PREVIEW_READY NORMAL public projection", () => {
+    const parsed = parseBrandPreviewRuntimeProjection(
+      backendReadyProjection("NORMAL"),
+    );
+
+    expect(parsed.state).toBe("PREVIEW_READY");
+    expect(parsed.completeness).toBe("NORMAL");
+    expect(parsed.preview?.identity.brandDescriptor).toBe(
+      "Practical trail guidance for people building confidence outdoors",
+    );
+    expect(parsed.preview?.understanding.narrative).toMatch(/attainable/);
+    expect(parsed.preview?.audiences).toHaveLength(2);
+    expect(parsed.preview?.opportunities).toHaveLength(2);
+    expect(parsed.preview?.creatorStartingPoint.archetypes).toHaveLength(2);
+    expect(
+      parsed.preview?.creatorStartingPoint.archetypes[0]?.archetypeId,
+    ).toBe("EDUCATOR");
+    expect(parsed.verificationContext?.brandProfileId).toBe(
+      "brand-profile-public-1",
+    );
+    expect(parsed.preview?.audiences[0]).not.toHaveProperty("evidence_refs");
+    expect(parsed.preview?.opportunities[0]).not.toHaveProperty("confidence");
+    expect(
+      parsed.preview?.creatorStartingPoint.archetypes[0],
+    ).not.toHaveProperty("provider");
+  });
+
+  it("normalizes the exact backend PREVIEW_READY PARTIAL 1/1/1 projection with optional identity fields absent", () => {
+    const parsed = parseBrandPreviewRuntimeProjection(
+      backendReadyProjection("PARTIAL", { descriptor: null, logo: null }),
+    );
+
+    expect(parsed.completeness).toBe("PARTIAL");
+    expect(parsed.preview?.identity.brandLogo).toBeNull();
+    expect(parsed.preview?.identity.brandDescriptor).toBeNull();
+    expect(parsed.preview?.audiences).toHaveLength(1);
+    expect(parsed.preview?.opportunities).toHaveLength(1);
+    expect(parsed.preview?.creatorStartingPoint.archetypes).toHaveLength(1);
+    expect(parsed.verificationContext?.brandProfileId).toBe(
+      "brand-profile-public-1",
+    );
+  });
+
   it("accepts snake-case bounded payload fields without changing semantics", () => {
     const parsed = parseBrandPreviewRuntimeProjection({
       state: "PREVIEW_READY",
@@ -98,14 +216,22 @@ describe("parseBrandPreviewRuntimeProjection", () => {
           website_url: "https://relaydesk.example",
           display_domain: "relaydesk.example",
           confirmed_industry: "SAAS_AI",
-          brand_descriptor: "AI-assisted support workflows for growing customer-service teams",
+          brand_descriptor:
+            "AI-assisted support workflows for growing customer-service teams",
         },
         understanding: {
           narrative:
             "Relaydesk AI helps support teams handle repetitive work while keeping people in control of complex conversations. Creator-led operator proof can make the workflow value believable in a noisy AI category.",
         },
-        audiences: { groups: [oneAudience, { ...oneAudience, id: "audience-2" }] },
-        opportunities: { items: [oneOpportunity, { ...oneOpportunity, title: "Create believable operator proof" }] },
+        audiences: {
+          groups: [oneAudience, { ...oneAudience, id: "audience-2" }],
+        },
+        opportunities: {
+          items: [
+            oneOpportunity,
+            { ...oneOpportunity, title: "Create believable operator proof" },
+          ],
+        },
         creator_starting_point: {
           archetypes: [
             oneArchetype,
