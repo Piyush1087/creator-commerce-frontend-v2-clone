@@ -1,5 +1,5 @@
-import { BrandScanView } from "../../../features/brand-onboarding/components/brand-scan-view";
+import { BrandPreviewJourneyView } from "../../../features/brand-onboarding/components/brand-preview-journey-view";
 
 export function BrandOnboardingScanPage() {
-  return <BrandScanView />;
+  return <BrandPreviewJourneyView />;
 }
