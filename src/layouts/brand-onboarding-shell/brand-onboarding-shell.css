@@ -44,6 +44,27 @@
   color: var(--text-high);
 }
 
+/* Brand Preview is a long public onboarding narrative. Let the page own one
+   natural document scroll instead of trapping the accepted composition in a
+   fixed-height scan viewport. */
+.bons-shell:has(.bp-analysis),
+.bons-shell:has(.bp-recovery),
+.bons-shell:has(.bp-preview) {
+  height: auto;
+  max-height: none;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.bons-shell:has(.bp-analysis) .bons-shell__main,
+.bons-shell:has(.bp-recovery) .bons-shell__main,
+.bons-shell:has(.bp-preview) .bons-shell__main {
+  flex: 1 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
 .bons-shell__header {
   flex: 0 0 var(--height-header);
   position: relative;
@@ -188,6 +209,14 @@
   }
 }
 
+@media (max-width: 767px) {
+  .bons-shell__header {
+    flex-basis: 56px;
+    height: 56px;
+    padding: 0 var(--space-sm);
+  }
+}
+
 @media (min-width: 900px) {
   .bons-shell:has(.bob-verify) .bons-shell__main {
     overflow: hidden;
@@ -304,7 +333,7 @@
   text-align: left;
 }
 
-/* Scan funnel variant (dark hero) */
+/* Scan funnel variant (legacy; no longer emitted by Brand Preview journey). */
 .bons-shell--scan {
   background: var(--color-secondary);
   color: #fff;
