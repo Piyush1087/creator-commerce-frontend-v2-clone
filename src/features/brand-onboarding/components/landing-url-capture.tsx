@@ -1,324 +1,710 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Ban, CircleAlert, Info, Link2, Lock, RefreshCw } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { AlertCircle, CircleAlert, Info, Link2, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "../../../design-system/aurora";
-
+import { AUTH_ROUTES } from "../../auth/constants";
+import { postDiscoveryWaitlist } from "../api/discovery-client";
+import {
+  confirmGatekeeperIndustry,
+  runGatekeeperAdmission,
+} from "../api/gatekeeper-client";
+import { ONBOARDING_ROUTES } from "../constants";
+import {
+  INDUSTRY_VERTICALS,
+  type IndustryVertical,
+  type WaitlistReasonCode,
+} from "../contracts/discovery.contracts";
+import {
+  SUPPORTED_GATEKEEPER_INDUSTRIES,
+  type GatekeeperFrontendResult,
+  type GatekeeperJourneyState,
+  type GatekeeperRecoveryAction,
+  type SupportedGatekeeperIndustry,
+} from "../contracts/gatekeeper.contracts";
+import { mapGatekeeperResultToViewState } from "../mappers/map-gatekeeper-result";
 import { urlSchema } from "../schemas/url-schema";
+import {
+  CLASSIFICATION_REVIEW_REQUEST_RECEIVED_MESSAGE,
+  isGatekeeperRecoveryActionAvailable,
+  navigateToGatekeeperSupportDestination,
+  ORG_ACCESS_REQUEST_RECEIVED_MESSAGE,
+  submitGatekeeperRecoveryRequestForResult,
+  visibleGatekeeperRecoveryActions,
+} from "../services/gatekeeper-recovery";
+import { saveBrandOnboardingSession } from "../session/onboarding-session";
+import { GatekeeperConfirmationModal } from "./gatekeeper-confirmation-modal";
+import "./gatekeeper-reconciliation.css";
 
-export type LandingUrlCaptureMode =
-  | "default"
-  | "syntax_error"
-  | "infra_retry"
-  | "blocked_locked"
-  | "resume"
-  | "verification_required"
-  | "org_claimed"
-  | "brand_active"
-  | "waitlist";
-
-type LandingUrlCaptureProps = {
-  isBusy: boolean;
-  mode?: LandingUrlCaptureMode;
-  lockedUrl?: string;
-  primaryLabel?: string;
-  primaryDisabled?: boolean;
-  feedback?: { tone: "error" | "warning" | "success"; message: string } | null;
-  helperText?: string | null;
-  onPrimaryAction: (url: string) => void | Promise<void>;
+type ClientErrors = {
+  url?: string;
+  ownership?: string;
+  legal?: string;
 };
 
-const LISTENING_MESSAGES = [
-  "Locating brand servers...",
-  "Analyzing industry signals...",
-  "Verifying commercial DNA...",
-] as const;
+type RecoveryExpansion = "waitlist" | "review" | "org";
 
-export function LandingUrlCapture({
-  isBusy,
-  mode = "default",
-  lockedUrl,
-  primaryLabel = "Analyze My Brand",
-  primaryDisabled,
-  feedback,
-  helperText,
-  onPrimaryAction,
-}: LandingUrlCaptureProps) {
-  const [url, setUrl] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [shakeNonce, setShakeNonce] = useState(0);
-  const [listening, setListening] = useState(false);
-  const [listeningText, setListeningText] = useState<string>(
-    LISTENING_MESSAGES[0],
-  );
-  const [textFading, setTextFading] = useState(false);
-  const listenIndex = useRef(0);
-  const fadeTimer = useRef<number | null>(null);
+const actionLabels: Record<GatekeeperRecoveryAction, string> = {
+  CONTINUE: "Continue",
+  RESUME: "Resume",
+  SIGN_IN: "Sign in",
+  REQUEST_ORG_ACCESS: "Request access",
+  VERIFY_DOMAIN: "Verify domain",
+  JOIN_WAITLIST: "Join waitlist",
+  REQUEST_CLASSIFICATION_REVIEW: "Request review",
+  RETRY: "Try again",
+  CONTACT_SUPPORT: "Contact support",
+};
 
-  useEffect(() => {
-    if (typeof lockedUrl === "string") {
-      setUrl(lockedUrl);
-      setError(null);
-    }
-  }, [lockedUrl]);
+function asIndustryVertical(value: string | null): IndustryVertical | null {
+  return value && INDUSTRY_VERTICALS.includes(value as IndustryVertical)
+    ? (value as IndustryVertical)
+    : null;
+}
 
-  useEffect(() => {
-    return () => {
-      if (fadeTimer.current !== null) {
-        window.clearTimeout(fadeTimer.current);
-      }
-    };
-  }, []);
+function waitlistReason(result: GatekeeperFrontendResult): WaitlistReasonCode {
+  if (result.outcome === "UNSUPPORTED_LANGUAGE") return "FOREIGN_LANGUAGE";
+  if (result.reasonCode === "PARKED_DOMAIN") return "PARKED_DOMAIN";
+  if (result.reasonCode === "CONTENT_UNREADABLE") return "CONTENT_UNREADABLE";
+  return "UNSUPPORTED_INDUSTRY";
+}
 
-  useEffect(() => {
-    if (!listening && !isBusy) {
-      return;
-    }
-    const id = window.setInterval(() => {
-      setTextFading(true);
-      fadeTimer.current = window.setTimeout(() => {
-        listenIndex.current =
-          (listenIndex.current + 1) % LISTENING_MESSAGES.length;
-        setListeningText(LISTENING_MESSAGES[listenIndex.current]);
-        setTextFading(false);
-      }, 200);
-    }, 2000);
-    return () => window.clearInterval(id);
-  }, [listening, isBusy]);
-
-  const shouldValidateUrl =
-    mode === "default" ||
-    mode === "syntax_error" ||
-    mode === "infra_retry";
-
-  const inputDisabled =
-    mode === "blocked_locked" ||
-    mode === "org_claimed" ||
-    mode === "waitlist" ||
-    (Boolean(lockedUrl) &&
-      mode !== "resume" &&
-      mode !== "brand_active" &&
-      mode !== "verification_required" &&
-      mode !== "infra_retry");
-
-  const locked =
-    Boolean(lockedUrl) ||
-    mode === "blocked_locked" ||
-    mode === "resume" ||
-    mode === "verification_required" ||
-    mode === "org_claimed" ||
-    mode === "brand_active" ||
-    mode === "waitlist";
-
-  const effectiveFeedback = useMemo(() => {
-    if (error) {
-      return { tone: "error" as const, message: error };
-    }
-    return feedback ?? null;
-  }, [error, feedback]);
-
-  const handlePrimary = async (event?: React.FormEvent) => {
-    event?.preventDefault();
-
-    const trimmed = url.trim();
-    if (!trimmed) {
-      setError("Please enter a website address.");
-      setShakeNonce((value) => value + 1);
-      return;
-    }
-
-    if (shouldValidateUrl) {
-      const parsed = urlSchema.safeParse(trimmed);
-      if (!parsed.success) {
-        setError(parsed.error.issues[0]?.message ?? "Invalid URL.");
-        setShakeNonce((value) => value + 1);
-        return;
-      }
-      setError(null);
-      setListening(true);
-      try {
-        await Promise.resolve(onPrimaryAction(parsed.data));
-      } finally {
-        setListening(false);
-      }
-      return;
-    }
-
-    setError(null);
-    await Promise.resolve(onPrimaryAction(trimmed));
+function localTechnicalFailure(
+  message: string,
+  normalizedUrl: string,
+): GatekeeperFrontendResult {
+  return {
+    outcome: "TECHNICAL_FAILURE",
+    reasonCode: null,
+    recoveryActions: ["RETRY"],
+    manualReviewEligible: false,
+    normalizedUrl,
+    normalizedDomain: null,
+    leadId: null,
+    brandProfileId: null,
+    provisionalIndustry: null,
+    message,
   };
+}
 
-  const showLoadingStatus = listening || isBusy;
-  const hasInlineError = effectiveFeedback?.tone === "error";
-  const hasLocalError = Boolean(error);
-  const showShake = hasLocalError || mode === "syntax_error";
-  const showIdlePulse =
-    mode === "default" && !locked && !showLoadingStatus && !hasInlineError;
+export function LandingUrlCapture() {
+  const navigate = useNavigate();
+  const [url, setUrl] = useState("");
+  const [ownershipAccepted, setOwnershipAccepted] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [errors, setErrors] = useState<ClientErrors>({});
+  const [journeyState, setJourneyState] =
+    useState<GatekeeperJourneyState>("IDLE");
+  const [result, setResult] = useState<GatekeeperFrontendResult | null>(null);
+  const [recoveryIndustry, setRecoveryIndustry] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [startError, setStartError] = useState<string | null>(null);
+  const [emailExpansion, setEmailExpansion] =
+    useState<RecoveryExpansion | null>(null);
+  const [email, setEmail] = useState("");
+  const [recoveryAuthorized, setRecoveryAuthorized] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
+  const [recoverySubmitting, setRecoverySubmitting] = useState(false);
+  const [recoverySubmissionSucceeded, setRecoverySubmissionSucceeded] =
+    useState(false);
+  const modalReturnFocusRef = useRef<HTMLElement | null>(null);
 
-  const glassClass = [
-    "bob-url-glass",
-    hasInlineError || hasLocalError ? "bob-url-glass--error" : "",
-    showShake ? "bob-url-glass--shake" : "",
-    mode === "blocked_locked" ? "bob-url-glass--blocked" : "",
-    mode === "org_claimed" ? "bob-url-glass--org-claimed" : "",
-    locked && mode !== "blocked_locked" ? "bob-url-glass--locked" : "",
-    showLoadingStatus ? "bob-url-glass--active" : "",
-    showIdlePulse ? "bob-url-glass--idle-pulse" : "",
-    mode === "waitlist" ? "bob-url-glass--waitlist" : "",
-    mode === "resume" ? "bob-url-glass--resume" : "",
-    mode === "verification_required" ? "bob-url-glass--verify" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const busy =
+    journeyState === "SUBMITTING" ||
+    journeyState === "RESOLVING" ||
+    journeyState === "STARTING_SURFACE_SCAN" ||
+    recoverySubmitting;
 
-  const inputClass = [
-    "bob-url-input",
-    mode === "verification_required" ? "bob-url-input--rate-limit" : "",
-    mode === "blocked_locked" || mode === "org_claimed"
-      ? "bob-url-input--blocked"
-      : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const viewState = useMemo(
+    () => (result ? mapGatekeeperResultToViewState(result) : null),
+    [result],
+  );
 
-  const feedbackClass = [
-    "bob-url-feedback",
-    "bob-url-feedback--inline",
-    effectiveFeedback?.tone === "error" ? "bob-url-feedback--error" : "",
-    effectiveFeedback?.tone === "warning" ? "bob-url-feedback--warning" : "",
-    effectiveFeedback?.tone === "success" ? "bob-url-feedback--success" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const visibleRecoveryActions = useMemo(() => {
+    if (!result) return [];
+    return visibleGatekeeperRecoveryActions(result);
+  }, [result]);
 
-  const linkIconColor =
-    mode === "waitlist" ? "#F5926E" : "var(--bob-primary)";
-
-  const feedbackIcon = useMemo(() => {
-    if (!effectiveFeedback) {
+  const validate = (): string | null => {
+    const nextErrors: ClientErrors = {};
+    const parsed = urlSchema.safeParse(url);
+    if (!parsed.success) {
+      nextErrors.url =
+        parsed.error.issues[0]?.message ?? "Enter a valid website URL.";
+    }
+    if (!ownershipAccepted) {
+      nextErrors.ownership =
+        "Confirm that you own or are authorized to represent this brand.";
+    }
+    if (!legalAccepted) {
+      nextErrors.legal =
+        "Accept the Terms of Service and Privacy Policy to continue.";
+    }
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setJourneyState("CLIENT_VALIDATION_ERROR");
       return null;
     }
-    if (effectiveFeedback.tone === "error") {
-      if (mode === "blocked_locked") {
-        return <Ban size={16} aria-hidden className="bob-url-feedback__icon" />;
+    return parsed.success ? parsed.data : null;
+  };
+
+  const resetRecoveryInteraction = () => {
+    setEmailExpansion(null);
+    setEmail("");
+    setRecoveryAuthorized(false);
+    setEmailFeedback(null);
+    setRecoverySubmitting(false);
+    setRecoverySubmissionSucceeded(false);
+  };
+
+  const updateLegalAcceptance = (accepted: boolean) => {
+    setLegalAccepted(accepted);
+    setErrors((current) => ({ ...current, legal: undefined }));
+  };
+
+  const beginAdmission = async () => {
+    const normalizedInput = validate();
+    if (!normalizedInput) return;
+
+    modalReturnFocusRef.current = document.activeElement as HTMLElement | null;
+    setResult(null);
+    setRecoveryIndustry(null);
+    resetRecoveryInteraction();
+    setStartError(null);
+    setJourneyState("SUBMITTING");
+
+    try {
+      setJourneyState("RESOLVING");
+      const next = await runGatekeeperAdmission({
+        url: normalizedInput,
+        brandOwnershipOrAuthorizationAttestation: true,
+        termsAcceptance: true,
+        privacyPolicyAcceptance: true,
+      });
+      setResult(next);
+      setRecoveryIndustry(next.provisionalIndustry);
+
+      if (next.outcome === "ADMITTED") {
+        const detected =
+          next.provisionalIndustry as SupportedGatekeeperIndustry | null;
+        if (!detected || !SUPPORTED_GATEKEEPER_INDUSTRIES.includes(detected)) {
+          const failure = localTechnicalFailure(
+            "The admission response is missing a supported Industry confirmation value.",
+            next.normalizedUrl ?? normalizedInput,
+          );
+          setResult(failure);
+          setJourneyState("TECHNICAL_FAILURE");
+          return;
+        }
+        setSelectedIndustry(detected);
+        setJourneyState("PRE_SCAN_CONFIRMATION");
+        setModalOpen(true);
+        return;
       }
-      return (
-        <CircleAlert size={16} aria-hidden className="bob-url-feedback__icon" />
+
+      setJourneyState(next.outcome);
+    } catch (error) {
+      const failure = localTechnicalFailure(
+        error instanceof Error
+          ? error.message
+          : "We couldn’t finish this check.",
+        normalizedInput,
       );
+      setResult(failure);
+      setJourneyState("TECHNICAL_FAILURE");
     }
-    if (effectiveFeedback.tone === "warning") {
-      if (mode === "org_claimed") {
-        return <Lock size={16} aria-hidden className="bob-url-feedback__icon" />;
+  };
+
+  const handleRecoveryAction = async (action: GatekeeperRecoveryAction) => {
+    if (!result || !isGatekeeperRecoveryActionAvailable(result, action)) return;
+
+    switch (action) {
+      case "RETRY":
+        await beginAdmission();
+        return;
+      case "SIGN_IN":
+        navigate(AUTH_ROUTES.login);
+        return;
+      case "VERIFY_DOMAIN":
+        navigate(ONBOARDING_ROUTES.verification, {
+          state: {
+            url: result.normalizedUrl,
+            leadId: result.leadId,
+            brandProfileId: result.brandProfileId,
+          },
+        });
+        return;
+      case "RESUME":
+        if (!result.leadId || !result.brandProfileId) {
+          setEmailFeedback(
+            "This resumable scan is missing session context. Retry the website check.",
+          );
+          return;
+        }
+        saveBrandOnboardingSession({
+          leadId: result.leadId,
+          brandProfileId: result.brandProfileId,
+          normalizedUrl: result.normalizedUrl ?? url,
+        });
+        navigate(ONBOARDING_ROUTES.dna, {
+          state: {
+            url: result.normalizedUrl ?? url,
+            leadId: result.leadId,
+            brandProfileId: result.brandProfileId,
+            scanMode: "cached" as const,
+          },
+        });
+        return;
+      case "JOIN_WAITLIST":
+        setEmailExpansion("waitlist");
+        setRecoveryAuthorized(false);
+        setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
+        return;
+      case "REQUEST_CLASSIFICATION_REVIEW":
+        setEmailExpansion("review");
+        setRecoveryAuthorized(false);
+        setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
+        return;
+      case "REQUEST_ORG_ACCESS":
+        setEmailExpansion("org");
+        setRecoveryAuthorized(false);
+        setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
+        return;
+      case "CONTACT_SUPPORT":
+        setEmailFeedback(null);
+        setRecoverySubmissionSucceeded(false);
+        setRecoverySubmitting(true);
+        try {
+          await navigateToGatekeeperSupportDestination();
+        } catch (error) {
+          setEmailFeedback(
+            error instanceof Error
+              ? error.message
+              : "The Gatekeeper support destination is unavailable.",
+          );
+        } finally {
+          setRecoverySubmitting(false);
+        }
+        return;
+      case "CONTINUE":
+        return;
+    }
+  };
+
+  const submitEmailRecovery = async () => {
+    if (recoverySubmitting || recoverySubmissionSucceeded) return;
+
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailFeedback("Enter a valid email address.");
+      return;
+    }
+    if (!result || !emailExpansion) return;
+
+    if (emailExpansion !== "waitlist" && !recoveryAuthorized) {
+      setEmailFeedback("Confirm that you are authorized to make this request.");
+      return;
+    }
+
+    if (emailExpansion === "waitlist") {
+      const industry = asIndustryVertical(recoveryIndustry);
+      if (!industry) {
+        setEmailFeedback(
+          "Industry context is unavailable for this waitlist request. Retry the website check.",
+        );
+        return;
       }
-      if (mode === "infra_retry") {
-        return (
-          <AlertCircle size={16} aria-hidden className="bob-url-feedback__icon" />
+      try {
+        setRecoverySubmitting(true);
+        await postDiscoveryWaitlist({
+          email: trimmed,
+          industry,
+          reason: waitlistReason(result),
+          domain:
+            result.normalizedDomain ??
+            new URL(result.normalizedUrl ?? url).hostname,
+          discoveryLeadId: result.leadId ?? undefined,
+          sourceUrl: result.normalizedUrl ?? url,
+        });
+        setEmailFeedback("Thanks — your waitlist request was submitted.");
+        setRecoverySubmissionSucceeded(true);
+      } catch (error) {
+        setEmailFeedback(
+          error instanceof Error
+            ? error.message
+            : "Could not submit the waitlist request.",
+        );
+      } finally {
+        setRecoverySubmitting(false);
+      }
+      return;
+    }
+
+    const action =
+      emailExpansion === "review"
+        ? "REQUEST_CLASSIFICATION_REVIEW"
+        : "REQUEST_ORG_ACCESS";
+
+    try {
+      setRecoverySubmitting(true);
+      const submission = await submitGatekeeperRecoveryRequestForResult({
+        result,
+        action,
+        requesterEmail: trimmed,
+        authorizedRepresentativeAttested: recoveryAuthorized,
+      });
+      if (submission.status === "MISSING_CONTEXT") {
+        setEmailFeedback(
+          "This request is missing Gatekeeper session context. Retry the website check.",
+        );
+        return;
+      }
+      if (submission.status === "NOT_PERMITTED") {
+        setEmailFeedback(
+          "The current Gatekeeper result does not permit this request. Retry the website check.",
+        );
+        return;
+      }
+      if (submission.status === "ATTESTATION_REQUIRED") {
+        setEmailFeedback(
+          "Confirm that you are authorized to make this request.",
+        );
+        return;
+      }
+
+      setEmailFeedback(
+        action === "REQUEST_CLASSIFICATION_REVIEW"
+          ? CLASSIFICATION_REVIEW_REQUEST_RECEIVED_MESSAGE
+          : ORG_ACCESS_REQUEST_RECEIVED_MESSAGE,
+      );
+      setRecoverySubmissionSucceeded(true);
+    } catch (error) {
+      setEmailFeedback(
+        error instanceof Error
+          ? error.message
+          : "Could not submit this Gatekeeper recovery request.",
+      );
+    } finally {
+      setRecoverySubmitting(false);
+    }
+  };
+
+  const confirmIndustry = async () => {
+    if (!result?.leadId) {
+      setStartError("Missing Gatekeeper session. Retry the website check.");
+      return;
+    }
+
+    setStartError(null);
+    setJourneyState("STARTING_SURFACE_SCAN");
+
+    try {
+      const confirmation = await confirmGatekeeperIndustry({
+        leadId: result.leadId,
+        selectedIndustry,
+      });
+      setResult(confirmation.gatekeeper);
+      setRecoveryIndustry(confirmation.confirmedIndustry ?? selectedIndustry);
+
+      if (confirmation.gatekeeper.outcome !== "ADMITTED") {
+        setModalOpen(false);
+        setJourneyState(confirmation.gatekeeper.outcome);
+        return;
+      }
+
+      if (!confirmation.surfaceEligible || !confirmation.confirmedIndustry) {
+        throw new Error(
+          "Industry confirmation did not authorize Surface Intelligence.",
         );
       }
-      return <Info size={16} aria-hidden className="bob-url-feedback__icon" />;
-    }
-    if (effectiveFeedback.tone === "success" && mode === "resume") {
-      return (
-        <RefreshCw size={16} aria-hidden className="bob-url-feedback__icon" />
+
+      const normalizedUrl =
+        confirmation.gatekeeper.normalizedUrl ?? result.normalizedUrl ?? url;
+      const brandProfileId =
+        confirmation.gatekeeper.brandProfileId ?? result.brandProfileId;
+
+      if (brandProfileId) {
+        saveBrandOnboardingSession({
+          leadId: result.leadId,
+          brandProfileId,
+          normalizedUrl,
+        });
+      }
+
+      navigate(ONBOARDING_ROUTES.scan, {
+        state: {
+          url: normalizedUrl,
+          leadId: result.leadId,
+        },
+      });
+    } catch (error) {
+      setJourneyState("PRE_SCAN_CONFIRMATION");
+      setStartError(
+        error instanceof Error
+          ? error.message
+          : "Could not start Brand Intelligence.",
       );
     }
-    return null;
-  }, [effectiveFeedback, mode]);
+  };
 
-  const ctaDisabled =
-    primaryDisabled ||
-    showLoadingStatus ||
-    !url.trim() ||
-    // State F must stay clickable so "Retry Connection Check" can re-submit.
-    (locked && shouldValidateUrl && mode !== "infra_retry");
+  const detectedIndustry = result?.provisionalIndustry as
+    | SupportedGatekeeperIndustry
+    | undefined;
 
   return (
-    <div className={`bob-url-capture bob-url-capture--${mode}`}>
-      <form className="bob-url-form" onSubmit={handlePrimary}>
-        <div
-          key={shakeNonce}
-          className={glassClass}
-          data-mode={mode}
-        >
+    <div className="gk-entry">
+      <form
+        className="gk-entry__form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void beginAdmission();
+        }}
+        noValidate
+      >
+        <div className="gk-entry__input-row">
           <div className="bob-url-glass__input-wrap">
-            <Link2
-              size={22}
-              className="bob-url-glass__icon"
-              color={linkIconColor}
-              aria-hidden
-            />
+            <Link2 size={21} aria-hidden className="bob-url-glass__icon" />
             <input
-              className={inputClass}
+              className="gk-entry__input"
               name="brandUrl"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
               inputMode="url"
-              placeholder="Your website URL (we'll take it from here)"
+              autoComplete="url"
+              placeholder="Your website URL"
               value={url}
-              disabled={inputDisabled || showLoadingStatus}
-              readOnly={
-                mode === "resume" ||
-                mode === "brand_active" ||
-                mode === "verification_required"
-              }
+              disabled={busy}
+              aria-invalid={errors.url ? true : undefined}
+              aria-describedby={errors.url ? "gk-url-error" : undefined}
               onChange={(event) => {
                 setUrl(event.target.value);
-                if (error) {
-                  setError(null);
+                setErrors((current) => ({ ...current, url: undefined }));
+                if (journeyState === "CLIENT_VALIDATION_ERROR") {
+                  setJourneyState("IDLE");
                 }
               }}
             />
           </div>
-          <div className="bob-url-glass__cta">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={ctaDisabled}
-            >
-              {primaryLabel}
-            </Button>
-          </div>
-        </div>
-        <div className="bob-url-glass__cta-mobile">
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidthOnMobile
-            disabled={ctaDisabled}
-          >
-            {primaryLabel}
+          <Button type="submit" variant="primary" disabled={busy}>
+            {journeyState === "SUBMITTING" || journeyState === "RESOLVING"
+              ? "Checking…"
+              : "Analyze My Brand"}
           </Button>
+        </div>
+
+        {errors.url ? (
+          <p id="gk-url-error" className="gk-form-error" role="alert">
+            {errors.url}
+          </p>
+        ) : null}
+
+        <div className="gk-entry__consents">
+          <label className="gk-check">
+            <input
+              type="checkbox"
+              checked={ownershipAccepted}
+              disabled={busy}
+              aria-invalid={errors.ownership ? true : undefined}
+              aria-describedby={
+                errors.ownership ? "gk-ownership-error" : undefined
+              }
+              onChange={(event) => {
+                setOwnershipAccepted(event.target.checked);
+                setErrors((current) => ({ ...current, ownership: undefined }));
+              }}
+            />
+            <span>
+              I confirm I own or am authorized to represent this brand.
+            </span>
+          </label>
+          {errors.ownership ? (
+            <p id="gk-ownership-error" className="gk-form-error" role="alert">
+              {errors.ownership}
+            </p>
+          ) : null}
+
+          <div
+            className="gk-check gk-check--legal"
+            onClick={(event) => {
+              const target = event.target as HTMLElement;
+              if (!target.closest("a, input")) {
+                updateLegalAcceptance(!legalAccepted);
+              }
+            }}
+          >
+            <input
+              type="checkbox"
+              aria-label="I agree to the Terms of Service and Privacy Policy"
+              checked={legalAccepted}
+              disabled={busy}
+              aria-invalid={errors.legal ? true : undefined}
+              aria-describedby={errors.legal ? "gk-legal-error" : undefined}
+              onChange={(event) => updateLegalAcceptance(event.target.checked)}
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noreferrer">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer">
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </div>
+          {errors.legal ? (
+            <p id="gk-legal-error" className="gk-form-error" role="alert">
+              {errors.legal}
+            </p>
+          ) : null}
         </div>
       </form>
 
-      {effectiveFeedback && !showLoadingStatus ? (
-        <p className={feedbackClass} role="alert">
-          {feedbackIcon}
-          <span>{effectiveFeedback.message}</span>
-        </p>
+      {journeyState === "SUBMITTING" || journeyState === "RESOLVING" ? (
+        <div className="gk-activity" role="status" aria-live="polite">
+          <span className="gk-activity__dot" aria-hidden />
+          <span>Checking your brand and website…</span>
+        </div>
       ) : null}
 
-      {helperText && !showLoadingStatus && !effectiveFeedback ? (
-        <p className="bob-url-helper">{helperText}</p>
-      ) : null}
-
-      <div
-        className={`bob-url-loading${
-          showLoadingStatus ? " bob-url-loading--visible" : " bob-url-loading--hidden"
-        }`}
-        aria-live="polite"
-        aria-hidden={!showLoadingStatus}
-      >
-        <span className="bob-url-loading__dot" aria-hidden />
-        <span
-          className={`bob-url-loading__text${
-            textFading ? " bob-url-loading__text--fade" : ""
-          }`}
+      {viewState && result?.outcome !== "ADMITTED" ? (
+        <section
+          className={`gk-recovery gk-recovery--${viewState.tone}`}
+          aria-live="polite"
+          aria-busy={recoverySubmitting || undefined}
         >
-          {listeningText}
-        </span>
-      </div>
+          <div className="gk-recovery__status">
+            {viewState.tone === "error" ? (
+              <CircleAlert size={20} aria-hidden />
+            ) : viewState.tone === "warning" ? (
+              <AlertCircle size={20} aria-hidden />
+            ) : (
+              <Info size={20} aria-hidden />
+            )}
+            <div>
+              <h3>{viewState.title}</h3>
+              <p>{viewState.description}</p>
+            </div>
+          </div>
+
+          {visibleRecoveryActions.length > 0 ? (
+            <div className="gk-recovery__actions">
+              {visibleRecoveryActions.map((action, index) => (
+                <Button
+                  key={action}
+                  type="button"
+                  variant={index === 0 ? "primary" : "secondary"}
+                  disabled={recoverySubmitting}
+                  onClick={() => void handleRecoveryAction(action)}
+                >
+                  {action === "RETRY" ? (
+                    <RefreshCw size={16} aria-hidden />
+                  ) : null}
+                  {actionLabels[action]}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+
+          {!emailExpansion && emailFeedback ? (
+            <p role="alert">{emailFeedback}</p>
+          ) : null}
+
+          {emailExpansion ? (
+            <div className="gk-recovery__expansion">
+              <strong>
+                {emailExpansion === "waitlist"
+                  ? "Join the waitlist"
+                  : emailExpansion === "review"
+                    ? "Request classification review"
+                    : "Request organization access"}
+              </strong>
+              <input
+                type="email"
+                autoComplete="email"
+                aria-label="Work email address"
+                placeholder="Work email address"
+                value={email}
+                disabled={recoverySubmitting || recoverySubmissionSucceeded}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setEmailFeedback(null);
+                }}
+              />
+
+              {emailExpansion !== "waitlist" ? (
+                <label className="gk-check">
+                  <input
+                    type="checkbox"
+                    checked={recoveryAuthorized}
+                    disabled={recoverySubmitting || recoverySubmissionSucceeded}
+                    onChange={(event) => {
+                      setRecoveryAuthorized(event.target.checked);
+                      setEmailFeedback(null);
+                    }}
+                  />
+                  <span>I confirm I am authorized to make this request.</span>
+                </label>
+              ) : null}
+
+              {!recoverySubmissionSucceeded ? (
+                <div className="gk-recovery__actions">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={recoverySubmitting}
+                    onClick={() => void submitEmailRecovery()}
+                  >
+                    {recoverySubmitting ? "Submitting…" : "Submit request"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={recoverySubmitting}
+                    onClick={() => resetRecoveryInteraction()}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : null}
+
+              {emailFeedback ? (
+                <p
+                  role={recoverySubmissionSucceeded ? "status" : "alert"}
+                  aria-live="polite"
+                >
+                  {emailFeedback}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {detectedIndustry && result ? (
+        <GatekeeperConfirmationModal
+          open={modalOpen}
+          domain={result.normalizedDomain ?? result.normalizedUrl ?? url}
+          detectedIndustry={detectedIndustry}
+          selectedIndustry={selectedIndustry}
+          isStarting={journeyState === "STARTING_SURFACE_SCAN"}
+          error={startError}
+          returnFocusTarget={modalReturnFocusRef.current}
+          onSelectIndustry={setSelectedIndustry}
+          onResetIndustry={() => setSelectedIndustry(detectedIndustry)}
+          onConfirmSupported={confirmIndustry}
+          onConfirmUnsupported={confirmIndustry}
+          onClose={() => {
+            if (journeyState !== "STARTING_SURFACE_SCAN") {
+              setModalOpen(false);
+              setJourneyState("ADMITTED");
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

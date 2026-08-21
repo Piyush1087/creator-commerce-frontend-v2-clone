@@ -14,12 +14,15 @@ import { BrandOnboardingSyncCompletePage } from "../pages/brand/onboarding/brand
 import { BrandOnboardingSyncVerifyPage } from "../pages/brand/onboarding/brand-onboarding-sync-verify-page";
 import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
 import { BrandIntelligenceIdentityTestPage } from "../pages/brand/intelligence/brand-intelligence-identity-test-page";
+import { LegalPlaceholderPage } from "../pages/public/legal-placeholder-page";
 
 export function BrandOnboardingAppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<BrandOnboardingShell />}>
         <Route index element={<BrandOnboardingLandingPage />} />
+        <Route path="terms" element={<LegalPlaceholderPage title="Terms of Service" />} />
+        <Route path="privacy" element={<LegalPlaceholderPage title="Privacy Policy" />} />
         <Route
           path="brand/intelligence/identity-test"
           element={<BrandIntelligenceIdentityTestPage />}
