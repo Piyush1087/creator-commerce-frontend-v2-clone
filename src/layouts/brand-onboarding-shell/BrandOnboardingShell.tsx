@@ -65,6 +65,9 @@ export function BrandOnboardingShell() {
         onClick={closeDrawer}
       />
       <aside
+        ref={(drawer) => {
+          if (drawer) drawer.inert = !drawerOpen;
+        }}
         className={
           drawerOpen ? "bons-shell__drawer bons-shell__drawer--open" : "bons-shell__drawer"
         }
