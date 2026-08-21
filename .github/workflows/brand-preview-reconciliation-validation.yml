@@ -1,6 +1,9 @@
 name: Brand Preview Reconciliation Validation
 
 on:
+  pull_request:
+    branches:
+      - development
   push:
     branches:
       - phase-g/brand-preview-frontend-reconciliation
