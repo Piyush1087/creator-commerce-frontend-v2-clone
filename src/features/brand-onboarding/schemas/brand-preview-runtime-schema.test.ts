@@ -107,7 +107,15 @@ describe("parseBrandPreviewRuntimeProjection", () => {
         audiences: { groups: [oneAudience, { ...oneAudience, id: "audience-2" }] },
         opportunities: { items: [oneOpportunity, { ...oneOpportunity, title: "Create believable operator proof" }] },
         creator_starting_point: {
-          archetypes: [oneArchetype, { ...oneArchetype, archetype_id: "operator-led-b2b", archetypeId: undefined, label: "Operator-led B2B creators" }],
+          archetypes: [
+            oneArchetype,
+            {
+              archetype_id: "operator-led-b2b",
+              label: "Operator-led B2B creators",
+              rationale:
+                "Working operators can explain support workflow value in language buyers already use.",
+            },
+          ],
         },
       },
       verification_context: { brand_profile_id: "brand-profile-2" },
