@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-// useNavigate temporarily unused while scan close / CTA are commented out — restore later
-// import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import {
   Briefcase,
   ChevronRight,
   Home,
-  // Info, // temporarily unused with scan header icons commented out
   LogOut,
   Menu,
   PieChart,
@@ -17,9 +14,6 @@ import {
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
 import "./brand-onboarding-shell.css";
-
-// Temporarily unused while marketing nav / CTA are commented out — restore later
-// const MARKETING_LINKS = ["How it works", "Features", "Pricing"] as const;
 
 const MOBILE_NAV = [
   { label: "Dashboard", path: "/", Icon: Home },
@@ -34,52 +28,8 @@ const DRAWER_NAV = [
 ] as const;
 
 export function BrandOnboardingShell() {
-  const location = useLocation();
-  // Temporarily unused while scan header close button is commented out — restore later
-  // const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isScan =
-    location.pathname.endsWith("/brand/onboarding/scan") ||
-    location.pathname.endsWith("/brand/onboarding/intelligence-scan");
-
   const closeDrawer = () => setDrawerOpen(false);
-  // Temporarily unused while header CTA is commented out — restore later
-  // const startScan = () => {
-  //   closeDrawer();
-  //   navigate("/");
-  // };
-
-  if (isScan) {
-    return (
-      <div className="bons-shell bons-shell--scan">
-        <header className="bons-shell__header bons-shell__header--scan">
-          {/* Temporarily hidden — restore later
-          <button
-            type="button"
-            className="bons-shell__icon-btn"
-            aria-label="Close scan and return home"
-            onClick={() => navigate("/")}
-          >
-            <X size={20} aria-hidden />
-          </button>
-          */}
-          <span className="bons-shell__scan-title">Aurora AI Scan</span>
-          {/* Temporarily hidden — restore later
-          <button
-            type="button"
-            className="bons-shell__icon-btn"
-            aria-label="Scan information"
-          >
-            <Info size={20} aria-hidden />
-          </button>
-          */}
-        </header>
-        <main className="bons-shell__main">
-          <Outlet />
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="bons-shell">
@@ -88,29 +38,11 @@ export function BrandOnboardingShell() {
           <Link className="bons-shell__brand" to="/" onClick={closeDrawer}>
             The Creator Shop
           </Link>
-          {/* Temporarily hidden — restore later
-          <nav className="bons-shell__nav" aria-label="Marketing sections">
-            {MARKETING_LINKS.map((item) => (
-              <a href={`#${item.toLowerCase().replace(/\s+/g, "-")}`} key={item}>
-                {item}
-              </a>
-            ))}
-          </nav>
-          */}
         </div>
         <div className="bons-shell__actions">
           <Link className="bons-shell__login" to={AUTH_ROUTES.login}>
             Login
           </Link>
-          {/* Temporarily hidden — restore later
-          <button
-            type="button"
-            className="bons-shell__cta"
-            onClick={startScan}
-          >
-            Start Your Free Scan →
-          </button>
-          */}
           <button
             type="button"
             className="bons-shell__menu-btn"
@@ -139,7 +71,7 @@ export function BrandOnboardingShell() {
         aria-hidden={!drawerOpen}
       >
         <div className="bons-shell__drawer-header">
-          <span className="bons-shell__drawer-title">Aurora</span>
+          <span className="bons-shell__drawer-title">Creator Shop</span>
           <button
             type="button"
             className="bons-shell__drawer-close"
