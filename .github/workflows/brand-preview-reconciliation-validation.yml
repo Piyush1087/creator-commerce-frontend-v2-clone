@@ -77,7 +77,7 @@ jobs:
 
       - name: Desktop and 390px runtime/accessibility smoke
         run: |
-          cat > /tmp/brand-preview-smoke.mjs <<'EOF'
+          cat > brand-preview-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
           import AxeBuilder from '@axe-core/playwright';
 
@@ -204,4 +204,5 @@ jobs:
             await browser.close();
           }
           EOF
-          node /tmp/brand-preview-smoke.mjs
+          node brand-preview-smoke.mjs
+          rm -f brand-preview-smoke.mjs
