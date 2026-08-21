@@ -1,0 +1,249 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import {
+  getBrandPreviewRuntime,
+  retryBrandPreviewRuntime,
+} from "../api/brand-preview-client";
+import type {
+  BrandPreviewRuntimeProjection,
+  BrandPreviewViewState,
+} from "../contracts/brand-preview.contracts";
+import { mapBrandPreviewRuntimeToViewState } from "../mappers/map-brand-preview-state";
+import {
+  loadBrandOnboardingSession,
+  saveBrandOnboardingSession,
+} from "../session/onboarding-session";
+import { ONBOARDING_ROUTES } from "../constants";
+import { AnalysisRecoveryView } from "./analysis-recovery-view";
+import { BrandPreviewView } from "./brand-preview-view";
+import { FastBrandAnalysisView } from "./fast-brand-analysis-view";
+import "../brand-preview.css";
+
+type PreviewLocationState = {
+  url?: string;
+  leadId?: string;
+};
+
+const POLL_INTERVAL_MS = 1200;
+const SLOW_ANALYSIS_THRESHOLD_MS = 8000;
+
+function displayDomainFromUrl(value: string): string {
+  try {
+    return new URL(value).hostname.replace(/^www\./i, "");
+  } catch {
+    return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0] || "yourbrand.com";
+  }
+}
+
+export function BrandPreviewJourneyView() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as PreviewLocationState | undefined;
+  const storedSession = useMemo(() => loadBrandOnboardingSession(), []);
+
+  const leadId = locationState?.leadId ?? storedSession?.leadId ?? "";
+  const normalizedUrl =
+    locationState?.url ?? storedSession?.normalizedUrl ?? "";
+  const initialDomain = normalizedUrl
+    ? displayDomainFromUrl(normalizedUrl)
+    : "yourbrand.com";
+
+  const [viewState, setViewState] = useState<BrandPreviewViewState>({
+    state: "FAST_ANALYSIS_ACTIVE",
+    phase: null,
+  });
+  const [slow, setSlow] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [startingVerification, setStartingVerification] = useState(false);
+  const [connectionInterrupted, setConnectionInterrupted] = useState(false);
+  const pollTimerRef = useRef<number | null>(null);
+  const slowTimerRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current !== null) {
+      window.clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
+
+  const stopSlowTimer = useCallback(() => {
+    if (slowTimerRef.current !== null) {
+      window.clearTimeout(slowTimerRef.current);
+      slowTimerRef.current = null;
+    }
+  }, []);
+
+  const startSlowTimer = useCallback(() => {
+    stopSlowTimer();
+    setSlow(false);
+    slowTimerRef.current = window.setTimeout(() => {
+      if (mountedRef.current) setSlow(true);
+    }, SLOW_ANALYSIS_THRESHOLD_MS);
+  }, [stopSlowTimer]);
+
+  const focusStateHeading = useCallback((state: BrandPreviewViewState["state"]) => {
+    const id =
+      state === "PREVIEW_READY"
+        ? "bp-preview-title"
+        : state === "ANALYSIS_RECOVERABLE_FAILURE" || state === "PREVIEW_NOT_READY"
+          ? "bp-recovery-title"
+          : "bp-analysis-title";
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.focus();
+    });
+  }, []);
+
+  const applyProjection = useCallback(
+    (projection: BrandPreviewRuntimeProjection) => {
+      const mapped = mapBrandPreviewRuntimeToViewState(projection);
+      setConnectionInterrupted(false);
+      setViewState(mapped);
+
+      if (mapped.state === "FAST_ANALYSIS_ACTIVE") {
+        return false;
+      }
+
+      stopPolling();
+      stopSlowTimer();
+      setSlow(false);
+
+      if (mapped.state === "PREVIEW_READY") {
+        saveBrandOnboardingSession({
+          leadId,
+          brandProfileId: mapped.brandProfileId,
+          normalizedUrl: mapped.preview.identity.websiteUrl,
+          confirmedIndustry: mapped.preview.identity.confirmedIndustry,
+        });
+      }
+      focusStateHeading(mapped.state);
+      return true;
+    },
+    [focusStateHeading, leadId, stopPolling, stopSlowTimer],
+  );
+
+  const poll = useCallback(async () => {
+    if (!leadId || !mountedRef.current) return;
+    try {
+      const projection = await getBrandPreviewRuntime(leadId);
+      if (!mountedRef.current) return;
+      const terminal = applyProjection(projection);
+      if (!terminal) {
+        pollTimerRef.current = window.setTimeout(() => {
+          void poll();
+        }, POLL_INTERVAL_MS);
+      }
+    } catch {
+      if (!mountedRef.current) return;
+      // A transport failure is not an authoritative Preview failure. Keep the
+      // last known analysis state and retry the projection instead of inventing
+      // PREVIEW_FAILED_RECOVERABLE locally.
+      setConnectionInterrupted(true);
+      pollTimerRef.current = window.setTimeout(() => {
+        void poll();
+      }, POLL_INTERVAL_MS * 2);
+    }
+  }, [applyProjection, leadId]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    if (!leadId) {
+      navigate(ONBOARDING_ROUTES.landing, { replace: true });
+      return () => {
+        mountedRef.current = false;
+      };
+    }
+
+    startSlowTimer();
+    void poll();
+
+    return () => {
+      mountedRef.current = false;
+      stopPolling();
+      stopSlowTimer();
+    };
+  }, [leadId, navigate, poll, startSlowTimer, stopPolling, stopSlowTimer]);
+
+  const handleRetry = async () => {
+    if (!leadId || retrying) return;
+    setRetrying(true);
+    setConnectionInterrupted(false);
+    try {
+      const projection = await retryBrandPreviewRuntime(leadId);
+      if (!mountedRef.current) return;
+      const terminal = applyProjection(projection);
+      if (!terminal) {
+        focusStateHeading("FAST_ANALYSIS_ACTIVE");
+        startSlowTimer();
+        pollTimerRef.current = window.setTimeout(() => {
+          void poll();
+        }, POLL_INTERVAL_MS);
+      }
+    } finally {
+      if (mountedRef.current) setRetrying(false);
+    }
+  };
+
+  const handleVerify = () => {
+    if (viewState.state !== "PREVIEW_READY" || startingVerification) return;
+    setStartingVerification(true);
+    saveBrandOnboardingSession({
+      leadId,
+      brandProfileId: viewState.brandProfileId,
+      normalizedUrl: viewState.preview.identity.websiteUrl,
+      confirmedIndustry: viewState.preview.identity.confirmedIndustry,
+    });
+    navigate(ONBOARDING_ROUTES.verification, {
+      state: {
+        leadId,
+        brandProfileId: viewState.brandProfileId,
+        url: viewState.preview.identity.websiteUrl,
+      },
+    });
+  };
+
+  if (viewState.state === "PREVIEW_READY") {
+    return (
+      <BrandPreviewView
+        preview={viewState.preview}
+        completeness={viewState.completeness}
+        startingVerification={startingVerification}
+        onVerify={handleVerify}
+      />
+    );
+  }
+
+  if (viewState.state === "ANALYSIS_RECOVERABLE_FAILURE") {
+    return (
+      <AnalysisRecoveryView
+        kind="RECOVERABLE"
+        displayDomain={initialDomain}
+        canRetry
+        retrying={retrying}
+        onRetry={() => void handleRetry()}
+      />
+    );
+  }
+
+  if (viewState.state === "PREVIEW_NOT_READY") {
+    return (
+      <AnalysisRecoveryView
+        kind="NOT_READY"
+        displayDomain={initialDomain}
+        canRetry={viewState.canRetry}
+        retrying={retrying}
+        onRetry={() => void handleRetry()}
+      />
+    );
+  }
+
+  return (
+    <FastBrandAnalysisView
+      displayDomain={initialDomain}
+      phase={viewState.phase}
+      slow={slow}
+      connectionInterrupted={connectionInterrupted}
+    />
+  );
+}
