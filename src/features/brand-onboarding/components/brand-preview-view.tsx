@@ -53,10 +53,17 @@ export function BrandPreviewView({
   const reducedOpportunities = preview.opportunities.length < 3;
 
   return (
-    <main className="bp-preview" aria-labelledby="bp-preview-title">
+    <main
+      className="bp-preview"
+      aria-labelledby="bp-preview-title"
+      data-completeness={completeness.toLowerCase()}
+    >
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        Your Brand Preview is ready.
+      </p>
       <header className="bp-preview__header">
         <p className="bp-eyebrow">Your Brand Preview</p>
-        <h1 id="bp-preview-title">Here’s what we see in your brand.</h1>
+        <h1 id="bp-preview-title" tabIndex={-1}>Here’s what we see in your brand.</h1>
         <p className="bp-preview__subheadline">
           A first view of who you’re trying to reach, where creators could help, and the creator profiles we’d explore first.
         </p>
@@ -213,13 +220,9 @@ export function BrandPreviewView({
           disabled={startingVerification}
           aria-busy={startingVerification}
         >
-          {startingVerification ? "Opening verification…" : "Verify & claim this brand"}
+          Verify & claim this brand
         </Button>
       </section>
-
-      {completeness === "PARTIAL" ? (
-        <p className="sr-only">This Brand Preview is ready with a smaller grounded result.</p>
-      ) : null}
     </main>
   );
 }
