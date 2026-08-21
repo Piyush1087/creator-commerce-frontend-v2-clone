@@ -32,7 +32,10 @@ function displayDomainFromUrl(value: string): string {
   try {
     return new URL(value).hostname.replace(/^www\./i, "");
   } catch {
-    return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0] || "yourbrand.com";
+    return (
+      value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0] ||
+      "yourbrand.com"
+    );
   }
 }
 
@@ -43,8 +46,7 @@ export function BrandPreviewJourneyView() {
   const storedSession = useMemo(() => loadBrandOnboardingSession(), []);
 
   const leadId = locationState?.leadId ?? storedSession?.leadId ?? "";
-  const normalizedUrl =
-    locationState?.url ?? storedSession?.normalizedUrl ?? "";
+  const normalizedUrl = locationState?.url ?? storedSession?.normalizedUrl ?? "";
   const initialDomain = normalizedUrl
     ? displayDomainFromUrl(normalizedUrl)
     : "yourbrand.com";
@@ -136,9 +138,8 @@ export function BrandPreviewJourneyView() {
       }
     } catch {
       if (!mountedRef.current) return;
-      // A transport failure is not an authoritative Preview failure. Keep the
-      // last known analysis state and retry the projection instead of inventing
-      // PREVIEW_FAILED_RECOVERABLE locally.
+      // Transport health is not Preview state authority. Keep the last known
+      // analysis state and refetch instead of manufacturing a terminal result.
       setConnectionInterrupted(true);
       pollTimerRef.current = window.setTimeout(() => {
         void poll();
@@ -155,6 +156,17 @@ export function BrandPreviewJourneyView() {
       };
     }
 
+    // Preserve the Gatekeeper handoff immediately so a refresh does not lose
+    // the durable DiscoveryLead before PREVIEW_READY supplies brandProfileId.
+    if (normalizedUrl) {
+      saveBrandOnboardingSession({
+        leadId,
+        brandProfileId: storedSession?.brandProfileId,
+        normalizedUrl,
+        confirmedIndustry: storedSession?.confirmedIndustry,
+      });
+    }
+
     startSlowTimer();
     void poll();
 
@@ -163,7 +175,17 @@ export function BrandPreviewJourneyView() {
       stopPolling();
       stopSlowTimer();
     };
-  }, [leadId, navigate, poll, startSlowTimer, stopPolling, stopSlowTimer]);
+  }, [
+    leadId,
+    navigate,
+    normalizedUrl,
+    poll,
+    startSlowTimer,
+    stopPolling,
+    stopSlowTimer,
+    storedSession?.brandProfileId,
+    storedSession?.confirmedIndustry,
+  ]);
 
   const handleRetry = async () => {
     if (!leadId || retrying) return;
@@ -180,6 +202,9 @@ export function BrandPreviewJourneyView() {
           void poll();
         }, POLL_INTERVAL_MS);
       }
+    } catch {
+      // Keep the authoritative recovery state visible. The user may retry the
+      // canonical action again; do not substitute a frontend terminal state.
     } finally {
       if (mountedRef.current) setRetrying(false);
     }
