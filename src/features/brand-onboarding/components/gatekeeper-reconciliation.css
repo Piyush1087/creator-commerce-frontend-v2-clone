@@ -2,7 +2,37 @@
 .gk-entry__form { display: grid; gap: 14px; }
 .gk-entry__input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; padding: 6px; border: 1px solid var(--border-default); border-radius: var(--radius-card-standard); background: var(--surface-card); box-shadow: var(--shadow-card); }
 .gk-entry__input-row:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent); }
-.gk-entry__input { width: 100%; min-height: var(--height-input); border: 0; outline: 0; padding: 0 14px; background: transparent; color: var(--text-high); font: inherit; }
+.gk-entry__input-row .bob-url-glass__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+.gk-entry__input-row .bob-url-glass__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.gk-entry__input {
+  width: 100%;
+  min-height: var(--height-input);
+  border: 0;
+  outline: 0;
+  /* Leave room for the leading link icon so placeholder/value never overlap it. */
+  padding: 0 14px 0 44px;
+  background: transparent;
+  color: var(--text-high);
+  font: inherit;
+  box-sizing: border-box;
+}
 .gk-entry__consents { display: grid; gap: 9px; padding: 0 4px; }
 .gk-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 8px 0; color: var(--text-high); font-size: 14px; line-height: 1.45; cursor: pointer; }
 .gk-check--legal { cursor: default; }
