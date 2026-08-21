@@ -13,14 +13,12 @@ type FastBrandAnalysisViewProps = {
   displayDomain: string;
   phase: BrandPreviewPhase | null;
   slow: boolean;
-  connectionInterrupted?: boolean;
 };
 
 export function FastBrandAnalysisView({
   displayDomain,
   phase,
   slow,
-  connectionInterrupted = false,
 }: FastBrandAnalysisViewProps) {
   const activeIndex = phase
     ? PHASES.findIndex((entry) => entry.phase === phase)
@@ -101,12 +99,6 @@ export function FastBrandAnalysisView({
             </div>
           )}
         </div>
-
-        {connectionInterrupted ? (
-          <p className="bp-analysis__connection-note" role="status">
-            Reconnecting to your Brand Preview…
-          </p>
-        ) : null}
 
         {slow ? (
           <div className="bp-analysis__reassurance">
