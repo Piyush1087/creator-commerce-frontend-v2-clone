@@ -48,7 +48,7 @@ export function AnalysisRecoveryView({
 
         <div className="bp-recovery__copy">
           <p className="bp-eyebrow">Your Brand Preview</p>
-          <h1 id="bp-recovery-title">{title}</h1>
+          <h1 id="bp-recovery-title" tabIndex={-1}>{title}</h1>
           <p className="bp-recovery__body">{body}</p>
           <p className="bp-recovery__support">{support}</p>
         </div>
