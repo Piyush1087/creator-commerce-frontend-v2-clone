@@ -138,60 +138,72 @@ jobs:
           }
 
           async function validateReady(browser, viewport, label) {
-            const page = await browser.newPage({ viewport });
-            await prime(page);
-            await page.route(endpoint, async (route) => {
-              await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ready) });
-            });
-            await page.goto(origin + '/brand/onboarding/scan');
-            await page.locator('#bp-preview-title').waitFor();
-            assert((await page.locator('#bp-preview-title').textContent()) === 'Here’s what we see in your brand.', label + ': wrong Preview heading');
-            assert((await page.locator('.bp-section').count()) === 5, label + ': five semantic sections not preserved');
-            assert((await page.locator('.bp-audience-item').count()) === 1, label + ': partial Audience density not preserved');
-            assert((await page.locator('.bp-opportunity-card').count()) === 1, label + ': partial Opportunity density not preserved');
-            assert((await page.locator('.bp-archetype-card').count()) === 1, label + ': partial Archetype density not preserved');
-            assert((await page.getByRole('button', { name: 'Verify & claim this brand' }).count()) === 1, label + ': canonical verification CTA missing');
-            const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-            assert(overflow <= 1, label + ': horizontal page overflow detected: ' + overflow + 'px');
-            const results = await new AxeBuilder({ page }).analyze();
-            const severe = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
-            assert(severe.length === 0, label + ': serious/critical accessibility violations: ' + severe.map((item) => item.id).join(', '));
-            await page.screenshot({ path: `/tmp/${label}.png`, fullPage: true });
-            await page.close();
+            const context = await browser.newContext({ viewport });
+            const page = await context.newPage();
+            try {
+              await prime(page);
+              await page.route(endpoint, async (route) => {
+                await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ready) });
+              });
+              await page.goto(origin + '/brand/onboarding/scan');
+              await page.locator('#bp-preview-title').waitFor();
+              assert((await page.locator('#bp-preview-title').textContent()) === 'Here’s what we see in your brand.', label + ': wrong Preview heading');
+              assert((await page.locator('.bp-section').count()) === 5, label + ': five semantic sections not preserved');
+              assert((await page.locator('.bp-audience-item').count()) === 1, label + ': partial Audience density not preserved');
+              assert((await page.locator('.bp-opportunity-card').count()) === 1, label + ': partial Opportunity density not preserved');
+              assert((await page.locator('.bp-archetype-card').count()) === 1, label + ': partial Archetype density not preserved');
+              assert((await page.getByRole('button', { name: 'Verify & claim this brand' }).count()) === 1, label + ': canonical verification CTA missing');
+              const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+              assert(overflow <= 1, label + ': horizontal page overflow detected: ' + overflow + 'px');
+              const results = await new AxeBuilder({ page }).analyze();
+              const severe = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
+              assert(severe.length === 0, label + ': serious/critical accessibility violations: ' + severe.map((item) => item.id).join(', '));
+              await page.screenshot({ path: `/tmp/${label}.png`, fullPage: true });
+            } finally {
+              await context.close();
+            }
           }
 
           async function validateAnalysisAndRecovery(browser) {
-            const analysisPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
-            await prime(analysisPage);
-            await analysisPage.route(endpoint, async (route) => {
-              await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ state: 'ANALYSIS_ACTIVE', phase: 'LEARNING_AUDIENCE' }),
+            const analysisContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+            const analysisPage = await analysisContext.newPage();
+            try {
+              await prime(analysisPage);
+              await analysisPage.route(endpoint, async (route) => {
+                await route.fulfill({
+                  status: 200,
+                  contentType: 'application/json',
+                  body: JSON.stringify({ state: 'ANALYSIS_ACTIVE', phase: 'LEARNING_AUDIENCE' }),
+                });
               });
-            });
-            await analysisPage.goto(origin + '/brand/onboarding/scan');
-            await analysisPage.locator('#bp-analysis-title').waitFor();
-            assert((await analysisPage.locator('.bp-understanding-thread__item').count()) === 4, 'mobile analysis: Understanding Thread must show all four phases');
-            assert((await analysisPage.locator('[aria-current="step"]').textContent()).includes('Learning who you need to reach'), 'mobile analysis: runtime phase not mapped truthfully');
-            const overflow = await analysisPage.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-            assert(overflow <= 1, 'mobile analysis: horizontal overflow detected');
-            await analysisPage.close();
+              await analysisPage.goto(origin + '/brand/onboarding/scan');
+              await analysisPage.locator('#bp-analysis-title').waitFor();
+              assert((await analysisPage.locator('.bp-understanding-thread__item').count()) === 4, 'mobile analysis: Understanding Thread must show all four phases');
+              assert((await analysisPage.locator('[aria-current="step"]').textContent()).includes('Learning who you need to reach'), 'mobile analysis: runtime phase not mapped truthfully');
+              const overflow = await analysisPage.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+              assert(overflow <= 1, 'mobile analysis: horizontal overflow detected');
+            } finally {
+              await analysisContext.close();
+            }
 
-            const recoveryPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
-            await prime(recoveryPage);
-            await recoveryPage.route(endpoint, async (route) => {
-              await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({ state: 'PREVIEW_FAILED_RECOVERABLE', phase: null, canRetry: true }),
+            const recoveryContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+            const recoveryPage = await recoveryContext.newPage();
+            try {
+              await prime(recoveryPage);
+              await recoveryPage.route(endpoint, async (route) => {
+                await route.fulfill({
+                  status: 200,
+                  contentType: 'application/json',
+                  body: JSON.stringify({ state: 'PREVIEW_FAILED_RECOVERABLE', phase: null, canRetry: true }),
+                });
               });
-            });
-            await recoveryPage.goto(origin + '/brand/onboarding/scan');
-            await recoveryPage.locator('#bp-recovery-title').waitFor();
-            assert((await recoveryPage.getByRole('button', { name: 'Try again' }).count()) === 1, 'mobile recovery: expected one canonical retry action');
-            assert((await recoveryPage.locator('text=We couldn\'t finish your Brand Preview.').count()) === 1, 'mobile recovery: frozen failure headline missing');
-            await recoveryPage.close();
+              await recoveryPage.goto(origin + '/brand/onboarding/scan');
+              await recoveryPage.locator('#bp-recovery-title').waitFor();
+              assert((await recoveryPage.getByRole('button', { name: 'Try again' }).count()) === 1, 'mobile recovery: expected one canonical retry action');
+              assert((await recoveryPage.locator('text=We couldn\'t finish your Brand Preview.').count()) === 1, 'mobile recovery: frozen failure headline missing');
+            } finally {
+              await recoveryContext.close();
+            }
           }
 
           const browser = await chromium.launch({ headless: true });
