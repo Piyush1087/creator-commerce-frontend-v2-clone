@@ -11,8 +11,11 @@ import type {
 } from "../contracts/brand-preview.contracts";
 import { mapBrandPreviewRuntimeToViewState } from "../mappers/map-brand-preview-state";
 import {
+  clearBrandPreviewPendingSession,
   loadBrandOnboardingSession,
+  loadBrandPreviewPendingSession,
   saveBrandOnboardingSession,
+  saveBrandPreviewPendingSession,
 } from "../session/onboarding-session";
 import { ONBOARDING_ROUTES } from "../constants";
 import { AnalysisRecoveryView } from "./analysis-recovery-view";
@@ -44,9 +47,15 @@ export function BrandPreviewJourneyView() {
   const location = useLocation();
   const locationState = location.state as PreviewLocationState | undefined;
   const storedSession = useMemo(() => loadBrandOnboardingSession(), []);
+  const pendingSession = useMemo(() => loadBrandPreviewPendingSession(), []);
 
-  const leadId = locationState?.leadId ?? storedSession?.leadId ?? "";
-  const normalizedUrl = locationState?.url ?? storedSession?.normalizedUrl ?? "";
+  const leadId =
+    locationState?.leadId ?? pendingSession?.leadId ?? storedSession?.leadId ?? "";
+  const normalizedUrl =
+    locationState?.url ??
+    pendingSession?.normalizedUrl ??
+    storedSession?.normalizedUrl ??
+    "";
   const initialDomain = normalizedUrl
     ? displayDomainFromUrl(normalizedUrl)
     : "yourbrand.com";
@@ -116,8 +125,8 @@ export function BrandPreviewJourneyView() {
           leadId,
           brandProfileId: mapped.brandProfileId,
           normalizedUrl: mapped.preview.identity.websiteUrl,
-          confirmedIndustry: mapped.preview.identity.confirmedIndustry,
         });
+        clearBrandPreviewPendingSession();
       }
       focusStateHeading(mapped.state);
       return true;
@@ -156,15 +165,10 @@ export function BrandPreviewJourneyView() {
       };
     }
 
-    // Preserve the Gatekeeper handoff immediately so a refresh does not lose
-    // the durable DiscoveryLead before PREVIEW_READY supplies brandProfileId.
+    // Preserve the Gatekeeper handoff before PREVIEW_READY supplies the stable
+    // BrandProfile identifier, without weakening the existing shared session.
     if (normalizedUrl) {
-      saveBrandOnboardingSession({
-        leadId,
-        brandProfileId: storedSession?.brandProfileId,
-        normalizedUrl,
-        confirmedIndustry: storedSession?.confirmedIndustry,
-      });
+      saveBrandPreviewPendingSession({ leadId, normalizedUrl });
     }
 
     startSlowTimer();
@@ -183,8 +187,6 @@ export function BrandPreviewJourneyView() {
     startSlowTimer,
     stopPolling,
     stopSlowTimer,
-    storedSession?.brandProfileId,
-    storedSession?.confirmedIndustry,
   ]);
 
   const handleRetry = async () => {
@@ -217,8 +219,8 @@ export function BrandPreviewJourneyView() {
       leadId,
       brandProfileId: viewState.brandProfileId,
       normalizedUrl: viewState.preview.identity.websiteUrl,
-      confirmedIndustry: viewState.preview.identity.confirmedIndustry,
     });
+    clearBrandPreviewPendingSession();
     navigate(ONBOARDING_ROUTES.verification, {
       state: {
         leadId,
