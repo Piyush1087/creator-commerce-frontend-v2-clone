@@ -11,7 +11,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,3 +57,151 @@ jobs:
           src/layouts/brand-onboarding-shell/BrandOnboardingShell.tsx
           src/pages/brand/onboarding/brand-onboarding-scan-page.tsx
           src/routes/brand-onboarding-app.tsx
+
+      - name: Install browser smoke dependencies
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0 @axe-core/playwright@4.10.2
+          npx playwright install chromium
+
+      - name: Start Vite dev server
+        run: |
+          npm run dev -- --host 127.0.0.1 > /tmp/brand-preview-vite.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:5173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/brand-preview-vite.log
+          exit 1
+
+      - name: Desktop and 390px runtime/accessibility smoke
+        run: |
+          cat > /tmp/brand-preview-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import AxeBuilder from '@axe-core/playwright';
+
+          const origin = 'http://127.0.0.1:5173';
+          const endpoint = '**/api/v1/discovery/lead-smoke/brand-preview';
+          const ready = {
+            state: 'PREVIEW_READY',
+            phase: 'PREPARING_PREVIEW',
+            completeness: 'PARTIAL',
+            canRetry: false,
+            preview: {
+              identity: {
+                brandName: 'Northstar Fertility Care',
+                brandLogo: null,
+                websiteUrl: 'https://northstarfertility.example',
+                displayDomain: 'northstarfertility.example',
+                confirmedIndustry: 'HEALTHCARE',
+                brandDescriptor: null,
+              },
+              understanding: {
+                narrative: 'Northstar Fertility Care positions the treatment journey as something patients should be able to understand, not simply endure. The brand combines clinical care with guidance around a process that can feel emotionally and medically complex. Creator marketing therefore needs to build informed confidence—not make outcome promises or reduce care decisions to promotional claims.',
+              },
+              audiences: [{
+                id: 'audience-1',
+                label: 'Early-stage treatment researchers',
+                whyItMatters: 'People trying to understand when to seek specialist care and what a first consultation may involve before they are ready to contact a clinic.',
+              }],
+              opportunities: [{
+                title: 'Make the first step less intimidating',
+                whyItMatters: 'Credible educational voices can explain what typically happens before and during an initial consultation, reducing uncertainty without presenting medical advice as personal diagnosis.',
+              }],
+              creatorStartingPoint: {
+                archetypes: [{
+                  archetypeId: 'doctor-led-explainers',
+                  label: 'Doctor-led explainers',
+                  rationale: 'Qualified clinicians who communicate clearly can make complex fertility concepts easier to understand without weakening medical boundaries.',
+                }],
+              },
+            },
+            verificationContext: { brandProfileId: 'brand-profile-smoke' },
+          };
+
+          function assert(condition, message) {
+            if (!condition) throw new Error(message);
+          }
+
+          async function prime(page) {
+            await page.goto(origin + '/');
+            await page.evaluate(() => {
+              sessionStorage.setItem(
+                'ccs.brandPreview.pending.v1',
+                JSON.stringify({
+                  leadId: 'lead-smoke',
+                  normalizedUrl: 'https://northstarfertility.example',
+                }),
+              );
+            });
+          }
+
+          async function validateReady(browser, viewport, label) {
+            const page = await browser.newPage({ viewport });
+            await prime(page);
+            await page.route(endpoint, async (route) => {
+              await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ready) });
+            });
+            await page.goto(origin + '/brand/onboarding/scan');
+            await page.locator('#bp-preview-title').waitFor();
+            assert((await page.locator('#bp-preview-title').textContent()) === 'Here’s what we see in your brand.', label + ': wrong Preview heading');
+            assert((await page.locator('.bp-section').count()) === 5, label + ': five semantic sections not preserved');
+            assert((await page.locator('.bp-audience-item').count()) === 1, label + ': partial Audience density not preserved');
+            assert((await page.locator('.bp-opportunity-card').count()) === 1, label + ': partial Opportunity density not preserved');
+            assert((await page.locator('.bp-archetype-card').count()) === 1, label + ': partial Archetype density not preserved');
+            assert((await page.getByRole('button', { name: 'Verify & claim this brand' }).count()) === 1, label + ': canonical verification CTA missing');
+            const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+            assert(overflow <= 1, label + ': horizontal page overflow detected: ' + overflow + 'px');
+            const results = await new AxeBuilder({ page }).analyze();
+            const severe = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
+            assert(severe.length === 0, label + ': serious/critical accessibility violations: ' + severe.map((item) => item.id).join(', '));
+            await page.screenshot({ path: `/tmp/${label}.png`, fullPage: true });
+            await page.close();
+          }
+
+          async function validateAnalysisAndRecovery(browser) {
+            const analysisPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            await prime(analysisPage);
+            await analysisPage.route(endpoint, async (route) => {
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ state: 'ANALYSIS_ACTIVE', phase: 'LEARNING_AUDIENCE' }),
+              });
+            });
+            await analysisPage.goto(origin + '/brand/onboarding/scan');
+            await analysisPage.locator('#bp-analysis-title').waitFor();
+            assert((await analysisPage.locator('.bp-understanding-thread__item').count()) === 4, 'mobile analysis: Understanding Thread must show all four phases');
+            assert((await analysisPage.locator('[aria-current="step"]').textContent()).includes('Learning who you need to reach'), 'mobile analysis: runtime phase not mapped truthfully');
+            const overflow = await analysisPage.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+            assert(overflow <= 1, 'mobile analysis: horizontal overflow detected');
+            await analysisPage.close();
+
+            const recoveryPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            await prime(recoveryPage);
+            await recoveryPage.route(endpoint, async (route) => {
+              await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ state: 'PREVIEW_FAILED_RECOVERABLE', phase: null, canRetry: true }),
+              });
+            });
+            await recoveryPage.goto(origin + '/brand/onboarding/scan');
+            await recoveryPage.locator('#bp-recovery-title').waitFor();
+            assert((await recoveryPage.getByRole('button', { name: 'Try again' }).count()) === 1, 'mobile recovery: expected one canonical retry action');
+            assert((await recoveryPage.locator('text=We couldn\'t finish your Brand Preview.').count()) === 1, 'mobile recovery: frozen failure headline missing');
+            await recoveryPage.close();
+          }
+
+          const browser = await chromium.launch({ headless: true });
+          try {
+            await validateReady(browser, { width: 1440, height: 1100 }, 'desktop-preview');
+            await validateReady(browser, { width: 390, height: 844 }, 'mobile-390-preview');
+            await validateAnalysisAndRecovery(browser);
+            console.log('BRAND_PREVIEW_BROWSER_SMOKE_PASS');
+          } finally {
+            await browser.close();
+          }
+          EOF
+          node /tmp/brand-preview-smoke.mjs
