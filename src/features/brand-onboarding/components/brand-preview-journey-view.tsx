@@ -67,7 +67,6 @@ export function BrandPreviewJourneyView() {
   const [slow, setSlow] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [startingVerification, setStartingVerification] = useState(false);
-  const [connectionInterrupted, setConnectionInterrupted] = useState(false);
   const pollTimerRef = useRef<number | null>(null);
   const slowTimerRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
@@ -109,7 +108,6 @@ export function BrandPreviewJourneyView() {
   const applyProjection = useCallback(
     (projection: BrandPreviewRuntimeProjection) => {
       const mapped = mapBrandPreviewRuntimeToViewState(projection);
-      setConnectionInterrupted(false);
       setViewState(mapped);
 
       if (mapped.state === "FAST_ANALYSIS_ACTIVE") {
@@ -147,9 +145,9 @@ export function BrandPreviewJourneyView() {
       }
     } catch {
       if (!mountedRef.current) return;
-      // Transport health is not Preview state authority. Keep the last known
-      // analysis state and refetch instead of manufacturing a terminal result.
-      setConnectionInterrupted(true);
+      // Transport health is not Preview state authority. Retain the current
+      // truthful analysis presentation and refetch instead of inventing a
+      // terminal customer-facing state.
       pollTimerRef.current = window.setTimeout(() => {
         void poll();
       }, POLL_INTERVAL_MS * 2);
@@ -165,8 +163,6 @@ export function BrandPreviewJourneyView() {
       };
     }
 
-    // Preserve the Gatekeeper handoff before PREVIEW_READY supplies the stable
-    // BrandProfile identifier, without weakening the existing shared session.
     if (normalizedUrl) {
       saveBrandPreviewPendingSession({ leadId, normalizedUrl });
     }
@@ -192,7 +188,6 @@ export function BrandPreviewJourneyView() {
   const handleRetry = async () => {
     if (!leadId || retrying) return;
     setRetrying(true);
-    setConnectionInterrupted(false);
     try {
       const projection = await retryBrandPreviewRuntime(leadId);
       if (!mountedRef.current) return;
@@ -205,8 +200,8 @@ export function BrandPreviewJourneyView() {
         }, POLL_INTERVAL_MS);
       }
     } catch {
-      // Keep the authoritative recovery state visible. The user may retry the
-      // canonical action again; do not substitute a frontend terminal state.
+      // Keep the authoritative recovery state visible; do not substitute a
+      // frontend-derived terminal state.
     } finally {
       if (mountedRef.current) setRetrying(false);
     }
@@ -270,7 +265,6 @@ export function BrandPreviewJourneyView() {
       displayDomain={initialDomain}
       phase={viewState.phase}
       slow={slow}
-      connectionInterrupted={connectionInterrupted}
     />
   );
 }
