@@ -289,7 +289,7 @@
   padding: clamp(48px, 7vw, 80px) 32px 96px;
 }
 
-.bp-preview > * {
+.bp-preview > :not(.sr-only) {
   width: min(1200px, 100%);
   margin-left: auto;
   margin-right: auto;
