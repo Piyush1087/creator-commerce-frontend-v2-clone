@@ -25,6 +25,12 @@ export function FastBrandAnalysisView({
   const activeIndex = phase
     ? PHASES.findIndex((entry) => entry.phase === phase)
     : -1;
+  const liveStatus = phase
+    ? PHASES.find((entry) => entry.phase === phase)?.label ??
+      "Building your Brand Preview…"
+    : slow
+      ? "Still analysing…"
+      : "Building your Brand Preview…";
 
   return (
     <main className="bp-analysis" aria-labelledby="bp-analysis-title">
@@ -36,7 +42,7 @@ export function FastBrandAnalysisView({
 
         <div className="bp-analysis__intro">
           <p className="bp-eyebrow">Building your Brand Preview</p>
-          <h1 id="bp-analysis-title">
+          <h1 id="bp-analysis-title" tabIndex={-1}>
             {slow
               ? "We're still building your Brand Preview."
               : "We're getting to know your brand."}
@@ -48,12 +54,11 @@ export function FastBrandAnalysisView({
           </p>
         </div>
 
-        <div
-          className="bp-analysis__status-region"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {liveStatus}
+        </p>
+
+        <div className="bp-analysis__status-region">
           {phase ? (
             <ol className="bp-understanding-thread" aria-label="Brand Preview analysis progress">
               {PHASES.map((entry, index) => {
