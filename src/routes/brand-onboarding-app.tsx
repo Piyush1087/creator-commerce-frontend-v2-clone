@@ -4,7 +4,6 @@ import { BrandOnboardingShell } from "../layouts/brand-onboarding-shell/BrandOnb
 import { BrandOnboardingCataloguePage } from "../pages/brand/onboarding/brand-onboarding-catalogue-page";
 import { BrandOnboardingCompetitorsPage } from "../pages/brand/onboarding/brand-onboarding-competitors-page";
 import { BrandOnboardingCoreIdentityPage } from "../pages/brand/onboarding/brand-onboarding-core-identity-page";
-import { BrandOnboardingDnaPage } from "../pages/brand/onboarding/brand-onboarding-dna-page";
 import { BrandOnboardingIntelligenceScanPage } from "../pages/brand/onboarding/brand-onboarding-intelligence-scan-page";
 import { BrandOnboardingLandingPage } from "../pages/brand/onboarding/brand-onboarding-landing-page";
 import { BrandOnboardingPricingPage } from "../pages/brand/onboarding/brand-onboarding-pricing-page";
@@ -14,12 +13,15 @@ import { BrandOnboardingSyncCompletePage } from "../pages/brand/onboarding/brand
 import { BrandOnboardingSyncVerifyPage } from "../pages/brand/onboarding/brand-onboarding-sync-verify-page";
 import { BrandOnboardingVerificationPage } from "../pages/brand/onboarding/brand-onboarding-verification-page";
 import { BrandIntelligenceIdentityTestPage } from "../pages/brand/intelligence/brand-intelligence-identity-test-page";
+import { LegalPlaceholderPage } from "../pages/public/legal-placeholder-page";
 
 export function BrandOnboardingAppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<BrandOnboardingShell />}>
         <Route index element={<BrandOnboardingLandingPage />} />
+        <Route path="terms" element={<LegalPlaceholderPage title="Terms of Service" />} />
+        <Route path="privacy" element={<LegalPlaceholderPage title="Privacy Policy" />} />
         <Route
           path="brand/intelligence/identity-test"
           element={<BrandIntelligenceIdentityTestPage />}
@@ -36,7 +38,10 @@ export function BrandOnboardingAppRoutes() {
           path="brand/onboarding/intelligence-scan"
           element={<BrandOnboardingIntelligenceScanPage />}
         />
-        <Route path="brand/onboarding/dna" element={<BrandOnboardingDnaPage />} />
+        {/* Compatibility target for existing RESUME navigation. The canonical
+            backend projection decides whether the admitted/confirmed run can
+            resume; do not bypass Brand Preview into editable Brand DNA. */}
+        <Route path="brand/onboarding/dna" element={<BrandOnboardingScanPage />} />
         <Route
           path="brand/onboarding/catalogue"
           element={<BrandOnboardingCataloguePage />}
