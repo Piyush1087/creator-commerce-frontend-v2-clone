@@ -670,6 +670,47 @@
   gap: var(--space-md);
 }
 
+/* BS-06: Instagram is the only operational integration in Settings MVP. */
+.settings-instagram-connection,
+.settings-instagram-conflict__panel {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.settings-instagram-conflict__panel {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
+.settings-instagram-conflict__actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .settings-instagram-connection .settings-meta-header__actions,
+  .settings-instagram-conflict__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .settings-instagram-connection .settings-meta-header__actions > button,
+  .settings-instagram-manage > button,
+  .settings-instagram-conflict__actions > button {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .settings-instagram-conflict {
+    align-items: end !important;
+    padding-bottom: calc(var(--height-bottom-nav, 0px) + 1rem) !important;
+  }
+
+  .settings-instagram-conflict__panel {
+    max-height: calc(100dvh - var(--height-bottom-nav, 0px) - 2rem);
+  }
+}
+
 @media (min-width: 960px) {
   .settings-integrations-grid {
     grid-template-columns: 2fr 1fr;
