@@ -1,0 +1,28 @@
+.team-invitation {
+  width: 100%;
+  max-width: 640px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--space-lg);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+.team-invitation .aurora-card {
+  padding: 24px;
+}
+.team-invitation form {
+  display: grid;
+  gap: var(--space-md);
+}
+.team-invitation dt {
+  font-weight: 600;
+  margin-top: var(--space-md);
+}
+.team-invitation dd {
+  margin: 0;
+}
+@media (max-width: 767px) {
+  .team-invitation form button {
+    width: 100%;
+  }
+}

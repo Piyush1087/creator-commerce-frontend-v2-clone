@@ -6,9 +6,7 @@ import { CloudUpload, Loader2 } from "lucide-react";
 
 import { Alert, Button, TextField } from "../../../../design-system/aurora";
 
-import { SideDrawer } from "../../../../design-system/aurora/components/SideDrawer";
 
-import type { BrandSettingsRole } from "../../contracts/brand-settings.contracts";
 
 import { useBrandGeneralSettings } from "../../hooks/use-brand-general-settings";
 
@@ -16,9 +14,7 @@ import {
 
   initialsFromName,
 
-  isBrandTeamAdmin,
 
-  mapBrandTeamRows,
 
   settingsDisplayText,
 
@@ -26,33 +22,9 @@ import {
 
 import { SettingsSectionCard } from "../settings-section-card";
 
-import { SettingsTeamTable } from "../settings-team-table";
+import { BrandTeamSettings } from "./brand-team-settings";
 
 import { SettingsUnsavedBar } from "../settings-unsaved-bar";
-
-
-
-const ROLE_OPTIONS: Array<{ value: BrandSettingsRole; label: string }> = [
-
-  { value: "BRAND_OWNER", label: "Admin — full administrative and financial access" },
-
-  {
-
-    value: "FINANCE_ADMIN",
-
-    label: "Finance Admin — financial and billing configuration access",
-
-  },
-
-  {
-
-    value: "CAMPAIGN_MANAGER",
-
-    label: "Campaign Manager — all access except financial",
-
-  },
-
-];
 
 
 
@@ -127,6 +99,7 @@ export function BrandGeneralSettings() {
     revokeMember,
 
     cancelInvitation,
+    changeRole,
 
   } = useBrandGeneralSettings();
 
@@ -135,20 +108,6 @@ export function BrandGeneralSettings() {
   const [form, setForm] = useState<FormState | null>(null);
 
   const [passwordOpen, setPasswordOpen] = useState(false);
-
-  const [inviteOpen, setInviteOpen] = useState(false);
-
-  const [inviteEmail, setInviteEmail] = useState("");
-
-  const [inviteRole, setInviteRole] = useState<BrandSettingsRole>("CAMPAIGN_MANAGER");
-
-  const [inviteBusy, setInviteBusy] = useState(false);
-
-  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
-
-  const [revokeConfirmed, setRevokeConfirmed] = useState(false);
-
-  const [revokeBusy, setRevokeBusy] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -194,22 +153,6 @@ export function BrandGeneralSettings() {
 
   const canEditOrg = data ? data.current_user_role !== "CAMPAIGN_MANAGER" : false;
 
-  const canManageTeam = data ? isBrandTeamAdmin(data.current_user_role) : false;
-
-  const seatUsage = data?.team.seat_usage;
-
-  const atCapacity =
-
-    seatUsage !== undefined &&
-
-    seatUsage.active_members + seatUsage.pending_invitations >= seatUsage.max_seats;
-
-
-
-  const teamRows = data ? mapBrandTeamRows(data) : [];
-
-
-
   const resetForm = () => {
 
     if (baseline) {
@@ -251,88 +194,6 @@ export function BrandGeneralSettings() {
     } catch (err) {
 
       setActionError(err instanceof Error ? err.message : "Failed to save changes.");
-
-    }
-
-  };
-
-
-
-  const handleInvite = async () => {
-
-    setInviteBusy(true);
-
-    setActionError(null);
-
-    try {
-
-      await inviteMember({ email: inviteEmail.trim(), role: inviteRole });
-
-      setInviteOpen(false);
-
-      setInviteEmail("");
-
-      setInviteRole("CAMPAIGN_MANAGER");
-
-    } catch (err) {
-
-      setActionError(err instanceof Error ? err.message : "Failed to send invitation.");
-
-    } finally {
-
-      setInviteBusy(false);
-
-    }
-
-  };
-
-
-
-  const handleRevoke = async () => {
-
-    if (!revokeTarget || !revokeConfirmed) {
-
-      return;
-
-    }
-
-    setRevokeBusy(true);
-
-    setActionError(null);
-
-    try {
-
-      await revokeMember(revokeTarget);
-
-      setRevokeTarget(null);
-
-      setRevokeConfirmed(false);
-
-    } catch (err) {
-
-      setActionError(err instanceof Error ? err.message : "Failed to revoke access.");
-
-    } finally {
-
-      setRevokeBusy(false);
-
-    }
-
-  };
-
-
-
-  const handleCancelInvite = async (invitationId: string) => {
-
-    setActionError(null);
-
-    try {
-
-      await cancelInvitation(invitationId);
-
-    } catch (err) {
-
-      setActionError(err instanceof Error ? err.message : "Failed to cancel invitation.");
 
     }
 
@@ -712,35 +573,7 @@ export function BrandGeneralSettings() {
 
         >
 
-          <SettingsTeamTable
-
-            members={teamRows}
-
-            maxSeats={seatUsage?.max_seats ?? 5}
-
-            inviteDisabled={!canManageTeam || atCapacity}
-
-            inviteDisabledReason={
-
-              atCapacity
-
-                ? "Workspace seat capacity fully exhausted. Revoke a member or cancel a pending invitation."
-
-                : !canManageTeam
-
-                  ? "Only workspace admins can invite team members."
-
-                  : undefined
-
-            }
-
-            onInvite={() => setInviteOpen(true)}
-
-            onRevoke={canManageTeam ? (id) => setRevokeTarget(id) : undefined}
-
-            onCancelInvite={canManageTeam ? (id) => void handleCancelInvite(id) : undefined}
-
-          />
+          <BrandTeamSettings data={data} inviteMember={inviteMember} revokeMember={revokeMember} cancelInvitation={cancelInvitation} changeRole={changeRole} />
 
         </SettingsSectionCard>
 
@@ -761,188 +594,6 @@ export function BrandGeneralSettings() {
       />
 
 
-
-      <SideDrawer
-
-        isOpen={inviteOpen}
-
-        onClose={() => setInviteOpen(false)}
-
-        title="Invite team member"
-
-        subtitle="Provision secure platform workspace access to internal personnel or external agency partners."
-
-        width="460px"
-
-        footer={
-
-          <div className="settings-drawer-footer">
-
-            <Button variant="ghost" onClick={() => setInviteOpen(false)} disabled={inviteBusy}>
-
-              Cancel &amp; close
-
-            </Button>
-
-            <Button
-
-              variant="primary"
-
-              disabled={!inviteEmail.includes("@") || inviteBusy}
-
-              onClick={() => void handleInvite()}
-
-            >
-
-              {inviteBusy ? "Sending…" : "Dispatch safe invite code"}
-
-            </Button>
-
-          </div>
-
-        }
-
-      >
-
-        <div className="settings-drawer-body">
-
-          <TextField
-
-            label="Target recipient email address"
-
-            placeholder="e.g., teammate@brandworkspace.com"
-
-            value={inviteEmail}
-
-            onChange={(e) => setInviteEmail(e.target.value)}
-
-            helperText="External email domains are permitted for agency collaboration."
-
-          />
-
-          <fieldset className="settings-role-fieldset">
-
-            <legend>Workspace role assignment</legend>
-
-            {ROLE_OPTIONS.map((option) => (
-
-              <label key={option.value} className="settings-role-option">
-
-                <input
-
-                  type="radio"
-
-                  name="invite-role"
-
-                  value={option.value}
-
-                  checked={inviteRole === option.value}
-
-                  onChange={() => setInviteRole(option.value)}
-
-                />
-
-                <span>{option.label}</span>
-
-              </label>
-
-            ))}
-
-          </fieldset>
-
-          <Alert tone="warning" title="Role boundary context">
-
-            Campaign Managers can edit campaigns and settings but cannot execute billing changes or
-
-            manage escrow ledger balances.
-
-          </Alert>
-
-        </div>
-
-      </SideDrawer>
-
-
-
-      {revokeTarget ? (
-
-        <div className="settings-modal-overlay" role="presentation">
-
-          <div className="settings-modal" role="dialog" aria-labelledby="revoke-title">
-
-            <h3 id="revoke-title">Terminate workspace access authorization?</h3>
-
-            <p>
-
-              You are about to securely wipe all active user tokens and operational permissions for
-
-              this seat. Historical campaign logs remain preserved in the audit track.
-
-            </p>
-
-            <label className="settings-modal__confirm">
-
-              <input
-
-                type="checkbox"
-
-                checked={revokeConfirmed}
-
-                onChange={(e) => setRevokeConfirmed(e.target.checked)}
-
-              />
-
-              <span>
-
-                I verify that I have the administrative authority to revoke this user seat.
-
-              </span>
-
-            </label>
-
-            <div className="settings-modal__actions">
-
-              <Button
-
-                variant="ghost"
-
-                onClick={() => {
-
-                  setRevokeTarget(null);
-
-                  setRevokeConfirmed(false);
-
-                }}
-
-                disabled={revokeBusy}
-
-              >
-
-                Cancel and retain user seat
-
-              </Button>
-
-              <Button
-
-                variant="primary"
-
-                disabled={!revokeConfirmed || revokeBusy}
-
-                onClick={() => void handleRevoke()}
-
-              >
-
-                {revokeBusy ? "Revoking…" : "Confirm access termination"}
-
-              </Button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      ) : null}
 
     </>
 

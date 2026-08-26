@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
 import { LoginPage } from "../pages/auth/login-page";
+import { TeamInvitationPage } from "../pages/public/brand/team-invitation-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
@@ -46,6 +47,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path={AUTH_ROUTES.login} element={<LoginPage />} />
+      <Route path="/brand/team-invitations/accept" element={<TeamInvitationPage />} />
       <Route element={<MarketplaceGuestLayout />}>
         <Route path={PUBLIC_ROUTES.brandLanding} element={<PublicBrandLandingPage />} />
         <Route path={PUBLIC_ROUTES.marketplace} element={<PublicMarketplacePage />} />

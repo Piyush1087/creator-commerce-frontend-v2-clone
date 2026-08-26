@@ -11,6 +11,7 @@ import type {
   UpdateBrandNotificationsPayload,
   UpdateTeamRolePayload,
   UpsertBrandBillingProfilePayload,
+  TeamInvitationDispatch,
 } from "../contracts/brand-settings.contracts";
 
 const BASE = `${env.apiUrl}/api/v1/brand/settings`;
@@ -21,7 +22,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -118,16 +121,25 @@ export async function updateBrandNotifications(
   return (await readJsonOrThrow(response)) as BrandNotificationsResponse;
 }
 
-export async function inviteBrandTeamMember(payload: InviteTeamMemberPayload): Promise<unknown> {
+export async function inviteBrandTeamMember(
+  payload: InviteTeamMemberPayload,
+): Promise<TeamInvitationDispatch> {
   const response = await fetch(`${BASE}/team/invite`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  return readJsonOrThrow(response);
+  const result = (await readJsonOrThrow(response)) as TeamInvitationDispatch;
+  if (result?.delivery_status !== "DISPATCHED")
+    throw new Error(
+      "Invitation dispatch was not confirmed. Refresh the team list before trying again.",
+    );
+  return result;
 }
 
-export async function updateBrandTeamRole(payload: UpdateTeamRolePayload): Promise<unknown> {
+export async function updateBrandTeamRole(
+  payload: UpdateTeamRolePayload,
+): Promise<unknown> {
   const response = await fetch(`${BASE}/team/role`, {
     method: "PATCH",
     headers: jsonHeaders(),
@@ -136,15 +148,22 @@ export async function updateBrandTeamRole(payload: UpdateTeamRolePayload): Promi
   return readJsonOrThrow(response);
 }
 
-export async function revokeBrandTeamMember(membershipId: string): Promise<unknown> {
-  const response = await fetch(`${BASE}/team/${encodeURIComponent(membershipId)}`, {
-    method: "DELETE",
-    headers: jsonHeaders(),
-  });
+export async function revokeBrandTeamMember(
+  membershipId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/team/${encodeURIComponent(membershipId)}`,
+    {
+      method: "DELETE",
+      headers: jsonHeaders(),
+    },
+  );
   return readJsonOrThrow(response);
 }
 
-export async function cancelBrandTeamInvitation(invitationId: string): Promise<unknown> {
+export async function cancelBrandTeamInvitation(
+  invitationId: string,
+): Promise<unknown> {
   const response = await fetch(
     `${BASE}/team/invitations/${encodeURIComponent(invitationId)}`,
     {

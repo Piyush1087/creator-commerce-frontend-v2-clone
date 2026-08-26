@@ -6,12 +6,14 @@ import {
   inviteBrandTeamMember,
   revokeBrandTeamMember,
   updateBrandGeneralSettings,
+  updateBrandTeamRole,
 } from "../api/brand-settings-client";
 import type {
   BrandGeneralResponse,
   BrandSettingsRole,
   InviteTeamMemberPayload,
   UpdateBrandGeneralPayload,
+  UpdateTeamRolePayload,
 } from "../contracts/brand-settings.contracts";
 
 export function useBrandGeneralSettings() {
@@ -46,7 +48,8 @@ export function useBrandGeneralSettings() {
         setData(response);
         return response;
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to save settings.";
+        const message =
+          err instanceof Error ? err.message : "Failed to save settings.";
         setError(message);
         throw err;
       } finally {
@@ -60,10 +63,12 @@ export function useBrandGeneralSettings() {
     async (payload: InviteTeamMemberPayload) => {
       setError(null);
       try {
-        await inviteBrandTeamMember(payload);
+        const dispatched = await inviteBrandTeamMember(payload);
         await reload();
+        return dispatched;
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to send invitation.";
+        const message =
+          err instanceof Error ? err.message : "Failed to send invitation.";
         setError(message);
         throw err;
       }
@@ -78,7 +83,8 @@ export function useBrandGeneralSettings() {
         await revokeBrandTeamMember(membershipId);
         await reload();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to revoke member.";
+        const message =
+          err instanceof Error ? err.message : "Failed to revoke member.";
         setError(message);
         throw err;
       }
@@ -93,10 +99,19 @@ export function useBrandGeneralSettings() {
         await cancelBrandTeamInvitation(invitationId);
         await reload();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to cancel invitation.";
+        const message =
+          err instanceof Error ? err.message : "Failed to cancel invitation.";
         setError(message);
         throw err;
       }
+    },
+    [reload],
+  );
+
+  const changeRole = useCallback(
+    async (payload: UpdateTeamRolePayload) => {
+      await updateBrandTeamRole(payload);
+      await reload();
     },
     [reload],
   );
@@ -111,6 +126,7 @@ export function useBrandGeneralSettings() {
     inviteMember,
     revokeMember,
     cancelInvitation,
+    changeRole,
   };
 }
 

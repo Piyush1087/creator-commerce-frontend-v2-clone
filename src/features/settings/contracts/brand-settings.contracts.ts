@@ -140,3 +140,19 @@ export type UpdateTeamRolePayload = {
   membershipId: string;
   role: BrandSettingsRole;
 };
+
+export type TeamInvitationPresentation = {
+  brand_name: string;
+  email: string;
+  role: BrandSettingsRole;
+  expires_at: string;
+  requires_account_bootstrap: boolean;
+};
+
+export type TeamInvitationDispatch = {
+  invitation_id: string;
+  email: string;
+  role: BrandSettingsRole;
+  expires_at: string;
+  delivery_status: "DISPATCHED";
+};
