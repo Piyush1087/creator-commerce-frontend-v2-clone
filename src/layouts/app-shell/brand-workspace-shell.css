@@ -1,0 +1,139 @@
+/* Accepted shell proportions, scoped to the Brand workspace. Existing destinations stay application-owned. */
+.aurora-header__brand-context {
+  display: none;
+}
+.aurora-shell--brand-workspace .aurora-header {
+  position: fixed;
+  top: 0;
+  left: var(--width-sidebar-collapsed);
+  right: 0;
+}
+.aurora-shell--brand-workspace .aurora-shell__wrapper {
+  padding-top: var(--height-header);
+}
+.aurora-shell--brand-workspace .aurora-sidebar {
+  box-shadow: none;
+}
+.aurora-shell--brand-workspace .aurora-sidebar:hover {
+  width: var(--width-sidebar-collapsed);
+}
+.aurora-shell--brand-workspace
+  .aurora-sidebar:hover
+  + .aurora-shell__wrapper
+  .aurora-header {
+  padding-left: var(--space-lg);
+}
+.aurora-shell--brand-workspace .aurora-sidebar__upgrade {
+  display: none;
+}
+.aurora-shell--brand-workspace .aurora-sidebar__label,
+.aurora-shell--brand-workspace .aurora-sidebar__logo-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.aurora-shell--brand-workspace .aurora-sidebar__link--active {
+  background: var(--color-primary);
+  color: var(--color-secondary);
+}
+.aurora-shell--brand-workspace .aurora-shell__main--flush {
+  overflow: visible;
+}
+.aurora-shell--brand-workspace :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-secondary);
+  outline-offset: 3px;
+}
+.aurora-shell--brand-workspace
+  :is(.aurora-sidebar, .aurora-drawer)
+  :is(a, button):focus-visible {
+  outline-color: var(--color-primary);
+  outline-offset: -2px;
+}
+.aurora-shell--brand-workspace .aurora-drawer-overlay {
+  z-index: calc(var(--z-bottom-nav) + 1);
+}
+.aurora-shell--brand-workspace .aurora-drawer {
+  z-index: calc(var(--z-bottom-nav) + 2);
+}
+.aurora-shell--brand-workspace .aurora-drawer:not(.aurora-drawer--open) {
+  visibility: hidden;
+  box-shadow: none;
+}
+/* Do not animate inherited visibility: it would delay initial dialog focus. */
+.aurora-shell--brand-workspace .aurora-drawer .aurora-header__btn {
+  transition-property: background-color, border-color, color;
+}
+@media (max-width: 767px) {
+  .aurora-shell--brand-workspace {
+    --height-header: 56px;
+  }
+  .aurora-shell--brand-workspace .aurora-header {
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding-inline: var(--space-sm);
+    flex-shrink: 0;
+  }
+  .aurora-shell--brand-workspace .aurora-header__left {
+    gap: var(--space-xs);
+  }
+  .aurora-shell--brand-workspace .aurora-header__brand-context {
+    display: flex;
+    flex-direction: column;
+  }
+  .aurora-header__brand-context > :first-child {
+    font-size: var(--size-h2-mobile);
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+  }
+  .aurora-header__brand-context > :last-child {
+    font-size: var(--size-caption);
+    color: var(--text-muted);
+  }
+  .aurora-shell--brand-workspace .aurora-header__right {
+    gap: var(--space-xs);
+  }
+  .aurora-shell--brand-workspace .aurora-header__right > .aurora-button {
+    display: none;
+  }
+  .aurora-shell--brand-workspace .aurora-header__btn {
+    width: var(--height-button);
+    height: var(--height-button);
+    border: 0;
+  }
+  .aurora-shell--brand-workspace .aurora-header__user {
+    display: none;
+  }
+  .aurora-shell--brand-workspace .aurora-bottom-nav {
+    height: calc(var(--height-bottom-nav) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .aurora-shell--brand-workspace .aurora-bottom-nav__item {
+    min-width: var(--height-button);
+    min-height: var(--height-button);
+  }
+  .aurora-shell--brand-workspace .aurora-bottom-nav__item span {
+    font-size: var(--size-caption);
+  }
+  .aurora-shell--brand-workspace .aurora-bottom-nav__item--active {
+    color: var(--color-secondary);
+    border-top: 3px solid var(--color-primary);
+  }
+  .aurora-shell--brand-workspace .aurora-shell__main--flush {
+    padding-bottom: calc(
+      var(--height-bottom-nav) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora-shell--brand-workspace *,
+  .aurora-shell--brand-workspace *::before,
+  .aurora-shell--brand-workspace *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

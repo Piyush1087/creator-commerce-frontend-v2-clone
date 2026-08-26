@@ -6,9 +6,13 @@ import { useAppShellBreadcrumbs } from "./use-app-shell-breadcrumbs";
 
 type AppHeaderProps = {
   onToggleMenu: () => void;
+  brandWorkspace?: boolean;
+  menuOpen?: boolean;
 };
 
-function userAvatarInitial(session: ReturnType<typeof loadAuthSession>): string {
+function userAvatarInitial(
+  session: ReturnType<typeof loadAuthSession>,
+): string {
   const name = session?.user.name?.trim();
   if (name && name.length > 0) {
     return name.charAt(0).toUpperCase();
@@ -20,7 +24,11 @@ function userAvatarInitial(session: ReturnType<typeof loadAuthSession>): string 
   return "?";
 }
 
-export function AppHeader({ onToggleMenu }: AppHeaderProps) {
+export function AppHeader({
+  onToggleMenu,
+  brandWorkspace = false,
+  menuOpen = false,
+}: AppHeaderProps) {
   const session = loadAuthSession();
   const { breadcrumb, title } = useAppShellBreadcrumbs();
 
@@ -30,6 +38,12 @@ export function AppHeader({ onToggleMenu }: AppHeaderProps) {
         <div className="aurora-header__logo">
           <div className="aurora-header__logo-mark">T</div>
         </div>
+        {brandWorkspace ? (
+          <div className="aurora-header__brand-context">
+            <h1>Brand</h1>
+            <span>Brand Centre</span>
+          </div>
+        ) : null}
         <div className="aurora-header__breadcrumbs">
           <span>{breadcrumb}</span>
           <div className="aurora-header__separator">
@@ -47,7 +61,11 @@ export function AppHeader({ onToggleMenu }: AppHeaderProps) {
           Upgrade
         </Button>
 
-        <button type="button" className="aurora-header__btn" aria-label="Notifications">
+        <button
+          type="button"
+          className="aurora-header__btn"
+          aria-label="Notifications"
+        >
           <Bell size={18} />
         </button>
 
@@ -62,6 +80,8 @@ export function AppHeader({ onToggleMenu }: AppHeaderProps) {
           className="aurora-header__btn aurora-header__menu-trigger"
           onClick={onToggleMenu}
           aria-label="Open Menu"
+          aria-expanded={menuOpen}
+          aria-controls="application-mobile-navigation"
         >
           <Menu size={18} />
         </button>
