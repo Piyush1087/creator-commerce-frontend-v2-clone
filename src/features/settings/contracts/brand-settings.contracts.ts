@@ -61,10 +61,6 @@ export type UpdateBrandGeneralPayload = {
   firstName?: string;
   lastName?: string;
   organizationLegalName?: string;
-  organizationAddress?: string;
-  countryCode?: string;
-  currencyCode?: string;
-  taxId?: string | null;
 };
 
 export type BrandBillingProfileResponse = {
