@@ -11,6 +11,7 @@ import {
   presentNodes,
   type BrandNode,
 } from "./brand-field-state";
+import type { BrandObjectRuntimeActivities } from "./brand-processor-runtime";
 
 /** Render only named, contract-owned components; never generic JSON or diagnostic keys. */
 export function intelligenceNodes(activity: BrandRuntimeActivity) {
@@ -73,7 +74,7 @@ export function intelligenceNodes(activity: BrandRuntimeActivity) {
 
 export function mapStory(
   data: BrandWorkspaceProjection,
-  activity: BrandRuntimeActivity,
+  activities: BrandObjectRuntimeActivities,
 ) {
   const {
     description,
@@ -83,54 +84,82 @@ export function mapStory(
     personality,
     differentiation,
   } = data.brandIdentity;
-  const { scalar, list, root } = intelligenceNodes(activity);
-  const text = (field: BrandField<string>, label: string) => {
+  const text = (
+    field: BrandField<string>,
+    label: string,
+    activity: BrandRuntimeActivity,
+  ) => {
     const node = createNode(field, label, activity);
     if (field.current.kind === "VALUE") node.text = field.current.value;
     return node;
   };
+  const differentiationNodes = intelligenceNodes(
+    activities.differentiation_and_proof,
+  );
+  const valueNodes = intelligenceNodes(activities.brand_values);
+  const personalityNodes = intelligenceNodes(activities.brand_personality);
   return [
-    text(description, "Brand narrative"),
-    text(positioning, "Positioning"),
-    text(valueProposition, "Value Proposition"),
-    root(differentiation, "Differentiation / Proof", (items) =>
-      items.map((item) => {
-        const path = itemPath("$", item.semantic_id);
-        const node = componentNode(differentiation, path, item, "", activity)!;
-        node.children = presentNodes([
-          scalar(
+    text(description, "Brand narrative", activities.brand_description),
+    text(positioning, "Positioning", activities.positioning),
+    text(valueProposition, "Value Proposition", activities.value_proposition),
+    differentiationNodes.root(
+      differentiation,
+      "Differentiation / Proof",
+      (items) =>
+        items.map((item) => {
+          const path = itemPath("$", item.semantic_id);
+          const { scalar, list } = differentiationNodes;
+          const node = componentNode(
             differentiation,
-            fieldPath(path, "differentiator"),
-            item.differentiator,
-            "What sets the Brand apart",
-          ),
-          list(
-            differentiation,
-            fieldPath(path, "proof_points"),
-            item.proof_points,
-            "What supports this",
-            (proof, proofPath) =>
-              presentNodes([
-                scalar(
-                  differentiation,
-                  fieldPath(proofPath, "statement"),
-                  proof.statement,
-                  "",
-                ),
-              ]),
-          ),
-        ]);
-        return node;
-      }),
+            path,
+            item,
+            "",
+            activities.differentiation_and_proof,
+          )!;
+          node.children = presentNodes([
+            scalar(
+              differentiation,
+              fieldPath(path, "differentiator"),
+              item.differentiator,
+              "What sets the Brand apart",
+            ),
+            list(
+              differentiation,
+              fieldPath(path, "proof_points"),
+              item.proof_points,
+              "What supports this",
+              (proof, proofPath) =>
+                presentNodes([
+                  scalar(
+                    differentiation,
+                    fieldPath(proofPath, "statement"),
+                    proof.statement,
+                    "",
+                  ),
+                ]),
+            ),
+          ]);
+          return node;
+        }),
     ),
-    root(values, "Values", (items) =>
+    valueNodes.root(values, "Values", (items) =>
       items.map((item) =>
-        scalar(values, itemPath("$", item.semantic_id), item.value, ""),
+        valueNodes.scalar(
+          values,
+          itemPath("$", item.semantic_id),
+          item.value,
+          "",
+        ),
       ),
     ),
-    root(personality, "Personality", (items) =>
+    personalityNodes.root(personality, "Personality", (items) =>
       items.map((item) =>
-        scalar(personality, itemPath("$", item.semantic_id), item.trait, ""),
+        personalityNodes.scalar(
+          personality,
+          itemPath("$", item.semantic_id),
+          item.trait,
+          "",
+        ),
       ),
     ),
   ];
@@ -138,8 +167,9 @@ export function mapStory(
 
 export function mapCommunication(
   data: BrandWorkspaceProjection,
-  activity: BrandRuntimeActivity,
+  activities: BrandObjectRuntimeActivities,
 ) {
+  const activity = activities.communication_profile;
   const field = data.brandIdentity.communication;
   const { scalar, list, traitList, root } = intelligenceNodes(activity);
   return root(field, "", (value) => [
@@ -168,8 +198,9 @@ export function mapCommunication(
 
 export function mapAudience(
   data: BrandWorkspaceProjection,
-  activity: BrandRuntimeActivity,
+  activities: BrandObjectRuntimeActivities,
 ) {
+  const activity = activities.audience_personas;
   const field = data.audience.state;
   const { scalar, valueList, root } = intelligenceNodes(activity);
   const node = root(field, "", (personas) =>
@@ -220,8 +251,9 @@ export function mapAudience(
 
 export function mapVisualStyle(
   data: BrandWorkspaceProjection,
-  activity: BrandRuntimeActivity,
+  activities: BrandObjectRuntimeActivities,
 ) {
+  const activity = activities.visual_style_profile;
   const field = data.visualIdentity.style;
   const { scalar, traitList, valueList, list, root } =
     intelligenceNodes(activity);
@@ -268,8 +300,9 @@ export function mapVisualStyle(
 
 export function mapServiceability(
   data: BrandWorkspaceProjection,
-  activity: BrandRuntimeActivity,
+  activities: BrandObjectRuntimeActivities,
 ) {
+  const activity = activities.serviceability_profile;
   const field = data.serviceability.state;
   const { scalar, list, root } = intelligenceNodes(activity);
   const scopeLabels = {

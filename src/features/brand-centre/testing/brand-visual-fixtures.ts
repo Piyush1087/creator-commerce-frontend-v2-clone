@@ -3,6 +3,7 @@ import {
   field,
   intelligence,
   missing,
+  setProcessorActivity,
 } from "./brand-consumer-fixtures";
 import { parseBrandCentreBrand } from "../schemas/brand-centre-brand-schema";
 
@@ -194,6 +195,35 @@ export function brandVisualFixture(family: BrandVisualFamily, count = 3) {
     mixed_coverage_note: "Availability may vary by treatment or service.",
   });
   const developing = family === "initial" || family === "progressive";
+  if (family === "initial") {
+    for (const processorId of [
+      "brand_communication",
+      "brand_meaning",
+      "brand_character",
+      "audience_persona_synthesis",
+      "brand_differentiation",
+      "visual_style_synthesis",
+      "serviceability_synthesis",
+    ] as const)
+      setProcessorActivity(
+        base.processorRuntime,
+        processorId,
+        "LEARNING",
+        false,
+      );
+  } else if (family === "progressive") {
+    for (const processorId of [
+      "audience_persona_synthesis",
+      "visual_style_synthesis",
+      "serviceability_synthesis",
+    ] as const)
+      setProcessorActivity(
+        base.processorRuntime,
+        processorId,
+        "LEARNING",
+        false,
+      );
+  }
   return parseBrandCentreBrand({
     ...base,
     workspaceReadiness: developing ? "PARTIAL" : "READY",

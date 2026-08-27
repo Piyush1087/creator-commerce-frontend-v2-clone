@@ -4,6 +4,11 @@ import type {
   BrandWorkspaceProjection,
 } from "../contracts/brand-centre-brand.contracts";
 import { parseBrandCentreBrand } from "../schemas/brand-centre-brand-schema";
+import type {
+  BrandProcessorId,
+  BrandProcessorRuntime,
+  BrandProcessorRuntimeEntry,
+} from "../schemas/brand-processor-runtime";
 
 /** Test-only fixtures: backend 884eed0 consumer/service and PostgreSQL fixture shapes.
  * No fixture is imported by a production entrypoint or used as a data fallback.
@@ -25,24 +30,63 @@ export function intelligence<T>(semanticId: string, value: T) {
   return {
     ...field(semanticId, value),
     candidate: {
-      status: "NONE",
+      status: "NONE" as const,
       count: 0,
       currentPreserved: true,
       summaryAvailable: false,
-      rawCandidateVisible: false,
+      rawCandidateVisible: false as const,
     },
-    mixedGeneration: false,
+    mixedGeneration: false as const,
     componentMeta: {},
   };
 }
 export function missing(semanticId: string) {
   return {
     ...intelligence(semanticId, "unused"),
-    current: { kind: "NO_CURRENT" },
-    readiness: "NOT_READY",
-    resultReadiness: "NOT_READY",
-    freshness: "UNKNOWN",
+    current: { kind: "NO_CURRENT" as const },
+    readiness: "NOT_READY" as const,
+    resultReadiness: "NOT_READY" as const,
+    freshness: "UNKNOWN" as const,
   };
+}
+
+function processorEntry<Id extends BrandProcessorId>(processorId: Id) {
+  return {
+    processorId,
+    activity: "IDLE" as const,
+    readiness: "UNKNOWN" as const,
+    latestExecutionStatus: null,
+    reasonCode: null,
+    hasCurrent: true,
+    refreshing: false,
+    failure: null,
+  };
+}
+
+export function processorRuntimeFixture(): BrandProcessorRuntime {
+  return {
+    brand_communication: processorEntry("brand_communication"),
+    brand_meaning: processorEntry("brand_meaning"),
+    brand_character: processorEntry("brand_character"),
+    audience_persona_synthesis: processorEntry("audience_persona_synthesis"),
+    brand_differentiation: processorEntry("brand_differentiation"),
+    visual_style_synthesis: processorEntry("visual_style_synthesis"),
+    serviceability_synthesis: processorEntry("serviceability_synthesis"),
+  };
+}
+
+export function setProcessorActivity(
+  runtime: BrandProcessorRuntime,
+  processorId: BrandProcessorId,
+  activity: BrandProcessorRuntimeEntry["activity"],
+  hasCurrent = activity !== "LEARNING",
+) {
+  const entry = runtime[processorId];
+  entry.activity = activity;
+  entry.hasCurrent = hasCurrent;
+  entry.refreshing = activity === "REFRESHING";
+  entry.latestExecutionStatus =
+    activity === "LEARNING" || activity === "REFRESHING" ? "RUNNING" : null;
 }
 function applicationMissing(semanticId: string) {
   return {
@@ -76,6 +120,7 @@ export function consumerFixture(personaCount = 1): BrandWorkspaceProjection {
     brandId: "10000000-0000-4000-8000-000000000001",
     workspaceReadiness: "READY",
     runtimeActivity: "NONE",
+    processorRuntime: processorRuntimeFixture(),
     identity: {
       ...details,
       brandName: field("brand_name", "Consumer test"),

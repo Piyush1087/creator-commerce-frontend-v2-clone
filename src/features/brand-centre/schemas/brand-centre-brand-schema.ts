@@ -9,6 +9,7 @@ import {
   uniqueItems,
 } from "./brand-consumer-primitives";
 import * as domain from "./brand-consumer-domains";
+import { brandProcessorRuntime } from "./brand-processor-runtime";
 
 const details = z
   .object({
@@ -24,6 +25,7 @@ export const brandCentreBrandSchema = z
     brandId: z.string().uuid(),
     workspaceReadiness: readiness,
     runtimeActivity,
+    processorRuntime: brandProcessorRuntime,
     identity: details
       .extend({
         brandName: field(z.string()),

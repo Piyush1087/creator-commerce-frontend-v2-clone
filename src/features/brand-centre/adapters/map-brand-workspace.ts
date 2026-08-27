@@ -11,6 +11,7 @@ import {
   mapStory,
   mapVisualStyle,
 } from "./map-brand-intelligence";
+import { mapBrandObjectRuntimeActivities } from "./brand-processor-runtime";
 
 export const BRAND_SECTION_ORDER = [
   "identity",
@@ -109,6 +110,9 @@ export function mapBrandWorkspace(
   data: BrandWorkspaceProjection,
 ): BrandWorkspaceView {
   const activity = data.runtimeActivity;
+  const objectActivities = mapBrandObjectRuntimeActivities(
+    data.processorRuntime,
+  );
   const anchor = (field: BrandField<string>, label: string) => {
     const node = createNode(field, label, "NONE");
     if (field.current.kind === "VALUE") node.text = field.current.value;
@@ -143,17 +147,17 @@ export function mapBrandWorkspace(
       {
         id: "story",
         title: "Brand Story & Strategy",
-        nodes: mapStory(data, activity),
+        nodes: mapStory(data, objectActivities),
       },
       {
         id: "communication",
         title: "How your Brand communicates",
-        nodes: [mapCommunication(data, activity)],
+        nodes: [mapCommunication(data, objectActivities)],
       },
       {
         id: "audience",
         title: "Audience",
-        nodes: [mapAudience(data, activity)],
+        nodes: [mapAudience(data, objectActivities)],
       },
       {
         id: "visual",
@@ -165,14 +169,14 @@ export function mapBrandWorkspace(
             presentation: "CONTENT",
             children: mapCanonicalVisual(data),
           },
-          mapVisualStyle(data, activity),
+          mapVisualStyle(data, objectActivities),
         ],
       },
       { id: "locations", title: "Locations", nodes: [] },
       {
         id: "serviceability",
         title: "Where you can serve customers",
-        nodes: [mapServiceability(data, activity)],
+        nodes: [mapServiceability(data, objectActivities)],
       },
     ],
   };

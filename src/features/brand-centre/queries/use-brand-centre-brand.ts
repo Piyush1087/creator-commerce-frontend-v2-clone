@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createBrandWorkspaceCache } from "./brand-workspace-cache";
+import { shouldPollProcessorRuntime } from "../adapters/brand-processor-runtime";
 
 export function useBrandCentreBrand() {
   const [cache] = useState(createBrandWorkspaceCache);
@@ -25,9 +26,8 @@ export function useBrandCentreBrand() {
       state.status === "BACKGROUND_LOADING"
     )
       return;
-    const activity = state.projection?.runtimeActivity;
-    if (activity !== "LEARNING" && activity !== "REFRESHING") return;
-    // Poll only the authoritative consumer while it truthfully reports activity.
+    if (!shouldPollProcessorRuntime(state.projection?.processorRuntime)) return;
+    // Poll while any detailed processor reports activity that can progress unaided.
     const timer = window.setTimeout(() => {
       void cache.refresh();
     }, 15000);

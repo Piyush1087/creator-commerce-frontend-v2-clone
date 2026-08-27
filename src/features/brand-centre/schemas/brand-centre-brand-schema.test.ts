@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { consumerFixture } from "../testing/brand-consumer-fixtures";
+import {
+  consumerFixture,
+  setProcessorActivity,
+} from "../testing/brand-consumer-fixtures";
+import { BRAND_PROCESSOR_IDS } from "./brand-processor-runtime";
 import {
   BrandConsumerContractError,
   parseBrandCentreBrand,
@@ -9,6 +13,94 @@ describe("strict accepted Brand consumer", () => {
   it("parses the complete consumer boundary", () => {
     const fixture = consumerFixture(3);
     expect(parseBrandCentreBrand(fixture)).toEqual(fixture);
+  });
+  it("requires exactly seven processor runtime entries", () => {
+    const fixture = consumerFixture();
+    expect(Object.keys(fixture.processorRuntime)).toEqual(BRAND_PROCESSOR_IDS);
+    const { brand_meaning: _missing, ...incomplete } = fixture.processorRuntime;
+    expect(() =>
+      parseBrandCentreBrand({ ...fixture, processorRuntime: incomplete }),
+    ).toThrow(BrandConsumerContractError);
+    expect(() =>
+      parseBrandCentreBrand({
+        ...fixture,
+        processorRuntime: {
+          ...fixture.processorRuntime,
+          invented_processor: fixture.processorRuntime.brand_meaning,
+        },
+      }),
+    ).toThrow(BrandConsumerContractError);
+  });
+  it("rejects processor key/id mismatch", () => {
+    const fixture = consumerFixture();
+    expect(() =>
+      parseBrandCentreBrand({
+        ...fixture,
+        processorRuntime: {
+          ...fixture.processorRuntime,
+          brand_meaning: {
+            ...fixture.processorRuntime.brand_meaning,
+            processorId: "brand_character",
+          },
+        },
+      }),
+    ).toThrow(BrandConsumerContractError);
+  });
+  it.each([
+    "IDLE",
+    "WAITING_FOR_EVIDENCE",
+    "WAITING_FOR_DEPENDENCY",
+    "READY_TO_RUN",
+    "RETRY_SCHEDULED",
+    "LEARNING",
+    "REFRESHING",
+    "TEMPORARILY_UNAVAILABLE",
+  ] as const)("accepts detailed processor activity %s", (activity) => {
+    const fixture = consumerFixture();
+    setProcessorActivity(fixture.processorRuntime, "brand_meaning", activity);
+    expect(
+      parseBrandCentreBrand(fixture).processorRuntime.brand_meaning.activity,
+    ).toBe(activity);
+  });
+  it.each([
+    "UNKNOWN",
+    "WAITING_FOR_EVIDENCE",
+    "WAITING_FOR_DEPENDENCY",
+    "READY_TO_RUN",
+  ] as const)("accepts processor execution readiness %s", (readiness) => {
+    const fixture = consumerFixture();
+    fixture.processorRuntime.brand_meaning.readiness = readiness;
+    expect(
+      parseBrandCentreBrand(fixture).processorRuntime.brand_meaning.readiness,
+    ).toBe(readiness);
+  });
+  it("validates runtime failure envelope without accepting internals", () => {
+    const fixture = consumerFixture();
+    fixture.processorRuntime.brand_meaning.activity = "TEMPORARILY_UNAVAILABLE";
+    fixture.processorRuntime.brand_meaning.latestExecutionStatus =
+      "FAILED_TERMINAL";
+    fixture.processorRuntime.brand_meaning.reasonCode = "INPUT_UNAVAILABLE";
+    fixture.processorRuntime.brand_meaning.failure = {
+      category: "INPUT",
+      code: "INPUT_UNAVAILABLE",
+      currentPreserved: true,
+      retryEligible: false,
+    };
+    expect(
+      parseBrandCentreBrand(fixture).processorRuntime.brand_meaning,
+    ).toEqual(fixture.processorRuntime.brand_meaning);
+    expect(() =>
+      parseBrandCentreBrand({
+        ...fixture,
+        processorRuntime: {
+          ...fixture.processorRuntime,
+          brand_meaning: {
+            ...fixture.processorRuntime.brand_meaning,
+            provider: "must-not-cross-boundary",
+          },
+        },
+      }),
+    ).toThrow(BrandConsumerContractError);
   });
   it.each([
     "EXPLICIT_NULL",

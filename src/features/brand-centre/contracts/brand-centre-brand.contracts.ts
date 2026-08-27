@@ -4,10 +4,15 @@ import type {
   fieldMeta,
   runtimeActivity,
 } from "../schemas/brand-consumer-primitives";
+import type {
+  BrandProcessorRuntime,
+  BrandProcessorRuntimeEntry,
+} from "../schemas/brand-processor-runtime";
 
 export type BrandWorkspaceProjection = z.infer<typeof brandCentreBrandSchema>;
 export type BrandFieldMeta = z.infer<typeof fieldMeta>;
 export type BrandRuntimeActivity = z.infer<typeof runtimeActivity>;
+export type { BrandProcessorRuntime, BrandProcessorRuntimeEntry };
 export type BrandCurrent<T> =
   | { kind: "VALUE"; value: T }
   | {
