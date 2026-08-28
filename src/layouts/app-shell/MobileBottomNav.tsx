@@ -2,7 +2,10 @@ import { Link, useLocation } from "react-router-dom";
 
 import { loadAuthSession } from "../../shared/auth/auth-session";
 import { normalizeUserRole } from "../../shared/auth/user-role";
-import { getBottomNavItemsForRole, isBottomNavItemActive } from "./bottom-nav-items";
+import {
+  getBottomNavItemsForRole,
+  isBottomNavItemActive,
+} from "./bottom-nav-items";
 
 export function MobileBottomNav() {
   const location = useLocation();
@@ -23,6 +26,7 @@ export function MobileBottomNav() {
             <Link
               key={item.label}
               to={item.path}
+              aria-current={isActive ? "page" : undefined}
               className={`aurora-bottom-nav__item ${isActive ? "aurora-bottom-nav__item--active" : ""}`}
             >
               <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />

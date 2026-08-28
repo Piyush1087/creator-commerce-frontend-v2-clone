@@ -48,6 +48,16 @@ function first(value: Record<string, unknown>, ...keys: string[]): unknown {
   return undefined;
 }
 
+function parseWebsiteUrl(value: unknown): string {
+  const raw = z.string().trim().min(1).parse(value);
+  if (z.string().url().safeParse(raw).success) return raw;
+  try {
+    return new URL(`https://${raw}`).toString();
+  } catch {
+    throw new Error("Brand Preview website URL is invalid.");
+  }
+}
+
 function normalizeAudience(value: unknown): BrandPreviewAudienceGroup {
   const item = record(value);
   return {
@@ -158,10 +168,9 @@ function normalizePreview(value: unknown): BrandPreviewPayload {
         optionalText(2048).parse(
           first(identity, "brandLogo", "brand_logo", "logoUrl", "logo_url"),
         ) ?? null,
-      websiteUrl: z
-        .string()
-        .url()
-        .parse(first(identity, "websiteUrl", "website_url")),
+      websiteUrl: parseWebsiteUrl(
+        first(identity, "websiteUrl", "website_url"),
+      ),
       displayDomain: requiredText(255).parse(
         first(identity, "displayDomain", "display_domain"),
       ),

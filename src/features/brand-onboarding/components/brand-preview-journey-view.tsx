@@ -249,9 +249,9 @@ export function BrandPreviewJourneyView() {
     clearBrandPreviewPendingSession();
     navigate(ONBOARDING_ROUTES.verification, {
       state: {
+        url: viewState.preview.identity.websiteUrl,
         leadId,
         brandProfileId: viewState.brandProfileId,
-        url: viewState.preview.identity.websiteUrl,
       },
     });
   };

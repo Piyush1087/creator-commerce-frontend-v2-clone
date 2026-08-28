@@ -27,13 +27,19 @@ export function SidebarNavLink({
   return (
     <Link
       to={item.path}
+      title={item.label}
+      aria-current={isActive ? "page" : undefined}
       className={`${baseClassName}${isActive ? ` ${activeClassName}` : ""}`}
       onClick={onNavigate}
     >
       <span className={iconClassName}>
         <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
       </span>
-      {labelClassName ? <span className={labelClassName}>{item.label}</span> : <span>{item.label}</span>}
+      {labelClassName ? (
+        <span className={labelClassName}>{item.label}</span>
+      ) : (
+        <span>{item.label}</span>
+      )}
     </Link>
   );
 }
