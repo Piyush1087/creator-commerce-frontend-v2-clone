@@ -46,7 +46,7 @@ beforeEach(() => {
       avatar_url: null,
     },
     organization: {
-      company_legal_name: "Legal Ltd",
+      company_legal_name: "Workspace Organization",
       corporate_address: null,
       country_code: "IN",
       currency_code: "INR",
@@ -124,7 +124,7 @@ describe("BS-01 General Settings", () => {
     expect(input("Last name").value).toBe("Lovelace");
     expect(input("First name").disabled).toBe(false);
     expect(input("Last name").disabled).toBe(false);
-    expect(input("Company legal name").value).toBe("Legal Ltd");
+    expect(input("Organization name").value).toBe("Workspace Organization");
     for (const [label, value] of [
       ["Account email address", "ada@example.test"],
       ["Country location (ISO)", "IN"],
@@ -155,7 +155,7 @@ describe("BS-01 General Settings", () => {
     ).toBeNull();
     expect(
       screen.getByText(
-        /Billing address and tax details belong to the Billing profile/,
+        /Registered legal entity, billing address, and tax details belong to Billing/,
       ),
     ).toBeTruthy();
   });
@@ -164,11 +164,11 @@ describe("BS-01 General Settings", () => {
     async (role) => {
       data.current_user_role = role;
       await mount();
-      expect(input("Company legal name").disabled).toBe(false);
+      expect(input("Organization name").disabled).toBe(false);
       fireEvent.change(input("First name"), { target: { value: "Grace" } });
       fireEvent.change(input("Last name"), { target: { value: "Hopper" } });
-      fireEvent.change(input("Company legal name"), {
-        target: { value: "New Legal Ltd" },
+      fireEvent.change(input("Organization name"), {
+        target: { value: "New Workspace Name" },
       });
       fireEvent.click(
         screen.getByRole("button", { name: "Save workspace changes" }),
@@ -179,7 +179,7 @@ describe("BS-01 General Settings", () => {
       ).toEqual({
         firstName: "Grace",
         lastName: "Hopper",
-        organizationLegalName: "New Legal Ltd",
+        organizationLegalName: "New Workspace Name",
       });
       await waitFor(() =>
         expect(
@@ -192,19 +192,23 @@ describe("BS-01 General Settings", () => {
       expect(screen.getByText("Team management")).toBeTruthy();
     },
   );
-  it("preserves the existing Campaign Manager save policy", async () => {
+  it("allows Campaign Manager personal save without an Organization mutation", async () => {
     data.current_user_role = "CAMPAIGN_MANAGER";
     await mount();
-    expect(input("Company legal name").disabled).toBe(true);
+    expect(input("First name").disabled).toBe(false);
+    expect(input("Last name").disabled).toBe(false);
+    expect(input("Organization name").disabled).toBe(true);
+    expect(input("Organization name").readOnly).toBe(true);
     fireEvent.change(input("First name"), { target: { value: "Changed" } });
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "Save workspace changes",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
-    expect(patches()).toHaveLength(0);
+    const save = screen.getByRole("button", { name: "Save workspace changes" });
+    expect((save as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => expect(patches()).toHaveLength(1));
+    const payload = JSON.parse(
+      (patches()[0][1] as RequestInit).body as string,
+    ) as Record<string, unknown>;
+    expect(payload).toEqual({ firstName: "Changed", lastName: "Lovelace" });
+    expect(payload).not.toHaveProperty("organizationLegalName");
     expect(
       screen.queryByRole("button", { name: "Invite new member" }),
     ).toBeNull();
@@ -221,14 +225,14 @@ describe("BS-01 General Settings", () => {
   it("shows save failure and retains unsaved values", async () => {
     failSave = true;
     await mount();
-    fireEvent.change(input("Company legal name"), {
+    fireEvent.change(input("Organization name"), {
       target: { value: "Unsaved Ltd" },
     });
     fireEvent.click(
       screen.getByRole("button", { name: "Save workspace changes" }),
     );
     expect(await screen.findByText("Save rejected")).toBeTruthy();
-    expect(input("Company legal name").value).toBe("Unsaved Ltd");
+    expect(input("Organization name").value).toBe("Unsaved Ltd");
     expect(
       screen.getByRole("button", { name: "Save workspace changes" }),
     ).toBeTruthy();

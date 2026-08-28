@@ -52,16 +52,33 @@ export function BrandGeneralSettings() {
     (form.firstName !== baseline.firstName ||
       form.lastName !== baseline.lastName ||
       form.companyName !== baseline.companyName);
-  const canEditOrg = data
-    ? data.current_user_role !== "CAMPAIGN_MANAGER"
+  const canEditPersonal =
+    data?.current_user_role === "BRAND_OWNER" ||
+    data?.current_user_role === "FINANCE_ADMIN" ||
+    data?.current_user_role === "CAMPAIGN_MANAGER";
+  const canEditOrganization = data
+    ? data.current_user_role === "BRAND_OWNER" ||
+      data.current_user_role === "FINANCE_ADMIN"
     : false;
+  const hasPersonalChanges =
+    form !== null &&
+    baseline !== null &&
+    (form.firstName !== baseline.firstName ||
+      form.lastName !== baseline.lastName);
+  const hasOrganizationChanges =
+    form !== null &&
+    baseline !== null &&
+    form.companyName !== baseline.companyName;
+  const hasEditableChanges =
+    (canEditPersonal && hasPersonalChanges) ||
+    (canEditOrganization && hasOrganizationChanges);
   const resetForm = () => {
     if (baseline) {
       setForm(baseline);
     }
   };
   const handleSave = async () => {
-    if (!form || !canEditOrg) {
+    if (!form || !hasEditableChanges) {
       return;
     }
     setActionError(null);
@@ -69,7 +86,11 @@ export function BrandGeneralSettings() {
       await saveGeneral({
         firstName: form.firstName.trim() || undefined,
         lastName: form.lastName.trim() || undefined,
-        organizationLegalName: form.companyName.trim() || undefined,
+        ...(canEditOrganization
+          ? {
+              organizationLegalName: form.companyName.trim() || undefined,
+            }
+          : {}),
       });
     } catch (err) {
       setActionError(
@@ -112,6 +133,7 @@ export function BrandGeneralSettings() {
                 label="First name"
                 value={form.firstName}
                 placeholder={displayFieldValue("")}
+                disabled={!canEditPersonal}
                 onChange={(e) =>
                   setForm((f) => f && { ...f, firstName: e.target.value })
                 }
@@ -120,6 +142,7 @@ export function BrandGeneralSettings() {
                 label="Last name"
                 value={form.lastName}
                 placeholder={displayFieldValue("")}
+                disabled={!canEditPersonal}
                 onChange={(e) =>
                   setForm((f) => f && { ...f, lastName: e.target.value })
                 }
@@ -139,14 +162,15 @@ export function BrandGeneralSettings() {
         <hr className="settings-section-divider" />
         <SettingsSectionCard
           title="Organization details"
-          description="Manage the organization legal name. Primary country and reporting currency are protected Brand settings. Billing address and tax details belong to the Billing profile."
+          description="Manage the workspace and Organization name. Registered legal entity, billing address, and tax details belong to Billing. Primary country and reporting currency are protected Brand settings."
         >
           <div className="settings-form-grid settings-form-grid--two">
             <TextField
-              label="Company legal name"
+              label="Organization name"
               value={form.companyName}
               placeholder={displayFieldValue("")}
-              disabled={!canEditOrg}
+              disabled={!canEditOrganization}
+              readOnly={!canEditOrganization}
               onChange={(e) =>
                 setForm((f) => f && { ...f, companyName: e.target.value })
               }
@@ -192,7 +216,7 @@ export function BrandGeneralSettings() {
           </div>
           <Alert tone="warning" title="Protected Brand identity">
             Brand name and website are read-only in General settings. Changing
-            the organization legal name does not change your Brand identity.
+            the Organization name does not change your Brand identity.
           </Alert>
         </SettingsSectionCard>
         <SettingsSectionCard
@@ -212,7 +236,7 @@ export function BrandGeneralSettings() {
         visible={isDirty}
         onDiscard={resetForm}
         onSave={() => void handleSave()}
-        saveDisabled={saving || !canEditOrg}
+        saveDisabled={saving || !hasEditableChanges}
       />
     </>
   );
