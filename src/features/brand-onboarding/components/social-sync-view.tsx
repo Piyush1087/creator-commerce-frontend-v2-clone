@@ -223,7 +223,7 @@ export function SocialSyncView() {
     setError(null);
     setSkipConfirmOpen(false);
     if (!auth?.accessToken) {
-      navigate(AUTH_ROUTES.brandCentre);
+      navigate(AUTH_ROUTES.brandDashboard);
       return;
     }
     setBusy(true);
@@ -232,9 +232,9 @@ export function SocialSyncView() {
         method: "POST",
         headers: authHeaders(),
       });
-      navigate(AUTH_ROUTES.brandCentre);
+      navigate(AUTH_ROUTES.brandDashboard);
     } catch {
-      navigate(AUTH_ROUTES.brandCentre);
+      navigate(AUTH_ROUTES.brandDashboard);
     } finally {
       setBusy(false);
     }
@@ -327,9 +327,9 @@ export function SocialSyncView() {
                 variant="primary"
                 className="bob-social-sync__connect"
                 disabled={busy}
-                onClick={() => navigate(AUTH_ROUTES.brandCentre)}
+                onClick={() => navigate(AUTH_ROUTES.brandDashboard)}
               >
-                Continue to Brand Centre
+                Continue to dashboard
               </Button>
             ) : (
               <Button

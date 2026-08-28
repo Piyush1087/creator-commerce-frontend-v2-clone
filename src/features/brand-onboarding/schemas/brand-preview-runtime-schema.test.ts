@@ -253,6 +253,19 @@ describe("parseBrandPreviewRuntimeProjection", () => {
     expect(parsed.verificationContext?.brandProfileId).toBe("brand-profile-2");
   });
 
+  it("accepts a POST_PROFILE domain as website_url", () => {
+    const domainOnly = backendReadyProjection("PARTIAL");
+    (
+      domainOnly.preview.identity as { website_url: string }
+    ).website_url = "perniaspopupshop.com";
+
+    const parsed = parseBrandPreviewRuntimeProjection(domainOnly);
+
+    expect(parsed.preview?.identity.websiteUrl).toBe(
+      "https://perniaspopupshop.com/",
+    );
+  });
+
   it("rejects PREVIEW_READY when a mandatory repeated block is empty", () => {
     const broken = readyProjection();
     (broken.preview as { audiences: unknown[] }).audiences = [];

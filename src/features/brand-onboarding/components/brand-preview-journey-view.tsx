@@ -18,7 +18,6 @@ import {
   saveBrandOnboardingSession,
   saveBrandPreviewPendingSession,
 } from "../session/onboarding-session";
-import { AUTH_ROUTES } from "../../auth/constants";
 import { ONBOARDING_ROUTES } from "../constants";
 import { AnalysisRecoveryView } from "./analysis-recovery-view";
 import { BrandPreviewView } from "./brand-preview-view";
@@ -248,11 +247,11 @@ export function BrandPreviewJourneyView() {
       normalizedUrl: viewState.preview.identity.websiteUrl,
     });
     clearBrandPreviewPendingSession();
-    navigate(AUTH_ROUTES.brandCentre, {
+    navigate(ONBOARDING_ROUTES.verification, {
       state: {
+        url: viewState.preview.identity.websiteUrl,
         leadId,
         brandProfileId: viewState.brandProfileId,
-        url: viewState.preview.identity.websiteUrl,
       },
     });
   };
