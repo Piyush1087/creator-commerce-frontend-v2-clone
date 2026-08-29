@@ -106,7 +106,7 @@ describe("functional Brand workspace", () => {
       'data-location-id="20000000-0000-4000-8000-000000000001"',
     );
   });
-  it("only Brand has a destination; unavailable workspaces are natively disabled", () => {
+  it("Brand and canonical Offerings have destinations; unavailable workspaces are natively disabled", () => {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -115,10 +115,10 @@ describe("functional Brand workspace", () => {
       ),
     );
     expect([...html.matchAll(/href="([^"]+)"/gu)].map((m) => m[1])).toEqual([
-      "/brand-centre",
-      "/brand-centre",
+      "/brand-centre", "/brand-centre/offerings",
+      "/brand-centre", "/brand-centre/offerings",
     ]);
-    expect([...html.matchAll(/disabled=""/gu)]).toHaveLength(8);
+    expect([...html.matchAll(/disabled=""/gu)]).toHaveLength(6);
     for (const legacy of [
       "Brand DNA",
       "Intelligence &amp; Gaps",

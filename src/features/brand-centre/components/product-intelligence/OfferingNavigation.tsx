@@ -1,0 +1,2 @@
+import { Link } from "react-router-dom";
+export function OfferingNavigation({ current = "Offerings" }: { current?: "Brand" | "Offerings" }) { return <nav className="product-nav" aria-label="Brand Centre workspaces"><Link to="/brand-centre" aria-current={current === "Brand" ? "page" : undefined}>Brand</Link><Link to="/brand-centre/offerings" aria-current={current === "Offerings" ? "page" : undefined}>Offerings</Link><span aria-disabled="true">Market</span><span aria-disabled="true">Recommendations</span></nav>; }

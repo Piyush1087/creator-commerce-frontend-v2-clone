@@ -1,0 +1,16 @@
+import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import { mapProductIntelligence } from "../../adapters/map-product-intelligence";
+import { productFixture } from "../../testing/product-intelligence-fixtures";
+import { ProductSection } from "./ProductSection";
+describe("Product presentation states", () => {
+  it("renders all three semantic sections in stable order", () => { const view = mapProductIntelligence(productFixture); expect(view.sections.map((s) => s.title)).toEqual(["Factual understanding", "Creator communication", "Actionability"]); });
+  it("preserves mixed runtime locally", () => { const fixture = structuredClone(productFixture); fixture.intelligence.factualProfile.freshness = "STALE"; fixture.processorRuntime.offering_creator_communication.activity = "WAITING_FOR_DEPENDENCY"; fixture.intelligence.actionabilityProfile.readiness = "PARTIAL"; const sections = mapProductIntelligence(fixture).sections; expect(sections.map((s) => [s.freshness, s.activity, s.readiness])).toEqual([["STALE", "IDLE", "READY"], ["CURRENT", "WAITING_FOR_DEPENDENCY", "READY"], ["CURRENT", "IDLE", "PARTIAL"]]); });
+  it("renders stale, candidate, and failed-refresh cues with retained current", () => { const fixture = structuredClone(productFixture); fixture.intelligence.factualProfile.freshness = "STALE"; fixture.intelligence.factualProfile.candidate.status = "CONFLICT"; fixture.processorRuntime.offering_factual_synthesis.activity = "TEMPORARILY_UNAVAILABLE"; fixture.processorRuntime.offering_factual_synthesis.failure = { category: null, code: "RETRY", currentPreserved: true, retryEligible: true }; const html = renderToStaticMarkup(createElement(ProductSection, { section: mapProductIntelligence(fixture).sections[0] })); expect(html).toContain("May need updating"); expect(html).toContain("Current information remains visible"); expect(html).toContain("Current information remains unchanged"); expect(html).toContain("A grounded summary"); });
+  it("does not manufacture absent optional fields", () => expect(mapProductIntelligence(productFixture).sections[0].groups.map((g) => g.label)).toEqual(["Key facts"]));
+  it("uses canonical price only and maps manual protection", () => { const view = mapProductIntelligence(productFixture); expect(view.priceLabel).toContain("25.00"); expect(view.manuallyManaged).toBe(true); });
+  it("keeps interaction accessible and refetches after a successful write", () => { const source = readFileSync(new URL("./CanonicalPrice.tsx", import.meta.url), "utf8"); expect(source).toContain("await putManualOfferingPrice"); expect(source).toContain("await onSaved()"); expect(source).toContain("<form"); expect(source).toContain("Save"); expect(source).toContain("Cancel"); expect(source).toContain("error={errors.currentMinAmount}"); });
+  it("defines the mobile 390 semantic stack without horizontal core scrolling", () => { const css = readFileSync(new URL("./product-intelligence.css", import.meta.url), "utf8"); expect(css).toContain("@media(max-width:767px)"); expect(css).toContain("grid-template-columns:1fr"); expect(css).not.toContain("100vw"); });
+});

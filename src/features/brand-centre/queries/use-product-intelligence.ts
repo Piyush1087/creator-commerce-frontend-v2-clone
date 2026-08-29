@@ -1,0 +1,4 @@
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createOfferingDiscoveryCache, createProductDetailCache } from "./product-intelligence-cache";
+export function useOfferingDiscovery() { const [cache] = useState(createOfferingDiscoveryCache); const state = useSyncExternalStore(cache.subscribe, cache.getSnapshot, cache.getSnapshot); useEffect(() => { void cache.refresh(); return cache.cancel; }, [cache]); return { state, refresh: cache.refresh }; }
+export function useProductDetail(offeringId: string) { const [cache] = useState(() => createProductDetailCache(offeringId)); const state = useSyncExternalStore(cache.subscribe, cache.getSnapshot, cache.getSnapshot); useEffect(() => { void cache.refresh(); return cache.cancel; }, [cache]); return { state, refresh: cache.refresh }; }
