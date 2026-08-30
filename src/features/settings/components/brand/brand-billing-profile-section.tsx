@@ -78,8 +78,8 @@ export function BrandBillingProfileSection({
     const normalizedAddress = billingAddress.trim();
     const normalizedGstin = gstin.trim().toUpperCase();
 
-    if (normalizedName.length < 2 || normalizedName.length > 100) {
-      setFormError("Legal entity name must be between 2 and 100 characters.");
+    if (normalizedName.length < 2 || normalizedName.length > 255) {
+      setFormError("Legal entity name must be between 2 and 255 characters.");
       return;
     }
     if (normalizedType.length < 2 || normalizedType.length > 100) {
@@ -242,7 +242,7 @@ export function BrandBillingProfileSection({
             label="Legal entity name"
             value={legalEntityName}
             minLength={2}
-            maxLength={100}
+            maxLength={255}
             onChange={(event) => setLegalEntityName(event.target.value)}
             disabled={readOnly}
           />

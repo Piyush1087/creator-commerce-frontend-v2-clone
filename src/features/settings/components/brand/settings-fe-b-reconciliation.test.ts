@@ -45,6 +45,45 @@ const notifications: BrandNotificationsResponse = {
 
 afterEach(cleanup);
 
+function openEmptyBillingProfile(onSave: ReturnType<typeof vi.fn>) {
+  render(
+    createElement(BrandBillingProfileSection, {
+      data: {
+        ...completeBilling,
+        billing_profile: null,
+        profile_state: "NOT_CONFIGURED",
+        is_complete_for_paid_conversion: false,
+        missing_required_fields: [
+          "legal_entity_name",
+          "legal_entity_type",
+          "billing_country_code",
+          "billing_address",
+        ],
+      },
+      loading: false,
+      saving: false,
+      error: null,
+      onSave,
+    }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Add billing profile" }));
+}
+
+function fillRequiredBillingFields(legalEntityName: string) {
+  fireEvent.change(screen.getByLabelText("Legal entity name"), {
+    target: { value: legalEntityName },
+  });
+  fireEvent.change(screen.getByLabelText("Legal entity type"), {
+    target: { value: "LLC" },
+  });
+  fireEvent.change(screen.getByLabelText(/^Billing country/), {
+    target: { value: "US" },
+  });
+  fireEvent.change(screen.getByLabelText("Billing address"), {
+    target: { value: "100 Main Street" },
+  });
+}
+
 describe("FE-B canonical billing profile", () => {
   it("renders only canonical fields, readiness, and the backend lifecycle", () => {
     const { container } = render(
@@ -131,6 +170,34 @@ describe("FE-B canonical billing profile", () => {
     );
     expect(screen.getByText("UPDATED")).toBeTruthy();
     expect(screen.queryByText(/verified|pending verification/i)).toBeNull();
+  });
+
+  it.each([2, 255])(
+    "accepts a %i-character legal entity name client-side",
+    async (length) => {
+      const onSave = vi.fn().mockResolvedValue(undefined);
+      openEmptyBillingProfile(onSave);
+      const legalEntityName = "A".repeat(length);
+      fillRequiredBillingFields(legalEntityName);
+      expect(screen.getByLabelText("Legal entity name").getAttribute("maxlength")).toBe("255");
+      fireEvent.click(screen.getByRole("button", { name: "Save billing profile" }));
+      await waitFor(() =>
+        expect(onSave).toHaveBeenCalledWith(
+          expect.objectContaining({ legalEntityName }),
+        ),
+      );
+    },
+  );
+
+  it("rejects a 256-character legal entity name client-side", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    openEmptyBillingProfile(onSave);
+    fillRequiredBillingFields("A".repeat(256));
+    fireEvent.click(screen.getByRole("button", { name: "Save billing profile" }));
+    expect(
+      await screen.findByText("Legal entity name must be between 2 and 255 characters."),
+    ).toBeTruthy();
+    expect(onSave).not.toHaveBeenCalled();
   });
 });
 

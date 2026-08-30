@@ -7,30 +7,46 @@ export const SUBSCRIPTION_TIERS = [
 
 export type SubscriptionTier = (typeof SUBSCRIPTION_TIERS)[number];
 
-export type SubscriptionStatus =
-  | "TRIALING"
-  | "TRIAL_EXPIRED"
-  | "ACTIVE"
-  | "CANCEL_SCHEDULED"
-  | "CANCELED"
-  | "PAST_DUE"
-  | "HALTED";
+export const SUBSCRIPTION_STATUSES = [
+  "TRIALING",
+  "TRIAL_EXPIRED",
+  "ACTIVE",
+  "CANCEL_SCHEDULED",
+  "CANCELED",
+  "PAST_DUE",
+  "HALTED",
+] as const;
+
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+export const SUBSCRIPTION_LIFECYCLE_STATUSES = [
+  "TRIALING",
+  "ACTIVE",
+  "CANCEL_SCHEDULED",
+  "PAST_DUE",
+  "TRIAL_EXPIRED",
+  "CANCELLED",
+  "HALTED",
+] as const;
 
 export type SubscriptionLifecycleStatus =
-  | "TRIALING"
-  | "TRIAL_EXPIRED"
-  | "ACTIVE"
-  | "CANCEL_SCHEDULED"
-  | "CANCELLED"
-  | "PAST_DUE"
-  | "HALTED";
+  (typeof SUBSCRIPTION_LIFECYCLE_STATUSES)[number];
 
-export type SubscriptionAccessMode = "FULL_ACCESS" | "RESTRICTED_WIND_DOWN";
+export const SUBSCRIPTION_ACCESS_MODES = [
+  "FULL_ACCESS",
+  "RESTRICTED_WIND_DOWN",
+] as const;
+
+export type SubscriptionAccessMode = (typeof SUBSCRIPTION_ACCESS_MODES)[number];
+
+export const SUBSCRIPTION_REQUIRED_ACTIONS = [
+  "NONE",
+  "PAYMENT_REQUIRED",
+  "UPDATE_PAYMENT_METHOD",
+] as const;
 
 export type SubscriptionRequiredAction =
-  | "NONE"
-  | "PAYMENT_REQUIRED"
-  | "UPDATE_PAYMENT_METHOD";
+  (typeof SUBSCRIPTION_REQUIRED_ACTIONS)[number];
 
 export type SubscriptionCurrency = "INR" | "USD";
 
@@ -151,6 +167,33 @@ function isSubscriptionTier(value: unknown): value is SubscriptionTier {
   return SUBSCRIPTION_TIERS.includes(value as SubscriptionTier);
 }
 
+function isCanonicalString<T extends readonly string[]>(
+  values: T,
+  value: unknown,
+): value is T[number] {
+  return typeof value === "string" && values.includes(value as T[number]);
+}
+
+function isSubscriptionStatus(value: unknown): value is SubscriptionStatus {
+  return isCanonicalString(SUBSCRIPTION_STATUSES, value);
+}
+
+function isSubscriptionLifecycleStatus(
+  value: unknown,
+): value is SubscriptionLifecycleStatus {
+  return isCanonicalString(SUBSCRIPTION_LIFECYCLE_STATUSES, value);
+}
+
+function isSubscriptionAccessMode(value: unknown): value is SubscriptionAccessMode {
+  return isCanonicalString(SUBSCRIPTION_ACCESS_MODES, value);
+}
+
+function isSubscriptionRequiredAction(
+  value: unknown,
+): value is SubscriptionRequiredAction {
+  return isCanonicalString(SUBSCRIPTION_REQUIRED_ACTIONS, value);
+}
+
 function isCommercialTerms(value: unknown): value is SubscriptionCommercialTerms {
   if (!isRecord(value)) return false;
   return (
@@ -190,7 +233,7 @@ export function isBrandSubscriptionRecord(
     isString(value.brandProfileId) &&
     isSubscriptionTier(value.tier) &&
     isSubscriptionTier(value.plan) &&
-    isString(value.status) &&
+    isSubscriptionStatus(value.status) &&
     (value.currency === "INR" || value.currency === "USD") &&
     isNullableString(value.razorpayCustomerId) &&
     isNullableString(value.razorpaySubscriptionId) &&
@@ -200,9 +243,9 @@ export function isBrandSubscriptionRecord(
     isString(value.currentPeriodEnd) &&
     isNullableString(value.cancelEffectiveAt) &&
     isNullableString(value.paymentGraceEndsAt) &&
-    isString(value.lifecycleStatus) &&
-    (value.accessMode === "FULL_ACCESS" || value.accessMode === "RESTRICTED_WIND_DOWN") &&
-    isString(value.requiredAction) &&
+    isSubscriptionLifecycleStatus(value.lifecycleStatus) &&
+    isSubscriptionAccessMode(value.accessMode) &&
+    isSubscriptionRequiredAction(value.requiredAction) &&
     (value.commercialTerms === null || isCommercialTerms(value.commercialTerms))
   );
 }

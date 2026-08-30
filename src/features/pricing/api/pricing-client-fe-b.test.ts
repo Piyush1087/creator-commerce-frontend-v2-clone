@@ -3,6 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { adoptAuthSession, resetAuthSessionForTests } from "../../../shared/auth/auth-session";
 import {
+  SUBSCRIPTION_ACCESS_MODES,
+  SUBSCRIPTION_LIFECYCLE_STATUSES,
+  SUBSCRIPTION_REQUIRED_ACTIONS,
+  SUBSCRIPTION_STATUSES,
+  isBrandSubscriptionRecord,
+} from "../contracts/pricing.contracts";
+import {
   PricingApiError,
   cancelSubscription,
   startPaidConversion,
@@ -118,5 +125,67 @@ describe("FE-B canonical pricing mutations", () => {
     await cancelSubscription();
     expect(String(fetchMock.mock.calls[0][0])).toContain("/api/v1/pricing/cancel");
     expect(fetchMock.mock.calls[0][1]?.body).toBeUndefined();
+  });
+});
+
+describe("FE-BC1 pricing runtime contract validation", () => {
+  it.each(SUBSCRIPTION_STATUSES)("accepts canonical raw status %s", (status) => {
+    expect(isBrandSubscriptionRecord({ ...subscription, status })).toBe(true);
+  });
+
+  it.each(SUBSCRIPTION_LIFECYCLE_STATUSES)(
+    "accepts canonical lifecycle status %s",
+    (lifecycleStatus) => {
+      expect(isBrandSubscriptionRecord({ ...subscription, lifecycleStatus })).toBe(true);
+    },
+  );
+
+  it.each(SUBSCRIPTION_ACCESS_MODES)("accepts canonical access mode %s", (accessMode) => {
+    expect(isBrandSubscriptionRecord({ ...subscription, accessMode })).toBe(true);
+  });
+
+  it.each(SUBSCRIPTION_REQUIRED_ACTIONS)(
+    "accepts canonical required action %s",
+    (requiredAction) => {
+      expect(isBrandSubscriptionRecord({ ...subscription, requiredAction })).toBe(true);
+    },
+  );
+
+  it("preserves raw CANCELED with derived lifecycle CANCELLED", () => {
+    expect(
+      isBrandSubscriptionRecord({
+        ...subscription,
+        status: "CANCELED",
+        lifecycleStatus: "CANCELLED",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects an unknown raw subscription status", () => {
+    expect(isBrandSubscriptionRecord({ ...subscription, status: "UNKNOWN_STATE" })).toBe(false);
+  });
+
+  it("rejects an unknown lifecycle status", () => {
+    expect(
+      isBrandSubscriptionRecord({
+        ...subscription,
+        lifecycleStatus: "UNKNOWN_STATE",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects an unknown access mode", () => {
+    expect(
+      isBrandSubscriptionRecord({ ...subscription, accessMode: "UNKNOWN_ACCESS_MODE" }),
+    ).toBe(false);
+  });
+
+  it("rejects an unknown required action", () => {
+    expect(
+      isBrandSubscriptionRecord({
+        ...subscription,
+        requiredAction: "UNKNOWN_REQUIRED_ACTION",
+      }),
+    ).toBe(false);
   });
 });
