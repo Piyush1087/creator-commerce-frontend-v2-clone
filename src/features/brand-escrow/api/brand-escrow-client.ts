@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import {
   isEscrowBreakdownApiResponse,
   isEscrowLedgerApiResponse,
@@ -28,7 +28,6 @@ export class EscrowApiError extends Error {
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -50,7 +49,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
         ? (body as { message?: unknown }).message
         : undefined;
     const message = Array.isArray(rawMessage)
-      ? rawMessage.filter((item): item is string => typeof item === "string").join(", ")
+      ? rawMessage
+          .filter((item): item is string => typeof item === "string")
+          .join(", ")
       : typeof rawMessage === "string"
         ? rawMessage
         : `Request failed (${response.status}).`;
@@ -67,7 +68,10 @@ export async function fetchEscrowVault(): Promise<EscrowVaultApiResponse> {
   });
   const json = await readJsonOrThrow(response);
   if (!isEscrowVaultApiResponse(json)) {
-    throw new EscrowApiError("Unexpected escrow vault response.", response.status);
+    throw new EscrowApiError(
+      "Unexpected escrow vault response.",
+      response.status,
+    );
   }
   return json;
 }
@@ -79,12 +83,17 @@ export async function initializeEscrowVault(): Promise<EscrowVaultApiResponse> {
   });
   const json = await readJsonOrThrow(response);
   if (!isEscrowVaultApiResponse(json)) {
-    throw new EscrowApiError("Unexpected escrow initialize response.", response.status);
+    throw new EscrowApiError(
+      "Unexpected escrow initialize response.",
+      response.status,
+    );
   }
   return json;
 }
 
-export async function fetchEscrowLedger(limit = 50): Promise<EscrowLedgerApiEntry[]> {
+export async function fetchEscrowLedger(
+  limit = 50,
+): Promise<EscrowLedgerApiEntry[]> {
   const response = await fetch(
     `${env.apiUrl}/api/v1/escrow/ledger?limit=${encodeURIComponent(String(limit))}`,
     {
@@ -94,7 +103,10 @@ export async function fetchEscrowLedger(limit = 50): Promise<EscrowLedgerApiEntr
   );
   const json = await readJsonOrThrow(response);
   if (!isEscrowLedgerApiResponse(json)) {
-    throw new EscrowApiError("Unexpected escrow ledger response.", response.status);
+    throw new EscrowApiError(
+      "Unexpected escrow ledger response.",
+      response.status,
+    );
   }
   return json;
 }
@@ -113,7 +125,10 @@ export async function createEscrowTopUpIntent(input: {
   });
   const json = await readJsonOrThrow(response);
   if (!isEscrowTopUpIntentApiResponse(json)) {
-    throw new EscrowApiError("Unexpected top-up intent response.", response.status);
+    throw new EscrowApiError(
+      "Unexpected top-up intent response.",
+      response.status,
+    );
   }
   return json;
 }
@@ -123,15 +138,18 @@ export async function fetchEscrowBreakdown(input: {
   currency: "INR" | "USD";
   expectedTdsPercentage: 0 | 1 | 2;
 }): Promise<EscrowBreakdownApiResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/escrow/calculate-breakdown`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({
-      gross_creator_quote: input.grossCreatorQuote,
-      currency: input.currency,
-      expected_tds_percentage: input.expectedTdsPercentage,
-    }),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/escrow/calculate-breakdown`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        gross_creator_quote: input.grossCreatorQuote,
+        currency: input.currency,
+        expected_tds_percentage: input.expectedTdsPercentage,
+      }),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (!isEscrowBreakdownApiResponse(json)) {
     throw new EscrowApiError("Unexpected breakdown response.", response.status);

@@ -6,7 +6,7 @@ import {
   Card,
   TextField,
 } from "../../../../design-system/aurora";
-import { saveAuthSession } from "../../../../shared/auth/auth-session";
+import { adoptAuthSession } from "../../../../shared/auth/auth-session";
 import { AUTH_ROUTES } from "../../../auth/constants";
 import {
   acceptTeamInvitation,
@@ -106,7 +106,7 @@ export function TeamInvitationAcceptance() {
         token,
         invitation.requires_account_bootstrap ? password : undefined,
       );
-      saveAuthSession(session);
+      adoptAuthSession(session);
       setState("accepted");
       setPassword("");
       setConfirm("");

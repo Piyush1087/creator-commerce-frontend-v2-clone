@@ -24,6 +24,7 @@ async function post(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      credentials: "include",
       cache: "no-store",
       referrerPolicy: "no-referrer",
     },

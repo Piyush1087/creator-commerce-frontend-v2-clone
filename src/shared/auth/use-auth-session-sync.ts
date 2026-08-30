@@ -1,25 +1,18 @@
 import { useEffect } from "react";
 
 import { refreshAuthSessionFromServer } from "../../features/auth/api/auth-client";
-import { handleAuthFailure, isAccessTokenValid, loadAuthSession } from "./auth-session";
+import { useAuthSession } from "./use-auth-session";
 
-/** Sync minimal user fields from GET /api/v1/auth/me on authenticated shell mount. */
+/** Refresh the server-authoritative `/auth/me` projection on shell entry. */
 export function useAuthSessionSync(): void {
+  const { status } = useAuthSession();
+
   useEffect(() => {
-    const session = loadAuthSession();
-    if (!session?.accessToken || !isAccessTokenValid(session.accessToken)) {
-      if (session?.accessToken) {
-        handleAuthFailure();
-      }
+    if (status !== "AUTHENTICATED") {
       return;
     }
-
-    void (async () => {
-      try {
-        await refreshAuthSessionFromServer();
-      } catch {
-        handleAuthFailure();
-      }
-    })();
-  }, []);
+    void refreshAuthSessionFromServer().catch(() => {
+      // authenticatedFetch owns refresh failure and session transitions.
+    });
+  }, [status]);
 }

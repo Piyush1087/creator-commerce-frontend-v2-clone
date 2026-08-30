@@ -10,7 +10,10 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TeamInvitationAcceptance } from "./team-invitation-acceptance";
-import { loadAuthSession } from "../../../../shared/auth/auth-session";
+import {
+  getAuthSession,
+  resetAuthSessionForTests,
+} from "../../../../shared/auth/auth-session";
 import { AUTH_ROUTES } from "../../../auth/constants";
 
 const fetchMock = vi.fn();
@@ -23,6 +26,7 @@ const presentation = {
 };
 const session = {
   accessToken: "synthetic.session.fixture",
+  accessTokenExpiresAt: new Date(Date.now() + 900000).toISOString(),
   user: {
     id: "recipient",
     email: presentation.email,
@@ -63,6 +67,7 @@ function mount() {
   );
 }
 beforeEach(() => {
+  resetAuthSessionForTests();
   localStorage.clear();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
@@ -142,7 +147,8 @@ describe("BS-02 public invitation acceptance", () => {
           .closest("form")!,
       );
       expect(await screen.findByText("Brand dashboard")).toBeTruthy();
-      expect(loadAuthSession()).toEqual(session);
+      expect(getAuthSession()).toEqual(session);
+      expect(fetchMock.mock.calls[1][1].credentials).toBe("include");
       const body = JSON.parse(fetchMock.mock.calls[1][1].body as string) as {
         password?: string;
       };
@@ -185,6 +191,6 @@ describe("BS-02 public invitation acceptance", () => {
         ),
       ).toBeTruthy(),
     );
-    expect(loadAuthSession()).toBeNull();
+    expect(getAuthSession()).toBeNull();
   });
 });

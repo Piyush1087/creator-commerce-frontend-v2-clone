@@ -4,7 +4,7 @@ import { Instagram } from "lucide-react";
 import { Alert, Badge, Button } from "../../../../design-system/aurora";
 import { SideDrawer } from "../../../../design-system/aurora/components/SideDrawer";
 import { env } from "../../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../../shared/api/authenticated-fetch";
 import { SettingsSectionCard } from "../settings-section-card";
 
 type LayoutCase = "PARTIAL_INSTAGRAM" | "FULL_INSTAGRAM" | "SKIPPED";
@@ -111,7 +111,6 @@ export function BrandIntegrationsSettings() {
   const authHeaders = (): HeadersInit => ({
     Accept: "application/json",
     "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
   });
 
   const redirectUri = () =>

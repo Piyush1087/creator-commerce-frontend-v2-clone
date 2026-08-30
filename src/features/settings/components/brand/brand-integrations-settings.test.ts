@@ -11,7 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BrandIntegrationsSettings } from "./brand-integrations-settings";
 
 vi.mock("../../../../shared/auth/auth-session", () => ({
-  authAuthorizationHeader: () => ({}),
+  getAccessToken: () => "settings-test-token",
+  getAuthSessionSnapshot: () => ({ status: "AUTHENTICATED" }),
+  refreshAuthSession: vi.fn(),
 }));
 vi.mock("../../../../shared/config/env", () => ({
   env: { apiUrl: "http://localhost:3000" },

@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   BrandBillingProfileResponse,
   BrandGeneralResponse,
@@ -41,7 +41,6 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
 function jsonHeaders(): HeadersInit {
   return {
     "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
   };
 }
 

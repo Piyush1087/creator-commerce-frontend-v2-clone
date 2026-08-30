@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 
 import { Alert } from "../../../design-system/aurora";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import { normalizeUserRole } from "../../../shared/auth/user-role";
 import {
   resolveCollaborationRouteAccess,
@@ -17,7 +17,8 @@ export function CollaborationRouteGuard({
   children,
   expectedRole,
 }: CollaborationRouteGuardProps) {
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   const access = resolveCollaborationRouteAccess(role, expectedRole);
 
   if (access.kind === "redirect") {
@@ -26,7 +27,8 @@ export function CollaborationRouteGuard({
   if (access.kind === "unsupported") {
     return (
       <Alert tone="warning" title="Collaboration access unavailable">
-        This account does not have an operational Brand or Creator Collaboration workspace.
+        This account does not have an operational Brand or Creator Collaboration
+        workspace.
       </Alert>
     );
   }

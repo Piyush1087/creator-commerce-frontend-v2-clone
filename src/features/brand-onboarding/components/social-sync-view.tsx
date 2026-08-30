@@ -12,7 +12,8 @@ import {
 import { Button, TextField } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import { env } from "../../../shared/config/env";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import { openInstagramOAuth } from "../../../shared/oauth/instagram-oauth";
 import { InstagramConnectModal } from "./instagram-connect-modal";
 
@@ -35,7 +36,7 @@ function isPopupCallback(): boolean {
  */
 export function SocialSyncView() {
   const navigate = useNavigate();
-  const auth = loadAuthSession();
+  const auth = useAuthSession();
   const handledCodeRef = useRef(false);
 
   const [inviteEmail, setInviteEmail] = useState("");
@@ -52,9 +53,6 @@ export function SocialSyncView() {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
-    if (auth?.accessToken) {
-      headers.Authorization = `Bearer ${auth.accessToken}`;
-    }
     return headers;
   };
 
@@ -116,7 +114,7 @@ export function SocialSyncView() {
   }, []);
 
   useEffect(() => {
-    if (!auth?.accessToken || handledCodeRef.current) {
+    if (!auth.accessToken || handledCodeRef.current) {
       return;
     }
     const params = new URLSearchParams(window.location.search);
@@ -180,13 +178,13 @@ export function SocialSyncView() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when code is present
-  }, [auth?.accessToken]);
+  }, [auth.accessToken]);
 
   const launchInstagramOauth = async () => {
     setModalError(null);
     setError(null);
     setMessage(null);
-    if (!auth?.accessToken) {
+    if (!auth.accessToken) {
       setModalError(
         "Sign in / complete password verification before connecting Instagram.",
       );
@@ -222,7 +220,7 @@ export function SocialSyncView() {
   const confirmSkip = async () => {
     setError(null);
     setSkipConfirmOpen(false);
-    if (!auth?.accessToken) {
+    if (!auth.accessToken) {
       navigate(AUTH_ROUTES.brandCentre);
       return;
     }
@@ -243,7 +241,7 @@ export function SocialSyncView() {
   const sendInvite = async () => {
     setError(null);
     setMessage(null);
-    if (!auth?.accessToken) {
+    if (!auth.accessToken) {
       setError("Sign in before inviting a teammate.");
       return;
     }
@@ -258,7 +256,9 @@ export function SocialSyncView() {
       if (!res.ok) {
         throw new Error(json.message || "Invite failed.");
       }
-      setMessage("Secure integration link sent (check server logs in local/dev).");
+      setMessage(
+        "Secure integration link sent (check server logs in local/dev).",
+      );
       setInviteEmail("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invite failed.");
@@ -270,19 +270,26 @@ export function SocialSyncView() {
   return (
     <div className="bob-verify bob-verify--hide-nav bob-social-sync">
       <div className="bob-verify__split">
-        <section className="bob-verify__left" aria-labelledby="social-sync-title">
+        <section
+          className="bob-verify__left"
+          aria-labelledby="social-sync-title"
+        >
           <div className="bob-verify__left-inner bob-social-sync__left-inner">
             <header className="bob-social-sync__header">
               <h1 id="social-sync-title" className="bob-verify__title">
                 Supercharge your Brand DNA
               </h1>
               <p className="bob-verify__lead bob-social-sync__lead">
-                Connect your professional Instagram profile to unlock deep performance analytics
-                and verify your ecosystem engagement metrics.
+                Connect your professional Instagram profile to unlock deep
+                performance analytics and verify your ecosystem engagement
+                metrics.
               </p>
             </header>
 
-            <div className="bob-social-sync__permissions" aria-label="What you unlock">
+            <div
+              className="bob-social-sync__permissions"
+              aria-label="What you unlock"
+            >
               <div className="bob-social-sync__permission">
                 <BarChart2 size={22} aria-hidden />
                 <div>
@@ -351,7 +358,8 @@ export function SocialSyncView() {
                 Not the Instagram Account Manager?
               </h3>
               <p className="bob-verify__lead">
-                Enter the email of the teammate who manages your Instagram professional credentials.
+                Enter the email of the teammate who manages your Instagram
+                professional credentials.
               </p>
               <TextField
                 label="Colleague email"
@@ -380,8 +388,8 @@ export function SocialSyncView() {
                 Skip for now
               </button>
               <p className="bob-otp-helper">
-                Instagram Login only during onboarding. Meta Business Suite can be added later in
-                Settings → Integrations.
+                Instagram Login only during onboarding. Meta Business Suite can
+                be added later in Settings → Integrations.
               </p>
             </div>
           </div>
@@ -415,15 +423,22 @@ export function SocialSyncView() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 id="skip-sync-title" className="bob-verify__title" style={{ fontSize: "1.25rem" }}>
+              <h2
+                id="skip-sync-title"
+                className="bob-verify__title"
+                style={{ fontSize: "1.25rem" }}
+              >
                 Are you sure you want to skip integration?
               </h2>
               <p className="bob-verify__lead">
-                Bypassing this step will limit your real-time performance tracking and fallback to
-                historical public engagement estimates. You can connect later via your workspace
-                account panel.
+                Bypassing this step will limit your real-time performance
+                tracking and fallback to historical public engagement estimates.
+                You can connect later via your workspace account panel.
               </p>
-              <div className="bob-inline" style={{ justifyContent: "flex-end", gap: "0.5rem" }}>
+              <div
+                className="bob-inline"
+                style={{ justifyContent: "flex-end", gap: "0.5rem" }}
+              >
                 <Button
                   type="button"
                   variant="outline"
@@ -455,7 +470,9 @@ export function SocialSyncView() {
               Instagram API Synchronization Pipeline Active
             </div>
 
-            <h2 className="bob-social-sync__preview-title">Dashboard Sneak-Peek</h2>
+            <h2 className="bob-social-sync__preview-title">
+              Dashboard Sneak-Peek
+            </h2>
 
             <div className="bob-social-sync__preview-panel">
               <div className="bob-social-sync__preview-window">
@@ -464,7 +481,9 @@ export function SocialSyncView() {
                   <span />
                   <span />
                 </div>
-                <div className="bob-social-sync__window-label">Global Analytics v5.0</div>
+                <div className="bob-social-sync__window-label">
+                  Global Analytics v5.0
+                </div>
               </div>
 
               <div className="bob-social-sync__preview-grid">
@@ -496,7 +515,10 @@ export function SocialSyncView() {
                       <span style={{ height: "35%" }} />
                       <span style={{ height: "60%" }} />
                       <span style={{ height: "50%" }} />
-                      <span className="bob-social-sync__mini-bars--peak" style={{ height: "95%" }} />
+                      <span
+                        className="bob-social-sync__mini-bars--peak"
+                        style={{ height: "95%" }}
+                      />
                       <span style={{ height: "70%" }} />
                     </div>
                     <div className="bob-social-sync__live-feed">
@@ -516,7 +538,9 @@ export function SocialSyncView() {
                 </div>
                 <div>
                   <p>Latency</p>
-                  <strong className="bob-social-sync__latency">Real-time (0.4ms)</strong>
+                  <strong className="bob-social-sync__latency">
+                    Real-time (0.4ms)
+                  </strong>
                 </div>
               </div>
             </div>

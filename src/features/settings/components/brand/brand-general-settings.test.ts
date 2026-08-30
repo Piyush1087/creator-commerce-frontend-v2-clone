@@ -15,7 +15,9 @@ import type {
 } from "../../contracts/brand-settings.contracts";
 
 vi.mock("../../../../shared/auth/auth-session", () => ({
-  authAuthorizationHeader: () => ({}),
+  getAccessToken: () => "settings-test-token",
+  getAuthSessionSnapshot: () => ({ status: "AUTHENTICATED" }),
+  refreshAuthSession: vi.fn(),
 }));
 vi.mock("../../../../shared/config/env", () => ({
   env: { apiUrl: "http://localhost:3000" },

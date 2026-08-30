@@ -1,6 +1,7 @@
 import { Bell, Menu, ChevronRight } from "lucide-react";
 
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import type { AuthUser } from "../../shared/auth/auth-session";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { Button } from "../../design-system/aurora";
 import { useAppShellBreadcrumbs } from "./use-app-shell-breadcrumbs";
 
@@ -8,12 +9,12 @@ type AppHeaderProps = {
   onToggleMenu: () => void;
 };
 
-function userAvatarInitial(session: ReturnType<typeof loadAuthSession>): string {
-  const name = session?.user.name?.trim();
+function userAvatarInitial(user: AuthUser | null): string {
+  const name = user?.name?.trim();
   if (name && name.length > 0) {
     return name.charAt(0).toUpperCase();
   }
-  const email = session?.user.email?.trim();
+  const email = user?.email?.trim();
   if (email && email.length > 0) {
     return email.charAt(0).toUpperCase();
   }
@@ -21,7 +22,7 @@ function userAvatarInitial(session: ReturnType<typeof loadAuthSession>): string 
 }
 
 export function AppHeader({ onToggleMenu }: AppHeaderProps) {
-  const session = loadAuthSession();
+  const session = useAuthSession();
   const { breadcrumb, title } = useAppShellBreadcrumbs();
 
   return (
@@ -47,13 +48,17 @@ export function AppHeader({ onToggleMenu }: AppHeaderProps) {
           Upgrade
         </Button>
 
-        <button type="button" className="aurora-header__btn" aria-label="Notifications">
+        <button
+          type="button"
+          className="aurora-header__btn"
+          aria-label="Notifications"
+        >
           <Bell size={18} />
         </button>
 
         <div className="aurora-header__user">
           <div className="aurora-header__avatar" aria-hidden>
-            {userAvatarInitial(session)}
+            {userAvatarInitial(session.currentUser)}
           </div>
         </div>
 

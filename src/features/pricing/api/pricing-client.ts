@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import {
   isGeoContextApiResponse,
   isPlansApiResponse,
@@ -32,7 +32,6 @@ export class PricingApiError extends Error {
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -54,7 +53,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
         ? (body as { message?: unknown }).message
         : undefined;
     const message = Array.isArray(rawMessage)
-      ? rawMessage.filter((item): item is string => typeof item === "string").join(", ")
+      ? rawMessage
+          .filter((item): item is string => typeof item === "string")
+          .join(", ")
       : typeof rawMessage === "string"
         ? rawMessage
         : `Request failed (${response.status}).`;
@@ -83,7 +84,10 @@ export async function fetchSubscription(): Promise<BrandSubscriptionRecord | nul
   });
   const json = await readJsonOrThrow(response);
   if (!isSubscriptionApiResponse(json)) {
-    throw new PricingApiError("Unexpected subscription response.", response.status);
+    throw new PricingApiError(
+      "Unexpected subscription response.",
+      response.status,
+    );
   }
   return json.subscription;
 }
@@ -119,7 +123,10 @@ export async function fetchGeoContext(): Promise<GeoContext> {
   });
   const json = await readJsonOrThrow(response);
   if (!isGeoContextApiResponse(json)) {
-    throw new PricingApiError("Unexpected geo context response.", response.status);
+    throw new PricingApiError(
+      "Unexpected geo context response.",
+      response.status,
+    );
   }
   return json.geoContext;
 }
@@ -138,14 +145,23 @@ export async function initializeRazorpayTrial(
       typeof json === "object" &&
       json !== null &&
       "subscription" in json &&
-      isSubscriptionApiResponse({ subscription: (json as { subscription: unknown }).subscription })
+      isSubscriptionApiResponse({
+        subscription: (json as { subscription: unknown }).subscription,
+      })
     )
   ) {
-    throw new PricingApiError("Unexpected Razorpay trial response.", response.status);
+    throw new PricingApiError(
+      "Unexpected Razorpay trial response.",
+      response.status,
+    );
   }
-  const subscription = (json as { subscription: BrandSubscriptionRecord }).subscription;
+  const subscription = (json as { subscription: BrandSubscriptionRecord })
+    .subscription;
   if (!subscription) {
-    throw new PricingApiError("Razorpay trial did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Razorpay trial did not return a subscription.",
+      response.status,
+    );
   }
   return subscription;
 }
@@ -164,14 +180,23 @@ export async function bootstrapLocalTrial(
       typeof json === "object" &&
       json !== null &&
       "subscription" in json &&
-      isSubscriptionApiResponse({ subscription: (json as { subscription: unknown }).subscription })
+      isSubscriptionApiResponse({
+        subscription: (json as { subscription: unknown }).subscription,
+      })
     )
   ) {
-    throw new PricingApiError("Unexpected trial bootstrap response.", response.status);
+    throw new PricingApiError(
+      "Unexpected trial bootstrap response.",
+      response.status,
+    );
   }
-  const subscription = (json as { subscription: BrandSubscriptionRecord }).subscription;
+  const subscription = (json as { subscription: BrandSubscriptionRecord })
+    .subscription;
   if (!subscription) {
-    throw new PricingApiError("Trial bootstrap did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Trial bootstrap did not return a subscription.",
+      response.status,
+    );
   }
   return subscription;
 }
@@ -187,7 +212,9 @@ export type TierChangeResult = {
   checkout: PricingCheckoutSession | null;
 };
 
-function isPricingCheckoutSession(value: unknown): value is PricingCheckoutSession {
+function isPricingCheckoutSession(
+  value: unknown,
+): value is PricingCheckoutSession {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -209,11 +236,17 @@ export async function changeSubscriptionTier(
   });
   const json = await readJsonOrThrow(response);
   if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected tier change response.", response.status);
+    throw new PricingApiError(
+      "Unexpected tier change response.",
+      response.status,
+    );
   }
   const payload = json as { subscription: unknown; checkout?: unknown };
   if (!payload.subscription || typeof payload.subscription !== "object") {
-    throw new PricingApiError("Tier change did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Tier change did not return a subscription.",
+      response.status,
+    );
   }
   const checkout =
     payload.checkout === null || payload.checkout === undefined
@@ -222,7 +255,10 @@ export async function changeSubscriptionTier(
         ? payload.checkout
         : null;
   if (payload.checkout != null && checkout === null) {
-    throw new PricingApiError("Tier change returned an invalid checkout session.", response.status);
+    throw new PricingApiError(
+      "Tier change returned an invalid checkout session.",
+      response.status,
+    );
   }
   return {
     subscription: payload.subscription as BrandSubscriptionRecord,
@@ -248,11 +284,17 @@ export async function restoreFoundersTrial(): Promise<BrandSubscriptionRecord> {
   });
   const json = await readJsonOrThrow(response);
   if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected trial restore response.", response.status);
+    throw new PricingApiError(
+      "Unexpected trial restore response.",
+      response.status,
+    );
   }
   const subscription = (json as { subscription: unknown }).subscription;
   if (!subscription || typeof subscription !== "object") {
-    throw new PricingApiError("Trial restore did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Trial restore did not return a subscription.",
+      response.status,
+    );
   }
   return subscription as BrandSubscriptionRecord;
 }
@@ -265,11 +307,17 @@ export async function reactivateSubscription(): Promise<ReactivateSubscriptionRe
   });
   const json = await readJsonOrThrow(response);
   if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected reactivate response.", response.status);
+    throw new PricingApiError(
+      "Unexpected reactivate response.",
+      response.status,
+    );
   }
   const payload = json as ReactivateSubscriptionResult;
   if (!payload.subscription || typeof payload.subscription !== "object") {
-    throw new PricingApiError("Reactivate did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Reactivate did not return a subscription.",
+      response.status,
+    );
   }
   return payload;
 }
@@ -288,7 +336,10 @@ export async function cancelSubscription(
   }
   const subscription = (json as { subscription: unknown }).subscription;
   if (!subscription || typeof subscription !== "object") {
-    throw new PricingApiError("Cancel did not return a subscription.", response.status);
+    throw new PricingApiError(
+      "Cancel did not return a subscription.",
+      response.status,
+    );
   }
   return subscription as BrandSubscriptionRecord;
 }

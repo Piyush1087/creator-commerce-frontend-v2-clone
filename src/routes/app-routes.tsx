@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
 import { LoginPage } from "../pages/auth/login-page";
+import { ForgotPasswordPage } from "../pages/auth/forgot-password-page";
+import { ResetPasswordPage } from "../pages/auth/reset-password-page";
 import { TeamInvitationPage } from "../pages/public/brand/team-invitation-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
@@ -47,11 +49,28 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path={AUTH_ROUTES.login} element={<LoginPage />} />
-      <Route path="/brand/team-invitations/accept" element={<TeamInvitationPage />} />
+      <Route
+        path={AUTH_ROUTES.forgotPassword}
+        element={<ForgotPasswordPage />}
+      />
+      <Route path={AUTH_ROUTES.resetPassword} element={<ResetPasswordPage />} />
+      <Route
+        path="/brand/team-invitations/accept"
+        element={<TeamInvitationPage />}
+      />
       <Route element={<MarketplaceGuestLayout />}>
-        <Route path={PUBLIC_ROUTES.brandLanding} element={<PublicBrandLandingPage />} />
-        <Route path={PUBLIC_ROUTES.marketplace} element={<PublicMarketplacePage />} />
-        <Route path={PUBLIC_ROUTES.marketplaceInvite} element={<PublicInviteLandingPage />} />
+        <Route
+          path={PUBLIC_ROUTES.brandLanding}
+          element={<PublicBrandLandingPage />}
+        />
+        <Route
+          path={PUBLIC_ROUTES.marketplace}
+          element={<PublicMarketplacePage />}
+        />
+        <Route
+          path={PUBLIC_ROUTES.marketplaceInvite}
+          element={<PublicInviteLandingPage />}
+        />
         <Route
           path={PUBLIC_ROUTES.marketplaceCampaign}
           element={<PublicCampaignDetailPage />}
@@ -64,12 +83,27 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route path={AUTH_ROUTES.brandDashboard} element={<BrandDashboardPage />} />
+        <Route
+          path={AUTH_ROUTES.brandDashboard}
+          element={<BrandDashboardPage />}
+        />
         <Route path={AUTH_ROUTES.brandCentre} element={<BrandCentrePage />} />
-        <Route path={AUTH_ROUTES.brandUceCampaigns} element={<BrandUceCampaignsPage />} />
-        <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
-        <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />
-        <Route path={AUTH_ROUTES.brandCollaborationPage} element={<BrandCollaborationPage />} />
+        <Route
+          path={AUTH_ROUTES.brandUceCampaigns}
+          element={<BrandUceCampaignsPage />}
+        />
+        <Route
+          path={AUTH_ROUTES.brandUceCampaignCreate}
+          element={<BrandUceCampaignCreatePage />}
+        />
+        <Route
+          path={AUTH_ROUTES.brandUceCampaignDetail}
+          element={<BrandUceCampaignDetailPage />}
+        />
+        <Route
+          path={AUTH_ROUTES.brandCollaborationPage}
+          element={<BrandCollaborationPage />}
+        />
         <Route
           path={AUTH_ROUTES.brandCollaborations}
           element={
@@ -79,27 +113,48 @@ export function AppRoutes() {
           }
         />
         <Route path={AUTH_ROUTES.brandPayouts} element={<BrandPayoutsPage />} />
-        <Route path={AUTH_ROUTES.brandSettings} element={<BrandSettingsLayout />}>
+        <Route
+          path={AUTH_ROUTES.brandSettings}
+          element={<BrandSettingsLayout />}
+        >
           <Route index element={<Navigate to="general" replace />} />
           <Route path="general" element={<BrandSettingsGeneralPage />} />
-          <Route path="integrations" element={<BrandSettingsIntegrationsPage />} />
+          <Route
+            path="integrations"
+            element={<BrandSettingsIntegrationsPage />}
+          />
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
         <Route path={AUTH_ROUTES.creatorHome} element={<CreatorCentrePage />} />
-        <Route path={AUTH_ROUTES.creatorAnalytics} element={<CreatorAnalyticsPage />} />
-        <Route path={AUTH_ROUTES.creatorMediaKit} element={<CreatorMediaKitPage />} />
+        <Route
+          path={AUTH_ROUTES.creatorAnalytics}
+          element={<CreatorAnalyticsPage />}
+        />
+        <Route
+          path={AUTH_ROUTES.creatorMediaKit}
+          element={<CreatorMediaKitPage />}
+        />
         <Route
           path={AUTH_ROUTES.creatorDashboard}
           element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
         />
-        <Route path={AUTH_ROUTES.creatorMarketplace} element={<CreatorMarketplacePage />} />
+        <Route
+          path={AUTH_ROUTES.creatorMarketplace}
+          element={<CreatorMarketplacePage />}
+        />
         <Route
           path={AUTH_ROUTES.creatorMarketplaceCampaign}
           element={<CreatorCampaignDetailPage />}
         />
-        <Route path={AUTH_ROUTES.creatorCampaigns} element={<CreatorCampaignsCommandCenterPage />} />
-        <Route path={AUTH_ROUTES.creatorPayouts} element={<CreatorPayoutsPage />} />
+        <Route
+          path={AUTH_ROUTES.creatorCampaigns}
+          element={<CreatorCampaignsCommandCenterPage />}
+        />
+        <Route
+          path={AUTH_ROUTES.creatorPayouts}
+          element={<CreatorPayoutsPage />}
+        />
         <Route
           path={AUTH_ROUTES.creatorCampaignsHistory}
           element={<CreatorCampaignsHistoryPage />}
@@ -112,14 +167,20 @@ export function AppRoutes() {
             </CollaborationRouteGuard>
           }
         />
-        <Route path={AUTH_ROUTES.creatorSettings} element={<CreatorSettingsLayout />}>
+        <Route
+          path={AUTH_ROUTES.creatorSettings}
+          element={<CreatorSettingsLayout />}
+        >
           <Route index element={<Navigate to="profile" replace />} />
           <Route path="profile" element={<CreatorSettingsProfilePage />} />
           <Route path="social" element={<CreatorSettingsSocialPage />} />
           <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
         </Route>
       </Route>
-      <Route path="/creator/onboarding/*" element={<CreatorOnboardingAppRoutes />} />
+      <Route
+        path="/creator/onboarding/*"
+        element={<CreatorOnboardingAppRoutes />}
+      />
       <Route
         path={CREATOR_ONBOARDING_ROUTES.instagramCallback}
         element={<CreatorInstagramOAuthCallbackPage />}
