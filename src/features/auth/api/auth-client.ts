@@ -2,7 +2,7 @@ import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import {
   adoptAuthSession,
   clearAuthSession,
-  getAccessToken,
+  getAuthSessionSnapshot,
   updateCurrentUser,
 } from "../../../shared/auth/auth-session";
 import { env } from "../../../shared/config/env";
@@ -134,19 +134,23 @@ export async function refreshAuthSessionFromServer(): Promise<AuthUserBody> {
 }
 
 async function endSession(path: "logout" | "logout-all"): Promise<void> {
-  const accessToken = getAccessToken();
-  if (!accessToken) {
+  const response = await authenticatedFetch(
+    `${env.apiUrl}/api/v1/auth/${path}`,
+    {
+      method: "POST",
+      cache: "no-store",
+    },
+  );
+  if (response.ok) {
     clearAuthSession();
     return;
   }
-  const response = await fetch(`${env.apiUrl}/api/v1/auth/${path}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
-    credentials: "include",
-    cache: "no-store",
-  });
-  if (response.ok || response.status === 401) {
-    clearAuthSession();
+  if (
+    response.status === 401 &&
+    getAuthSessionSnapshot().status === "UNAUTHENTICATED"
+  ) {
+    // The shared refresh authority already proved this browser session cannot
+    // be restored through its refresh credential.
     return;
   }
   await readJsonOrThrow(response);

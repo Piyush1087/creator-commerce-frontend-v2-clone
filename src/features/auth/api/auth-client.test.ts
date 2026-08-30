@@ -6,6 +6,7 @@ import {
   forgotPassword,
   loginWithPassword,
   logoutAllSessions,
+  logoutCurrentSession,
   requestLoginOtp,
   resetPassword,
   signInWithGoogle,
@@ -13,7 +14,9 @@ import {
 } from "./auth-client";
 import {
   adoptAuthSession,
+  bootstrapAuthSession,
   getAuthSession,
+  getAuthSessionSnapshot,
   resetAuthSessionForTests,
 } from "../../../shared/auth/auth-session";
 
@@ -26,6 +29,11 @@ const canonicalSession = {
     name: "Person",
     role: "CREATOR",
   },
+};
+
+const refreshedSession = {
+  ...canonicalSession,
+  accessToken: "access-refreshed",
 };
 
 function response(body: unknown, status = 200): Response {
@@ -136,7 +144,7 @@ describe("auth API contract", () => {
     expect(sessionStorage.length).toBe(0);
   });
 
-  it("provides logout-all and password-change APIs that clear the memory session", async () => {
+  it("provides password-change API and clears the memory session", async () => {
     adoptAuthSession(canonicalSession);
     fetchMock.mockResolvedValueOnce(response(undefined, 204));
     await changePassword({
@@ -145,12 +153,160 @@ describe("auth API contract", () => {
     });
     expect(String(fetchMock.mock.calls[0][0])).toContain("/password/change");
     expect(getAuthSession()).toBeNull();
+  });
 
+  it("finalizes current logout with fresh access without refreshing", async () => {
     adoptAuthSession(canonicalSession);
     fetchMock.mockResolvedValueOnce(response(undefined, 204));
+
+    await logoutCurrentSession();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/auth/logout");
+    expect(fetchMock.mock.calls[0][1]?.credentials).toBe("include");
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("refreshes an expired access token and retries current logout once", async () => {
+    adoptAuthSession(canonicalSession);
+    fetchMock
+      .mockResolvedValueOnce(response({ message: "Expired" }, 401))
+      .mockResolvedValueOnce(response(refreshedSession))
+      .mockResolvedValueOnce(response(undefined, 204));
+
+    await logoutCurrentSession();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("/auth/logout"),
+      expect.stringContaining("/auth/refresh"),
+      expect.stringContaining("/auth/logout"),
+    ]);
+    expect(
+      new Headers(fetchMock.mock.calls[0][1]?.headers).get("Authorization"),
+    ).toBe("Bearer access-fixture");
+    expect(
+      new Headers(fetchMock.mock.calls[2][1]?.headers).get("Authorization"),
+    ).toBe("Bearer access-refreshed");
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("finishes locally when logout refresh proves the session is invalid", async () => {
+    adoptAuthSession(canonicalSession);
+    fetchMock
+      .mockResolvedValueOnce(response({ message: "Expired" }, 401))
+      .mockResolvedValueOnce(response({ message: "Invalid refresh" }, 401));
+
+    await expect(logoutCurrentSession()).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith("/api/v1/auth/refresh"),
+      ),
+    ).toHaveLength(1);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("refreshes an expired access token and retries logout-all once", async () => {
+    adoptAuthSession(canonicalSession);
+    fetchMock
+      .mockResolvedValueOnce(response({ message: "Expired" }, 401))
+      .mockResolvedValueOnce(response(refreshedSession))
+      .mockResolvedValueOnce(response(undefined, 204));
+
     await logoutAllSessions();
-    expect(String(fetchMock.mock.calls[1][0])).toContain("/auth/logout-all");
-    expect(fetchMock.mock.calls[1][1]?.credentials).toBe("include");
-    expect(getAuthSession()).toBeNull();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("/auth/logout-all"),
+      expect.stringContaining("/auth/refresh"),
+      expect.stringContaining("/auth/logout-all"),
+    ]);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("finishes logout-all when refresh proves the session is invalid", async () => {
+    adoptAuthSession(canonicalSession);
+    fetchMock
+      .mockResolvedValueOnce(response({ message: "Expired" }, 401))
+      .mockResolvedValueOnce(response({ message: "Invalid refresh" }, 401));
+
+    await expect(logoutAllSessions()).resolves.toBeUndefined();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("shares one refresh across concurrent logout operations", async () => {
+    adoptAuthSession(canonicalSession);
+    let logoutAttempts = 0;
+    let refreshCalls = 0;
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/api/v1/auth/refresh")) {
+        refreshCalls += 1;
+        await Promise.resolve();
+        return response(refreshedSession);
+      }
+      logoutAttempts += 1;
+      return logoutAttempts <= 2
+        ? response({ message: "Expired" }, 401)
+        : response(undefined, 204);
+    });
+
+    await Promise.all([logoutCurrentSession(), logoutAllSessions()]);
+
+    expect(refreshCalls).toBe(1);
+    expect(logoutAttempts).toBe(4);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+  });
+
+  it("does not report server failure as successful logout", async () => {
+    adoptAuthSession(canonicalSession);
+    fetchMock.mockResolvedValueOnce(
+      response({ message: "Logout service unavailable." }, 500),
+    );
+
+    await expect(logoutCurrentSession()).rejects.toThrow(
+      "Logout service unavailable.",
+    );
+
+    expect(getAuthSession()).toEqual(canonicalSession);
+  });
+
+  it("cannot restore a server session after refreshed logout succeeds", async () => {
+    let serverSessionActive = true;
+    let refreshCalls = 0;
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/api/v1/auth/refresh")) {
+        refreshCalls += 1;
+        return serverSessionActive
+          ? response(refreshedSession)
+          : response({ message: "Invalid refresh" }, 401);
+      }
+      if (url.endsWith("/api/v1/auth/logout")) {
+        const authorization = new Headers(init?.headers).get("Authorization");
+        if (authorization === "Bearer access-fixture") {
+          return response({ message: "Expired" }, 401);
+        }
+        if (authorization === "Bearer access-refreshed") {
+          serverSessionActive = false;
+          return response(undefined, 204);
+        }
+      }
+      return response({ message: "Unexpected request" }, 500);
+    });
+
+    adoptAuthSession(canonicalSession);
+    await logoutCurrentSession();
+    expect(serverSessionActive).toBe(false);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
+
+    resetAuthSessionForTests();
+    await expect(bootstrapAuthSession()).resolves.toBe(false);
+    expect(refreshCalls).toBe(2);
+    expect(getAuthSessionSnapshot().status).toBe("UNAUTHENTICATED");
   });
 });
