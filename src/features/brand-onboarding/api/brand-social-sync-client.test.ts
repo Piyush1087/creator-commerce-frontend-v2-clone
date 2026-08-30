@@ -44,13 +44,13 @@ afterEach(() => {
 });
 
 describe("Brand social-sync API client", () => {
-  it("starts delegated OAuth with the invitation token and exact redirect URI", async () => {
+  it("sends the invitation only to bootstrap with a token-free redirect URI", async () => {
     fetchMock.mockResolvedValue(
       response({ url: "https://instagram.example.test/oauth", state }),
     );
     await startInvitedInstagramOAuth(
       "invite-token",
-      "https://app.example.test/brand/onboarding/social-sync?context=agent&token=invite-token",
+      "https://app.example.test/brand/onboarding/social-sync?context=agent",
     );
     const url = new URL(
       String(fetchMock.mock.calls[0][0]),
@@ -59,8 +59,9 @@ describe("Brand social-sync API client", () => {
     expect(url.pathname).toContain("/social-sync/invite/instagram/oauth-url");
     expect(url.searchParams.get("token")).toBe("invite-token");
     expect(url.searchParams.get("redirectUri")).toBe(
-      "https://app.example.test/brand/onboarding/social-sync?context=agent&token=invite-token",
+      "https://app.example.test/brand/onboarding/social-sync?context=agent",
     );
+    expect(url.searchParams.get("redirectUri")).not.toContain("invite-token");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       referrerPolicy: "no-referrer",
     });

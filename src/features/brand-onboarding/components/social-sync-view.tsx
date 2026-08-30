@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BarChart2,
@@ -35,10 +35,17 @@ import {
   skipBrandSocialSync,
   startInvitedInstagramOAuth,
 } from "../api/brand-social-sync-client";
+import {
+  discardDelegatedInstagramInvitation,
+  storeDelegatedInstagramInvitation,
+  takeDelegatedInstagramInvitation,
+} from "../utils/delegated-instagram-oauth-handoff";
 import { InstagramConnectModal } from "./instagram-connect-modal";
 
 const IG_CONNECTED_MESSAGE = "BRAND_INSTAGRAM_CONNECTED";
 const IG_ERROR_MESSAGE = "BRAND_INSTAGRAM_ERROR";
+const INVITATION_HANDOFF_RECOVERY_MESSAGE =
+  "We couldn't resume this Instagram connection. Return to your invitation link and try again.";
 
 type ConnectedInstagram = {
   handle: string;
@@ -82,6 +89,19 @@ function isPopupCallback(): boolean {
   return Boolean(window.opener && window.opener !== window);
 }
 
+function discardPendingInvitationHandoff(pendingState: {
+  current: string | null;
+}): void {
+  const state = pendingState.current;
+  pendingState.current = null;
+  if (!state) return;
+  try {
+    discardDelegatedInstagramInvitation(state);
+  } catch {
+    // Storage may be unavailable; the flow already fails closed in that case.
+  }
+}
+
 /**
  * Aurora-styled onboarding shell using the same state-bound Instagram authority as Settings.
  * Delegated invitation links retain their separate backend-bound public state contract.
@@ -95,12 +115,25 @@ export function SocialSyncView() {
   }
   const initialParams = initialParamsRef.current;
   const callback = useRef(parseInstagramCallback(initialParams)).current;
-  const exchangeRequestRef = useRef<Promise<ConnectedInstagram> | null>(null);
-  const invitationToken =
-    initialParams.get("context") === "agent"
-      ? initialParams.get("token")
-      : null;
   const isInvitationFlow = initialParams.get("context") === "agent";
+  const invitationTokenFromLink = useRef(
+    isInvitationFlow && callback.kind === "none"
+      ? initialParams.get("token")
+      : null,
+  ).current;
+  const exchangeRequestRef = useRef<Promise<ConnectedInstagram> | null>(null);
+  const callbackHandoffAttemptedRef = useRef(false);
+  const pendingInvitationStateRef = useRef<string | null>(null);
+  const [callbackInvitationToken, setCallbackInvitationToken] = useState<
+    string | null
+  >(null);
+  const [callbackHandoffStatus, setCallbackHandoffStatus] = useState<
+    "not-needed" | "pending" | "ready" | "missing"
+  >(isInvitationFlow && callback.kind === "ready" ? "pending" : "not-needed");
+  const invitationToken =
+    callback.kind === "ready"
+      ? callbackInvitationToken
+      : invitationTokenFromLink;
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -121,9 +154,8 @@ export function SocialSyncView() {
       "/brand/onboarding/social-sync",
       window.location.origin,
     );
-    if (isInvitationFlow && invitationToken) {
+    if (isInvitationFlow) {
       url.searchParams.set("context", "agent");
-      url.searchParams.set("token", invitationToken);
     }
     return url.toString();
   })();
@@ -154,6 +186,48 @@ export function SocialSyncView() {
       });
     }
   };
+
+  useLayoutEffect(() => {
+    if (isInvitationFlow && initialParams.has("token")) {
+      const scrubbed = new URL(window.location.href);
+      scrubbed.searchParams.delete("token");
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${scrubbed.pathname}${scrubbed.search}${scrubbed.hash}`,
+      );
+    }
+
+    if (!isInvitationFlow || callbackHandoffAttemptedRef.current) return;
+
+    if (callback.kind === "ready") {
+      callbackHandoffAttemptedRef.current = true;
+      try {
+        const recovered = takeDelegatedInstagramInvitation(callback.state);
+        if (recovered) {
+          setCallbackInvitationToken(recovered);
+          setCallbackHandoffStatus("ready");
+        } else {
+          setCallbackHandoffStatus("missing");
+        }
+      } catch {
+        setCallbackHandoffStatus("missing");
+      }
+      return;
+    }
+
+    if (callback.kind === "error") {
+      callbackHandoffAttemptedRef.current = true;
+      const returnedState = initialParams.get("state");
+      if (returnedState) {
+        try {
+          discardDelegatedInstagramInvitation(returnedState);
+        } catch {
+          // Invalid or unavailable storage is already a terminal callback state.
+        }
+      }
+    }
+  }, [callback, initialParams, isInvitationFlow]);
 
   useEffect(() => {
     if (callback.kind !== "none") {
@@ -198,6 +272,7 @@ export function SocialSyncView() {
         data.handle &&
         isAuthorizationHealth(data.authorizationHealth)
       ) {
+        discardPendingInvitationHandoff(pendingInvitationStateRef);
         applyConnected({
           handle: data.handle,
           authorizationHealth: data.authorizationHealth,
@@ -206,6 +281,7 @@ export function SocialSyncView() {
         return;
       }
       if (data.type === IG_ERROR_MESSAGE) {
+        discardPendingInvitationHandoff(pendingInvitationStateRef);
         setModalError(data.error || "Instagram connect failed.");
         setBusy(false);
         setConnectModalOpen(true);
@@ -220,12 +296,43 @@ export function SocialSyncView() {
     if (callback.kind === "error") {
       setError(callback.message);
       setModalError(callback.message);
+      if (isInvitationFlow && isPopupCallback()) {
+        try {
+          window.opener?.postMessage(
+            { type: IG_ERROR_MESSAGE, error: callback.message },
+            window.location.origin,
+          );
+        } catch {
+          // Opener may be unavailable.
+        }
+        window.setTimeout(() => window.close(), 900);
+        return;
+      }
       if (!isInvitationFlow) setConnectModalOpen(true);
       return;
     }
     if (!isInvitationFlow && !auth.accessToken) return;
-    if (isInvitationFlow && !invitationToken) {
-      setError("This secure Instagram invitation link is incomplete.");
+    if (isInvitationFlow && callbackHandoffStatus === "pending") return;
+    if (
+      isInvitationFlow &&
+      (callbackHandoffStatus !== "ready" || !invitationToken)
+    ) {
+      setError(INVITATION_HANDOFF_RECOVERY_MESSAGE);
+      setModalError(INVITATION_HANDOFF_RECOVERY_MESSAGE);
+      if (isPopupCallback()) {
+        try {
+          window.opener?.postMessage(
+            {
+              type: IG_ERROR_MESSAGE,
+              error: INVITATION_HANDOFF_RECOVERY_MESSAGE,
+            },
+            window.location.origin,
+          );
+        } catch {
+          // Opener may be unavailable.
+        }
+        window.setTimeout(() => window.close(), 900);
+      }
       return;
     }
     let cancelled = false;
@@ -269,15 +376,6 @@ export function SocialSyncView() {
       try {
         const result = await request;
         if (cancelled) return;
-        if (isInvitationFlow) {
-          const scrubbed = new URL(window.location.href);
-          scrubbed.searchParams.delete("token");
-          window.history.replaceState(
-            window.history.state,
-            "",
-            `${scrubbed.pathname}${scrubbed.search}${scrubbed.hash}`,
-          );
-        }
         if (isPopupCallback()) {
           try {
             window.opener?.postMessage(
@@ -328,7 +426,13 @@ export function SocialSyncView() {
     };
     // Callback and redirect URI are immutable for this page load; the request ref prevents StrictMode replay.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.accessToken, callback, invitationToken, isInvitationFlow]);
+  }, [
+    auth.accessToken,
+    callback,
+    callbackHandoffStatus,
+    invitationToken,
+    isInvitationFlow,
+  ]);
 
   const launchInstagramOauth = async () => {
     setModalError(null);
@@ -352,6 +456,9 @@ export function SocialSyncView() {
     }
     setBusy(true);
     try {
+      if (isInvitationFlow) {
+        discardPendingInvitationHandoff(pendingInvitationStateRef);
+      }
       if (
         !isInvitationFlow &&
         currentIntegration &&
@@ -367,6 +474,10 @@ export function SocialSyncView() {
             redirectUri,
             currentIntegration ? "RECONNECT" : "INITIAL_CONNECT",
           );
+      if (isInvitationFlow) {
+        storeDelegatedInstagramInvitation(oauth.state, invitationToken!);
+        pendingInvitationStateRef.current = oauth.state;
+      }
       // Desktop opens a centered popup; mobile falls back to full-page redirect.
       openInstagramOAuth(oauth.url);
       // Allow dismissing the waiting modal if the user closes the popup.
@@ -374,6 +485,9 @@ export function SocialSyncView() {
         setBusy(false);
       }, 1500);
     } catch (launchError) {
+      if (isInvitationFlow) {
+        discardPendingInvitationHandoff(pendingInvitationStateRef);
+      }
       setModalError(friendlyInstagramError(launchError));
       setBusy(false);
     }

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { createElement, StrictMode } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -58,6 +59,7 @@ vi.mock("../api/brand-social-sync-client", () => ({
 }));
 
 import { SocialSyncView } from "./social-sync-view";
+import { storeDelegatedInstagramInvitation } from "../utils/delegated-instagram-oauth-handoff";
 
 const path = "/brand/onboarding/social-sync";
 const state = "i".repeat(43);
@@ -128,6 +130,8 @@ function mount(query = "", strict = false) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.sessionStorage.clear();
+  window.localStorage.clear();
   mocks.authSession.accessToken = "brand-access-token";
   mocks.fetchGeneral.mockResolvedValue({ current_user_role: "BRAND_OWNER" });
   mocks.fetchIntegrations.mockResolvedValue(readModel());
@@ -148,10 +152,21 @@ beforeEach(() => {
     scopes: ["BASIC_PROFILE", "ENGAGEMENT_INSIGHTS"],
     providerAccountId: "stable-provider-account",
   });
-  mocks.startInvitedOAuth.mockResolvedValue({
-    url: "https://instagram.example.test/invited-oauth",
-    state,
-  });
+  mocks.startInvitedOAuth.mockImplementation(
+    async (_invitationToken: string, redirectUri: string) => {
+      const providerUrl = new URL("https://www.instagram.com/oauth/authorize");
+      providerUrl.searchParams.set("client_id", "instagram-client");
+      providerUrl.searchParams.set("redirect_uri", redirectUri);
+      providerUrl.searchParams.set("response_type", "code");
+      providerUrl.searchParams.set("response_mode", "query");
+      providerUrl.searchParams.set("state", state);
+      providerUrl.searchParams.set(
+        "scope",
+        "instagram_business_basic,instagram_business_manage_insights",
+      );
+      return { url: providerUrl.toString(), state };
+    },
+  );
   mocks.connectInvited.mockResolvedValue({
     connected: true,
     handle: "@delegated",
@@ -172,6 +187,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  window.sessionStorage.clear();
+  window.localStorage.clear();
   Object.defineProperty(window, "opener", { configurable: true, value: null });
   window.history.replaceState({}, "", path);
 });
@@ -314,9 +331,12 @@ describe("Brand onboarding canonical Instagram OAuth", () => {
     expect(serialized).not.toContain(state);
   });
 
-  it("uses the invitation-bound public OAuth route and exact redirect URI", async () => {
+  it("captures and scrubs the invitation bearer before starting token-free delegated OAuth", async () => {
     mocks.authSession.accessToken = null;
     mount("?context=agent&token=invite-token");
+    expect(window.location.search).toBe("?context=agent");
+    expect(window.history.state).toEqual({ onboarding: "preserved" });
+    expect(window.sessionStorage.length).toBe(0);
     fireEvent.click(
       screen.getByRole("button", { name: "Connect Instagram Profile" }),
     );
@@ -326,14 +346,85 @@ describe("Brand onboarding canonical Instagram OAuth", () => {
     await waitFor(() =>
       expect(mocks.startInvitedOAuth).toHaveBeenCalledWith(
         "invite-token",
-        `${window.location.origin}${path}?context=agent&token=invite-token`,
+        `${window.location.origin}${path}?context=agent`,
       ),
     );
     expect(mocks.getOAuthUrl).not.toHaveBeenCalled();
+    expect(
+      window.sessionStorage.getItem(
+        `creator-shop:instagram-invite-oauth:${state}`,
+      ),
+    ).toBe("invite-token");
+    expect(window.localStorage.length).toBe(0);
+
+    const providerUrl = new URL(String(mocks.openOAuth.mock.calls[0][0]));
+    expect(providerUrl.toString()).not.toContain("invite-token");
+    expect(providerUrl.searchParams.get("redirect_uri")).toBe(
+      `${window.location.origin}${path}?context=agent`,
+    );
+    expect(providerUrl.searchParams.get("state")).toBe(state);
+    expect(providerUrl.searchParams.get("scope")).toBe(
+      "instagram_business_basic,instagram_business_manage_insights",
+    );
   });
 
-  it("requires public invitation state for a full-page delegated callback", async () => {
+  it("does not persist the invitation bearer when OAuth bootstrap fails", async () => {
     mocks.authSession.accessToken = null;
+    mocks.startInvitedOAuth.mockRejectedValueOnce(
+      new Error("Instagram OAuth bootstrap failed."),
+    );
+    mount("?context=agent&token=invite-token");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Connect Instagram Profile" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue with Instagram" }),
+    );
+
+    expect(
+      await screen.findByText(/Instagram OAuth bootstrap failed/),
+    ).toBeTruthy();
+    expect(window.sessionStorage.length).toBe(0);
+    expect(window.localStorage.length).toBe(0);
+    expect(mocks.openOAuth).not.toHaveBeenCalled();
+  });
+
+  it("clears the opener's handoff copy after popup completion", async () => {
+    mocks.authSession.accessToken = null;
+    mount("?context=agent&token=invite-token");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Connect Instagram Profile" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue with Instagram" }),
+    );
+    await waitFor(() =>
+      expect(
+        window.sessionStorage.getItem(
+          `creator-shop:instagram-invite-oauth:${state}`,
+        ),
+      ).toBe("invite-token"),
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: window.location.origin,
+          data: {
+            type: "BRAND_INSTAGRAM_CONNECTED",
+            handle: "@delegated",
+            authorizationHealth: "CONNECTED_FULL",
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => expect(window.sessionStorage.length).toBe(0));
+  });
+
+  it("recovers and removes the state-keyed bearer for a token-free delegated callback", async () => {
+    mocks.authSession.accessToken = null;
+    storeDelegatedInstagramInvitation(state, "invite-token");
     mocks.connectInvited.mockResolvedValue({
       connected: true,
       handle: "@delegated",
@@ -342,18 +433,79 @@ describe("Brand onboarding canonical Instagram OAuth", () => {
       brandProfileId: "brand-profile",
       inviteCompleted: true,
     });
-    mount(
-      `?context=agent&token=invite-token&code=synthetic-code&state=${state}`,
-    );
+    mount(`?context=agent&code=synthetic-code&state=${state}`, true);
     expect(await screen.findByText(/Insights are limited/)).toBeTruthy();
+    expect(mocks.connectInvited).toHaveBeenCalledTimes(1);
     expect(mocks.connectInvited).toHaveBeenCalledWith({
       token: "invite-token",
       code: "synthetic-code",
       state,
-      redirectUri: `${window.location.origin}${path}?context=agent&token=invite-token`,
+      redirectUri: `${window.location.origin}${path}?context=agent`,
     });
     expect(mocks.connectInstagram).not.toHaveBeenCalled();
     expect(window.location.search).toBe("?context=agent");
+    expect(window.sessionStorage.length).toBe(0);
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("removes the handoff before calling delegated connect", async () => {
+    mocks.authSession.accessToken = null;
+    storeDelegatedInstagramInvitation(state, "invite-token");
+    mocks.connectInvited.mockImplementation(async () => {
+      expect(
+        window.sessionStorage.getItem(
+          `creator-shop:instagram-invite-oauth:${state}`,
+        ),
+      ).toBeNull();
+      return {
+        connected: true,
+        handle: "@delegated",
+        status: "CONNECTED",
+        scopes: ["BASIC_PROFILE"],
+        brandProfileId: "brand-profile",
+        inviteCompleted: true,
+      };
+    });
+
+    mount(`?context=agent&code=provider-code&state=${state}`);
+
+    expect(
+      await screen.findByText(/Instagram connected as @delegated/),
+    ).toBeTruthy();
+  });
+
+  it("fails closed when a delegated callback has no matching temporary bearer", async () => {
+    mocks.authSession.accessToken = null;
+
+    mount(
+      `?context=agent&token=must-not-be-recovered&code=provider-code&state=${state}`,
+    );
+
+    expect(
+      await screen.findByText(/We couldn't resume this Instagram connection/),
+    ).toBeTruthy();
+    expect(mocks.connectInvited).not.toHaveBeenCalled();
+    expect(mocks.connectInstagram).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("?context=agent");
+  });
+
+  it("does not resume one invitation with another OAuth state's handoff", async () => {
+    mocks.authSession.accessToken = null;
+    const stateA = "a".repeat(43);
+    const stateB = "b".repeat(43);
+    storeDelegatedInstagramInvitation(stateA, "invite-a");
+
+    mount(`?context=agent&code=provider-code&state=${stateB}`);
+
+    expect(
+      await screen.findByText(/Return to your invitation link and try again/),
+    ).toBeTruthy();
+    expect(mocks.connectInvited).not.toHaveBeenCalled();
+    expect(
+      window.sessionStorage.getItem(
+        `creator-shop:instagram-invite-oauth:${stateA}`,
+      ),
+    ).toBe("invite-a");
   });
 
   it("keeps onboarding optional through the canonical skip endpoint", async () => {
