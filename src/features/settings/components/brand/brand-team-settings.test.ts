@@ -125,7 +125,7 @@ describe("BS-02 Team actions", () => {
         role: "FINANCE_ADMIN",
       }),
     );
-    expect(await screen.findByText("Workspace role updated.")).toBeTruthy();
+    expect(await screen.findByText("Role updated.")).toBeTruthy();
   });
   it.each([true, false])(
     "invite dispatch success=%s is reported truthfully",
@@ -149,11 +149,10 @@ describe("BS-02 Team actions", () => {
       fireEvent.submit(document.getElementById("brand-team-action")!);
       expect(
         await screen.findByText(
-          succeeds ? "Invitation email dispatched." : "Mail dispatch failed",
+          succeeds ? "Invitation sent." : "Mail dispatch failed",
         ),
       ).toBeTruthy();
-      if (!succeeds)
-        expect(screen.queryByText("Invitation email dispatched.")).toBeNull();
+      if (!succeeds) expect(screen.queryByText("Invitation sent.")).toBeNull();
     },
   );
   it("Finance can cancel ordinary invitations but not Owner invitations", async () => {
@@ -165,6 +164,28 @@ describe("BS-02 Team actions", () => {
     await waitFor(() =>
       expect(props.cancelInvitation).toHaveBeenCalledWith("invite-1"),
     );
+    expect(await screen.findByText("Invitation cancelled.")).toBeTruthy();
+  });
+  it("disables invitation at five used seats and exposes the reason", () => {
+    const props = {
+      data: data("BRAND_OWNER"),
+      inviteMember: vi.fn(),
+      revokeMember: vi.fn(),
+      cancelInvitation: vi.fn(),
+      changeRole: vi.fn(),
+    };
+    props.data.team.seat_usage = {
+      active_members: 3,
+      pending_invitations: 2,
+      max_seats: 5,
+    };
+    render(createElement(BrandTeamSettings, props));
+    const invite = screen.getByRole("button", { name: "Invite new member" });
+    expect((invite as HTMLButtonElement).disabled).toBe(true);
+    expect(invite.getAttribute("aria-describedby")).toBe(
+      "settings-team-capacity-reason",
+    );
+    expect(screen.getByText(/seat capacity fully exhausted/)).toBeTruthy();
   });
   it("Owner can manage another Owner when multiple Owners exist", () => {
     const props = {
@@ -182,21 +203,24 @@ describe("BS-02 Team actions", () => {
       }),
     ).toBeTruthy();
   });
-  it("shows backend last-owner failure", async () => {
+  it.each([
+    [
+      "TEAM_ANCHOR_OWNER_REQUIRED",
+      "At least one Brand-domain employee Owner must remain.",
+    ],
+    [
+      "TEAM_ANCHOR_AUTHORITY_UNRESOLVED",
+      "Brand-domain Owner authority could not be resolved.",
+    ],
+  ])("shows backend anchor failure %s", async (_code, backendMessage) => {
     const props = setup();
-    props.changeRole.mockRejectedValueOnce(
-      new Error("At least one Brand Owner must remain on the workspace."),
-    );
+    props.changeRole.mockRejectedValueOnce(new Error(backendMessage));
     fireEvent.click(
       within(screen.getByText("Member 1").closest("tr")!).getByRole("button", {
         name: "Change role",
       }),
     );
     fireEvent.submit(document.getElementById("brand-team-action")!);
-    expect(
-      await screen.findByText(
-        "At least one Brand Owner must remain on the workspace.",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByText(backendMessage)).toBeTruthy();
   });
 });

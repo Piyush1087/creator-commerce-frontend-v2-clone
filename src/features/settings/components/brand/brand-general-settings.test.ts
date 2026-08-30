@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
+import { MemoryRouter } from "react-router-dom";
 import {
   cleanup,
   fireEvent,
@@ -14,7 +15,10 @@ import type {
   UpdateBrandGeneralPayload,
 } from "../../contracts/brand-settings.contracts";
 
-vi.mock("../../../../shared/auth/auth-session", () => ({
+vi.mock("../../../../shared/auth/auth-session", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../../../../shared/auth/auth-session")
+  >()),
   getAccessToken: () => "settings-test-token",
   getAuthSessionSnapshot: () => ({ status: "AUTHENTICATED" }),
   refreshAuthSession: vi.fn(),
@@ -25,9 +29,11 @@ vi.mock("../../../../shared/config/env", () => ({
 
 let data: BrandGeneralResponse;
 let failSave = false;
+let failLoadStatus: number | null = null;
 const fetchMock = vi.fn();
-const response = (body: unknown, ok = true) => ({
-  ok,
+const response = (body: unknown, status = 200) => ({
+  ok: status >= 200 && status < 300,
+  status,
   text: async () => JSON.stringify(body),
 });
 const input = (label: string) =>
@@ -39,6 +45,7 @@ const patches = () =>
 
 beforeEach(() => {
   failSave = false;
+  failLoadStatus = null;
   data = {
     current_user_role: "BRAND_OWNER",
     personal_profile: {
@@ -80,7 +87,7 @@ beforeEach(() => {
     .mockReset()
     .mockImplementation(async (url: string, init: RequestInit) => {
       if (url.endsWith("/general") && init.method === "PATCH") {
-        if (failSave) return response({ message: "Save rejected" }, false);
+        if (failSave) return response({ message: "Save rejected" }, 500);
         const patch = JSON.parse(
           init.body as string,
         ) as UpdateBrandGeneralPayload;
@@ -100,10 +107,48 @@ beforeEach(() => {
         };
         return response(data);
       }
-      if (url.endsWith("/general") && init.method === "GET")
+      if (url.endsWith("/general") && init.method === "GET") {
+        if (failLoadStatus)
+          return response(
+            { message: "Active Brand team membership required." },
+            failLoadStatus,
+          );
         return response(data);
+      }
+      if (url.endsWith("/auth/me") && init.method === "GET")
+        return response({
+          id: "ada",
+          email: "ada@example.test",
+          name: "Ada Lovelace",
+          role: "BRAND",
+          authState: "ACTIVE",
+          authMethods: [
+            { type: "PASSWORD", verifiedAt: "2026-08-30T00:00:00.000Z" },
+          ],
+          brandMemberships: [
+            {
+              brandProfileId: "brand",
+              role: data.current_user_role,
+              isActive: true,
+            },
+          ],
+        });
       if (url.endsWith("/team/invite") && init.method === "POST")
         return response({ delivery_status: "DISPATCHED" });
+      if (url.includes("/team/invitations/") && init.method === "DELETE") {
+        data = {
+          ...data,
+          team: {
+            ...data.team,
+            pending_invitations: [],
+            seat_usage: {
+              ...data.team.seat_usage,
+              pending_invitations: 0,
+            },
+          },
+        };
+        return response({ status: "CANCELLED" });
+      }
       throw new Error(`Unexpected request: ${init.method} ${url}`);
     });
   vi.stubGlobal("fetch", fetchMock);
@@ -114,7 +159,9 @@ afterEach(() => {
 });
 
 async function mount() {
-  const rendered = render(createElement(BrandGeneralSettings));
+  const rendered = render(
+    createElement(MemoryRouter, null, createElement(BrandGeneralSettings)),
+  );
   await screen.findByLabelText("First name");
   return rendered;
 }
@@ -139,22 +186,20 @@ describe("BS-01 General Settings", () => {
       expect(input(label).disabled).toBe(true);
     }
   });
-  it("has no editable address/tax, fake avatar upload, or password-change affordance", async () => {
+  it("keeps unrelated identity fields out while composing Account security", async () => {
     const { container } = await mount();
     expect(
       screen.queryByLabelText(/corporate address|tax id|vat number/i),
     ).toBeNull();
     expect(screen.queryByLabelText(/profile image upload/i)).toBeNull();
+    expect(screen.queryByText(/drag.*drop|click to browse/i)).toBeNull();
     expect(
-      screen.queryByText(
-        /drag.*drop|click to browse|update password|login security/i,
-      ),
+      container.querySelector('input[type="file"], .settings-avatar-upload'),
     ).toBeNull();
+    expect(screen.getByText("Account security")).toBeTruthy();
     expect(
-      container.querySelector(
-        'input[type="file"], input[type="password"], .settings-avatar-upload',
-      ),
-    ).toBeNull();
+      await screen.findByRole("button", { name: "Change password" }),
+    ).toBeTruthy();
     expect(
       screen.getByText(
         /Registered legal entity, billing address, and tax details belong to Billing/,
@@ -248,9 +293,7 @@ describe("BS-01 General Settings", () => {
       target: { value: "new@example.test" },
     });
     fireEvent.submit(document.getElementById("brand-team-action")!);
-    expect(
-      await screen.findByText("Invitation email dispatched."),
-    ).toBeTruthy();
+    expect(await screen.findByText("Invitation sent.")).toBeTruthy();
     expect(
       fetchMock.mock.calls.some(
         ([url, init]) =>
@@ -259,5 +302,58 @@ describe("BS-01 General Settings", () => {
       ),
     ).toBe(true);
     expect(patches()).toHaveLength(0);
+  });
+  it("returns invitation capacity after cancelling a pending seat and refetching", async () => {
+    data.team.pending_invitations = [
+      {
+        invitation_id: "pending-1",
+        email: "pending@example.test",
+        role: "CAMPAIGN_MANAGER",
+        status: "PENDING",
+        expires_at: new Date(Date.now() + 86_400_000).toISOString(),
+      },
+    ];
+    data.team.seat_usage = {
+      active_members: 4,
+      pending_invitations: 1,
+      max_seats: 5,
+    };
+    await mount();
+    const invite = screen.getByRole("button", { name: "Invite new member" });
+    expect((invite as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel invite" }));
+    expect(await screen.findByText("Invitation cancelled.")).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Invite new member",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(false),
+    );
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) =>
+          String(url).endsWith("/general") &&
+          (init as RequestInit).method === "GET",
+      ),
+    ).toHaveLength(2);
+  });
+  it("shows workspace denial on 403 without converting it into an auth redirect", async () => {
+    failLoadStatus = 403;
+    render(
+      createElement(MemoryRouter, null, createElement(BrandGeneralSettings)),
+    );
+    expect(
+      await screen.findByText("Workspace access unavailable"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Active Brand team membership required/),
+    ).toBeTruthy();
+    expect(screen.queryByText(/sign in again/i)).toBeNull();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/general")),
+    ).toHaveLength(1);
   });
 });

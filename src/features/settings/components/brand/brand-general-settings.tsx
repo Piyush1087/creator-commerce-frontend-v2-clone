@@ -9,6 +9,7 @@ import {
 import { SettingsSectionCard } from "../settings-section-card";
 import { BrandTeamSettings } from "./brand-team-settings";
 import { SettingsUnsavedBar } from "../settings-unsaved-bar";
+import { AccountSecuritySettings } from "./account-security-settings";
 type FormState = {
   firstName: string;
   lastName: string;
@@ -32,6 +33,7 @@ export function BrandGeneralSettings() {
     loading,
     saving,
     error,
+    errorStatus,
     saveGeneral,
     inviteMember,
     revokeMember,
@@ -108,8 +110,17 @@ export function BrandGeneralSettings() {
   }
   if (!data || !form) {
     return (
-      <Alert tone="error" title="Could not load settings">
-        {error ?? "Workspace settings are unavailable right now."}
+      <Alert
+        tone="error"
+        title={
+          errorStatus === 403
+            ? "Workspace access unavailable"
+            : "Could not load settings"
+        }
+      >
+        {errorStatus === 403
+          ? `${error ?? "Active Brand team membership is required."} You can navigate elsewhere or sign out from the application menu.`
+          : (error ?? "Workspace settings are unavailable right now.")}
       </Alert>
     );
   }
@@ -160,6 +171,7 @@ export function BrandGeneralSettings() {
           </div>
         </SettingsSectionCard>
         <hr className="settings-section-divider" />
+        <AccountSecuritySettings />
         <SettingsSectionCard
           title="Organization details"
           description="Manage the workspace and Organization name. Registered legal entity, billing address, and tax details belong to Billing. Primary country and reporting currency are protected Brand settings."

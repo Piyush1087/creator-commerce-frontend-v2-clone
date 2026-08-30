@@ -1,4 +1,5 @@
 import { env } from "../../../shared/config/env";
+import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import {
   isAuthTokenResponse,
   type AuthTokenResponseBody,
@@ -16,9 +17,16 @@ export class TeamInvitationError extends Error {
 
 async function post(
   action: string,
-  body: { token: string; password?: string },
+  body: {
+    token: string;
+    password?: string;
+    otpCode?: string;
+    googleIdToken?: string;
+  },
+  authenticate = false,
 ): Promise<unknown> {
-  const response = await fetch(
+  const request = authenticate ? authenticatedFetch : fetch;
+  const response = await request(
     `${env.apiUrl}/api/v1/brand/team-invitations/${action}`,
     {
       method: "POST",
@@ -29,7 +37,13 @@ async function post(
       referrerPolicy: "no-referrer",
     },
   );
-  const value: unknown = await response.json();
+  const text = await response.text();
+  let value: unknown;
+  try {
+    value = text ? (JSON.parse(text) as unknown) : undefined;
+  } catch {
+    throw new Error("The invitation service returned an invalid response.");
+  }
   if (!response.ok) {
     const error = value as { message?: unknown; code?: unknown };
     throw new TeamInvitationError(
@@ -40,6 +54,10 @@ async function post(
     );
   }
   return value;
+}
+
+export async function requestTeamInvitationOtp(token: string): Promise<void> {
+  await post("request-otp", { token });
 }
 
 export async function inspectTeamInvitation(
@@ -64,12 +82,20 @@ export async function inspectTeamInvitation(
 
 export async function acceptTeamInvitation(
   token: string,
-  password?: string,
+  proof: {
+    password?: string;
+    otpCode?: string;
+    googleIdToken?: string;
+  } = {},
 ): Promise<AuthTokenResponseBody> {
-  const value = await post("accept", {
-    token,
-    ...(password ? { password } : {}),
-  });
+  const value = await post(
+    "accept",
+    {
+      token,
+      ...proof,
+    },
+    true,
+  );
   if (!isAuthTokenResponse(value) || value.user.role !== "BRAND")
     throw new Error(
       "The invitation was accepted but the session was unavailable. Please sign in.",

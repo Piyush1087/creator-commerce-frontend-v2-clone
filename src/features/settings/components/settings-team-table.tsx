@@ -55,6 +55,7 @@ export function SettingsTeamTable({
   onCancelInvite,
   onChangeRole,
 }: SettingsTeamTableProps) {
+  const capacityReasonId = "settings-team-capacity-reason";
   const activeCount = members.filter((m) => m.status === "ACTIVE").length;
   const pendingCount = members.filter((m) => m.status === "PENDING").length;
   const occupied = activeCount + pendingCount;
@@ -74,6 +75,11 @@ export function SettingsTeamTable({
           <Button
             variant="primary"
             disabled={inviteDisabled}
+            aria-describedby={
+              inviteDisabled && inviteDisabledReason
+                ? capacityReasonId
+                : undefined
+            }
             onClick={onInvite}
           >
             Invite new member
@@ -82,7 +88,7 @@ export function SettingsTeamTable({
       </div>
 
       {inviteDisabled && inviteDisabledReason ? (
-        <p className="settings-team__capacity-warning">
+        <p id={capacityReasonId} className="settings-team__capacity-warning">
           {inviteDisabledReason}
         </p>
       ) : null}

@@ -21,8 +21,40 @@
 .team-invitation dd {
   margin: 0;
 }
+.team-invitation h2 {
+  margin-top: var(--space-lg);
+  font-size: 1.125rem;
+}
+.team-invitation__method-tabs,
+.team-invitation__otp-actions,
+.team-invitation__account-warning,
+.team-invitation__direct-accept,
+.team-invitation__google {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+}
+.team-invitation__method-tabs {
+  margin-bottom: var(--space-md);
+}
+.team-invitation__account-warning,
+.team-invitation__direct-accept,
+.team-invitation__google {
+  align-items: stretch;
+  flex-direction: column;
+}
 @media (max-width: 767px) {
-  .team-invitation form button {
+  .team-invitation {
+    padding: var(--space-md);
+  }
+  .team-invitation .aurora-card {
+    padding: var(--space-md);
+  }
+  .team-invitation form button,
+  .team-invitation__method-tabs button,
+  .team-invitation__account-warning button,
+  .team-invitation__direct-accept button {
     width: 100%;
   }
 }

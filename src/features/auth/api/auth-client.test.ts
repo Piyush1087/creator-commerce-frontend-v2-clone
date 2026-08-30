@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   changePassword,
+  fetchAuthMe,
   forgotPassword,
   loginWithPassword,
   logoutAllSessions,
@@ -56,6 +57,25 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("auth API contract", () => {
+  it("reads active authentication methods from the canonical auth profile", async () => {
+    adoptAuthSession(canonicalSession);
+    const profile = {
+      ...canonicalSession.user,
+      authState: "ACTIVE",
+      authMethods: [
+        { type: "PASSWORD", verifiedAt: "2026-08-30T00:00:00.000Z" },
+        { type: "GOOGLE", verifiedAt: "2026-08-30T00:00:00.000Z" },
+      ],
+      brandMemberships: [
+        { brandProfileId: "brand-1", role: "BRAND_OWNER", isActive: true },
+      ],
+    };
+    fetchMock.mockResolvedValueOnce(response(profile));
+    await expect(fetchAuthMe()).resolves.toEqual(profile);
+    const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer access-fixture");
+  });
+
   it("logs in with email/password, includes credentials, and adopts memory session", async () => {
     fetchMock.mockResolvedValueOnce(response(canonicalSession));
     await loginWithPassword({

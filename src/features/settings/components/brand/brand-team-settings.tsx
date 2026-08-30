@@ -70,15 +70,15 @@ export function BrandTeamSettings({
     if (action.kind === "invite")
       void run(
         () => inviteMember({ email: email.trim(), role }),
-        "Invitation email dispatched.",
+        "Invitation sent.",
       );
     if (action.kind === "role" && action.id)
       void run(
         () => changeRole({ membershipId: action.id!, role }),
-        "Workspace role updated.",
+        "Role updated.",
       );
     if (action.kind === "revoke" && action.id)
-      void run(() => revokeMember(action.id!), "Workspace membership revoked.");
+      void run(() => revokeMember(action.id!), "Access revoked.");
   };
   return (
     <>

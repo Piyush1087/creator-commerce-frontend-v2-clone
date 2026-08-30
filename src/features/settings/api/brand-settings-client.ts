@@ -16,6 +16,16 @@ import type {
 
 const BASE = `${env.apiUrl}/api/v1/brand/settings`;
 
+export class BrandSettingsApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string | null,
+  ) {
+    super(message);
+  }
+}
+
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
   let body: unknown = undefined;
@@ -33,7 +43,13 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
       typeof (body as { message?: unknown }).message === "string"
         ? (body as { message: string }).message
         : `Request failed (${response.status}).`;
-    throw new Error(message);
+    const code =
+      typeof body === "object" &&
+      body !== null &&
+      typeof (body as { code?: unknown }).code === "string"
+        ? (body as { code: string }).code
+        : null;
+    throw new BrandSettingsApiError(message, response.status, code);
   }
   return body;
 }

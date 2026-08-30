@@ -7,8 +7,8 @@ import {
 } from "../../../shared/auth/auth-session";
 import { env } from "../../../shared/config/env";
 import type {
+  AuthMeResponseBody,
   AuthTokenResponseBody,
-  AuthUserBody,
 } from "../contracts/auth.contracts";
 import { isAuthTokenResponse } from "../contracts/auth.contracts";
 
@@ -107,7 +107,7 @@ export async function signInWithGoogle(body: {
   return adoptTokenResponse(result, "Unexpected Google sign-in response.");
 }
 
-export async function fetchAuthMe(): Promise<AuthUserBody> {
+export async function fetchAuthMe(): Promise<AuthMeResponseBody> {
   const response = await authenticatedFetch(`${env.apiUrl}/api/v1/auth/me`, {
     method: "GET",
     cache: "no-store",
@@ -116,18 +116,49 @@ export async function fetchAuthMe(): Promise<AuthUserBody> {
   if (!json || typeof json !== "object") {
     throw new Error("Unexpected profile response.");
   }
-  const user = json as { id?: unknown; email?: unknown; role?: unknown };
+  const user = json as {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+    role?: unknown;
+    authState?: unknown;
+    authMethods?: unknown;
+    brandMemberships?: unknown;
+  };
   if (
     typeof user.id !== "string" ||
     typeof user.email !== "string" ||
-    typeof user.role !== "string"
+    (typeof user.name !== "string" && user.name !== null) ||
+    typeof user.role !== "string" ||
+    typeof user.authState !== "string" ||
+    !Array.isArray(user.authMethods) ||
+    !user.authMethods.every(
+      (method) =>
+        method &&
+        typeof method === "object" &&
+        ["PASSWORD", "GOOGLE", "EMAIL_OTP"].includes(
+          String((method as { type?: unknown }).type),
+        ) &&
+        (typeof (method as { verifiedAt?: unknown }).verifiedAt === "string" ||
+          (method as { verifiedAt?: unknown }).verifiedAt === null),
+    ) ||
+    !Array.isArray(user.brandMemberships) ||
+    !user.brandMemberships.every(
+      (membership) =>
+        membership &&
+        typeof membership === "object" &&
+        typeof (membership as { brandProfileId?: unknown }).brandProfileId ===
+          "string" &&
+        typeof (membership as { role?: unknown }).role === "string" &&
+        typeof (membership as { isActive?: unknown }).isActive === "boolean",
+    )
   ) {
     throw new Error("Unexpected profile response.");
   }
-  return json as AuthUserBody;
+  return json as AuthMeResponseBody;
 }
 
-export async function refreshAuthSessionFromServer(): Promise<AuthUserBody> {
+export async function refreshAuthSessionFromServer(): Promise<AuthMeResponseBody> {
   const user = await fetchAuthMe();
   updateCurrentUser(user);
   return user;

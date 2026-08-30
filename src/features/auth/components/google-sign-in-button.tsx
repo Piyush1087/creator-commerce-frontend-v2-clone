@@ -4,11 +4,13 @@ import { mountGoogleIdButton } from "../../brand-onboarding/utils/google-id-toke
 
 type GoogleSignInButtonProps = {
   disabled?: boolean;
+  context?: "signin" | "signup" | "use";
   onCredential: (idToken: string) => void;
 };
 
 export function GoogleSignInButton({
   disabled = false,
+  context = "signin",
   onCredential,
 }: GoogleSignInButtonProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -24,7 +26,7 @@ export function GoogleSignInButton({
     setError(null);
     void mountGoogleIdButton({
       container: host,
-      context: "signin",
+      context,
       onCredential: (idToken) => {
         if (active) {
           onCredential(idToken);
@@ -52,7 +54,7 @@ export function GoogleSignInButton({
       active = false;
       cleanup?.();
     };
-  }, [disabled, onCredential]);
+  }, [context, disabled, onCredential]);
 
   return (
     <>

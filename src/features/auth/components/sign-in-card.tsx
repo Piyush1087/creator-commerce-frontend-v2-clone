@@ -19,6 +19,7 @@ type LoginMethod = "password" | "email-code";
 type CodeStage = "request" | "verify";
 
 function locationState(value: unknown): {
+  accountSecurity?: "PASSWORD_CHANGED" | "SIGNED_OUT_ALL";
   email?: string;
   from?: string;
   passwordReset?: boolean;
@@ -40,7 +41,11 @@ export function SignInCard() {
   const [status, setStatus] = useState<string | null>(
     state.passwordReset
       ? "Your password was reset. Sign in with your new password."
-      : null,
+      : state.accountSecurity === "PASSWORD_CHANGED"
+        ? "Your password was changed. Sign in again on this device."
+        : state.accountSecurity === "SIGNED_OUT_ALL"
+          ? "You have been signed out of Creator Shop on all devices."
+          : null,
   );
   const [submitting, setSubmitting] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
