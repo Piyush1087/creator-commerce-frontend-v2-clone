@@ -714,6 +714,110 @@
 }
 
 /* BS-06: Instagram is the only operational integration in Settings MVP. */
+.settings-instagram-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.settings-instagram-status h4,
+.settings-instagram-separate-capabilities h4 {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+}
+
+.settings-instagram-status p,
+.settings-instagram-separate-capabilities p,
+.settings-instagram-diagnostic {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.settings-instagram-status .settings-meta-subline {
+  margin-top: var(--space-sm);
+  color: var(--color-primary);
+}
+
+.settings-instagram-capabilities,
+.settings-instagram-separate-capabilities dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: var(--space-md) 0 0;
+}
+
+.settings-instagram-capabilities > div,
+.settings-instagram-separate-capabilities dl > div {
+  min-width: 0;
+  padding: var(--space-md);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-workflow);
+}
+
+.settings-instagram-capabilities dt,
+.settings-instagram-separate-capabilities dt {
+  color: var(--text-muted);
+  font-size: var(--size-small);
+  font-weight: 700;
+}
+
+.settings-instagram-capabilities dd,
+.settings-instagram-separate-capabilities dd {
+  margin: var(--space-xs) 0 0;
+  color: var(--text-high);
+  font-weight: 700;
+}
+
+.settings-instagram-separate-capabilities {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-default);
+}
+
+.settings-instagram-diagnostic {
+  margin-top: var(--space-md);
+  overflow-wrap: anywhere;
+}
+
+.settings-instagram-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.settings-instagram-drawer {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-instagram-drawer > p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.settings-instagram-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  color: var(--text-high);
+}
+
+.settings-instagram-confirmation svg {
+  flex: 0 0 auto;
+  color: var(--color-danger);
+}
+
+.settings-instagram-confirmation p {
+  margin: 0;
+  line-height: 1.55;
+}
+
 .settings-instagram-connection,
 .settings-instagram-conflict__panel {
   min-width: 0;
@@ -732,12 +836,14 @@
 
 @media (max-width: 767px) {
   .settings-instagram-connection .settings-meta-header__actions,
+  .settings-instagram-page .settings-meta-header__actions,
   .settings-instagram-conflict__actions {
     flex-direction: column;
     width: 100%;
   }
 
   .settings-instagram-connection .settings-meta-header__actions > button,
+  .settings-instagram-page .settings-meta-header__actions > button,
   .settings-instagram-manage > button,
   .settings-instagram-conflict__actions > button {
     width: 100%;
@@ -751,6 +857,22 @@
 
   .settings-instagram-conflict__panel {
     max-height: calc(100dvh - var(--height-bottom-nav, 0px) - 2rem);
+  }
+
+  .settings-instagram-capabilities,
+  .settings-instagram-separate-capabilities dl {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-instagram-inline-actions,
+  .settings-instagram-drawer {
+    width: 100%;
+  }
+
+  .settings-instagram-inline-actions > button,
+  .settings-instagram-drawer > button {
+    width: 100%;
+    white-space: normal;
   }
 }
 
@@ -1190,12 +1312,20 @@
 
 .settings-billing-readiness--ready {
   color: var(--color-success-strong, #15803d);
-  border-color: color-mix(in srgb, var(--color-success-strong, #15803d) 30%, var(--border-default));
+  border-color: color-mix(
+    in srgb,
+    var(--color-success-strong, #15803d) 30%,
+    var(--border-default)
+  );
 }
 
 .settings-billing-readiness--incomplete {
   color: var(--color-danger);
-  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--border-default));
+  border-color: color-mix(
+    in srgb,
+    var(--color-danger) 30%,
+    var(--border-default)
+  );
 }
 
 .settings-billing-readiness div,
