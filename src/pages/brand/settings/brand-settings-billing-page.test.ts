@@ -7,11 +7,22 @@ const financeSource = readFileSync(
   "utf8",
 );
 const routesSource = readFileSync(new URL("../../../routes/app-routes.tsx", import.meta.url), "utf8");
+const settingsClientSource = readFileSync(
+  new URL("../../../features/settings/api/brand-settings-client.ts", import.meta.url),
+  "utf8",
+);
+const settingsContractsSource = readFileSync(
+  new URL("../../../features/settings/contracts/brand-settings.contracts.ts", import.meta.url),
+  "utf8",
+);
 
 describe("FE-B Settings composition regressions", () => {
-  it("preserves treasury composition alongside reconciled billing", () => {
+  it("preserves accepted billing while removing the obsolete withdrawal model", () => {
     expect(pageSource).toContain("<EscrowAccountCard />");
-    expect(financeSource).toContain("<BrandWithdrawalAccountSection");
+    expect(financeSource).not.toContain("BrandWithdrawalAccountSection");
+    expect(financeSource).not.toContain("withdrawal");
+    expect(settingsClientSource).not.toContain("withdrawal-account");
+    expect(settingsContractsSource).not.toContain("WithdrawalAccount");
     expect(pageSource).toContain("<SettingsBillingSections />");
     expect(pageSource).toContain("<BrandFinanceSettings />");
   });

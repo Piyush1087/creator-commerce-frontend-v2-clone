@@ -4,22 +4,19 @@ import { Alert } from "../../../../design-system/aurora";
 import { useBrandFinanceSettings } from "../../hooks/use-brand-finance-settings";
 import { BrandBillingProfileSection } from "./brand-billing-profile-section";
 import { BrandNotificationsSection } from "./brand-notifications-section";
-import { BrandWithdrawalAccountSection } from "./brand-withdrawal-account-section";
 
 export function BrandFinanceSettings() {
   const {
     billing,
-    withdrawal,
     notifications,
     loading,
     saving,
     error,
     saveBillingProfile,
-    saveWithdrawalAccount,
     saveNotifications,
   } = useBrandFinanceSettings();
 
-  if (loading && !billing && !withdrawal && !notifications) {
+  if (loading && !billing && !notifications) {
     return (
       <div className="settings-page-stack settings-page-stack--centered">
         <Loader2 size={28} className="brand-escrow-spin" aria-hidden />
@@ -42,14 +39,6 @@ export function BrandFinanceSettings() {
         saving={saving}
         error={error}
         onSave={saveBillingProfile}
-      />
-
-      <BrandWithdrawalAccountSection
-        data={withdrawal}
-        loading={loading}
-        saving={saving}
-        error={error}
-        onSave={saveWithdrawalAccount}
       />
 
       <BrandNotificationsSection

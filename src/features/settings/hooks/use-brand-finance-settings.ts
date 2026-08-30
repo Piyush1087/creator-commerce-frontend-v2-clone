@@ -3,23 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchBrandBillingProfile,
   fetchBrandNotifications,
-  fetchBrandWithdrawalAccount,
-  linkBrandWithdrawalAccount,
   updateBrandNotifications,
   upsertBrandBillingProfile,
 } from "../api/brand-settings-client";
 import type {
   BrandBillingProfileResponse,
   BrandNotificationsResponse,
-  BrandWithdrawalAccountResponse,
-  LinkBrandWithdrawalAccountPayload,
   UpdateBrandNotificationsPayload,
   UpsertBrandBillingProfilePayload,
 } from "../contracts/brand-settings.contracts";
 
 export function useBrandFinanceSettings() {
   const [billing, setBilling] = useState<BrandBillingProfileResponse | null>(null);
-  const [withdrawal, setWithdrawal] = useState<BrandWithdrawalAccountResponse | null>(null);
   const [notifications, setNotifications] = useState<BrandNotificationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,13 +24,11 @@ export function useBrandFinanceSettings() {
     setLoading(true);
     setError(null);
     try {
-      const [billingResponse, withdrawalResponse, notificationsResponse] = await Promise.all([
+      const [billingResponse, notificationsResponse] = await Promise.all([
         fetchBrandBillingProfile(),
-        fetchBrandWithdrawalAccount(),
         fetchBrandNotifications(),
       ]);
       setBilling(billingResponse);
-      setWithdrawal(withdrawalResponse);
       setNotifications(notificationsResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load finance settings.");
@@ -66,25 +59,6 @@ export function useBrandFinanceSettings() {
     [],
   );
 
-  const saveWithdrawalAccount = useCallback(
-    async (payload: LinkBrandWithdrawalAccountPayload) => {
-      setSaving(true);
-      setError(null);
-      try {
-        await linkBrandWithdrawalAccount(payload);
-        await reload();
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to link withdrawal account.";
-        setError(message);
-        throw err;
-      } finally {
-        setSaving(false);
-      }
-    },
-    [reload],
-  );
-
   const saveNotifications = useCallback(
     async (payload: UpdateBrandNotificationsPayload) => {
       setSaving(true);
@@ -105,14 +79,12 @@ export function useBrandFinanceSettings() {
 
   return {
     billing,
-    withdrawal,
     notifications,
     loading,
     saving,
     error,
     reload,
     saveBillingProfile,
-    saveWithdrawalAccount,
     saveNotifications,
   };
 }

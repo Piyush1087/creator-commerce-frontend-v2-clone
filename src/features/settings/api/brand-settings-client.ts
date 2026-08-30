@@ -4,9 +4,7 @@ import type {
   BrandBillingProfileResponse,
   BrandGeneralResponse,
   BrandNotificationsResponse,
-  BrandWithdrawalAccountResponse,
   InviteTeamMemberPayload,
-  LinkBrandWithdrawalAccountPayload,
   UpdateBrandGeneralPayload,
   UpdateBrandNotificationsPayload,
   UpdateTeamRolePayload,
@@ -96,25 +94,6 @@ export async function upsertBrandBillingProfile(
     body: JSON.stringify(payload),
   });
   return (await readJsonOrThrow(response)) as BrandBillingProfileResponse;
-}
-
-export async function fetchBrandWithdrawalAccount(): Promise<BrandWithdrawalAccountResponse> {
-  const response = await fetch(`${BASE}/withdrawal-account`, {
-    method: "GET",
-    headers: jsonHeaders(),
-  });
-  return (await readJsonOrThrow(response)) as BrandWithdrawalAccountResponse;
-}
-
-export async function linkBrandWithdrawalAccount(
-  payload: LinkBrandWithdrawalAccountPayload,
-): Promise<unknown> {
-  const response = await fetch(`${BASE}/withdrawal-account`, {
-    method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify(payload),
-  });
-  return readJsonOrThrow(response);
 }
 
 export async function fetchBrandNotifications(): Promise<BrandNotificationsResponse> {
