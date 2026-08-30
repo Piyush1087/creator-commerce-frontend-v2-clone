@@ -1170,22 +1170,81 @@
   margin-top: var(--space-md);
 }
 
-.settings-notifications__table input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-}
-
-.settings-notifications__url-input {
-  width: 100%;
-  min-width: 12rem;
-  padding: 0.45rem 0.65rem;
+.settings-billing-readiness,
+.settings-notifications__mandatory-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-control);
-  background: var(--surface-base);
-  color: var(--text-primary);
-  font-size: 0.875rem;
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-subtle);
 }
 
-.settings-notifications__url-input:disabled {
-  opacity: 0.6;
+.settings-billing-readiness p,
+.settings-notifications__mandatory-note p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.settings-billing-readiness--ready {
+  color: var(--color-success-strong, #15803d);
+  border-color: color-mix(in srgb, var(--color-success-strong, #15803d) 30%, var(--border-default));
+}
+
+.settings-billing-readiness--incomplete {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--border-default));
+}
+
+.settings-billing-readiness div,
+.settings-notifications__mandatory-note p {
+  color: var(--text-high);
+}
+
+.settings-notifications__cards {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.settings-notifications__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-card);
+  cursor: pointer;
+}
+
+.settings-notifications__card-copy {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.settings-notifications__card-copy span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.settings-notifications__card-copy small {
+  color: var(--text-muted);
+}
+
+.settings-notifications__card input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+
+@media (min-width: 768px) {
+  .settings-notifications__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

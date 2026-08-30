@@ -8,6 +8,8 @@ import {
 import {
   BrandSettingsApiError,
   fetchBrandGeneralSettings,
+  updateBrandNotifications,
+  upsertBrandBillingProfile,
 } from "./brand-settings-client";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -67,5 +69,50 @@ describe("Brand Settings client", () => {
       code: "ACTIVE_BRAND_MEMBERSHIP_REQUIRED",
     });
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("writes only canonical billing fields", async () => {
+    const body = {
+      is_read_only: false,
+      profile_state: "CONFIGURED",
+      is_complete_for_paid_conversion: true,
+      missing_required_fields: [],
+      billing_profile: null,
+    };
+    fetchMock.mockResolvedValueOnce(response(body));
+    await upsertBrandBillingProfile({
+      legalEntityName: "Acme Private Limited",
+      legalEntityType: "Private Limited Company",
+      billingCountryCode: "IN",
+      billingAddress: "1 Billing Street, Bengaluru 560001",
+      gstin: null,
+    });
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/billing-profile");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      legalEntityName: "Acme Private Limited",
+      legalEntityType: "Private Limited Company",
+      billingCountryCode: "IN",
+      billingAddress: "1 Billing Street, Bengaluru 560001",
+      gstin: null,
+    });
+  });
+
+  it("writes the canonical personal notification payload without channels", async () => {
+    const body = {
+      settings: [],
+      mandatory_system_email_unaffected: true,
+    };
+    fetchMock.mockResolvedValueOnce(response(body));
+    await updateBrandNotifications({
+      settings: [
+        { category: "BRAND_INTELLIGENCE", optionalEmailEnabled: false },
+      ],
+    });
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/notifications");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      settings: [
+        { category: "BRAND_INTELLIGENCE", optionalEmailEnabled: false },
+      ],
+    });
   });
 });

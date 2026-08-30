@@ -53,8 +53,8 @@ export function useBrandFinanceSettings() {
       setSaving(true);
       setError(null);
       try {
-        await upsertBrandBillingProfile(payload);
-        await reload();
+        const response = await upsertBrandBillingProfile(payload);
+        setBilling(response);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to save billing profile.";
         setError(message);
@@ -63,7 +63,7 @@ export function useBrandFinanceSettings() {
         setSaving(false);
       }
     },
-    [reload],
+    [],
   );
 
   const saveWithdrawalAccount = useCallback(

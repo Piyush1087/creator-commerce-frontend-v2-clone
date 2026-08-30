@@ -1,15 +1,17 @@
 import type {
   BrandSubscriptionRecord,
-  SubscriptionStatus,
+  SubscriptionLifecycleStatus,
   SubscriptionTier,
 } from "../contracts/pricing.contracts";
-import {
-  TIER_DISPLAY_NAMES,
-  TIER_MONTHLY_PRICE_LABEL,
-  TIER_TAKE_RATES,
-} from "../constants/pricing-copy";
+import { TIER_DISPLAY_NAMES } from "../constants/pricing-copy";
 
 export const EMPTY_DISPLAY = "—";
+
+export type LifecyclePresentation = {
+  label: string;
+  heading: string;
+  description: string;
+};
 
 export function formatPricingDate(value: string | null | undefined): string {
   if (!value) return EMPTY_DISPLAY;
@@ -29,27 +31,56 @@ export function formatCurrencyLabel(currency: string | null | undefined): string
   return currency;
 }
 
-export function formatStatusLabel(status: SubscriptionStatus | null | undefined): string {
-  if (!status) return EMPTY_DISPLAY;
-  return status.replace(/_/g, " ");
-}
-
-export function getStatusDescription(
-  status: SubscriptionStatus | null | undefined,
-): string {
-  switch (status) {
+export function getLifecyclePresentation(
+  lifecycle: SubscriptionLifecycleStatus,
+  subscription?: Pick<
+    BrandSubscriptionRecord,
+    "trialEndsAt" | "currentPeriodEnd" | "cancelEffectiveAt" | "paymentGraceEndsAt"
+  >,
+): LifecyclePresentation {
+  switch (lifecycle) {
     case "TRIALING":
-      return "Active No-Card Preview Node";
+      return {
+        label: "Trialing",
+        heading: "Founder’s Beta trial is active",
+        description: `Full access continues through ${formatPricingDate(subscription?.trialEndsAt)}. No payment method is required during the trial.`,
+      };
     case "ACTIVE":
-      return "Recurring billing active";
+      return {
+        label: "Active",
+        heading: "Founder’s Beta is active",
+        description: `Full access is enabled. The current paid period ends ${formatPricingDate(subscription?.currentPeriodEnd)}.`,
+      };
+    case "CANCEL_SCHEDULED":
+      return {
+        label: "Cancellation scheduled",
+        heading: "Cancellation is scheduled",
+        description: `Full access continues until ${formatPricingDate(subscription?.cancelEffectiveAt)}.`,
+      };
     case "PAST_DUE":
-      return "Payment failed — read-only mode";
+      return {
+        label: "Past due",
+        heading: "Payment needs attention",
+        description: `Full access remains available during the payment grace period through ${formatPricingDate(subscription?.paymentGraceEndsAt)}.`,
+      };
+    case "TRIAL_EXPIRED":
+      return {
+        label: "Trial expired",
+        heading: "The Founder’s Beta trial has ended",
+        description: "The workspace is in restricted wind-down. Start paid conversion to restore full access.",
+      };
+    case "CANCELLED":
+      return {
+        label: "Cancelled",
+        heading: "The subscription is cancelled",
+        description: "The workspace is in restricted wind-down. Resume Founder’s Beta to restore full access.",
+      };
     case "HALTED":
-      return "Workspace automation frozen";
-    case "CANCELED":
-      return "Subscription canceled";
-    default:
-      return EMPTY_DISPLAY;
+      return {
+        label: "Halted",
+        heading: "Billing access is halted",
+        description: "The payment grace period has ended and the workspace is in restricted wind-down.",
+      };
   }
 }
 
@@ -57,23 +88,36 @@ export function getBillingCycleLabel(
   subscription: BrandSubscriptionRecord | null,
 ): string {
   if (!subscription) return EMPTY_DISPLAY;
-  if (subscription.status === "TRIALING") {
-    return "30-Day Free Window";
-  }
-  return "Monthly recurring";
+  return subscription.lifecycleStatus === "TRIALING"
+    ? "30-day trial"
+    : "Monthly recurring";
 }
 
-export function getPostTrialLabel(tier: SubscriptionTier | null | undefined): string {
-  if (!tier) return EMPTY_DISPLAY;
-  const price = TIER_MONTHLY_PRICE_LABEL[tier];
-  const takeRate = Math.round(TIER_TAKE_RATES[tier] * 100);
-  if (tier === "ENTERPRISE") {
-    return "Custom rate + negotiated collaboration fee";
-  }
-  return `Then ${price} + ${takeRate}% Collaboration Fee`;
+export function formatCommercialPrice(
+  subscription: BrandSubscriptionRecord | null,
+): string {
+  const terms = subscription?.commercialTerms;
+  if (!terms) return EMPTY_DISPLAY;
+  const major = terms.amountMinor / 100;
+  const price =
+    terms.currency === "INR"
+      ? `₹${major.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+      : `$${major.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  return `${price}/month${terms.currency === "INR" && terms.taxInclusive ? " (tax inclusive)" : ""}`;
 }
 
-export function getTierDisplayName(tier: SubscriptionTier | null | undefined): string {
+export function formatCommissionRate(
+  subscription: BrandSubscriptionRecord | null,
+): string {
+  const rate = subscription?.commercialTerms?.platformCommissionRate;
+  return rate === undefined || rate === null
+    ? EMPTY_DISPLAY
+    : `${Math.round(rate * 100)}% platform commission`;
+}
+
+export function getTierDisplayName(
+  tier: SubscriptionTier | null | undefined,
+): string {
   if (!tier) return EMPTY_DISPLAY;
   return TIER_DISPLAY_NAMES[tier];
 }
@@ -94,37 +138,33 @@ export function formatInvoiceAmount(
 
 export function getRenewalDate(subscription: BrandSubscriptionRecord | null): string {
   if (!subscription) return EMPTY_DISPLAY;
-  if (subscription.status === "TRIALING" && subscription.trialEndsAt) {
+  if (subscription.lifecycleStatus === "TRIALING") {
     return formatPricingDate(subscription.trialEndsAt);
+  }
+  if (subscription.lifecycleStatus === "CANCEL_SCHEDULED") {
+    return formatPricingDate(subscription.cancelEffectiveAt);
   }
   return formatPricingDate(subscription.currentPeriodEnd);
 }
 
-export function getRenewalLabel(
-  subscription: BrandSubscriptionRecord | null,
-): string {
+export function getRenewalLabel(subscription: BrandSubscriptionRecord | null): string {
   if (!subscription) return "Next renewal";
-  if (subscription.status === "TRIALING") {
-    return "Trial ends";
-  }
-  return "Next renewal";
+  if (subscription.lifecycleStatus === "TRIALING") return "Trial ends";
+  if (subscription.lifecycleStatus === "CANCEL_SCHEDULED") return "Access until";
+  return "Current period ends";
 }
 
 export function getTrialDaysRemaining(
   subscription: BrandSubscriptionRecord | null,
 ): number | null {
-  if (!subscription || subscription.status !== "TRIALING" || !subscription.trialEndsAt) {
+  if (
+    !subscription ||
+    subscription.lifecycleStatus !== "TRIALING" ||
+    !subscription.trialEndsAt
+  ) {
     return null;
   }
   const end = new Date(subscription.trialEndsAt);
   if (Number.isNaN(end.getTime())) return null;
-  const diffMs = end.getTime() - Date.now();
-  return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-}
-
-export function formatTakeRateLabel(tier: SubscriptionTier | null | undefined): string {
-  if (!tier) return EMPTY_DISPLAY;
-  if (tier === "ENTERPRISE") return "Custom collaboration fee";
-  const pct = Math.round(TIER_TAKE_RATES[tier] * 100);
-  return `${pct}% collaboration fee on escrow locks`;
+  return Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86_400_000));
 }

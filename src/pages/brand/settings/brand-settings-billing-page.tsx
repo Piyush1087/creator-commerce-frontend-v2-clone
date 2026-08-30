@@ -5,7 +5,7 @@ import { SettingsBillingSections } from "../../../features/settings/components/s
 export function BrandSettingsBillingPage() {
   return (
     <>
-      <SettingsBillingSections hideBillingDetailsSection />
+      <SettingsBillingSections />
       <div style={{ marginTop: "var(--space-lg)" }}>
         <BrandFinanceSettings />
       </div>

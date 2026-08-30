@@ -89,13 +89,13 @@ export async function fetchBrandBillingProfile(): Promise<BrandBillingProfileRes
 
 export async function upsertBrandBillingProfile(
   payload: UpsertBrandBillingProfilePayload,
-): Promise<unknown> {
+): Promise<BrandBillingProfileResponse> {
   const response = await fetch(`${BASE}/billing-profile`, {
     method: "PATCH",
     headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  return readJsonOrThrow(response);
+  return (await readJsonOrThrow(response)) as BrandBillingProfileResponse;
 }
 
 export async function fetchBrandWithdrawalAccount(): Promise<BrandWithdrawalAccountResponse> {

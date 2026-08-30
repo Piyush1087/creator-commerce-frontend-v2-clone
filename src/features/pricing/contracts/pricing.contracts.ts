@@ -7,25 +7,46 @@ export const SUBSCRIPTION_TIERS = [
 
 export type SubscriptionTier = (typeof SUBSCRIPTION_TIERS)[number];
 
-export const SUBSCRIPTION_STATUSES = [
-  "TRIALING",
-  "ACTIVE",
-  "PAST_DUE",
-  "CANCELED",
-  "HALTED",
-] as const;
+export type SubscriptionStatus =
+  | "TRIALING"
+  | "TRIAL_EXPIRED"
+  | "ACTIVE"
+  | "CANCEL_SCHEDULED"
+  | "CANCELED"
+  | "PAST_DUE"
+  | "HALTED";
 
-export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+export type SubscriptionLifecycleStatus =
+  | "TRIALING"
+  | "TRIAL_EXPIRED"
+  | "ACTIVE"
+  | "CANCEL_SCHEDULED"
+  | "CANCELLED"
+  | "PAST_DUE"
+  | "HALTED";
 
-export const SUBSCRIPTION_CURRENCIES = ["INR", "USD"] as const;
+export type SubscriptionAccessMode = "FULL_ACCESS" | "RESTRICTED_WIND_DOWN";
 
-export type SubscriptionCurrency = (typeof SUBSCRIPTION_CURRENCIES)[number];
+export type SubscriptionRequiredAction =
+  | "NONE"
+  | "PAYMENT_REQUIRED"
+  | "UPDATE_PAYMENT_METHOD";
+
+export type SubscriptionCurrency = "INR" | "USD";
 
 export type CatalogPlanView = {
-  tierKey: string;
+  tierKey: SubscriptionTier;
   name: string;
   priceDescriptor: string;
   isPubliclyAvailable: boolean;
+  availability: "PURCHASABLE" | "UPCOMING";
+  isPurchasable: boolean;
+  currency: SubscriptionCurrency | null;
+  amountMinor: number | null;
+  billingInterval: "MONTH" | null;
+  trialDays: number | null;
+  platformCommissionRate: number | null;
+  taxInclusive: boolean | null;
 };
 
 export type FeatureUsageRecord = {
@@ -42,10 +63,20 @@ export type UsageSnapshot = {
   usages: FeatureUsageRecord[];
 };
 
+export type SubscriptionCommercialTerms = {
+  amountMinor: number;
+  currency: SubscriptionCurrency;
+  billingInterval: "MONTH";
+  trialDays: number;
+  platformCommissionRate: number;
+  taxInclusive: boolean;
+};
+
 export type BrandSubscriptionRecord = {
   id: string;
   brandProfileId: string;
   tier: SubscriptionTier;
+  plan: SubscriptionTier;
   status: SubscriptionStatus;
   currency: SubscriptionCurrency;
   razorpayCustomerId: string | null;
@@ -54,6 +85,12 @@ export type BrandSubscriptionRecord = {
   trialEndsAt: string | null;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  cancelEffectiveAt: string | null;
+  paymentGraceEndsAt: string | null;
+  lifecycleStatus: SubscriptionLifecycleStatus;
+  accessMode: SubscriptionAccessMode;
+  requiredAction: SubscriptionRequiredAction;
+  commercialTerms: SubscriptionCommercialTerms | null;
   createdAt: string;
   updatedAt: string;
   featureUsages?: FeatureUsageRecord[];
@@ -61,7 +98,7 @@ export type BrandSubscriptionRecord = {
 
 export type GeoContext = {
   zone: "ZONE_IN" | "ZONE_US" | "ZONE_ROW";
-  currency: "INR" | "USD";
+  currency: SubscriptionCurrency;
   complianceWarning?: string;
 };
 
@@ -79,6 +116,14 @@ export type BillingInvoiceRecord = {
   issuedAt: string | null;
   billingPeriodStart: string | null;
   billingPeriodEnd: string | null;
+  billingIdentity: {
+    legalEntityName: string;
+    legalEntityType: string | null;
+    billingCountryCode: string | null;
+    billingAddress: string;
+    gstin: string | null;
+  } | null;
+  historicalBillingIdentityAvailable: boolean;
   lineItems: Array<{
     name: string;
     amount: number;
@@ -102,13 +147,37 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === "string";
 }
 
+function isSubscriptionTier(value: unknown): value is SubscriptionTier {
+  return SUBSCRIPTION_TIERS.includes(value as SubscriptionTier);
+}
+
+function isCommercialTerms(value: unknown): value is SubscriptionCommercialTerms {
+  if (!isRecord(value)) return false;
+  return (
+    isNumber(value.amountMinor) &&
+    (value.currency === "INR" || value.currency === "USD") &&
+    value.billingInterval === "MONTH" &&
+    isNumber(value.trialDays) &&
+    isNumber(value.platformCommissionRate) &&
+    typeof value.taxInclusive === "boolean"
+  );
+}
+
 export function isCatalogPlanView(value: unknown): value is CatalogPlanView {
   if (!isRecord(value)) return false;
   return (
-    isString(value.tierKey) &&
+    isSubscriptionTier(value.tierKey) &&
     isString(value.name) &&
     isString(value.priceDescriptor) &&
-    typeof value.isPubliclyAvailable === "boolean"
+    typeof value.isPubliclyAvailable === "boolean" &&
+    (value.availability === "PURCHASABLE" || value.availability === "UPCOMING") &&
+    typeof value.isPurchasable === "boolean" &&
+    (value.currency === null || value.currency === "INR" || value.currency === "USD") &&
+    (value.amountMinor === null || isNumber(value.amountMinor)) &&
+    (value.billingInterval === null || value.billingInterval === "MONTH") &&
+    (value.trialDays === null || isNumber(value.trialDays)) &&
+    (value.platformCommissionRate === null || isNumber(value.platformCommissionRate)) &&
+    (value.taxInclusive === null || typeof value.taxInclusive === "boolean")
   );
 }
 
@@ -119,15 +188,22 @@ export function isBrandSubscriptionRecord(
   return (
     isString(value.id) &&
     isString(value.brandProfileId) &&
-    isString(value.tier) &&
+    isSubscriptionTier(value.tier) &&
+    isSubscriptionTier(value.plan) &&
     isString(value.status) &&
-    isString(value.currency) &&
+    (value.currency === "INR" || value.currency === "USD") &&
     isNullableString(value.razorpayCustomerId) &&
     isNullableString(value.razorpaySubscriptionId) &&
     isNullableString(value.razorpayPlanId) &&
     isNullableString(value.trialEndsAt) &&
     isString(value.currentPeriodStart) &&
-    isString(value.currentPeriodEnd)
+    isString(value.currentPeriodEnd) &&
+    isNullableString(value.cancelEffectiveAt) &&
+    isNullableString(value.paymentGraceEndsAt) &&
+    isString(value.lifecycleStatus) &&
+    (value.accessMode === "FULL_ACCESS" || value.accessMode === "RESTRICTED_WIND_DOWN") &&
+    isString(value.requiredAction) &&
+    (value.commercialTerms === null || isCommercialTerms(value.commercialTerms))
   );
 }
 
@@ -144,11 +220,7 @@ export function isGeoContext(value: unknown): value is GeoContext {
 export function isPlansApiResponse(
   value: unknown,
 ): value is { plans: CatalogPlanView[] } {
-  return (
-    isRecord(value) &&
-    Array.isArray(value.plans) &&
-    value.plans.every(isCatalogPlanView)
-  );
+  return isRecord(value) && Array.isArray(value.plans) && value.plans.every(isCatalogPlanView);
 }
 
 export function isSubscriptionApiResponse(
@@ -187,11 +259,7 @@ export function isBillingInvoiceRecord(value: unknown): value is BillingInvoiceR
 export function isInvoicesApiResponse(
   value: unknown,
 ): value is { invoices: BillingInvoiceRecord[] } {
-  return (
-    isRecord(value) &&
-    Array.isArray(value.invoices) &&
-    value.invoices.every(isBillingInvoiceRecord)
-  );
+  return isRecord(value) && Array.isArray(value.invoices) && value.invoices.every(isBillingInvoiceRecord);
 }
 
 export function isFeatureUsageRecord(value: unknown): value is FeatureUsageRecord {

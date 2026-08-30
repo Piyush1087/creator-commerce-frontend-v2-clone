@@ -19,8 +19,6 @@ export function BrandFinanceSettings() {
     saveNotifications,
   } = useBrandFinanceSettings();
 
-  const readOnlyNotifications = billing?.is_read_only ?? false;
-
   if (loading && !billing && !withdrawal && !notifications) {
     return (
       <div className="settings-page-stack settings-page-stack--centered">
@@ -55,11 +53,10 @@ export function BrandFinanceSettings() {
       />
 
       <BrandNotificationsSection
-        settings={notifications?.settings ?? null}
+        data={notifications}
         loading={loading}
         saving={saving}
         error={error}
-        readOnly={readOnlyNotifications}
         onSave={saveNotifications}
       />
     </div>
