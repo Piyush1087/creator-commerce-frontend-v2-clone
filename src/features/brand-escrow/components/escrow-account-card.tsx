@@ -143,7 +143,10 @@ export function EscrowAccountCard({
                 <Button
                   variant="outline"
                   onClick={() => setReturnOpen(true)}
-                  disabled={returnSummary.self_service_returnable_balance <= 0}
+                  disabled={
+                    returnSummary.currency === null ||
+                    returnSummary.self_service_returnable_balance <= 0
+                  }
                 >
                   Return unused funds
                 </Button>
@@ -178,6 +181,12 @@ export function EscrowAccountCard({
                 </dd>
               </div>
             </dl>
+            {returnSummary.currency === null ? (
+              <p className="brand-escrow-return-panel__guidance">
+                Return currency is currently unavailable. Refresh Treasury status before
+                requesting a return.
+              </p>
+            ) : null}
             {returnSummary.source_reconciliation_required_amount > 0 ? (
               <p className="brand-escrow-return-panel__guidance">
                 Some AVAILABLE money lacks eligible source evidence for self-service return.

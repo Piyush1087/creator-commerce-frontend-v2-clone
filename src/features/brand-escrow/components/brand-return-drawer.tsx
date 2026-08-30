@@ -7,7 +7,7 @@ import {
 } from "../api/brand-escrow-client";
 import type { BrandReturnSummaryApiResponse } from "../contracts/escrow.contracts";
 import { BRAND_RETURN_PRESENTATION } from "../utils/brand-return-presentation";
-import { formatEscrowCurrency } from "../utils/format-escrow-currency";
+import { displayCurrency } from "../utils/display-value";
 import {
   amountIsWithinAuthoritativeLimit,
   parseTreasuryAmount,
@@ -45,6 +45,7 @@ export function BrandReturnDrawer({
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const amount = useMemo(() => parseTreasuryAmount(amountInput), [amountInput]);
+  const currencyUnavailable = summary.currency === null;
 
   useEffect(() => {
     if (!open) return;
@@ -56,17 +57,26 @@ export function BrandReturnDrawer({
     setSubmitError(null);
   }, [open]);
 
-  const validationError = !amount
-    ? "Enter an amount greater than zero with no more than two decimal places."
-    : !amountIsWithinAuthoritativeLimit(
-          amount,
-          summary.self_service_returnable_balance,
-        )
-      ? "Amount exceeds the current backend-confirmed self-service returnable balance."
-      : null;
+  const validationError = currencyUnavailable
+    ? "Return currency is currently unavailable. Refresh Treasury status before requesting a return."
+    : !amount
+      ? "Enter an amount greater than zero with no more than two decimal places."
+      : !amountIsWithinAuthoritativeLimit(
+            amount,
+            summary.self_service_returnable_balance,
+          )
+        ? "Amount exceeds the current backend-confirmed self-service returnable balance."
+        : null;
 
   const handleSubmit = async () => {
-    if (!amount || validationError || !confirmed || !requestIdentity) return;
+    if (
+      currencyUnavailable ||
+      !amount ||
+      validationError ||
+      !confirmed ||
+      !requestIdentity
+    )
+      return;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -112,6 +122,7 @@ export function BrandReturnDrawer({
             onClick={() => void handleSubmit()}
             disabled={
               Boolean(validationError) ||
+              currencyUnavailable ||
               !confirmed ||
               submitting ||
               outcomeUnknown
@@ -123,6 +134,12 @@ export function BrandReturnDrawer({
       }
     >
       <div className="settings-drawer-body">
+        {currencyUnavailable ? (
+          <Alert tone="warning" title="Return currency unavailable">
+            Return currency is currently unavailable. Refresh Treasury status before
+            requesting a return.
+          </Alert>
+        ) : null}
         {submitError ? (
           <Alert
             tone="error"
@@ -134,9 +151,9 @@ export function BrandReturnDrawer({
         <div className="brand-escrow-returnable">
           <span>Self-service returnable now</span>
           <strong>
-            {formatEscrowCurrency(
+            {displayCurrency(
               summary.self_service_returnable_balance,
-              summary.currency ?? "INR",
+              summary.currency,
             )}
           </strong>
         </div>
@@ -147,6 +164,7 @@ export function BrandReturnDrawer({
           inputMode="decimal"
           autoComplete="off"
           placeholder="0.00"
+          disabled={currencyUnavailable}
           error={amountInput ? validationError ?? undefined : undefined}
         />
         <div className="brand-escrow-explainer">
@@ -165,6 +183,7 @@ export function BrandReturnDrawer({
             type="checkbox"
             checked={confirmed}
             onChange={(event) => setConfirmed(event.target.checked)}
+            disabled={currencyUnavailable}
           />
           <span>
             I confirm that I am returning unused eligible funds to their backend-selected

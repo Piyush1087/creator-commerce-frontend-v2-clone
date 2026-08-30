@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EscrowApiError } from "../api/brand-escrow-client";
@@ -44,6 +51,7 @@ vi.mock("../utils/razorpay-checkout", () => ({
 }));
 
 import { EscrowAccountCard } from "./escrow-account-card";
+import { BrandReturnDrawer } from "./brand-return-drawer";
 
 const iso = "2026-08-30T10:00:00.000Z";
 const ids = {
@@ -271,6 +279,115 @@ describe("FE-D top-up fail-closed handoff", () => {
 });
 
 describe("FE-D Brand Return", () => {
+  it("renders backend-authoritative INR and keeps an eligible mutation available", () => {
+    render(createElement(EscrowAccountCard));
+    const openButton = screen.getByRole("button", { name: "Return unused funds" });
+    expect(openButton.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(openButton);
+    const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
+    expect(within(dialog).getByText("₹5,500.00")).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText("Return amount (INR)"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(within(dialog).getByRole("checkbox"));
+    expect(
+      within(dialog)
+        .getByRole("button", { name: "Confirm Brand Return" })
+        .hasAttribute("disabled"),
+    ).toBe(false);
+  });
+
+  it("renders backend-authoritative USD without an INR fallback", () => {
+    setState("BRAND_OWNER", {
+      returnSummary: {
+        available_balance: 7000,
+        proven_source_available_balance: 6000,
+        self_service_returnable_balance: 5500,
+        active_return_commitment: 500,
+        source_reconciliation_required_amount: 1000,
+        currency: "USD",
+      },
+    });
+    render(createElement(EscrowAccountCard));
+    const openButton = screen.getByRole("button", { name: "Return unused funds" });
+    expect(openButton.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(openButton);
+    const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
+    expect(within(dialog).getByText("$5,500.00")).toBeTruthy();
+    expect(dialog.textContent).not.toContain("₹");
+    expect(dialog.textContent).not.toContain("INR");
+  });
+
+  it("renders unavailable summary semantics and blocks null-currency mutation", () => {
+    setState("BRAND_OWNER", {
+      returnSummary: {
+        available_balance: 7000,
+        proven_source_available_balance: 6000,
+        self_service_returnable_balance: 5500,
+        active_return_commitment: 500,
+        source_reconciliation_required_amount: 1000,
+        currency: null,
+      },
+    });
+    const { container } = render(createElement(EscrowAccountCard));
+    const panel = container.querySelector(".brand-escrow-return-panel");
+    expect(panel).not.toBeNull();
+    expect(within(panel as HTMLElement).getAllByText("—")).toHaveLength(3);
+    expect(panel?.textContent).not.toMatch(/[₹$]/);
+    expect(panel?.textContent).not.toMatch(/\b(?:INR|USD)\b/);
+    expect(
+      screen
+        .getByRole("button", { name: "Return unused funds" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      within(panel as HTMLElement).getByText(
+        /Return currency is currently unavailable\. Refresh Treasury status before requesting a return\./,
+      ),
+    ).toBeTruthy();
+  });
+
+  it("keeps the drawer unavailable and fail-closed when currency authority is null", () => {
+    render(
+      createElement(BrandReturnDrawer, {
+        open: true,
+        summary: {
+          available_balance: 7000,
+          proven_source_available_balance: 6000,
+          self_service_returnable_balance: 5500,
+          active_return_commitment: 500,
+          source_reconciliation_required_amount: 1000,
+          currency: null,
+        },
+        onClose: vi.fn(),
+        onRefresh: mocks.reload,
+        onNotice: vi.fn(),
+      }),
+    );
+    const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
+    expect(within(dialog).getByText("—")).toBeTruthy();
+    expect(dialog.textContent).not.toMatch(/[₹$]/);
+    expect(dialog.textContent).not.toMatch(/\b(?:INR|USD)\b/);
+    expect(
+      within(dialog).getByText(
+        /Return currency is currently unavailable\. Refresh Treasury status before requesting a return\./,
+      ),
+    ).toBeTruthy();
+    expect(
+      within(dialog)
+        .getByLabelText("Return amount (currency unavailable)")
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    expect(within(dialog).getByRole("checkbox").hasAttribute("disabled")).toBe(true);
+    expect(
+      within(dialog)
+        .getByRole("button", { name: "Confirm Brand Return" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm Brand Return" }));
+    expect(mocks.brandReturn).not.toHaveBeenCalled();
+  });
+
   it("uses only amount plus explicit confirmation and has no destination/source fields", () => {
     render(createElement(EscrowAccountCard));
     fireEvent.click(screen.getByRole("button", { name: "Return unused funds" }));
