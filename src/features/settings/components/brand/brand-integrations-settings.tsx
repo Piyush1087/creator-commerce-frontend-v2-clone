@@ -294,6 +294,11 @@ export function BrandIntegrationsSettings() {
           row.humanActionRequired) ||
         row?.authorizationHealth === "DISCONNECTED"),
   );
+  const canManageConnection = Boolean(
+    canReconnect ||
+      row?.allowedActions.disconnect ||
+      row?.allowedActions.deleteMyData,
+  );
 
   return (
     <div className="settings-page-stack settings-instagram-page">
@@ -429,7 +434,7 @@ export function BrandIntegrationsSettings() {
                 disabled={busy}
                 onClick={() => setManageOpen(true)}
               >
-                Manage connection
+                {canManageConnection ? "Manage connection" : "View connection"}
               </Button>
             ) : null}
           </div>
@@ -529,8 +534,12 @@ export function BrandIntegrationsSettings() {
       <SideDrawer
         isOpen={manageOpen}
         onClose={() => setManageOpen(false)}
-        title="Manage Instagram connection"
-        closeLabel="Close manage Instagram connection"
+        title={
+          canManageConnection
+            ? "Manage Instagram connection"
+            : "Instagram connection details"
+        }
+        closeLabel="Close Instagram connection details"
         subtitle="Authorization and connection-data controls"
       >
         <div className="settings-instagram-drawer">

@@ -38,7 +38,7 @@ export function EscrowAccountCard({
     return (
       <section className="brand-escrow-card brand-escrow-card--loading" aria-busy="true">
         <Loader2 size={28} className="brand-escrow-spin" aria-hidden />
-        <p>Loading authoritative Treasury state…</p>
+        <p>Loading Secure escrow…</p>
       </section>
     );
   }
@@ -67,8 +67,8 @@ export function EscrowAccountCard({
             <div>
               <h2 className="brand-escrow-card__title">Secure escrow</h2>
               <p className="brand-escrow-card__desc">
-                Backend-authoritative pooled vault balances, funding, and external Brand
-                Returns.
+                Review available, locked, and pending balances, add funds, and return
+                eligible unused funds.
               </p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function EscrowAccountCard({
 
         {errorMessage ? (
           <Alert tone="error" title="Treasury refresh incomplete">
-            {errorMessage} Existing values have not been changed optimistically.
+            {errorMessage} Existing displayed values remain unchanged.
           </Alert>
         ) : null}
         {notice ? (
@@ -104,7 +104,8 @@ export function EscrowAccountCard({
             <strong>Protected commitments</strong>
             <p>
               Locked campaign funds and active return commitments cannot be released from
-              Settings. Collaboration and backend financial resolution remain authoritative.
+              Settings. They remain protected until the corresponding Collaboration or
+              return workflow completes.
             </p>
           </div>
           <div className="brand-escrow-explainer">
@@ -120,8 +121,8 @@ export function EscrowAccountCard({
           <div>
             <strong>Add funds</strong>
             <p>
-              Provider checkout creates a pending funding load. Available balance changes
-              only after backend confirmation.
+              Checkout creates Pending funding. Available balance changes only after
+              payment confirmation.
             </p>
           </div>
           {mutable ? (
@@ -135,8 +136,8 @@ export function EscrowAccountCard({
               <div>
                 <strong>Return unused funds</strong>
                 <p>
-                  Eligible AVAILABLE money is returned to backend-selected original payment
-                  source(s). No destination or source selection is accepted.
+                  Eligible available money is returned to original payment source(s),
+                  selected automatically. You cannot choose a destination or source.
                 </p>
               </div>
               {mutable ? (
@@ -189,7 +190,7 @@ export function EscrowAccountCard({
             ) : null}
             {returnSummary.source_reconciliation_required_amount > 0 ? (
               <p className="brand-escrow-return-panel__guidance">
-                Some AVAILABLE money lacks eligible source evidence for self-service return.
+                Some available money lacks eligible source evidence for self-service return.
                 It remains visible and is not treated as lost or automatically returnable.
               </p>
             ) : null}

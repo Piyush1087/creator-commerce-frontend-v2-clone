@@ -21,7 +21,7 @@ export function BrandReturnHistory({ requests }: BrandReturnHistoryProps) {
       <div className="brand-return-history__heading">
         <div>
           <h3 id="brand-return-history-title">Brand Return requests</h3>
-          <p>External returns only. Collaboration refunds remain a separate backend flow.</p>
+          <p>External returns only. Collaboration refunds remain a separate workflow.</p>
         </div>
       </div>
       {requests.length === 0 ? (

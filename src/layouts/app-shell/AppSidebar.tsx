@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { useLogout } from "../../shared/auth/use-logout";
 import { normalizeUserRole } from "../../shared/auth/user-role";
+import { AUTH_ROUTES } from "../../features/auth/constants";
 import { Button } from "../../design-system/aurora";
 import {
   getSidebarFooterNavItemsForRole,
@@ -20,6 +21,7 @@ export function AppSidebar() {
   const navItems = getSidebarNavItemsForRole(role);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
+  const showUpgrade = !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
 
   return (
     <aside className="aurora-sidebar">
@@ -63,11 +65,13 @@ export function AppSidebar() {
             </button>
           ) : null,
         )}
-        <div className="aurora-sidebar__upgrade">
-          <Button style={{ width: "100%", height: 40, fontSize: 13 }}>
-            Upgrade Plan
-          </Button>
-        </div>
+        {showUpgrade ? (
+          <div className="aurora-sidebar__upgrade">
+            <Button style={{ width: "100%", height: 40, fontSize: 13 }}>
+              Upgrade Plan
+            </Button>
+          </div>
+        ) : null}
       </div>
     </aside>
   );

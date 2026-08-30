@@ -28,6 +28,7 @@ export function SidebarFooterNavLink({
     <Link
       to={item.path}
       className={`${baseClassName}${isActive ? ` ${activeClassName}` : ""}`}
+      aria-current={isActive ? "page" : undefined}
       onClick={onNavigate}
     >
       <span

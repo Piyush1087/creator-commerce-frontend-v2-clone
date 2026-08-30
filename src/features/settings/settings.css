@@ -62,6 +62,12 @@
   color: var(--color-primary);
 }
 
+.brand-settings__tab:focus-visible,
+.brand-settings__subnav-link:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  outline-offset: 3px;
+}
+
 .brand-settings__tab--active {
   color: var(--color-primary);
   font-weight: 700;
@@ -104,6 +110,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+}
+
+.brand-settings__billing-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.brand-settings__billing-overview > .settings-page-stack {
+  padding: 0;
 }
 
 .brand-settings__collapsible {

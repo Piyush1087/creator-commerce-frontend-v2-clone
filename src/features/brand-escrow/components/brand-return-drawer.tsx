@@ -25,7 +25,7 @@ function definiteErrorCopy(error: EscrowApiError): string {
   if (error.code === "PROVIDER_SETUP_REQUIRED")
     return "The return provider is unavailable. No return was completed and no destination was changed.";
   if (error.code === "INSUFFICIENT_AVAILABLE_BALANCE")
-    return "Available balance changed before confirmation. Reload the authoritative Treasury state.";
+    return "Available balance changed before confirmation. Refresh Treasury status.";
   if (error.code === "SOURCE_PROVENANCE_REQUIRED")
     return "The requested amount is no longer backed by eligible original sources. Reload the returnable balance.";
   return error.message;
@@ -65,7 +65,7 @@ export function BrandReturnDrawer({
             amount,
             summary.self_service_returnable_balance,
           )
-        ? "Amount exceeds the current backend-confirmed self-service returnable balance."
+        ? "Amount exceeds the current self-service returnable balance."
         : null;
 
   const handleSubmit = async () => {
@@ -111,7 +111,7 @@ export function BrandReturnDrawer({
       isOpen={open}
       onClose={onClose}
       title="Return unused funds"
-      subtitle="Return eligible AVAILABLE money to its original external source(s)."
+      subtitle="Return eligible available money to its original external source(s)."
       width="500px"
       footer={
         <div className="settings-drawer-footer">
@@ -170,12 +170,13 @@ export function BrandReturnDrawer({
         <div className="brand-escrow-explainer">
           <strong>How Brand Return works</strong>
           <p>
-            The backend selects eligible original funding sources in order. One request
-            may span multiple sources. There is no bank, card, payment, or source picker.
+            Eligible original funding sources are selected automatically in order. One
+            request may span multiple sources. You cannot select a bank, card, payment, or
+            source.
           </p>
           <p>
-            Processing is asynchronous. An accepted request is not complete until the
-            backend reports COMPLETED.
+            Processing is asynchronous. An accepted request is not complete until its
+            status changes to Completed.
           </p>
         </div>
         <label className="settings-modal__confirm">
@@ -186,8 +187,8 @@ export function BrandReturnDrawer({
             disabled={currencyUnavailable}
           />
           <span>
-            I confirm that I am returning unused eligible funds to their backend-selected
-            original payment source(s).
+            I confirm that I am returning unused eligible funds to original payment
+            source(s), selected automatically.
           </span>
         </label>
       </div>

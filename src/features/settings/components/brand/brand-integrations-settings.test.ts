@@ -303,7 +303,9 @@ describe("BS-06 role and authorization-health presentation", () => {
       );
       mount();
       fireEvent.click(
-        await screen.findByRole("button", { name: "Manage connection" }),
+        await screen.findByRole("button", {
+          name: role === "FINANCE_ADMIN" ? "View connection" : "Manage connection",
+        }),
       );
       expect(
         Boolean(
@@ -483,7 +485,9 @@ describe("BS-06 stable identity, account change, and capabilities", () => {
         ),
       );
       mount();
-      await screen.findByRole("button", { name: "Manage connection" });
+      await screen.findByRole("button", {
+        name: role === "BRAND_OWNER" ? "Manage connection" : "View connection",
+      });
       expect(
         Boolean(
           screen.queryByRole("button", { name: "Reconcile legacy identity" }),

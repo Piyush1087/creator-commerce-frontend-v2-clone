@@ -1,5 +1,7 @@
 import { Bell, Menu, ChevronRight } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
+import { AUTH_ROUTES } from "../../features/auth/constants";
 import type { AuthUser } from "../../shared/auth/auth-session";
 import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { Button } from "../../design-system/aurora";
@@ -22,8 +24,10 @@ function userAvatarInitial(user: AuthUser | null): string {
 }
 
 export function AppHeader({ onToggleMenu }: AppHeaderProps) {
+  const location = useLocation();
   const session = useAuthSession();
   const { breadcrumb, title } = useAppShellBreadcrumbs();
+  const showUpgrade = !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
 
   return (
     <header className="aurora-header">
@@ -41,12 +45,14 @@ export function AppHeader({ onToggleMenu }: AppHeaderProps) {
       </div>
 
       <div className="aurora-header__right">
-        <Button
-          variant="primary"
-          style={{ height: 40, paddingInline: 24, fontSize: 13 }}
-        >
-          Upgrade
-        </Button>
+        {showUpgrade ? (
+          <Button
+            variant="primary"
+            style={{ height: 40, paddingInline: 24, fontSize: 13 }}
+          >
+            Upgrade
+          </Button>
+        ) : null}
 
         <button
           type="button"

@@ -80,12 +80,12 @@ export function EscrowTopUpDrawer({
           )}`,
           onSuccess: () => {
             void settleHandoff(
-              "Payment was submitted. Available balance will change only after backend confirmation; review Pending funding and refresh status.",
+              "Payment was submitted. Available balance will change only after payment confirmation; review Pending funding and refresh status.",
             );
           },
           onDismiss: () => {
             void settleHandoff(
-              "Checkout closed. No funds were credited optimistically; the funding load may remain pending.",
+              "Checkout closed. No funds have been confirmed; the request may still appear under Pending funding.",
             );
           },
         });
@@ -93,7 +93,7 @@ export function EscrowTopUpDrawer({
         setSubmitting(false);
         setOutcomeUnknown(true);
         setSubmitError(
-          `${error instanceof Error ? error.message : "Provider handoff is unavailable."} The funding intent may already exist; refresh Treasury status instead of retrying this attempt.`,
+          `${error instanceof Error ? error.message : "Checkout is unavailable."} A funding request may already exist; refresh Treasury status instead of retrying this attempt.`,
         );
         await refresh();
       }
@@ -117,7 +117,7 @@ export function EscrowTopUpDrawer({
       isOpen={open}
       onClose={onClose}
       title="Add funds"
-      subtitle="Create a provider checkout for this pooled Brand vault."
+      subtitle="Open checkout for this Brand vault."
       width="480px"
       footer={
         <div className="settings-drawer-footer">
@@ -149,10 +149,10 @@ export function EscrowTopUpDrawer({
           error={amountInput ? validationError ?? undefined : undefined}
         />
         <div className="brand-escrow-explainer">
-          <strong>Backend-confirmed funding only</strong>
+          <strong>Confirmed funding only</strong>
           <p>
-            Checkout success does not credit the vault. Funding remains unavailable while
-            pending and becomes usable only after authoritative provider confirmation.
+            Checkout success does not immediately update Available balance. Funding remains
+            unavailable while Pending and becomes usable only after payment confirmation.
           </p>
           {vault.currency === "INR" ? (
             <p>India minimum top-up: ₹5,000.</p>

@@ -19,9 +19,13 @@ export type BrandSettingsSubRoute =
 export type CreatorSettingsSubRoute =
   (typeof CREATOR_SETTINGS_ROUTES)[keyof typeof CREATOR_SETTINGS_ROUTES];
 
+function isRouteOrDescendant(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 export function isBrandFinanceRoute(pathname: string): boolean {
   return (
-    pathname.startsWith(BRAND_SETTINGS_ROUTES.billing) ||
-    pathname.startsWith(BRAND_SETTINGS_ROUTES.escrow)
+    isRouteOrDescendant(pathname, BRAND_SETTINGS_ROUTES.billing) ||
+    isRouteOrDescendant(pathname, BRAND_SETTINGS_ROUTES.escrow)
   );
 }

@@ -19,22 +19,22 @@ export function EscrowBalanceMetrics({ vault }: EscrowBalanceMetricsProps) {
     {
       label: "Pending funding",
       value: vault.pending_funding,
-      hint: "Not usable or returnable until the backend confirms credit.",
+      hint: "Not usable or returnable until payment is confirmed.",
     },
     {
       label: "Active return commitment",
       value: vault.active_return_commitment,
-      hint: "Accepted Brand Return money still awaiting a terminal provider outcome.",
+      hint: "Accepted Brand Return amount still awaiting a final outcome.",
     },
     {
       label: "TDS buffer",
       value: vault.tds_buffer_balance,
-      hint: "Backend-managed tax buffer; no Settings mutation is exposed.",
+      hint: "Tax buffer managed automatically; no Settings action is available.",
     },
     {
       label: "Total pooled balance",
       value: vault.total_pooled_balance,
-      hint: "Authoritative cleared balance across the pooled Brand vault.",
+      hint: "Total cleared balance across the pooled Brand vault.",
     },
   ];
 

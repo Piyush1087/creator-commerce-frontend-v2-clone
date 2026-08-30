@@ -208,7 +208,7 @@ describe("FE-D vault and fixed-point money truth", () => {
     expect(screen.getByText("Available balance")).toBeTruthy();
     expect(screen.getAllByText("₹5,000.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("₹7,000.00").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Not usable or returnable until the backend confirms credit/)).toBeTruthy();
+    expect(screen.getByText(/Not usable or returnable until payment is confirmed/)).toBeTruthy();
   });
 
   it("compares user input and authoritative limits with scaled integers", () => {
@@ -233,7 +233,7 @@ describe("FE-D vault and fixed-point money truth", () => {
       },
     });
     render(createElement(EscrowAccountCard));
-    expect(screen.getByText(/Some AVAILABLE money lacks eligible source evidence/)).toBeTruthy();
+    expect(screen.getByText(/Some available money lacks eligible source evidence/)).toBeTruthy();
     expect(screen.getAllByText("₹1,000.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("₹7,000.00").length).toBeGreaterThan(0);
   });
@@ -273,7 +273,7 @@ describe("FE-D top-up fail-closed handoff", () => {
       target: { value: "5000" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue to provider" }));
-    expect(await screen.findByText(/funding intent may already exist/i)).toBeTruthy();
+    expect(await screen.findByText(/funding request may already exist/i)).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/funds added|credited successfully/i);
   });
 });
@@ -414,7 +414,7 @@ describe("FE-D Brand Return", () => {
       target: { value: "1000.01" },
     });
     expect(
-      screen.getByText(/exceeds the current backend-confirmed self-service returnable balance/i),
+      screen.getByText(/exceeds the current self-service returnable balance/i),
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Confirm Brand Return" }).hasAttribute("disabled"),
