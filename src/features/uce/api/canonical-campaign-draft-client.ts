@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type { CampaignShellResponse } from "../contracts/brand-uce.contracts";
 import type { CanonicalCampaignWizardPayload } from "../schemas/canonical-campaign-wizard-schema";
 
@@ -7,7 +7,7 @@ const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 const BASE = `${env.apiUrl}/api/v1/brand-uce`;
 
 function authHeaders(): Record<string, string> {
-  return { ...JSON_HEADERS, ...authAuthorizationHeader() };
+  return { ...JSON_HEADERS };
 }
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {

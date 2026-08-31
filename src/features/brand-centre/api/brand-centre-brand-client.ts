@@ -1,4 +1,4 @@
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import { env } from "../../../shared/config/env";
 import {
   BrandConsumerContractError,
@@ -17,7 +17,7 @@ export class BrandConsumerRequestError extends Error {
 export async function fetchBrandCentreBrand(signal?: AbortSignal) {
   const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/brand`, {
     method: "GET",
-    headers: { Accept: "application/json", ...authAuthorizationHeader() },
+    headers: { Accept: "application/json" },
     signal,
     cache: "no-store",
   });

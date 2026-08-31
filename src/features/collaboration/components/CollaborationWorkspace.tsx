@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, ArrowLeft, LoaderCircle, RefreshCw, SendHorizontal, WifiOff } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  LoaderCircle,
+  RefreshCw,
+  SendHorizontal,
+  WifiOff,
+} from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Alert, Button, TextField } from "../../../design-system/aurora";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import {
   normalizeUserRole,
   type UserRole,
@@ -92,8 +99,8 @@ function formatMessageTimestamp(value: string): string {
 }
 
 export function CollaborationWorkspace() {
-  const session = loadAuthSession();
-  const role = normalizeUserRole(session?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   if (role !== "BRAND" && role !== "CREATOR") {
     return (
       <Alert tone="warning" title="Collaboration access unavailable">
@@ -103,7 +110,10 @@ export function CollaborationWorkspace() {
     );
   }
   return (
-    <OperationalCollaborationWorkspace role={role} userId={session?.user.id} />
+    <OperationalCollaborationWorkspace
+      role={role}
+      userId={session.currentUser?.id}
+    />
   );
 }
 
@@ -135,7 +145,8 @@ function OperationalCollaborationWorkspace({
   );
   const [stale, setStale] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
-  const [campaignContextDetail, setCampaignContextDetail] = useState<CampaignContextDetail | null>(null);
+  const [campaignContextDetail, setCampaignContextDetail] =
+    useState<CampaignContextDetail | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const selected =
     threads.find((row) => row.collaborationId === selectedId) ?? null;
@@ -370,7 +381,8 @@ function OperationalCollaborationWorkspace({
       <div className="collab-pane__scroll">
         {paneErrors.inbox ? (
           <Alert tone="error" title="Collaborations could not be loaded">
-            The Inbox could not be refreshed. Previously loaded collaborations remain visible where available.
+            The Inbox could not be refreshed. Previously loaded collaborations
+            remain visible where available.
             <Button variant="secondary" onClick={() => void loadThreads()}>
               Retry
             </Button>
@@ -483,12 +495,22 @@ function OperationalCollaborationWorkspace({
       <div className="collab-chat-feed">
         {detail && isCompatibilityDetail(detail) ? (
           <Alert tone="warning" title="Limited collaboration details">
-            Some execution details are unavailable, but the conversation history remains accessible.
+            Some execution details are unavailable, but the conversation history
+            remains accessible.
           </Alert>
         ) : null}
         {paneErrors.detail || paneErrors.contract || paneErrors.messages ? (
-          <Alert tone="error" title={detail ? "Conversation could not be refreshed" : "Conversation could not be loaded"}>
-            {detail ? `The last saved conversation remains visible. Last updated ${new Date(detail.updatedAt).toLocaleString()}.` : "Collaboration details are temporarily unavailable."}
+          <Alert
+            tone="error"
+            title={
+              detail
+                ? "Conversation could not be refreshed"
+                : "Conversation could not be loaded"
+            }
+          >
+            {detail
+              ? `The last saved conversation remains visible. Last updated ${new Date(detail.updatedAt).toLocaleString()}.`
+              : "Collaboration details are temporarily unavailable."}
             <Button
               variant="secondary"
               onClick={() => void hydrate(selectedId)}
@@ -533,7 +555,11 @@ function OperationalCollaborationWorkspace({
       {paneErrors.send ? (
         <Alert tone="error" title="Message could not be sent">
           Your draft is still available. Retry when you are ready.
-          <Button variant="secondary" disabled={!canSend} onClick={() => void send()}>
+          <Button
+            variant="secondary"
+            disabled={!canSend}
+            onClick={() => void send()}
+          >
             Retry send
           </Button>
         </Alert>
@@ -613,19 +639,33 @@ function OperationalCollaborationWorkspace({
       {unavailable ? (
         <div className="collab-empty">Select an available collaboration.</div>
       ) : hydrating && !detail ? (
-        <div className="collab-state-surface collab-state-surface--compact" role="status">
-          <LoaderCircle className="collab-state-surface__spinner" size={28} aria-hidden="true" />
+        <div
+          className="collab-state-surface collab-state-surface--compact"
+          role="status"
+        >
+          <LoaderCircle
+            className="collab-state-surface__spinner"
+            size={28}
+            aria-hidden="true"
+          />
           <h3>Loading execution details</h3>
           <p>The persisted collaboration workspace is being prepared.</p>
         </div>
       ) : detail && isCompatibilityDetail(detail) ? (
         <div className="collab-pane__scroll collab-pane__scroll--execution">
           <section className="collab-state-surface collab-state-surface--limited">
-            <span className="collab-state-surface__icon" aria-hidden="true"><AlertTriangle size={26} /></span>
+            <span className="collab-state-surface__icon" aria-hidden="true">
+              <AlertTriangle size={26} />
+            </span>
             <p className="collab-deliverable__eyebrow">Read-only execution</p>
             <h3>Limited collaboration details</h3>
-            <p>Some execution details and actions are unavailable for this collaboration. Known conversation history remains accessible.</p>
-            <span className="collab-status-pill">No execution actions available</span>
+            <p>
+              Some execution details and actions are unavailable for this
+              collaboration. Known conversation history remains accessible.
+            </p>
+            <span className="collab-status-pill">
+              No execution actions available
+            </span>
           </section>
         </div>
       ) : (
@@ -657,8 +697,13 @@ function OperationalCollaborationWorkspace({
       {realtime === "degraded" ? (
         <div className="collab-realtime-banner" role="status">
           <WifiOff size={18} aria-hidden="true" />
-          <span><strong>Realtime updates are delayed.</strong> Persisted collaboration data remains usable while reconnection continues.</span>
-          <Button variant="secondary" onClick={() => void refreshAll()}><RefreshCw size={14} aria-hidden="true" /> Refresh</Button>
+          <span>
+            <strong>Realtime updates are delayed.</strong> Persisted
+            collaboration data remains usable while reconnection continues.
+          </span>
+          <Button variant="secondary" onClick={() => void refreshAll()}>
+            <RefreshCw size={14} aria-hidden="true" /> Refresh
+          </Button>
         </div>
       ) : null}
       {stale ? (
@@ -670,10 +715,20 @@ function OperationalCollaborationWorkspace({
         <section className="collab-pane collab-pane--list">{listPane}</section>
         {unavailable ? (
           <section className="collab-workspace__empty-surface collab-workspace__unavailable-surface">
-            <span className="collab-workspace__empty-icon collab-workspace__empty-icon--warning" aria-hidden="true"><AlertTriangle size={34} /></span>
+            <span
+              className="collab-workspace__empty-icon collab-workspace__empty-icon--warning"
+              aria-hidden="true"
+            >
+              <AlertTriangle size={34} />
+            </span>
             <h2>Collaboration unavailable</h2>
-            <p>This collaboration may no longer be available or you may not have access. No other collaboration was selected in its place.</p>
-            <Button variant="secondary" onClick={backToCollaborations}>Back to Collaborations</Button>
+            <p>
+              This collaboration may no longer be available or you may not have
+              access. No other collaboration was selected in its place.
+            </p>
+            <Button variant="secondary" onClick={backToCollaborations}>
+              Back to Collaborations
+            </Button>
           </section>
         ) : !selectedId ? (
           <CollaborationEmptyWorkspace
@@ -681,10 +736,10 @@ function OperationalCollaborationWorkspace({
               loadingInbox
                 ? "loading"
                 : paneErrors.inbox && threads.length === 0
-                ? "read-error"
-                : threads.length === 0
-                ? "empty-inbox"
-                : "no-selection"
+                  ? "read-error"
+                  : threads.length === 0
+                    ? "empty-inbox"
+                    : "no-selection"
             }
           />
         ) : (
@@ -746,10 +801,20 @@ function OperationalCollaborationWorkspace({
         ) : null}
         {unavailable ? (
           <section className="collab-workspace__empty-surface collab-workspace__unavailable-surface">
-            <span className="collab-workspace__empty-icon collab-workspace__empty-icon--warning" aria-hidden="true"><AlertTriangle size={34} /></span>
+            <span
+              className="collab-workspace__empty-icon collab-workspace__empty-icon--warning"
+              aria-hidden="true"
+            >
+              <AlertTriangle size={34} />
+            </span>
             <h2>Collaboration unavailable</h2>
-            <p>This collaboration may no longer be available or you may not have access. No other collaboration was selected in its place.</p>
-            <Button variant="secondary" onClick={backToCollaborations}>Back to Collaborations</Button>
+            <p>
+              This collaboration may no longer be available or you may not have
+              access. No other collaboration was selected in its place.
+            </p>
+            <Button variant="secondary" onClick={backToCollaborations}>
+              Back to Collaborations
+            </Button>
           </section>
         ) : mobileStep === 1 ? (
           <section className="collab-pane collab-pane--list">
@@ -772,9 +837,21 @@ function OperationalCollaborationWorkspace({
           detail={detail}
           open={contextOpen}
           onClose={() => setContextOpen(false)}
-          onOpenCampaign={contextReferences.campaignId ? () => openCampaignContextDetail("campaign") : undefined}
-          onOpenCampaignAsset={contextReferences.campaignAssetId ? () => openCampaignContextDetail("asset") : undefined}
-          onOpenBrief={contextReferences.briefId ? () => openCampaignContextDetail("brief") : undefined}
+          onOpenCampaign={
+            contextReferences.campaignId
+              ? () => openCampaignContextDetail("campaign")
+              : undefined
+          }
+          onOpenCampaignAsset={
+            contextReferences.campaignAssetId
+              ? () => openCampaignContextDetail("asset")
+              : undefined
+          }
+          onOpenBrief={
+            contextReferences.briefId
+              ? () => openCampaignContextDetail("brief")
+              : undefined
+          }
         />
       ) : null}
       {detail && role === "CREATOR" ? (
@@ -792,7 +869,10 @@ function OperationalCollaborationWorkspace({
           onClose={closeCampaignContextDetail}
         />
       ) : null}
-      {detail && role === "BRAND" && contextReferences.campaignId && contextReferences.campaignAssetId ? (
+      {detail &&
+      role === "BRAND" &&
+      contextReferences.campaignId &&
+      contextReferences.campaignAssetId ? (
         <CanonicalAssetDetailsDrawer
           campaignId={contextReferences.campaignId}
           campaignAssetId={contextReferences.campaignAssetId}
@@ -801,7 +881,11 @@ function OperationalCollaborationWorkspace({
           onClose={closeCampaignContextDetail}
         />
       ) : null}
-      {detail && role === "BRAND" && contextReferences.campaignId && contextReferences.campaignAssetId && contextReferences.briefId ? (
+      {detail &&
+      role === "BRAND" &&
+      contextReferences.campaignId &&
+      contextReferences.campaignAssetId &&
+      contextReferences.briefId ? (
         <CanonicalBriefDetailsDrawer
           campaignId={contextReferences.campaignId}
           campaignAssetId={contextReferences.campaignAssetId}

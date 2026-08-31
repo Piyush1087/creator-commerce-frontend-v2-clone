@@ -1,10 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 
-import {
-  clearAuthSession,
-  isAccessTokenValid,
-  loadAuthSession,
-} from "./auth-session";
+import { useAuthSession } from "./use-auth-session";
 
 type RequireAuthProps = {
   children: React.ReactNode;
@@ -12,13 +8,19 @@ type RequireAuthProps = {
 
 export function RequireAuth({ children }: RequireAuthProps) {
   const location = useLocation();
-  const token = loadAuthSession()?.accessToken ?? null;
+  const session = useAuthSession();
 
-  if (!token || !isAccessTokenValid(token)) {
-    if (token) {
-      clearAuthSession();
-    }
-    return <Navigate to="/" replace state={{ from: location.pathname }} />;
+  if (session.status === "INITIALIZING" || session.status === "REFRESHING") {
+    return (
+      <main className="auth-session-loading" aria-busy="true">
+        <p role="status">Restoring your secure session…</p>
+      </main>
+    );
+  }
+
+  if (session.status === "UNAUTHENTICATED") {
+    const from = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to="/login" replace state={{ from }} />;
   }
 
   return <>{children}</>;

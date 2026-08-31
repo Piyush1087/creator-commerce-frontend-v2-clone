@@ -1,5 +1,9 @@
-import type { BrandGeneralResponse, BrandSettingsRole } from "../contracts/brand-settings.contracts";
+import type {
+  BrandGeneralResponse,
+  BrandSettingsRole,
+} from "../contracts/brand-settings.contracts";
 import type { SettingsTeamMemberRow } from "../components/settings-team-table";
+import { canManageTeamTarget } from "./brand-team-authority";
 
 export const SETTINGS_EMPTY_DISPLAY = "—";
 
@@ -23,7 +27,7 @@ export function initialsFromName(name: string | null | undefined): string {
 }
 
 const ROLE_LABELS: Record<BrandSettingsRole, string> = {
-  BRAND_OWNER: "Admin",
+  BRAND_OWNER: "Brand Owner",
   FINANCE_ADMIN: "Finance Admin",
   CAMPAIGN_MANAGER: "Campaign Manager",
 };
@@ -32,20 +36,34 @@ export function brandRoleLabel(role: BrandSettingsRole): string {
   return ROLE_LABELS[role] ?? role;
 }
 
-export function mapBrandTeamRows(data: BrandGeneralResponse): SettingsTeamMemberRow[] {
-  const activeRows: SettingsTeamMemberRow[] = data.team.members.map((member) => ({
-    id: member.membership_id,
-    name: settingsDisplayText(member.name),
-    email: member.email,
-    initials: initialsFromName(member.name),
-    roleLabel: brandRoleLabel(member.role),
-    status: "ACTIVE",
-    isCurrentUser: member.is_current_user,
-    isExternal: !member.email.includes("@"),
-  }));
+export function mapBrandTeamRows(
+  data: BrandGeneralResponse,
+): SettingsTeamMemberRow[] {
+  const owners = data.team.members.filter(
+    (member) => member.role === "BRAND_OWNER",
+  ).length;
+  const activeRows: SettingsTeamMemberRow[] = data.team.members.map(
+    (member) => ({
+      id: member.membership_id,
+      name: settingsDisplayText(member.name),
+      email: member.email,
+      initials: initialsFromName(member.name),
+      roleLabel: brandRoleLabel(member.role),
+      status: "ACTIVE",
+      isCurrentUser: member.is_current_user,
+      isExternal: !member.email.includes("@"),
+      canRevoke:
+        !member.is_current_user &&
+        canManageTeamTarget(data.current_user_role, member.role) &&
+        (member.role !== "BRAND_OWNER" || owners > 1),
+      canChangeRole:
+        canManageTeamTarget(data.current_user_role, member.role) &&
+        (member.role !== "BRAND_OWNER" || owners > 1),
+    }),
+  );
 
-  const pendingRows: SettingsTeamMemberRow[] = data.team.pending_invitations.map(
-    (invite) => ({
+  const pendingRows: SettingsTeamMemberRow[] =
+    data.team.pending_invitations.map((invite) => ({
       id: invite.invitation_id,
       name: settingsDisplayText(invite.email.split("@")[0]),
       email: invite.email,
@@ -53,8 +71,9 @@ export function mapBrandTeamRows(data: BrandGeneralResponse): SettingsTeamMember
       roleLabel: brandRoleLabel(invite.role),
       status: "PENDING",
       isExternal: !invite.email.includes("@"),
-    }),
-  );
+      canCancelInvite: canManageTeamTarget(data.current_user_role, invite.role),
+      canResendInvite: false,
+    }));
 
   return [...activeRows, ...pendingRows];
 }

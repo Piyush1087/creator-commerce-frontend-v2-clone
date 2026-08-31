@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type { CreatorPayoutsHubResponse } from "../contracts/creator-payouts.contracts";
 
 const BASE = `${env.apiUrl}/api/v1/creator/payouts`;
@@ -10,7 +10,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -29,7 +31,6 @@ export async function fetchCreatorPayoutsHub(): Promise<CreatorPayoutsHubRespons
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      ...authAuthorizationHeader(),
     },
   });
   return (await readJsonOrThrow(response)) as CreatorPayoutsHubResponse;

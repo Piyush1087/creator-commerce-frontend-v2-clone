@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import {
   getBottomNavItemsForRole,
@@ -9,7 +9,8 @@ import {
 
 export function MobileBottomNav() {
   const location = useLocation();
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   const items = getBottomNavItemsForRole(role);
 
   if (items.length === 0) {

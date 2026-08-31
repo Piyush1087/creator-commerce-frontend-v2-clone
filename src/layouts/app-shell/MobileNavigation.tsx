@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { useLogout } from "../../shared/auth/use-logout";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import {
@@ -35,7 +35,8 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
   }, [isOpen]);
   const location = useLocation();
   const logout = useLogout();
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   const navItems = getSidebarNavItemsForRole(role);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);

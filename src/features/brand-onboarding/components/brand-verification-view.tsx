@@ -12,18 +12,12 @@ import {
 } from "../api/brand-client";
 import { GoogleVerifyModal } from "./google-verify-modal";
 import { ONBOARDING_ROUTES } from "../constants";
-import {
-  STUB_OTP_CODE,
-  STUB_OTP_TTL_MINUTES,
-  USE_REAL_BRAND_VERIFICATION_OTP,
-} from "../verification-otp.config";
 import { parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import {
   emailDomainFromAddress,
   emailDomainMatchesBrandDomain,
 } from "../utils/verification-email-domain";
-import { saveAuthSession } from "../../../shared/auth/auth-session";
 
 type VerifyStep = "email" | "otp" | "password" | "success";
 
@@ -85,7 +79,10 @@ export function BrandVerificationView() {
       setOtpSecondsLeft(0);
       return;
     }
-    const remaining = Math.max(0, Math.ceil((otpExpiresAt - Date.now()) / 1000));
+    const remaining = Math.max(
+      0,
+      Math.ceil((otpExpiresAt - Date.now()) / 1000),
+    );
     setOtpSecondsLeft(remaining);
   }, [otpExpiresAt]);
 
@@ -138,24 +135,13 @@ export function BrandVerificationView() {
 
     setIsSending(true);
     try {
-      // PRE-PROD: stub send — no API. PROD: set USE_REAL_BRAND_VERIFICATION_OTP=true
-      // (see creator-commerce-backend-v2/docs/brand-onboarding/VERIFICATION_OTP_TOGGLE.md)
-      if (!USE_REAL_BRAND_VERIFICATION_OTP) {
-        await new Promise((resolve) => window.setTimeout(resolve, 700));
-        setWorkEmail(email);
-        setOtpExpiresAt(Date.now() + STUB_OTP_TTL_MINUTES * 60 * 1000);
-        setOtpValues(Array(6).fill(""));
-        setStep("otp");
-        window.setTimeout(() => {
-          inputRefs.current[0]?.focus();
-        }, 100);
-        return;
-      }
-
-      /* PROD — real OTP send (active when USE_REAL_BRAND_VERIFICATION_OTP is true) */
-      const result = await sendBrandVerificationOtp(session.brandProfileId, email);
+      const result = await sendBrandVerificationOtp(
+        session.brandProfileId,
+        email,
+      );
       setWorkEmail(email);
       setOtpExpiresAt(new Date(result.expiresAt).getTime());
+      setSendCooldownSeconds(60);
       setOtpValues(Array(6).fill(""));
       setStep("otp");
       window.setTimeout(() => {
@@ -224,7 +210,10 @@ export function BrandVerificationView() {
     applyOtpFromString(event.clipboardData.getData("text"), index);
   };
 
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleOtpKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Backspace" && !otpValues[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -250,17 +239,6 @@ export function BrandVerificationView() {
 
     setIsVerifying(true);
     try {
-      // PRE-PROD: accept STUB_OTP_CODE locally, then verify API (backend stub sets isVerified)
-      if (!USE_REAL_BRAND_VERIFICATION_OTP) {
-        if (code !== STUB_OTP_CODE) {
-          setError("Invalid code. Please check your email and try again.");
-          setOtpValues(Array(6).fill(""));
-          inputRefs.current[0]?.focus();
-          return;
-        }
-      }
-
-      /* PROD — real OTP verify (USE_REAL_BRAND_VERIFICATION_OTP=true) */
       const result = await verifyBrandVerificationOtp(session.brandProfileId, {
         email: workEmail.trim(),
         otp: code,
@@ -341,13 +319,9 @@ export function BrandVerificationView() {
     }
     setIsSavingPassword(true);
     try {
-      const result = await setBrandVerificationPassword(session.brandProfileId, {
+      await setBrandVerificationPassword(session.brandProfileId, {
         email: workEmail.trim(),
         password,
-      });
-      saveAuthSession({
-        accessToken: result.accessToken,
-        user: result.user,
       });
       setStep("success");
     } catch (err) {
@@ -374,7 +348,11 @@ export function BrandVerificationView() {
             <span>{sessionError}</span>
           </div>
           <div className="bob-inline" style={{ marginTop: "var(--space-md)" }}>
-            <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate(-1)}
+            >
               Back
             </Button>
             <Button
@@ -393,10 +371,17 @@ export function BrandVerificationView() {
   return (
     <div className="bob-verify bob-verify--hide-nav">
       <div className="bob-verify__split">
-        <section className="bob-verify__left" aria-labelledby="bob-verify-title">
+        <section
+          className="bob-verify__left"
+          aria-labelledby="bob-verify-title"
+        >
           <div className="bob-verify__left-inner">
             <div className="bob-verify__toolbar">
-              <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(-1)}
+              >
                 Back
               </Button>
             </div>
@@ -406,11 +391,16 @@ export function BrandVerificationView() {
                 <div className="bob-verify__success-icon">
                   <CheckCircle size={40} strokeWidth={1.5} />
                 </div>
-                <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--centered">
+                <h1
+                  id="bob-verify-title"
+                  className="bob-verify__title bob-verify__title--centered"
+                >
                   VERIFICATION SUCCESSFUL
                 </h1>
                 <p className="bob-verify__lead bob-verify__lead--centered">
-                  Your brand ownership has been verified. You now have full access to Aurora&apos;s deep intelligence tools and strategy dashboard.
+                  Your brand ownership has been verified. You now have full
+                  access to Aurora&apos;s deep intelligence tools and strategy
+                  dashboard.
                 </p>
 
                 <div className="bob-verify__metadata">
@@ -443,12 +433,15 @@ export function BrandVerificationView() {
               </Card>
             ) : step === "password" ? (
               <Card className="bob-verify__card">
-                <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--uppercase">
+                <h1
+                  id="bob-verify-title"
+                  className="bob-verify__title bob-verify__title--uppercase"
+                >
                   CREATE YOUR WORKSPACE PASSWORD
                 </h1>
                 <p className="bob-verify__lead">
-                  Your brand ownership is verified! Create a strong local password to secure your
-                  personalized market insights database.
+                  Your brand ownership is verified! Create a strong local
+                  password to secure your personalized market insights database.
                 </p>
                 <form
                   className="bob-stack"
@@ -496,8 +489,13 @@ export function BrandVerificationView() {
               </Card>
             ) : (
               <Card className="bob-verify__card">
-                <h1 id="bob-verify-title" className="bob-verify__title bob-verify__title--uppercase">
-                  {step === "email" ? "VERIFY YOU OWN THIS BRAND" : "ENTER THE 6-DIGIT CODE"}
+                <h1
+                  id="bob-verify-title"
+                  className="bob-verify__title bob-verify__title--uppercase"
+                >
+                  {step === "email"
+                    ? "VERIFY YOU OWN THIS BRAND"
+                    : "ENTER THE 6-DIGIT CODE"}
                 </h1>
                 <p className="bob-verify__lead">
                   {step === "email" ? (
@@ -560,7 +558,10 @@ export function BrandVerificationView() {
                         <ArrowRight size={18} aria-hidden />
                       </Button>
                     </div>
-                    <p className="bob-verify__spam-hint" style={{ textAlign: "center" }}>
+                    <p
+                      className="bob-verify__spam-hint"
+                      style={{ textAlign: "center" }}
+                    >
                       or
                     </p>
                     <Button
@@ -570,12 +571,14 @@ export function BrandVerificationView() {
                       disabled={isGoogleVerifying || isSending}
                       onClick={() => openGoogleVerifyModal()}
                     >
-                      {isGoogleVerifying ? "Connecting Google…" : "Verify with Google"}
+                      {isGoogleVerifying
+                        ? "Connecting Google…"
+                        : "Verify with Google"}
                     </Button>
                     <p className="bob-otp-helper">
-                      Uses your Google Workspace account matching @{domain}. After identity
-                      confirmation you still create a local password. No Meta connection during
-                      signup.
+                      Uses your Google Workspace account matching @{domain}.
+                      After identity confirmation you still create a local
+                      password. No Meta connection during signup.
                     </p>
                   </form>
                 ) : (
@@ -598,7 +601,9 @@ export function BrandVerificationView() {
                             type="text"
                             inputMode="numeric"
                             value={digit}
-                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onChange={(e) =>
+                              handleOtpChange(index, e.target.value)
+                            }
                             onPaste={(e) => handleOtpPaste(index, e)}
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
                             className={`bob-otp-input ${error ? "bob-otp-input--error" : ""}`}
@@ -679,7 +684,9 @@ export function BrandVerificationView() {
 
               <div className="bob-verify__preview-grid">
                 <div className="bob-verify__preview-tile">
-                  <div className="bob-verify__preview-tile-label">competitor_brand</div>
+                  <div className="bob-verify__preview-tile-label">
+                    competitor_brand
+                  </div>
                   <div className="bob-verify__preview-visual" aria-hidden>
                     <span>Creative trend detected</span>
                   </div>
@@ -695,7 +702,9 @@ export function BrandVerificationView() {
                     <div className="bob-verify__bars" aria-hidden>
                       <span className="bob-verify__bar bob-verify__bar--muted" />
                       <span className="bob-verify__bar bob-verify__bar--you">
-                        <span className="bob-verify__bar-label">You (target)</span>
+                        <span className="bob-verify__bar-label">
+                          You (target)
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -716,8 +725,8 @@ export function BrandVerificationView() {
               <aside className="bob-verify__recommendation">
                 <strong>Executive recommendation</strong>
                 <p>
-                  Shift creative spend toward community verification to bridge engagement gaps
-                  identified in your sector.
+                  Shift creative spend toward community verification to bridge
+                  engagement gaps identified in your sector.
                 </p>
               </aside>
             </div>

@@ -3,7 +3,9 @@ import { io, type Socket } from "socket.io-client";
 import { getAccessToken } from "../../../shared/auth/auth-session";
 import { env } from "../../../shared/config/env";
 
-export type CollaborationRealtimeEventType = "thread.updated" | "message.created";
+export type CollaborationRealtimeEventType =
+  | "thread.updated"
+  | "message.created";
 
 export type CollaborationRealtimePayload = {
   type: CollaborationRealtimeEventType;
@@ -22,7 +24,10 @@ export function createCollaborationSocket(): Socket | null {
   }
 
   return io(`${resolveSocketBaseUrl()}/collaboration`, {
-    auth: { token },
+    auth: (callback) => {
+      const currentToken = getAccessToken();
+      callback(currentToken ? { token: currentToken } : {});
+    },
     transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionAttempts: 12,

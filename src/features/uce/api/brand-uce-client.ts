@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   CampaignBriefRecord,
   CampaignListAggregates,
@@ -38,7 +38,6 @@ const BASE = `${env.apiUrl}/api/v1/brand-uce`;
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 

@@ -1,149 +1,219 @@
-const STORAGE_KEY = "ccs.auth.v1";
+import { env } from "../config/env";
 
-export type AuthSessionV1 = {
+const LEGACY_STORAGE_KEY = "ccs.auth.v1";
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  sessionId?: string;
+  organizationId?: string | null;
+};
+
+export type AuthSession = {
   accessToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: string;
-    organizationId: string | null;
-  };
+  accessTokenExpiresAt: string;
+  user: AuthUser;
 };
 
-export function saveAuthSession(session: AuthSessionV1): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-}
+export type AuthSessionStatus =
+  | "INITIALIZING"
+  | "AUTHENTICATED"
+  | "UNAUTHENTICATED"
+  | "REFRESHING";
 
-type JwtPayload = {
-  exp?: number;
+export type AuthSessionSnapshot = {
+  accessToken: string | null;
+  accessTokenExpiresAt: string | null;
+  currentUser: AuthUser | null;
+  status: AuthSessionStatus;
 };
 
-function decodeJwtPayload(token: string): JwtPayload | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) {
-    return null;
-  }
+const listeners = new Set<() => void>();
 
-  try {
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(
-      base64.length + ((4 - (base64.length % 4)) % 4),
-      "=",
-    );
-    const json = atob(padded);
-    const parsed = JSON.parse(json) as unknown;
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
-    const exp = (parsed as { exp?: unknown }).exp;
-    return typeof exp === "number" ? { exp } : {};
-  } catch {
-    return null;
-  }
+let snapshot: AuthSessionSnapshot = {
+  accessToken: null,
+  accessTokenExpiresAt: null,
+  currentUser: null,
+  status: "INITIALIZING",
+};
+
+let refreshPromise: Promise<AuthSession> | null = null;
+
+function publish(next: AuthSessionSnapshot): void {
+  snapshot = next;
+  listeners.forEach((listener) => listener());
 }
 
-export function isAccessTokenValid(token: string | null | undefined): boolean {
-  if (!token) {
-    return false;
-  }
-
-  const payload = decodeJwtPayload(token);
-  if (!payload) {
-    return false;
-  }
-
-  if (typeof payload.exp !== "number") {
-    return true;
-  }
-
-  return payload.exp * 1000 > Date.now();
-}
-
-function isGuestOnboardingPath(pathname: string): boolean {
-  if (pathname === "/") {
-    return true;
-  }
-  return (
-    pathname.startsWith("/brand/onboarding") ||
-    pathname.startsWith("/creator/onboarding") ||
-    pathname.startsWith("/marketplace") ||
-    pathname.startsWith("/b/")
-  );
-}
-
-/** Clear session; only hard-redirect away from protected app routes. */
-export function handleAuthFailure(): void {
-  clearAuthSession();
+function removeLegacySession(): void {
   if (typeof window === "undefined") {
     return;
   }
-  const { pathname } = window.location;
-  if (isGuestOnboardingPath(pathname)) {
-    return;
-  }
-  window.location.replace("/");
-}
-
-export function loadAuthSession(): AuthSessionV1 | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") {
-      return null;
-    }
-    const v = parsed as {
-      accessToken?: unknown;
-      user?: unknown;
-    };
-    if (typeof v.accessToken !== "string" || !v.user || typeof v.user !== "object") {
-      return null;
-    }
-    const u = v.user as {
-      id?: unknown;
-      email?: unknown;
-      name?: unknown;
-      role?: unknown;
-      organizationId?: unknown;
-    };
-    if (typeof u.id !== "string" || typeof u.email !== "string" || typeof u.role !== "string") {
-      return null;
-    }
-    return {
-      accessToken: v.accessToken,
-      user: {
-        id: u.id,
-        email: u.email,
-        name: typeof u.name === "string" ? u.name : null,
-        role: u.role,
-        organizationId:
-          typeof u.organizationId === "string" ? u.organizationId : null,
-      },
-    };
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
   } catch {
-    return null;
+    // Storage may be unavailable in privacy-restricted browser contexts.
   }
 }
 
-export function clearAuthSession(): void {
-  localStorage.removeItem(STORAGE_KEY);
+export function subscribeToAuthSession(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getAuthSessionSnapshot(): AuthSessionSnapshot {
+  return snapshot;
+}
+
+export function getAuthSession(): AuthSession | null {
+  if (
+    snapshot.status !== "AUTHENTICATED" ||
+    !snapshot.accessToken ||
+    !snapshot.accessTokenExpiresAt ||
+    !snapshot.currentUser
+  ) {
+    return null;
+  }
+  return {
+    accessToken: snapshot.accessToken,
+    accessTokenExpiresAt: snapshot.accessTokenExpiresAt,
+    user: snapshot.currentUser,
+  };
 }
 
 export function getAccessToken(): string | null {
-  const token = loadAuthSession()?.accessToken ?? null;
-  if (!isAccessTokenValid(token)) {
-    return null;
-  }
-  return token;
+  return snapshot.accessToken;
 }
 
-export function authAuthorizationHeader(): Record<string, string> {
-  const token = getAccessToken();
-  if (!token) {
-    return {};
+export function adoptAuthSession(session: AuthSession): void {
+  removeLegacySession();
+  publish({
+    accessToken: session.accessToken,
+    accessTokenExpiresAt: session.accessTokenExpiresAt,
+    currentUser: session.user,
+    status: "AUTHENTICATED",
+  });
+}
+
+export function updateCurrentUser(user: AuthUser): void {
+  if (!snapshot.accessToken || !snapshot.accessTokenExpiresAt) {
+    return;
   }
-  return { Authorization: `Bearer ${token}` };
+  publish({ ...snapshot, currentUser: user, status: "AUTHENTICATED" });
+}
+
+export function clearAuthSession(): void {
+  removeLegacySession();
+  publish({
+    accessToken: null,
+    accessTokenExpiresAt: null,
+    currentUser: null,
+    status: "UNAUTHENTICATED",
+  });
+}
+
+export function isAuthSession(value: unknown): value is AuthSession {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as {
+    accessToken?: unknown;
+    accessTokenExpiresAt?: unknown;
+    user?: unknown;
+  };
+  if (
+    typeof candidate.accessToken !== "string" ||
+    typeof candidate.accessTokenExpiresAt !== "string" ||
+    !Number.isFinite(Date.parse(candidate.accessTokenExpiresAt)) ||
+    !candidate.user ||
+    typeof candidate.user !== "object"
+  ) {
+    return false;
+  }
+  const user = candidate.user as {
+    id?: unknown;
+    email?: unknown;
+    name?: unknown;
+    role?: unknown;
+  };
+  return (
+    typeof user.id === "string" &&
+    typeof user.email === "string" &&
+    (typeof user.name === "string" || user.name === null) &&
+    typeof user.role === "string"
+  );
+}
+
+async function readRefreshResponse(response: Response): Promise<AuthSession> {
+  let body: unknown;
+  try {
+    const text = await response.text();
+    body = text ? (JSON.parse(text) as unknown) : undefined;
+  } catch {
+    throw new Error("The session service returned an invalid response.");
+  }
+  if (!response.ok || !isAuthSession(body)) {
+    throw new Error("Your session could not be restored.");
+  }
+  return body;
+}
+
+/**
+ * The only refresh authority. The shared promise protects one-time rotating
+ * refresh credentials from concurrent browser requests.
+ */
+export function refreshAuthSession(): Promise<AuthSession> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  if (snapshot.status !== "INITIALIZING") {
+    publish({ ...snapshot, status: "REFRESHING" });
+  }
+
+  refreshPromise = fetch(`${env.apiUrl}/api/v1/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+  })
+    .then(readRefreshResponse)
+    .then((session) => {
+      adoptAuthSession(session);
+      return session;
+    })
+    .catch((error: unknown) => {
+      clearAuthSession();
+      throw error;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
+/** Remove obsolete persisted JWT state, then restore from the HttpOnly cookie. */
+export async function bootstrapAuthSession(): Promise<boolean> {
+  removeLegacySession();
+  if (snapshot.status !== "INITIALIZING") {
+    return snapshot.status === "AUTHENTICATED";
+  }
+  try {
+    await refreshAuthSession();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Test-only reset; no token material is persisted by this module. */
+export function resetAuthSessionForTests(): void {
+  refreshPromise = null;
+  snapshot = {
+    accessToken: null,
+    accessTokenExpiresAt: null,
+    currentUser: null,
+    status: "INITIALIZING",
+  };
 }

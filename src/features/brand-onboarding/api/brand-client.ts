@@ -1,4 +1,8 @@
 import { env } from "../../../shared/config/env";
+import {
+  adoptAuthSession,
+  isAuthSession,
+} from "../../../shared/auth/auth-session";
 import type {
   DiscoverValidateBrandActive,
   DiscoverValidateOrgClaimed,
@@ -84,7 +88,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     throw httpErrorFromResponse(response, body);
@@ -135,7 +141,9 @@ export async function postSurfaceScan(body: {
   try {
     parsed = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const gate = parseSurfaceScanGate(parsed);
@@ -331,12 +339,15 @@ export async function verifyBrandVerificationOtp(
 export async function setBrandVerificationPassword(
   brandProfileId: string,
   body: { email: string; password: string },
-): Promise<import("../contracts/brand.contracts").SetBrandPasswordResponseBody> {
+): Promise<
+  import("../contracts/brand.contracts").SetBrandPasswordResponseBody
+> {
   const response = await fetch(
     `${env.apiUrl}/api/v1/brand/profiles/${encodeURIComponent(brandProfileId)}/verification/password`,
     {
       method: "POST",
       headers: onboardingJsonHeaders(),
+      credentials: "include",
       body: JSON.stringify(body),
     },
   );
@@ -345,10 +356,11 @@ export async function setBrandVerificationPassword(
     !json ||
     typeof json !== "object" ||
     typeof (json as { activated?: unknown }).activated !== "boolean" ||
-    typeof (json as { accessToken?: unknown }).accessToken !== "string"
+    !isAuthSession(json)
   ) {
     throw new Error("Unexpected response from password setup.");
   }
+  adoptAuthSession(json);
   return json as import("../contracts/brand.contracts").SetBrandPasswordResponseBody;
 }
 

@@ -4,12 +4,23 @@ export type BrandSettingsRole =
   | "CAMPAIGN_MANAGER";
 
 export type NotificationCategory =
-  | "ESCROW_LOW_BALANCE"
-  | "MILESTONE_RELEASE_REQUEST"
-  | "TAX_COMPLIANCE_ALERT"
-  | "CAMPAIGN_BUDGET_OVERRUN";
+  | "BILLING_SUBSCRIPTION"
+  | "ESCROW_PAYOUTS"
+  | "CAMPAIGNS_APPLICATIONS"
+  | "COLLABORATIONS"
+  | "BRAND_INTELLIGENCE"
+  | "TEAM_ACCOUNT_INTEGRATIONS";
 
-export type NotificationChannel = "EMAIL" | "IN_APP" | "SLACK_WEBHOOK";
+export type BillingProfileState =
+  | "NOT_CONFIGURED"
+  | "CONFIGURED"
+  | "UPDATED";
+
+export type BillingRequiredField =
+  | "legal_entity_name"
+  | "legal_entity_type"
+  | "billing_country_code"
+  | "billing_address";
 
 export type BrandGeneralResponse = {
   current_user_role: BrandSettingsRole;
@@ -61,73 +72,49 @@ export type UpdateBrandGeneralPayload = {
   firstName?: string;
   lastName?: string;
   organizationLegalName?: string;
-  organizationAddress?: string;
-  countryCode?: string;
-  currencyCode?: string;
-  taxId?: string | null;
 };
 
 export type BrandBillingProfileResponse = {
   is_read_only: boolean;
+  profile_state: BillingProfileState;
+  is_complete_for_paid_conversion: boolean;
+  missing_required_fields: BillingRequiredField[];
   billing_profile: {
-    registered_company_name: string;
-    corporate_billing_address: string;
+    profile_id?: string;
+    legal_entity_name: string;
+    legal_entity_type: string;
+    billing_country_code: string;
+    billing_address: string;
     gstin: string | null;
-    pan: string | null;
-    default_tds_percentage: number;
-    currency_preference: string;
+    profile_state: Exclude<BillingProfileState, "NOT_CONFIGURED">;
+    configured_at: string | null;
     updated_at: string;
   } | null;
 };
 
 export type UpsertBrandBillingProfilePayload = {
-  registeredCompanyName: string;
-  corporateBillingAddress: string;
+  legalEntityName: string;
+  legalEntityType: string;
+  billingCountryCode: string;
+  billingAddress: string;
   gstin?: string | null;
-  pan?: string | null;
-  defaultTdsPercentage?: number;
-  currencyPreference?: string;
-};
-
-export type BrandWithdrawalAccountResponse = {
-  is_read_only: boolean;
-  withdrawal_account: {
-    account_id: string;
-    beneficiary_name: string;
-    bank_name: string;
-    account_last_4: string | null;
-    ifsc_code: string | null;
-    is_verified: boolean;
-    updated_at: string;
-  } | null;
-};
-
-export type LinkBrandWithdrawalAccountPayload = {
-  beneficiaryName: string;
-  bankName: string;
-  accountNumber: string;
-  confirmAccountNumber: string;
-  ifscCode: string;
 };
 
 export type BrandNotificationSettingLine = {
-  setting_id?: string;
   category: NotificationCategory;
-  channel: NotificationChannel;
-  is_enabled: boolean;
-  slack_webhook_url: string | null;
+  label: string;
+  optional_email_enabled: boolean;
 };
 
 export type BrandNotificationsResponse = {
   settings: BrandNotificationSettingLine[];
+  mandatory_system_email_unaffected: boolean;
 };
 
 export type UpdateBrandNotificationsPayload = {
   settings: Array<{
     category: NotificationCategory;
-    channel: NotificationChannel;
-    isEnabled: boolean;
-    slackWebhookUrl?: string | null;
+    optionalEmailEnabled: boolean;
   }>;
 };
 
@@ -139,4 +126,20 @@ export type InviteTeamMemberPayload = {
 export type UpdateTeamRolePayload = {
   membershipId: string;
   role: BrandSettingsRole;
+};
+
+export type TeamInvitationPresentation = {
+  brand_name: string;
+  email: string;
+  role: BrandSettingsRole;
+  expires_at: string;
+  requires_account_bootstrap: boolean;
+};
+
+export type TeamInvitationDispatch = {
+  invitation_id: string;
+  email: string;
+  role: BrandSettingsRole;
+  expires_at: string;
+  delivery_status: "DISPATCHED";
 };

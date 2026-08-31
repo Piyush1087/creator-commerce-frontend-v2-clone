@@ -1,11 +1,28 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  adoptAuthSession,
+  resetAuthSessionForTests,
+} from "../../../shared/auth/auth-session";
 import { consumerFixture } from "../testing/brand-consumer-fixtures";
 import { fetchBrandCentreBrand } from "./brand-centre-brand-client";
 
-vi.mock("../../../shared/auth/auth-session", () => ({
-  authAuthorizationHeader: () => ({ Authorization: "Bearer test-only-token" }),
-}));
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  adoptAuthSession({
+    accessToken: "test-only-token",
+    accessTokenExpiresAt: "2030-01-01T00:00:00.000Z",
+    user: {
+      id: "brand-user",
+      email: "brand@example.test",
+      name: "Brand User",
+      role: "BRAND",
+    },
+  });
+});
+
+afterEach(() => {
+  resetAuthSessionForTests();
+  vi.unstubAllGlobals();
+});
 
 describe("authenticated Brand consumer client", () => {
   it("uses only the bounded route, existing authorization, abort and no Brand selector", async () => {
@@ -19,15 +36,16 @@ describe("authenticated Brand consumer client", () => {
     expect(fetcher.mock.calls[0][0]).toMatch(
       /\/api\/v1\/brand-centre\/brand$/u,
     );
-    expect(fetcher.mock.calls[0][1]).toEqual({
+    const init = fetcher.mock.calls[0][1];
+    expect(init).toMatchObject({
       method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: "Bearer test-only-token",
-      },
       signal,
       cache: "no-store",
+      credentials: "include",
     });
+    const headers = new Headers(init.headers);
+    expect(headers.get("Accept")).toBe("application/json");
+    expect(headers.get("Authorization")).toBe("Bearer test-only-token");
   });
   it.each(["{", JSON.stringify({ legacyDna: true })])(
     "returns MALFORMED_RESPONSE for invalid success body",

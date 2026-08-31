@@ -10,21 +10,31 @@ export type SettingsTeamMemberRow = {
   status: "ACTIVE" | "PENDING";
   isCurrentUser?: boolean;
   isExternal?: boolean;
+  canRevoke?: boolean;
+  canChangeRole?: boolean;
+  canCancelInvite?: boolean;
+  canResendInvite?: boolean;
 };
 
 type SettingsTeamTableProps = {
   members: SettingsTeamMemberRow[];
   maxSeats: number;
   inviteDisabled?: boolean;
+  inviteVisible?: boolean;
   inviteDisabledReason?: string;
   onInvite: () => void;
   onRevoke?: (memberId: string) => void;
   onResendInvite?: (memberId: string) => void;
   onCancelInvite?: (memberId: string) => void;
+  onChangeRole?: (memberId: string) => void;
 };
 
 function roleBadgeTone(roleLabel: string): "success" | "neutral" | "pending" {
-  if (roleLabel === "Admin" || roleLabel === "Owner") {
+  if (
+    roleLabel === "Admin" ||
+    roleLabel === "Owner" ||
+    roleLabel === "Brand Owner"
+  ) {
     return "success";
   }
   if (roleLabel === "Campaign Manager" || roleLabel === "Manager") {
@@ -37,12 +47,15 @@ export function SettingsTeamTable({
   members,
   maxSeats,
   inviteDisabled = false,
+  inviteVisible = true,
   inviteDisabledReason,
   onInvite,
   onRevoke,
   onResendInvite,
   onCancelInvite,
+  onChangeRole,
 }: SettingsTeamTableProps) {
+  const capacityReasonId = "settings-team-capacity-reason";
   const activeCount = members.filter((m) => m.status === "ACTIVE").length;
   const pendingCount = members.filter((m) => m.status === "PENDING").length;
   const occupied = activeCount + pendingCount;
@@ -53,17 +66,31 @@ export function SettingsTeamTable({
       <div className="settings-team__toolbar">
         <div>
           <p className="settings-team__capacity">
-            Capacity tracker: {occupied} / {maxSeats} active workspace seats occupied
+            Capacity tracker: {occupied} / {maxSeats} active workspace seats
+            occupied
           </p>
           <ProgressBar label="Seat usage" value={percent} />
         </div>
-        <Button variant="primary" disabled={inviteDisabled} onClick={onInvite}>
-          Invite new member
-        </Button>
+        {inviteVisible && (
+          <Button
+            variant="primary"
+            disabled={inviteDisabled}
+            aria-describedby={
+              inviteDisabled && inviteDisabledReason
+                ? capacityReasonId
+                : undefined
+            }
+            onClick={onInvite}
+          >
+            Invite new member
+          </Button>
+        )}
       </div>
 
       {inviteDisabled && inviteDisabledReason ? (
-        <p className="settings-team__capacity-warning">{inviteDisabledReason}</p>
+        <p id={capacityReasonId} className="settings-team__capacity-warning">
+          {inviteDisabledReason}
+        </p>
       ) : null}
 
       <div className="settings-team__table-wrap">
@@ -85,13 +112,19 @@ export function SettingsTeamTable({
                       {member.initials}
                     </span>
                     <div>
-                      <p className="settings-team__member-name">{member.name}</p>
-                      <p className="settings-team__member-email">{member.email}</p>
+                      <p className="settings-team__member-name">
+                        {member.name}
+                      </p>
+                      <p className="settings-team__member-email">
+                        {member.email}
+                      </p>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <Badge tone={roleBadgeTone(member.roleLabel)}>{member.roleLabel}</Badge>
+                  <Badge tone={roleBadgeTone(member.roleLabel)}>
+                    {member.roleLabel}
+                  </Badge>
                 </td>
                 <td>
                   <span
@@ -106,34 +139,53 @@ export function SettingsTeamTable({
                 </td>
                 <td>
                   <div className="settings-team__actions">
+                    {member.canChangeRole && onChangeRole ? (
+                      <Button
+                        variant="ghost"
+                        onClick={() => onChangeRole(member.id)}
+                      >
+                        Change role
+                      </Button>
+                    ) : null}
                     {member.isCurrentUser ? (
-                      <span className="settings-team__action-muted">Manage permissions</span>
+                      <span className="settings-team__action-muted">
+                        Manage permissions
+                      </span>
                     ) : member.status === "PENDING" ? (
                       <>
-                        <button
-                          type="button"
-                          className="settings-team__action-link"
-                          onClick={() => onResendInvite?.(member.id)}
-                        >
-                          Resend invitation
-                        </button>
-                        <span aria-hidden>•</span>
+                        {member.canResendInvite !== false && (
+                          <button
+                            type="button"
+                            className="settings-team__action-link"
+                            onClick={() => onResendInvite?.(member.id)}
+                          >
+                            Resend invitation
+                          </button>
+                        )}
+                        {member.canResendInvite !== false &&
+                          member.canCancelInvite !== false && (
+                            <span aria-hidden>•</span>
+                          )}
+                        {member.canCancelInvite !== false && (
+                          <button
+                            type="button"
+                            className="settings-team__action-link settings-team__action-link--danger"
+                            onClick={() => onCancelInvite?.(member.id)}
+                          >
+                            Cancel invite
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      member.canRevoke !== false && (
                         <button
                           type="button"
                           className="settings-team__action-link settings-team__action-link--danger"
-                          onClick={() => onCancelInvite?.(member.id)}
+                          onClick={() => onRevoke?.(member.id)}
                         >
-                          Cancel invite
+                          Revoke access
                         </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="settings-team__action-link settings-team__action-link--danger"
-                        onClick={() => onRevoke?.(member.id)}
-                      >
-                        Revoke access
-                      </button>
+                      )
                     )}
                   </div>
                 </td>

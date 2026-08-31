@@ -104,6 +104,7 @@ export type SetBrandPasswordResponseBody = {
   domain: string;
   organizationId: string;
   accessToken: string;
+  accessTokenExpiresAt: string;
   user: {
     id: string;
     email: string;
@@ -163,7 +164,10 @@ export function isSurfaceScanInfrastructureError(
     return false;
   }
   const root = value as { outcome?: unknown; message?: unknown };
-  if (root.outcome === "infrastructure_error" && typeof root.message === "string") {
+  if (
+    root.outcome === "infrastructure_error" &&
+    typeof root.message === "string"
+  ) {
     return true;
   }
   // Nest sometimes nests the object under `message`.
@@ -190,7 +194,10 @@ export function unwrapSurfaceScanInfrastructureError(
     httpStatus?: unknown;
     message?: unknown;
   };
-  if (root.outcome === "infrastructure_error" && typeof root.message === "string") {
+  if (
+    root.outcome === "infrastructure_error" &&
+    typeof root.message === "string"
+  ) {
     return {
       outcome: "infrastructure_error",
       reason:
@@ -382,7 +389,11 @@ export function isBrandAuditExportResponse(
   if (!value || typeof value !== "object") {
     return false;
   }
-  const v = value as { leadId?: unknown; surfaceScan?: unknown; phaseB?: unknown };
+  const v = value as {
+    leadId?: unknown;
+    surfaceScan?: unknown;
+    phaseB?: unknown;
+  };
   return (
     typeof v.leadId === "string" &&
     typeof v.surfaceScan === "object" &&
@@ -440,7 +451,9 @@ export function isCheckpoint2Response(
   );
 }
 
-function isFieldWrapper(value: unknown): value is UniversalFieldWrapper<unknown> {
+function isFieldWrapper(
+  value: unknown,
+): value is UniversalFieldWrapper<unknown> {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -469,7 +482,11 @@ export function isCoreIdentitySnapshotResponse(
     leadId?: unknown;
     snapshot?: unknown;
   };
-  if (typeof v.leadId !== "string" || !v.snapshot || typeof v.snapshot !== "object") {
+  if (
+    typeof v.leadId !== "string" ||
+    !v.snapshot ||
+    typeof v.snapshot !== "object"
+  ) {
     return false;
   }
   const s = v.snapshot as Record<string, unknown>;
@@ -548,7 +565,11 @@ export function isSurfaceScanResponse(
   if (!value || typeof value !== "object") {
     return false;
   }
-  const v = value as { brandProfileId?: unknown; domain?: unknown; mode?: unknown };
+  const v = value as {
+    brandProfileId?: unknown;
+    domain?: unknown;
+    mode?: unknown;
+  };
   return (
     typeof v.brandProfileId === "string" &&
     typeof v.domain === "string" &&
@@ -563,5 +584,9 @@ export function isBrandProfileResponse(
     return false;
   }
   const v = value as { id?: unknown; domain?: unknown; name?: unknown };
-  return typeof v.id === "string" && typeof v.domain === "string" && typeof v.name === "string";
+  return (
+    typeof v.id === "string" &&
+    typeof v.domain === "string" &&
+    typeof v.name === "string"
+  );
 }

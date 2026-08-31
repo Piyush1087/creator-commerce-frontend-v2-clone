@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Alert, Button, TextField } from "../../../design-system/aurora";
-import { STUB_OTP_CODE } from "../../brand-onboarding/verification-otp.config";
 import {
   fetchOnboardingTrack,
   isApiRequestError,
@@ -22,7 +21,10 @@ import "../creator-onboarding.css";
 
 type SignupStep = "credentials" | "otp";
 
-function validateCredentials(email: string, password: string): Record<string, string> {
+function validateCredentials(
+  email: string,
+  password: string,
+): Record<string, string> {
   const errors: Record<string, string> = {};
   const trimmedEmail = email.trim();
 
@@ -34,8 +36,8 @@ function validateCredentials(email: string, password: string): Record<string, st
 
   if (!password) {
     errors.password = "Enter a password.";
-  } else if (password.length < 6) {
-    errors.password = "Use at least 6 characters.";
+  } else if (password.length < 8) {
+    errors.password = "Use at least 8 characters.";
   }
 
   return errors;
@@ -131,7 +133,10 @@ export function CreatorSignupView() {
       if (isApiRequestError(err)) {
         setFieldErrors(err.fieldErrors);
         setError(
-          err.fieldErrors.email ?? err.fieldErrors.password ?? err.formError ?? err.message,
+          err.fieldErrors.email ??
+            err.fieldErrors.password ??
+            err.formError ??
+            err.message,
         );
       } else {
         setError(err instanceof Error ? err.message : "Signup failed.");
@@ -216,18 +221,22 @@ export function CreatorSignupView() {
           ))}
         </div>
         <p className="cob-muted">
-          Founding badge: {displayValue("-")} · Estimated setup: Less than 60 seconds
+          Founding badge: {displayValue("-")} · Estimated setup: Less than 60
+          seconds
         </p>
       </section>
 
       <section className="cob-split__form">
         {step === "credentials" ? (
           <>
-            <h2 style={{ fontFamily: "var(--font-heading)", margin: "0 0 8px" }}>
+            <h2
+              style={{ fontFamily: "var(--font-heading)", margin: "0 0 8px" }}
+            >
               Secure your workspace allocation
             </h2>
             <p className="cob-muted" style={{ marginBottom: 24 }}>
-              Establish administrator credentials to initialize your staged modules.
+              Establish administrator credentials to initialize your staged
+              modules.
             </p>
 
             <form
@@ -252,7 +261,11 @@ export function CreatorSignupView() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 autoComplete="new-password"
-                helperText={fieldErrors.password ? undefined : "Use at least 6 characters."}
+                helperText={
+                  fieldErrors.password
+                    ? undefined
+                    : "Use at least 8 characters."
+                }
                 error={fieldErrors.password}
               />
 
@@ -264,7 +277,9 @@ export function CreatorSignupView() {
 
               <div className="cob-form-actions">
                 <Button variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? "Creating Workspace…" : "Create My Free Account"}
+                  {submitting
+                    ? "Creating Workspace…"
+                    : "Create My Free Account"}
                 </Button>
               </div>
             </form>
@@ -277,20 +292,25 @@ export function CreatorSignupView() {
           </>
         ) : (
           <>
-            <h2 style={{ fontFamily: "var(--font-heading)", margin: "0 0 8px" }}>
+            <h2
+              style={{ fontFamily: "var(--font-heading)", margin: "0 0 8px" }}
+            >
               Verify your email
             </h2>
             <p className="cob-muted" style={{ marginBottom: 24 }}>
-              Enter the 6-digit code sent to <strong>{email}</strong>. Dev stub:{" "}
-              <strong>{STUB_OTP_CODE}</strong>
+              Enter the 6-digit code sent to <strong>{email}</strong>.
             </p>
 
-            <form className="cob-form-stack" noValidate onSubmit={(e) => void onSubmitOtp(e)}>
+            <form
+              className="cob-form-stack"
+              noValidate
+              onSubmit={(e) => void onSubmitOtp(e)}
+            >
               <TextField
                 label="Verification code"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                placeholder="123456"
+                placeholder="6-digit code"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 error={fieldErrors.otpCode}
@@ -306,7 +326,11 @@ export function CreatorSignupView() {
                 <Button variant="primary" type="submit" disabled={submitting}>
                   {submitting ? "Verifying…" : "Verify & Continue"}
                 </Button>
-                <Button variant="ghost" type="button" onClick={onBackToCredentials}>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={onBackToCredentials}
+                >
                   Use a different email
                 </Button>
               </div>

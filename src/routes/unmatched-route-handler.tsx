@@ -2,11 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
 import { CREATOR_ONBOARDING_ROUTES } from "../features/creator-onboarding/constants";
-import {
-  clearAuthSession,
-  isAccessTokenValid,
-  loadAuthSession,
-} from "../shared/auth/auth-session";
+import { useAuthSession } from "../shared/auth/use-auth-session";
 
 const KNOWN_APP_PATH_PREFIXES = [
   AUTH_ROUTES.brandDashboard,
@@ -35,7 +31,7 @@ const KNOWN_APP_PATH_PREFIXES = [
   "/help",
 ] as const;
 
-/** Guest funnels that must stay reachable even with a stale JWT in localStorage. */
+/** Guest funnels that stay reachable while cookie-backed bootstrap resolves. */
 const GUEST_ONBOARDING_PATH_PREFIXES = [
   "/",
   "/brand/onboarding",
@@ -63,22 +59,14 @@ function isGuestOnboardingPath(pathname: string): boolean {
 
 /**
  * Runs beside guest brand onboarding under `/*`.
- * Signed-in users on unknown URLs go home; stale JWTs must not bounce
- * `/brand/onboarding/*` (that was flashing DNA then dumping to `/`).
+ * Signed-in users on unknown URLs go home without disrupting guest funnels.
  */
 export function UnmatchedRouteHandler() {
   const location = useLocation();
   const pathname = location.pathname;
-  const session = loadAuthSession();
-  const token = session?.accessToken ?? null;
+  const session = useAuthSession();
 
-  if (!token) {
-    return null;
-  }
-
-  if (!isAccessTokenValid(token)) {
-    clearAuthSession();
-    // Do not Navigate away — guest onboarding must keep working after cleanup.
+  if (session.status !== "AUTHENTICATED") {
     return null;
   }
 
