@@ -33,8 +33,6 @@ const KNOWN_APP_PATH_PREFIXES = [
   "/brand/onboarding",
   "/brand/intelligence",
   "/help",
-  "/terms",
-  "/privacy",
 ] as const;
 
 /** Guest funnels that must stay reachable even with a stale JWT in localStorage. */
@@ -46,8 +44,6 @@ const GUEST_ONBOARDING_PATH_PREFIXES = [
   CREATOR_ONBOARDING_ROUTES.instagramCallback,
   PUBLIC_ROUTES.marketplace,
   PUBLIC_ROUTES.brandLanding,
-  "/terms",
-  "/privacy",
 ] as const;
 
 function isKnownAppPath(pathname: string): boolean {

@@ -1,0 +1,7 @@
+import { Link } from "react-router-dom";
+import { Alert, Badge, Card } from "../../../../design-system/aurora";
+import { useOfferingDiscovery } from "../../queries/use-product-intelligence";
+import { OfferingNavigation } from "./OfferingNavigation";
+import "./product-intelligence.css";
+const lifecycle = { ACTIVE: "Active", DRAFT_INCOMPLETE: "Draft incomplete", PAUSED_INACTIVE: "Paused" } as const;
+export function OfferingList() { const { state } = useOfferingDiscovery(); return <div className="product-workspace"><OfferingNavigation/><main className="product-page"><header><h1>Offerings</h1><p>Choose an Offering to view its canonical Product Intelligence.</p></header>{state.status === "LOADING" ? <p role="status">Loading Offerings…</p> : null}{state.status === "ERROR" ? <Alert tone="error" title="Could not load Offerings">Offerings are temporarily unavailable.</Alert> : null}{state.data?.offerings.length === 0 ? <Card><h2>No Offerings yet</h2><p>Your canonical Offerings will appear here when they are established.</p></Card> : null}<div className="offering-grid">{state.data?.offerings.map((offering) => <Link className="offering-card" key={offering.offeringId} to={`/brand-centre/offerings/${offering.offeringId}`}><div><p className="eyebrow">{offering.kind.replace(/_/gu, " ")}{offering.subtype ? ` · ${offering.subtype}` : ""}</p><h2>{offering.name}</h2></div><Badge tone={offering.lifecycle === "ACTIVE" ? "success" : "neutral"}>{lifecycle[offering.lifecycle]}</Badge><span aria-hidden="true">View details →</span></Link>)}</div></main></div>; }

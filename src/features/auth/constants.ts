@@ -3,6 +3,8 @@ import type { UserRole } from "../../shared/auth/user-role";
 export const AUTH_ROUTES = {
   login: "/login",  brandDashboard: "/brand/dashboard",
   brandCentre: "/brand-centre",
+  brandCentreOfferings: "/brand-centre/offerings",
+  brandCentreOfferingDetail: "/brand-centre/offerings/:offeringId",
   brandUceCampaigns: "/brand/uce/campaigns",
   brandUceCampaignCreate: "/brand/uce/campaigns/create",
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
