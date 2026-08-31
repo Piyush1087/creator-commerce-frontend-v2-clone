@@ -104,6 +104,7 @@ export type SetBrandPasswordResponseBody = {
   domain: string;
   organizationId: string;
   accessToken: string;
+  accessTokenExpiresAt: string;
   user: {
     id: string;
     email: string;

@@ -23,7 +23,7 @@ import {
   emailDomainFromAddress,
   emailDomainMatchesBrandDomain,
 } from "../utils/verification-email-domain";
-import { saveAuthSession } from "../../../shared/auth/auth-session";
+import { adoptAuthSession } from "../../../shared/auth/auth-session";
 
 type VerifyStep = "email" | "otp" | "password" | "success";
 
@@ -345,8 +345,9 @@ export function BrandVerificationView() {
         email: workEmail.trim(),
         password,
       });
-      saveAuthSession({
+      adoptAuthSession({
         accessToken: result.accessToken,
+        accessTokenExpiresAt: result.accessTokenExpiresAt,
         user: result.user,
       });
       setStep("success");

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import {
   getBottomNavItemsForRole,
@@ -9,7 +9,8 @@ import {
 
 export function MobileBottomNav() {
   const location = useLocation();
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   const items = getBottomNavItemsForRole(role);
 
   if (items.length === 0) {
@@ -26,8 +27,8 @@ export function MobileBottomNav() {
             <Link
               key={item.label}
               to={item.path}
-              aria-current={isActive ? "page" : undefined}
               className={`aurora-bottom-nav__item ${isActive ? "aurora-bottom-nav__item--active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
             >
               <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
               <span>{item.label}</span>

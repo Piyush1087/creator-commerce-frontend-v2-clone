@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import {
+  resolveBrandCentreHeaderTitle,
+  useBrandCentreShell,
+} from "../../features/brand-centre/context/brand-centre-shell-context";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import { resolveHeaderMeta } from "./sidebar-items";
 
@@ -15,7 +19,9 @@ export type AppShellBreadcrumbMeta = {
 
 export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
   const location = useLocation();
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
+  const brandCentreShell = useBrandCentreShell();
   const baseMeta = resolveHeaderMeta(location.pathname, role);
   const [isBriefWizardOpen, setIsBriefWizardOpen] = useState(false);
 
@@ -44,7 +50,9 @@ export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
   if (isBrandCentre) {
     return {
       breadcrumb: "Brand Centre",
-      title: "Brand",
+      title: resolveBrandCentreHeaderTitle(
+        brandCentreShell?.activeTabId ?? "dna",
+      ),
     };
   }
 

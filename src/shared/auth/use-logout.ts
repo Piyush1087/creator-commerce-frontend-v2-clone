@@ -1,23 +1,21 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { postBrandCentreSessionEvict } from "../../features/brand-centre/api/brand-centre-client";
-import { clearAuthSession, getAccessToken } from "./auth-session";
+import { logoutCurrentSession } from "../../features/auth/api/auth-client";
+import { AUTH_ROUTES } from "../../features/auth/constants";
 
 export function useLogout() {
   const navigate = useNavigate();
 
   return useCallback(() => {
     void (async () => {
-      if (getAccessToken()) {
-        try {
-          await postBrandCentreSessionEvict();
-        } catch {
-          // still clear local session if evict fails
-        }
+      try {
+        await logoutCurrentSession();
+      } catch {
+        // Keep the user on the current page if the server could not confirm logout.
+        return;
       }
-      clearAuthSession();
-      navigate("/", { replace: true });
+      navigate(AUTH_ROUTES.login, { replace: true });
     })();
   }, [navigate]);
 }

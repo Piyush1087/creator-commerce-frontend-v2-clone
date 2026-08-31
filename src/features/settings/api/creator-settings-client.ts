@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   CreatorPayoutSettingsResponse,
   CreatorProfileResponse,
@@ -22,7 +22,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -39,7 +41,6 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
 function jsonHeaders(): HeadersInit {
   return {
     "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -111,7 +112,9 @@ export async function inviteCreatorTeamMember(
   return readJsonOrThrow(response);
 }
 
-export async function revokeCreatorTeamMember(memberId: string): Promise<unknown> {
+export async function revokeCreatorTeamMember(
+  memberId: string,
+): Promise<unknown> {
   const response = await fetch(`${BASE}/team/${encodeURIComponent(memberId)}`, {
     method: "DELETE",
     headers: jsonHeaders(),
@@ -119,7 +122,9 @@ export async function revokeCreatorTeamMember(memberId: string): Promise<unknown
   return readJsonOrThrow(response);
 }
 
-export async function cancelCreatorTeamInvitation(invitationId: string): Promise<unknown> {
+export async function cancelCreatorTeamInvitation(
+  invitationId: string,
+): Promise<unknown> {
   const response = await fetch(
     `${BASE}/team/invitations/${encodeURIComponent(invitationId)}`,
     {
@@ -138,11 +143,16 @@ export async function fetchCreatorSocialIntegrations(): Promise<CreatorSocialLis
   return (await readJsonOrThrow(response)) as CreatorSocialListResponse;
 }
 
-export async function disconnectCreatorSocial(platform: SocialPlatform): Promise<unknown> {
-  const response = await fetch(`${BASE}/social/${encodeURIComponent(platform)}`, {
-    method: "DELETE",
-    headers: jsonHeaders(),
-  });
+export async function disconnectCreatorSocial(
+  platform: SocialPlatform,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/social/${encodeURIComponent(platform)}`,
+    {
+      method: "DELETE",
+      headers: jsonHeaders(),
+    },
+  );
   return readJsonOrThrow(response);
 }
 
