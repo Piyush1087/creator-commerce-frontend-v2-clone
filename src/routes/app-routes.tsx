@@ -4,6 +4,8 @@ import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
 import { LoginPage } from "../pages/auth/login-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
+import { BrandCentreOfferingsPage } from "../pages/brand/brand-centre/brand-centre-offerings-page";
+import { BrandCentreOfferingDetailPage } from "../pages/brand/brand-centre/brand-centre-offering-detail-page";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
 import { BrandSettingsIntegrationsPage } from "../pages/brand/settings/brand-settings-integrations-page";
 import { BrandSettingsGeneralPage } from "../pages/brand/settings/brand-settings-general-page";
@@ -64,6 +66,8 @@ export function AppRoutes() {
       >
         <Route path={AUTH_ROUTES.brandDashboard} element={<BrandDashboardPage />} />
         <Route path={AUTH_ROUTES.brandCentre} element={<BrandCentrePage />} />
+        <Route path={AUTH_ROUTES.brandCentreOfferings} element={<BrandCentreOfferingsPage />} />
+        <Route path={AUTH_ROUTES.brandCentreOfferingDetail} element={<BrandCentreOfferingDetailPage />} />
         <Route path={AUTH_ROUTES.brandUceCampaigns} element={<BrandUceCampaignsPage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignCreate} element={<BrandUceCampaignCreatePage />} />
         <Route path={AUTH_ROUTES.brandUceCampaignDetail} element={<BrandUceCampaignDetailPage />} />

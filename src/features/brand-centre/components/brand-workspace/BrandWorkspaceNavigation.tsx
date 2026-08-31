@@ -17,6 +17,8 @@ function WorkspaceLinks() {
           <Link key={workspace} to="/brand-centre" aria-current="page">
             Brand
           </Link>
+        ) : workspace === "Offerings" ? (
+          <Link key={workspace} to="/brand-centre/offerings">Offerings</Link>
         ) : (
           <Button
             key={workspace}
