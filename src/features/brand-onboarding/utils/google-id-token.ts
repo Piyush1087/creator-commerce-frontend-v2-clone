@@ -93,6 +93,7 @@ export function getGoogleClientId(): string {
  */
 export async function mountGoogleIdButton(args: {
   container: HTMLElement;
+  context?: "signin" | "signup" | "use";
   onCredential: (idToken: string) => void;
   onError?: (error: Error) => void;
 }): Promise<() => void> {
@@ -114,7 +115,7 @@ export async function mountGoogleIdButton(args: {
   accountsId.initialize({
     client_id: clientId,
     ux_mode: "popup",
-    context: "signup",
+    context: args.context ?? "signup",
     cancel_on_tap_outside: true,
     callback: (response) => {
       const token = response.credential?.trim();

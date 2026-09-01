@@ -100,6 +100,27 @@ export type UpsertBrandBillingProfilePayload = {
   gstin?: string | null;
 };
 
+export type BrandWithdrawalAccountResponse = {
+  is_read_only: boolean;
+  withdrawal_account: {
+    account_id: string;
+    beneficiary_name: string;
+    bank_name: string;
+    account_last_4: string | null;
+    ifsc_code: string;
+    is_verified: boolean;
+    updated_at: string;
+  } | null;
+};
+
+export type LinkBrandWithdrawalAccountPayload = {
+  beneficiaryName: string;
+  bankName: string;
+  accountNumber: string;
+  confirmAccountNumber: string;
+  ifscCode: string;
+};
+
 export type BrandNotificationSettingLine = {
   category: NotificationCategory;
   label: string;
