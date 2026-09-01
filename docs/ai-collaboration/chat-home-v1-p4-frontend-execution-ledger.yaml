@@ -2,7 +2,7 @@ program: CHAT_HOME_V1
 
 phase:
   id: P4
-  status: IN_PROGRESS
+  status: CANDIDATE_READY_FOR_HUMAN_GATE
 
 authority:
   product_sha: d69ba6b8cb331bfa36b450307d9defcd26d09c6e
@@ -17,6 +17,7 @@ frontend:
 contract:
   surface: BRAND_HOME
   api: /api/v1/chat
+  response_contract_version: "1.0"
   legacy_copilot_business_runtime_used: false
   hitl: false
   execute_capabilities: 0
@@ -24,7 +25,181 @@ contract:
   home_proactive_logic: false
   stitch_required: false
   new_dependencies: 0
+  authenticated_fetch_preserved: true
+  safe_internal_navigation_preserved: true
+  global_conversations_only: true
+
+scope_proof:
+  frontend_direct_brand_intelligence_api_from_chat: false
+  frontend_direct_product_intelligence_api_from_chat: false
+  frontend_direct_campaign_api_from_chat: false
+  frontend_direct_offering_api_from_chat: false
+  legacy_copilot_api_from_permanent_chat: false
+  business_mutation_from_permanent_chat: false
+  provider_action: false
+  hitl: false
+  personal_memory: false
+  vector_memory: false
+  stitch: false
+  new_dependencies: 0
+  backend_modified: false
+  package_json_changed: false
+  package_lock_changed: false
+
+automated_validation:
+  permanent_chat:
+    command: npm test -- src/features/chat
+    test_files_passed: 8
+    tests_passed: 67
+    tests_failed: 0
+    tests_skipped: 0
+  contracts:
+    tests_passed: 10
+  api_client:
+    tests_passed: 19
+  hook:
+    tests_passed: 6
+  renderer:
+    tests_passed: 8
+  navigation:
+    tests_passed: 12
+  brand_home_integration:
+    tests_passed: 5
+  architecture:
+    tests_passed: 4
+  legacy_copilot_preservation:
+    tests_passed: 3
+  full_suite:
+    command: npm test
+    test_files_passed: 100
+    tests_passed: 811
+    tests_failed: 0
+    tests_skipped: 0
+  typecheck: PASS
+  build:
+    status: PASS
+    diagnostic: Existing production chunk-size warning remains nonblocking.
+  changed_scope_format: PASS
+  changed_scope_lint: PASS
+  git_diff_check: PASS
+  repository_lint:
+    status: PRE_EXISTING_FAILURE
+    errors: 26
+    warnings: 13
+    p4_findings: 0
+  dependency_security:
+    command: npm audit --omit=dev
+    critical: 0
+    high: 0
+    moderate: 2
+    low: 0
+    classification: Unchanged React Router moderate advisories; force upgrade prohibited.
+
+browser_smoke:
+  environment: MOCKED_P3_API
+  desktop_1440: PASS
+  tablet_768: PASS
+  mobile_390: PASS
+  horizontal_overflow: NONE
+  home_chat_boot: PASS
+  conversation_interaction: PASS
+  answered: PASS
+  stale_partial_render: PASS
+  navigation: PASS
+  conversation_drawer: PASS
+  mobile_sheet: PASS
+  mobile_composer_above_navigation: PASS
+  runtime_errors: 0
+  diagnostics:
+    - Existing React Router v7 future-flag warnings only.
+
+backend_runtime_smoke:
+  backend_sha: 93aa0c2da61b41415561d7f435c5c062c8b59a51
+  result: NOT_RUN_ENVIRONMENT_NOT_AVAILABLE
+  backend_modified: false
+
+diagnostic_history:
+  - stage: INITIAL_TARGETED_RUN
+    result: FAIL
+    passed: 59
+    failed: 3
+    cause: JSDOM does not implement HTMLElement.scrollTo; integration page unmounted.
+    correction: Auto-scroll now uses a capability-safe scrollTop fallback.
+  - stage: FIRST_INTEGRATION_RERUN
+    result: FAIL
+    passed: 2
+    failed: 1
+    cause: Test selector matched both the conversation and its Archive control.
+    correction: Selector was narrowed to the conversation-title prefix.
+  - stage: FINAL_TARGETED_AND_FULL_VALIDATION
+    result: PASS
+
+semantic_differential:
+  PERMANENT_CHAT_API:
+    - src/features/chat/api/chat-client.ts
+  PERMANENT_CHAT_CONTRACT:
+    - src/features/chat/contracts/chat.contracts.ts
+    - src/features/chat/contracts/chat.schemas.ts
+  PERMANENT_CHAT_HOOK:
+    - src/features/chat/hooks/use-brand-chat.ts
+  PERMANENT_CHAT_RENDERER:
+    - src/features/chat/components/chat-assistant-message.tsx
+    - src/features/chat/components/chat-composer.tsx
+    - src/features/chat/components/chat-message-feed.tsx
+  HOME_ASSISTANT_RECONCILIATION:
+    - src/features/chat/components/brand-home-chat-panel.tsx
+    - src/features/chat/components/brand-home-chat-mobile.tsx
+    - src/features/chat/components/chat-conversation-drawer.tsx
+    - src/pages/brand/dashboard/brand-dashboard-page.tsx
+  CHAT_NAVIGATION:
+    - src/features/chat/navigation/chat-navigation.ts
+  RESPONSIVE_ACCESSIBILITY:
+    - src/features/chat/chat.css
+  ROUTE_CONSTANT_ACCESSIBILITY_ONLY: []
+  TEST:
+    - src/features/chat/api/chat-client.test.ts
+    - src/features/chat/chat-architecture.test.ts
+    - src/features/chat/components/brand-home-chat-integration.test.ts
+    - src/features/chat/components/chat-renderer.test.ts
+    - src/features/chat/contracts/chat-schemas.test.ts
+    - src/features/chat/hooks/use-brand-chat.test.ts
+    - src/features/chat/legacy-copilot-preservation.test.ts
+    - src/features/chat/navigation/chat-navigation.test.ts
+    - src/features/chat/testing/chat-fixtures.ts
+  EXECUTION_LEDGER:
+    - docs/ai-collaboration/chat-home-v1-p4-frontend-execution-ledger.yaml
+  home_proactive_business_logic: NONE
+  campaign_business_logic: NONE
+  offering_business_logic: NONE
+  intelligence_business_logic: NONE
+  provider_logic: NONE
+  financial_logic: NONE
+  legacy_hitl_logic: NONE
+
+checkpoint:
+  implementation_sha: b2a5b636f1ec3d1615f3de6d3c2713d68f885263
+  implementation_message: "feat(chat-home): connect Brand Home to grounded Chat"
+  ledger_followup_commit: SELF_COMMIT
+  final_checkpoint_sha: SELF_COMMIT
 
 human_gate:
   required: true
   status: PENDING
+  token_issued: false
+  scenarios:
+    H1: PENDING_HUMAN_VALIDATION
+    H2: PENDING_HUMAN_VALIDATION
+    H3: PENDING_HUMAN_VALIDATION
+    H4: PENDING_HUMAN_VALIDATION
+    H5: PENDING_HUMAN_VALIDATION
+    H6: PENDING_HUMAN_VALIDATION
+    H7: PENDING_HUMAN_VALIDATION
+    H8: PENDING_HUMAN_VALIDATION
+    H9: PENDING_HUMAN_VALIDATION
+    H10: PENDING_HUMAN_VALIDATION
+    H11: PENDING_HUMAN_VALIDATION
+    H12: PENDING_HUMAN_VALIDATION
+
+next_phase:
+  p5_started: false
+  gate: P4_HUMAN_E2E_REVIEW
