@@ -2,6 +2,9 @@ run_id: C01-I6-FRONTEND
 frontend_starting_sha: 3bf9c37adf440eff88e3ccbc681bccfa27511be6
 frontend_branch: c01/i6-creator-entry-frontend-reconciliation
 backend_contract_sha: aa3b726534165f7a8bc8018c40113b8e14d4db60
+systems_review:
+  initial_checkpoint: b5ca4688da20e3055ab322b895cd92dfa50a4189
+  result: BOUNDED_SETTINGS_GUARD_SCOPE_CORRECTION
 state_family_register: docs/ai-collaboration/c01-i6-creator-entry-state-family-register.md
 legacy_authority_retirement:
   status: RETIRED_FROM_CANONICAL_FRONTEND
@@ -36,6 +39,10 @@ instagram_callback:
 creator_platform_frontend_guard:
   status: IMPLEMENTED
   formula: shared_session_CREATOR_and_backend_canEnterCreatorPlatform
+creator_settings:
+  shared_auth_required: true
+  blanket_creator_platform_guard: false
+  section_level_product_authority: DEFERRED_TO_SETTINGS
 campaign_continuation:
   storage: SESSION_ONLY_OPAQUE_43_CHAR_BASE64URL
   issuance: PUBLIC_POST_NO_BODY
@@ -48,9 +55,10 @@ direct_entry_handoff: /creator/home
 invitation_compatibility: CAMPAIGN_OWNED_SIGN_IN_RETURN_PRESERVED_NO_GENERIC_CONTINUATION
 tests:
   status: PASS
-  files: 86
-  assertions: 669
+  files: 87
+  assertions: 677
   creator_entry_component_contract_guard_callback_and_continuation: PASS
+  creator_settings_guard_scope_correction: PASS
   shared_auth_creator_brand_regression: PASS
 build:
   status: PASS

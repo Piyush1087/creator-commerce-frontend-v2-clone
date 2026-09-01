@@ -24,6 +24,7 @@ This register maps the frozen backend authority at `aa3b726534165f7a8bc8018c4011
 ## Implementation invariants
 
 - `canEnterCreatorPlatform` is the sole frontend readiness decision. `insightsCapability=UNKNOWN|UNAVAILABLE` does not override `true`.
+- `RequireCreatorPlatformAccess` protects normal Creator product routes, including `/creator/payouts`. The `/creator/settings/*` subtree remains inside shared authentication but is not blanket C01 platform-guarded; section-level Product authority is deferred to Settings.
 - The continuation helper stores exactly one validated opaque 43-character base64url token in `sessionStorage` and no campaign authority.
 - OAuth callback values live only in component memory, are scrubbed from the visible URL immediately, and are never logged or persisted.
 - `/creator/onboarding/modules`, `/creator/onboarding/signup`, `/creator/onboarding/connect`, and `/creator/onboarding/sync` redirect to the state orchestrator.

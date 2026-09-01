@@ -137,6 +137,15 @@ export function AppRoutes() {
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
+        <Route
+          path={AUTH_ROUTES.creatorSettings}
+          element={<CreatorSettingsLayout />}
+        >
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<CreatorSettingsProfilePage />} />
+          <Route path="social" element={<CreatorSettingsSocialPage />} />
+          <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
+        </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route
             path={AUTH_ROUTES.creatorHome}
@@ -182,15 +191,6 @@ export function AppRoutes() {
               </CollaborationRouteGuard>
             }
           />
-          <Route
-            path={AUTH_ROUTES.creatorSettings}
-            element={<CreatorSettingsLayout />}
-          >
-            <Route index element={<Navigate to="profile" replace />} />
-            <Route path="profile" element={<CreatorSettingsProfilePage />} />
-            <Route path="social" element={<CreatorSettingsSocialPage />} />
-            <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
-          </Route>
         </Route>
       </Route>
       <Route
