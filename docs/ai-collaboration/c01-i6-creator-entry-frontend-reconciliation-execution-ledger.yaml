@@ -1,0 +1,75 @@
+run_id: C01-I6-FRONTEND
+frontend_starting_sha: 3bf9c37adf440eff88e3ccbc681bccfa27511be6
+frontend_branch: c01/i6-creator-entry-frontend-reconciliation
+backend_contract_sha: aa3b726534165f7a8bc8018c40113b8e14d4db60
+state_family_register: docs/ai-collaboration/c01-i6-creator-entry-state-family-register.md
+legacy_authority_retirement:
+  status: RETIRED_FROM_CANONICAL_FRONTEND
+  compatibility_routes:
+    [
+      modules_redirect,
+      signup_redirect,
+      connect_redirect,
+      sync_redirect,
+      legacy_callback,
+    ]
+shared_auth_reuse:
+  status: REUSED
+  mechanisms:
+    [adoptAuthSession, authenticatedFetch, refresh_cookie, shared_login]
+registration_contract:
+  password: IMPLEMENTED
+  otp_request_resend: IMPLEMENTED
+  otp_verify_session_adoption: IMPLEMENTED
+  google_register_session_adoption: IMPLEMENTED
+creator_entry_state_contract:
+  endpoint: GET /api/v1/creator-entry/state
+  authority: canEnterCreatorPlatform_and_nextAction
+instagram_initial_connect: IMPLEMENTED_SERVER_AUTHORIZATION_URL
+instagram_reconnect: IMPLEMENTED_SERVER_AUTHORIZATION_URL
+instagram_revalidate: IMPLEMENTED_NO_OAUTH
+instagram_callback:
+  canonical_route: /creator-marketplace/callback
+  query_scrubbing: IMMEDIATE_HISTORY_REPLACE
+  client_redirect_uri: NONE
+  client_security_state: NONE
+creator_platform_frontend_guard:
+  status: IMPLEMENTED
+  formula: shared_session_CREATOR_and_backend_canEnterCreatorPlatform
+campaign_continuation:
+  storage: SESSION_ONLY_OPAQUE_43_CHAR_BASE64URL
+  issuance: PUBLIC_POST_NO_BODY
+  binding: AUTHENTICATED_RESOLVE_TOKEN_ONLY
+  pending: TOKEN_RETAINED
+  completion: TOKEN_CLEARED_AFTER_READY_HANDOFF
+  return_route: /creator/marketplace/:campaignId
+  auto_apply: NONE
+direct_entry_handoff: /creator/home
+invitation_compatibility: CAMPAIGN_OWNED_SIGN_IN_RETURN_PRESERVED_NO_GENERIC_CONTINUATION
+tests:
+  status: PASS
+  files: 86
+  assertions: 669
+  creator_entry_component_contract_guard_callback_and_continuation: PASS
+  shared_auth_creator_brand_regression: PASS
+build:
+  status: PASS
+  note: inherited_Vite_chunk_size_warning_only
+typecheck: PASS
+lint:
+  i6_change_set: PASS
+  repository_wide: INHERITED_FAILURE
+  inherited_result: 26_errors_13_warnings_in_unrelated_preexisting_files
+responsive_validation:
+  desktop_runtime_visual_and_overflow: PASS
+  mobile_first_and_tablet_breakpoint_source_validation: PASS
+  requested_browser_viewport_override: TOOL_DID_NOT_APPLY_REQUESTED_DIMENSIONS
+accessibility_validation:
+  labels_keyboard_actions_busy_status_live_regions_error_roles: PASS
+backend_changes: NONE
+migrations: NONE
+meta_changes: NONE
+persistent_db_changes: NONE
+historical_persistent_migration_blocker: ACTIVE
+checkpoint: null
+stop_reason: null
