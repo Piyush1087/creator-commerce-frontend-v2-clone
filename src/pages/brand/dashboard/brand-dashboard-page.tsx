@@ -1,28 +1,19 @@
-import { useState } from "react";
-
-import { BrandHomeAssistantMobile } from "../../../features/brand-dashboard/components/brand-home-assistant-mobile";
-import { BrandHomeAssistantPanel } from "../../../features/brand-dashboard/components/brand-home-assistant-panel";
 import { BrandHomeBriefingWorkspace } from "../../../features/brand-dashboard/components/brand-home-briefing-workspace";
-import { CoPilotDeleteThreadDialog } from "../../../features/co-pilot/components/CoPilotDeleteThreadDialog";
-import { CoPilotMobileThreadDrawer } from "../../../features/co-pilot/components/CoPilotMobileThreadDrawer";
-import { useBrandCoPilot } from "../../../features/co-pilot/hooks/use-brand-co-pilot";
+import { BrandHomeChatMobile } from "../../../features/chat/components/brand-home-chat-mobile";
+import { BrandHomeChatPanel } from "../../../features/chat/components/brand-home-chat-panel";
+import { ChatConversationDrawer } from "../../../features/chat/components/chat-conversation-drawer";
+import { useBrandChat } from "../../../features/chat/hooks/use-brand-chat";
 import "../../../features/creator-centre/creator-centre.css";
-import "../../../features/co-pilot/co-pilot.css";
 import "../../../features/brand-dashboard/brand-dashboard-home.css";
+import "../../../features/chat/chat.css";
 
 /**
- * Brand Home — static Daily Briefing (70%) + live Brand Co-Pilot (30%).
- * Recent chats use the existing sliding drawer (rail parity).
+ * Brand Home — preserved static Daily Briefing (70%) + permanent Chat (30%).
  */
 export function BrandDashboardPage() {
-  const coPilot = useBrandCoPilot();
-  const [chatsDrawerOpen, setChatsDrawerOpen] = useState(false);
-
-  const openChats = () => setChatsDrawerOpen(true);
-  const closeChats = () => {
-    setChatsDrawerOpen(false);
-    coPilot.setShowAllThreads(false);
-  };
+  const chat = useBrandChat();
+  const openChats = () => chat.setConversationDrawerOpen(true);
+  const closeChats = () => chat.setConversationDrawerOpen(false);
 
   return (
     <div className="bdash-home-page">
@@ -31,45 +22,28 @@ export function BrandDashboardPage() {
           <BrandHomeBriefingWorkspace />
         </div>
         <div className="cctr-home-split__assistant">
-          <BrandHomeAssistantPanel
-            coPilot={coPilot}
-            variant="desktop"
-            onOpenChats={openChats}
-          />
+          <BrandHomeChatPanel chat={chat} onOpenChats={openChats} />
         </div>
       </div>
 
-      <BrandHomeAssistantMobile coPilot={coPilot} onOpenChats={openChats} />
+      <BrandHomeChatMobile chat={chat} onOpenChats={openChats} />
 
-      <CoPilotMobileThreadDrawer
-        open={chatsDrawerOpen}
-        groupedThreads={coPilot.groupedThreads}
-        groupedAllThreads={coPilot.groupedAllThreads}
-        activeThreadId={coPilot.activeThreadId ?? ""}
-        isCreatingThread={coPilot.isCreatingThread}
-        deletingThreadId={coPilot.deletingThreadId}
-        showAllThreads={coPilot.showAllThreads}
+      <ChatConversationDrawer
+        open={chat.conversationDrawerOpen}
+        conversations={chat.conversations}
+        activeConversationId={chat.activeConversationId}
+        isCreatingConversation={chat.isCreatingConversation}
+        archivingConversationId={chat.archivingConversationId}
+        disabled={chat.isSending}
         onClose={closeChats}
-        onSelect={(threadId) => {
-          void coPilot.selectThread(threadId);
+        onSelect={(conversationId) => {
+          void chat.selectConversation(conversationId);
         }}
-        onDelete={coPilot.requestDeleteThread}
-        onCreateThread={() => {
-          void coPilot.createNewThread();
+        onArchive={(conversationId) => {
+          void chat.archiveConversation(conversationId);
         }}
-        onViewAll={() => {
-          void coPilot.openViewAllThreads();
-        }}
-        onCloseViewAll={() => coPilot.setShowAllThreads(false)}
-      />
-
-      <CoPilotDeleteThreadDialog
-        open={coPilot.pendingDeleteThread !== null}
-        threadTitle={coPilot.pendingDeleteThread?.title ?? ""}
-        busy={coPilot.deletingThreadId !== null}
-        onCancel={coPilot.cancelDeleteThread}
-        onConfirm={() => {
-          void coPilot.confirmDeleteThread();
+        onCreate={() => {
+          void chat.createNewConversation();
         }}
       />
     </div>

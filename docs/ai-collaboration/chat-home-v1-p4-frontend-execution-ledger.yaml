@@ -1,0 +1,30 @@
+program: CHAT_HOME_V1
+
+phase:
+  id: P4
+  status: IN_PROGRESS
+
+authority:
+  product_sha: d69ba6b8cb331bfa36b450307d9defcd26d09c6e
+  backend_p3_checkpoint: 93aa0c2da61b41415561d7f435c5c062c8b59a51
+
+frontend:
+  repository: Piyush1087/creator-commerce-frontend-v2-clone
+  source_branch: development
+  source_sha: b50c36fd4b99b6e0ec0718291d794d7a58353f4c
+  integration_branch: program/chat-home-v1
+
+contract:
+  surface: BRAND_HOME
+  api: /api/v1/chat
+  legacy_copilot_business_runtime_used: false
+  hitl: false
+  execute_capabilities: 0
+  provider_actions: false
+  home_proactive_logic: false
+  stitch_required: false
+  new_dependencies: 0
+
+human_gate:
+  required: true
+  status: PENDING
