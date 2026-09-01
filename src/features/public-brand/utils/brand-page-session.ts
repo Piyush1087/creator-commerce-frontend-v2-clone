@@ -24,9 +24,12 @@ export function publicBrandPath(slug: string): string {
   return `/brand/${encodeURIComponent(slug)}`;
 }
 
-/** Marketplace list filtered to one brand's open campaigns. */
-export function brandMarketplacePath(slug: string, authenticated: boolean): string {
+/** Guest Marketplace filter; signed Creators converge on the MVP Campaigns mount. */
+export function brandMarketplacePath(
+  slug: string,
+  authenticated: boolean,
+): string {
+  if (authenticated) return AUTH_ROUTES.creatorCampaigns;
   const params = new URLSearchParams({ brand_slug: slug });
-  const base = authenticated ? AUTH_ROUTES.creatorMarketplace : PUBLIC_ROUTES.marketplace;
-  return `${base}?${params.toString()}`;
+  return `${PUBLIC_ROUTES.marketplace}?${params.toString()}`;
 }

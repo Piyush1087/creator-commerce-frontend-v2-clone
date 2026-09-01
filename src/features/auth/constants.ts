@@ -21,6 +21,7 @@ export const AUTH_ROUTES = {
   brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
   creatorHome: "/creator/home",
+  creatorCentre: "/creator/centre",
   creatorAnalytics: "/creator/analytics",
   creatorMediaKit: "/creator/media-kit",
   creatorMarketplace: "/creator/marketplace",
@@ -30,9 +31,13 @@ export const AUTH_ROUTES = {
   creatorCollaborations: "/creator/collaborations",
   creatorPayouts: "/creator/payouts",
   creatorSettings: "/creator/settings",
+  creatorSettingsAccount: "/creator/settings/account",
   creatorSettingsProfile: "/creator/settings/profile",
+  creatorSettingsTeam: "/creator/settings/team",
+  creatorSettingsInstagram: "/creator/settings/instagram",
   creatorSettingsSocial: "/creator/settings/social",
   creatorSettingsPayouts: "/creator/settings/payouts",
+  creatorTeamInvitationAccept: "/creator/team-invitations/accept",
 } as const;
 
 /** Public guest marketplace (no auth required). */

@@ -10,6 +10,11 @@ describe("safe internal navigation", () => {
     "/creator/onboarding",
     "/creator/marketplace",
     "/creator/marketplace/11111111-1111-4111-8111-111111111111?source=invite",
+    "/creator/centre",
+    "/creator/settings/account",
+    "/creator/settings/team",
+    "/creator/settings/instagram",
+    "/creator/team-invitations/accept#token=safe-token",
     "/marketplace",
     "/marketplace/11111111-1111-4111-8111-111111111111",
     "/marketplace/invite/safe_token-123",
@@ -48,8 +53,8 @@ describe("safe internal navigation", () => {
   });
 
   it("uses root when even the caller fallback is unsupported", () => {
-    expect(resolveSafeInternalPath("//evil.example", "https://evil.example")).toBe(
-      "/",
-    );
+    expect(
+      resolveSafeInternalPath("//evil.example", "https://evil.example"),
+    ).toBe("/");
   });
 });

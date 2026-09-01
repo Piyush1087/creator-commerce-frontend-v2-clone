@@ -2,11 +2,14 @@ import { AUTH_ROUTES, getHomeRouteForRole } from "./constants";
 import type { UserRole } from "../../shared/auth/user-role";
 import { resolveSafeInternalPath } from "../../shared/navigation/safe-internal-path";
 
-const UUID_PATH =
-  /^\/marketplace\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\?.*)?$/i;
+const AUTHENTICATED_MARKETPLACE_PATH = /^\/creator\/marketplace(?:\/|\?|$)/u;
+const PUBLIC_MARKETPLACE_PATH = /^\/marketplace(?:\?|$|\/(?!invite(?:\/|$)))/u;
 
 /**
- * After OTP login, return creators to marketplace invite/detail URLs on the authed shell.
+ * Marketplace is hidden/out of MVP. Login-return values that would advertise
+ * or open its authenticated surface converge on the Campaigns mount. The
+ * dormant route stays available only for C-03 compatibility and is not new
+ * navigation authority.
  */
 export function resolvePostLoginPath(
   role: UserRole | null,
@@ -16,24 +19,11 @@ export function resolvePostLoginPath(
   const safeFrom = resolveSafeInternalPath(from, fallback);
 
   if (role === "CREATOR") {
-    const detailMatch = safeFrom.match(UUID_PATH);
-    if (detailMatch) {
-      return `${AUTH_ROUTES.creatorMarketplace}/${detailMatch[1]}${detailMatch[2] ?? ""}`;
-    }
     if (
-      safeFrom === AUTH_ROUTES.creatorMarketplace ||
-      safeFrom.startsWith(`${AUTH_ROUTES.creatorMarketplace}?`)
+      AUTHENTICATED_MARKETPLACE_PATH.test(safeFrom) ||
+      PUBLIC_MARKETPLACE_PATH.test(safeFrom)
     ) {
-      return safeFrom;
-    }
-    if (
-      safeFrom === "/marketplace" ||
-      safeFrom.startsWith("/marketplace?")
-    ) {
-      return (
-        AUTH_ROUTES.creatorMarketplace +
-        safeFrom.slice("/marketplace".length)
-      );
+      return AUTH_ROUTES.creatorCampaigns;
     }
     if (safeFrom.startsWith("/brand/")) {
       return safeFrom;

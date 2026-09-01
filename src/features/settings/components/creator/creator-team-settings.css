@@ -1,0 +1,189 @@
+.creator-team-settings {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.creator-team-settings__capacity {
+  display: grid;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.creator-team-settings__capacity p {
+  margin: 0;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.creator-team-roster {
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--space-md);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  overflow: hidden;
+}
+
+.creator-team-roster__header,
+.creator-team-roster__row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(7rem, 0.75fr) minmax(
+      9rem,
+      1fr
+    ) minmax(10rem, 1fr);
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.creator-team-roster__header {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--surface-page);
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.creator-team-roster__row {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.creator-team-roster__row:last-child {
+  border-bottom: 0;
+}
+
+.creator-team-roster__cell {
+  min-width: 0;
+}
+
+.creator-team-roster__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.creator-team-roster__avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-workflow);
+  color: var(--text-high);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.creator-team-roster__identity-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.creator-team-roster__identity-copy strong,
+.creator-team-roster__identity-copy span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.creator-team-roster__identity-copy span,
+.creator-team-roster__actions > span {
+  color: var(--text-muted);
+}
+
+.creator-team-roster__actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.creator-team-drawer__form,
+.creator-team-drawer__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.creator-team-settings__loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+}
+
+@media (max-width: 767px) {
+  .creator-team-settings .settings-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .creator-team-settings .settings-card__header .aurora-button,
+  .creator-team-drawer__footer .aurora-button {
+    width: 100%;
+  }
+
+  .creator-team-roster {
+    border: 0;
+    overflow: visible;
+  }
+
+  .creator-team-roster__header {
+    display: none;
+  }
+
+  .creator-team-roster__row {
+    display: block;
+    padding: var(--space-md);
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card-standard);
+    background: var(--surface-card);
+  }
+
+  .creator-team-roster__cell {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--space-sm);
+    align-items: start;
+    padding: var(--space-xs) 0;
+  }
+
+  .creator-team-roster__cell::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+
+  .creator-team-roster__identity {
+    align-items: start;
+  }
+
+  .creator-team-roster__actions {
+    align-items: stretch;
+  }
+
+  .creator-team-roster__actions .aurora-button {
+    width: 100%;
+  }
+
+  .aurora-sidedrawer-overlay:has(.creator-team-drawer__form) {
+    align-items: flex-end;
+  }
+
+  .aurora-sidedrawer:has(.creator-team-drawer__form) {
+    width: 100% !important;
+    height: min(92vh, 48rem);
+    margin-top: auto;
+    border-radius: var(--radius-card-standard) var(--radius-card-standard) 0 0;
+  }
+}

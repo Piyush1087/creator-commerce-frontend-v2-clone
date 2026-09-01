@@ -12,13 +12,19 @@ import {
 } from "./sidebar-items";
 import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
 import { SidebarNavLink } from "./SidebarNavLink";
+import type { CreatorShellState } from "./creator-shell-capabilities";
 
 type MobileNavigationProps = {
   isOpen: boolean;
   onClose: () => void;
+  creatorShellState?: CreatorShellState;
 };
 
-export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
+export function MobileNavigation({
+  isOpen,
+  onClose,
+  creatorShellState,
+}: MobileNavigationProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isOpen) return;
@@ -37,7 +43,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
   const logout = useLogout();
   const session = useAuthSession();
   const role = normalizeUserRole(session.currentUser?.role);
-  const navItems = getSidebarNavItemsForRole(role);
+  const navItems = getSidebarNavItemsForRole(role, creatorShellState);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
 

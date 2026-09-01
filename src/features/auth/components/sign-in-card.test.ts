@@ -143,7 +143,7 @@ describe("sign-in card", () => {
     });
   });
 
-  it("uses a safe Campaign guest return after password login", async () => {
+  it("reconciles a Marketplace guest return to Campaigns after password login", async () => {
     const campaignId = "11111111-1111-4111-8111-111111111111";
     vi.mocked(loginWithPassword).mockResolvedValueOnce(canonicalSession);
     mount(`/marketplace/${campaignId}?invite_token=safe_token`);
@@ -155,9 +155,7 @@ describe("sign-in card", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(
-      await screen.findByText(
-        `Destination: /creator/marketplace/${campaignId}?invite_token=safe_token`,
-      ),
+      await screen.findByText("Destination: /creator/campaigns"),
     ).toBeTruthy();
   });
 
@@ -235,11 +233,11 @@ describe("sign-in card", () => {
     ).toBeTruthy();
   });
 
-  it("sanitizes the already-authenticated session redirect", async () => {
+  it("reconciles an already-authenticated Marketplace redirect", async () => {
     adoptAuthSession(canonicalSession);
     mount("/creator/marketplace");
     expect(
-      await screen.findByText("Destination: /creator/marketplace"),
+      await screen.findByText("Destination: /creator/campaigns"),
     ).toBeTruthy();
   });
 

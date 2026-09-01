@@ -33,7 +33,9 @@ export function AppHeader({
   const location = useLocation();
   const session = useAuthSession();
   const { breadcrumb, title } = useAppShellBreadcrumbs();
-  const showUpgrade = !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
+  const showUpgrade =
+    session.currentUser?.role === "BRAND" &&
+    !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
 
   return (
     <header className="aurora-header">

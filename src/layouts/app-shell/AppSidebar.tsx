@@ -12,16 +12,23 @@ import {
 } from "./sidebar-items";
 import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
 import { SidebarNavLink } from "./SidebarNavLink";
+import type { CreatorShellState } from "./creator-shell-capabilities";
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  creatorShellState?: CreatorShellState;
+};
+
+export function AppSidebar({ creatorShellState }: AppSidebarProps) {
   const location = useLocation();
   const logout = useLogout();
   const session = useAuthSession();
   const role = normalizeUserRole(session.currentUser?.role);
-  const navItems = getSidebarNavItemsForRole(role);
+  const navItems = getSidebarNavItemsForRole(role, creatorShellState);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
-  const showUpgrade = !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
+  const showUpgrade =
+    role === "BRAND" &&
+    !location.pathname.startsWith(AUTH_ROUTES.brandSettings);
 
   return (
     <aside className="aurora-sidebar">

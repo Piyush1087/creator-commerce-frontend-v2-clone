@@ -24,11 +24,8 @@ export function CreatorDashboardPage() {
             : ""}
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          <Link to={AUTH_ROUTES.creatorMarketplace}>
-            <Button variant="primary">Open Marketplace</Button>
-          </Link>
           <Link to={AUTH_ROUTES.creatorCampaigns}>
-            <Button variant="outline">Campaign Command Center</Button>
+            <Button variant="primary">Campaign Command Center</Button>
           </Link>
           <Link to={AUTH_ROUTES.creatorCollaborations}>
             <Button variant="ghost">Collaboration Chat</Button>

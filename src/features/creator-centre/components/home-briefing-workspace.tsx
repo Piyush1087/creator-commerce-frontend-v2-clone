@@ -17,7 +17,7 @@ const SNAPSHOT_HREF: Record<string, string> = {
   earnings: AUTH_ROUTES.creatorCollaborations,
   profile: AUTH_ROUTES.creatorMediaKit,
   payout: AUTH_ROUTES.creatorPayouts,
-  marketplace: AUTH_ROUTES.creatorCampaigns,
+  campaigns: AUTH_ROUTES.creatorCampaigns,
 };
 
 /**
