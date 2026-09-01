@@ -129,6 +129,18 @@ button.aurora-sidebar__link:hover {
   color: white;
 }
 
+.aurora-sidebar__link--disabled,
+.aurora-drawer__link--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.aurora-sidebar__link--disabled:hover,
+.aurora-drawer__link--disabled:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .aurora-sidebar__link--active {
   background: var(--bg-sidebar-active);
   color: var(--color-primary);
@@ -162,7 +174,7 @@ button.aurora-sidebar__link:hover {
   opacity: 1;
 }
 
-/* Sidebar Footer (Payouts, Settings, Upgrade) */
+/* Sidebar Footer (utility links and Brand-only upgrade) */
 .aurora-sidebar__footer {
   padding: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);

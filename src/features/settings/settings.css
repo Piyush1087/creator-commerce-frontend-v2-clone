@@ -75,6 +75,22 @@
   margin-bottom: -1px;
 }
 
+.brand-settings__tab--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.brand-settings__tab--disabled:hover {
+  color: var(--text-muted);
+}
+
+.creator-settings__access-status {
+  margin: 0 0 var(--space-md);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+}
+
 .brand-settings__subnav {
   display: flex;
   flex-wrap: wrap;
@@ -309,6 +325,24 @@
 
 .settings-form-grid__full {
   grid-column: 1 / -1;
+}
+
+.creator-profile-contact,
+.creator-profile-contact .settings-card,
+.creator-profile-contact .settings-form-grid,
+.creator-profile-contact .aurora-field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.creator-profile-contact .aurora-field__control {
+  width: 100%;
+  max-width: 100%;
+}
+
+.creator-profile-contact .settings-card__description,
+.creator-profile-contact .aurora-field__helper {
+  overflow-wrap: anywhere;
 }
 
 @media (min-width: 768px) {

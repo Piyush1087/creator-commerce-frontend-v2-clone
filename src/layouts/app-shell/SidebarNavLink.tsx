@@ -23,6 +23,31 @@ export function SidebarNavLink({
   onNavigate,
 }: SidebarNavLinkProps) {
   const isActive = isSidebarNavItemActive(pathname, item.path);
+  const content = (
+    <>
+      <span className={iconClassName}>
+        <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+      </span>
+      {labelClassName ? (
+        <span className={labelClassName}>{item.label}</span>
+      ) : (
+        <span>{item.label}</span>
+      )}
+    </>
+  );
+
+  if (item.availability === "UNAVAILABLE") {
+    return (
+      <span
+        title={`${item.label}: ${item.unavailableReason ?? "Unavailable"}`}
+        aria-label={`${item.label}. ${item.unavailableReason ?? "Unavailable"}`}
+        aria-disabled="true"
+        className={`${baseClassName} ${baseClassName}--disabled`}
+      >
+        {content}
+      </span>
+    );
+  }
 
   return (
     <Link
@@ -32,14 +57,7 @@ export function SidebarNavLink({
       className={`${baseClassName}${isActive ? ` ${activeClassName}` : ""}`}
       onClick={onNavigate}
     >
-      <span className={iconClassName}>
-        <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-      </span>
-      {labelClassName ? (
-        <span className={labelClassName}>{item.label}</span>
-      ) : (
-        <span>{item.label}</span>
-      )}
+      {content}
     </Link>
   );
 }

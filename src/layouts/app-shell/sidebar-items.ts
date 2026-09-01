@@ -1,21 +1,23 @@
 import {
-  BarChart3,
   Globe,
   HelpCircle,
   Home,
   LogOut,
   Megaphone,
   MessageCircle,
-  Search,
   Settings,
   Store,
-  UserRound,
   Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
 import type { UserRole } from "../../shared/auth/user-role";
+import type { CreatorWorkspaceAction } from "../../shared/creator/creator-workspace-actor.contract";
+import {
+  projectCreatorShellItems,
+  type CreatorShellState,
+} from "./creator-shell-capabilities";
 
 export type AppShellMainVariant = "default" | "flush";
 
@@ -27,6 +29,11 @@ export type SidebarNavItem = {
   mainVariant: AppShellMainVariant;
   path: string;
   roles: readonly UserRole[];
+  availability?: "AVAILABLE" | "UNAVAILABLE";
+  unavailableReason?: string;
+  requiresCreatorWorkspace?: boolean;
+  requiredCreatorAction?: CreatorWorkspaceAction;
+  alwaysAvailableInRecovery?: boolean;
 };
 
 export type SidebarFooterNavItem = {
@@ -119,33 +126,7 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Home",
     headerTitle: "Daily Briefing",
     mainVariant: "flush",
-  },
-  {
-    label: "Insights",
-    icon: BarChart3,
-    path: AUTH_ROUTES.creatorAnalytics,
-    roles: ["CREATOR"],
-    breadcrumb: "Insights",
-    headerTitle: "Content Pulse",
-    mainVariant: "flush",
-  },
-  {
-    label: "Profile",
-    icon: UserRound,
-    path: AUTH_ROUTES.creatorMediaKit,
-    roles: ["CREATOR"],
-    breadcrumb: "Profile",
-    headerTitle: "Creator Profile",
-    mainVariant: "flush",
-  },
-  {
-    label: "Marketplace",
-    icon: Search,
-    path: AUTH_ROUTES.creatorMarketplace,
-    roles: ["CREATOR"],
-    breadcrumb: "Marketplace",
-    headerTitle: "Marketplace",
-    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
   },
   {
     label: "Campaigns",
@@ -155,6 +136,27 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Campaigns",
     headerTitle: "Campaigns Command Center",
     mainVariant: "flush",
+    requiresCreatorWorkspace: true,
+  },
+  {
+    label: "Collaborations",
+    icon: MessageCircle,
+    path: AUTH_ROUTES.creatorCollaborations,
+    roles: ["CREATOR"],
+    breadcrumb: "Collaborations",
+    headerTitle: "Collaborations",
+    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
+  },
+  {
+    label: "Creator Center",
+    icon: Store,
+    path: AUTH_ROUTES.creatorCentre,
+    roles: ["CREATOR"],
+    breadcrumb: "Creator Center",
+    headerTitle: "Creator Center",
+    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
   },
   {
     label: "Payouts",
@@ -164,15 +166,8 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Payouts",
     headerTitle: "Earnings & Payouts Hub",
     mainVariant: "flush",
-  },
-  {
-    label: "Chat",
-    icon: MessageCircle,
-    path: AUTH_ROUTES.creatorCollaborations,
-    roles: ["CREATOR"],
-    breadcrumb: "Collaborations",
-    headerTitle: "Collaborations",
-    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
+    requiredCreatorAction: "PAYOUT_SETTINGS_READ",
   },
   {
     label: "Settings",
@@ -182,6 +177,7 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     breadcrumb: "Settings",
     headerTitle: "Settings",
     mainVariant: "default",
+    alwaysAvailableInRecovery: true,
   },
 ];
 
@@ -237,9 +233,18 @@ const sidebarUtilityByRole: Record<UserRole, SidebarUtilityItem[]> = {
   ADMIN: [],
 };
 
-export function getSidebarNavItemsForRole(role: UserRole | null): SidebarNavItem[] {
+export function getSidebarNavItemsForRole(
+  role: UserRole | null,
+  creatorShellState?: CreatorShellState,
+): SidebarNavItem[] {
   if (!role) {
     return [];
+  }
+  if (role === "CREATOR") {
+    return projectCreatorShellItems(
+      sidebarNavByRole[role],
+      creatorShellState ?? { status: "LOADING", actorContext: null },
+    );
   }
   return sidebarNavByRole[role];
 }
@@ -253,7 +258,9 @@ export function getSidebarFooterNavItemsForRole(
   return sidebarFooterNavByRole[role];
 }
 
-export function getSidebarUtilityItemsForRole(role: UserRole | null): SidebarUtilityItem[] {
+export function getSidebarUtilityItemsForRole(
+  role: UserRole | null,
+): SidebarUtilityItem[] {
   if (!role) {
     return [];
   }
@@ -269,14 +276,17 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandSettings,
   AUTH_ROUTES.creatorAnalytics,
   AUTH_ROUTES.creatorMediaKit,
-  AUTH_ROUTES.creatorMarketplace,
+  AUTH_ROUTES.creatorCentre,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorPayouts,
   AUTH_ROUTES.creatorCollaborations,
   AUTH_ROUTES.creatorSettings,
 ] as const;
 
-export function isSidebarNavItemActive(pathname: string, itemPath: string): boolean {
+export function isSidebarNavItemActive(
+  pathname: string,
+  itemPath: string,
+): boolean {
   if (itemPath === AUTH_ROUTES.creatorHome) {
     return (
       pathname === AUTH_ROUTES.creatorHome ||
@@ -326,13 +336,19 @@ export function resolveHeaderMeta(
   }
 
   if (pathname.startsWith(AUTH_ROUTES.creatorSettings)) {
-    if (pathname.includes("/social")) {
-      return { breadcrumb: "Settings", title: "Social Channels" };
+    if (pathname.includes("/account")) {
+      return { breadcrumb: "Settings", title: "Account & Security" };
+    }
+    if (pathname.includes("/team")) {
+      return { breadcrumb: "Settings", title: "Team" };
+    }
+    if (pathname.includes("/instagram") || pathname.includes("/social")) {
+      return { breadcrumb: "Settings", title: "Instagram" };
     }
     if (pathname.includes("/payouts")) {
-      return { breadcrumb: "Settings", title: "Payouts & Tax" };
+      return { breadcrumb: "Settings", title: "Payouts & Legal" };
     }
-    return { breadcrumb: "Settings", title: "Profile & Workspace" };
+    return { breadcrumb: "Settings", title: "Profile & Contact" };
   }
 
   if (

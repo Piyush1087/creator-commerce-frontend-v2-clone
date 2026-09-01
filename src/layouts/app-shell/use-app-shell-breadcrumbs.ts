@@ -66,13 +66,6 @@ export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
     };
   }
 
-  if (location.pathname.startsWith(`${AUTH_ROUTES.creatorMarketplace}/`)) {
-    return {
-      breadcrumb: "Marketplace",
-      title: "Campaign Detail",
-    };
-  }
-
   if (location.pathname === AUTH_ROUTES.creatorCampaignsHistory) {
     return {
       breadcrumb: "Campaigns",

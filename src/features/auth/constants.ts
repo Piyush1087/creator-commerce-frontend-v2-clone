@@ -21,6 +21,7 @@ export const AUTH_ROUTES = {
   brandSettingsEscrow: "/brand/settings/escrow",
   creatorDashboard: "/creator/dashboard",
   creatorHome: "/creator/home",
+  creatorCentre: "/creator/centre",
   creatorAnalytics: "/creator/analytics",
   creatorMediaKit: "/creator/media-kit",
   creatorMarketplace: "/creator/marketplace",
