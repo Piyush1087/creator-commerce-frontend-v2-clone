@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, ArrowLeft, LoaderCircle, RefreshCw, SendHorizontal, WifiOff } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Alert, Button, TextField } from "../../../design-system/aurora";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import {
   normalizeUserRole,
   type UserRole,
@@ -92,8 +92,8 @@ function formatMessageTimestamp(value: string): string {
 }
 
 export function CollaborationWorkspace() {
-  const session = loadAuthSession();
-  const role = normalizeUserRole(session?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   if (role !== "BRAND" && role !== "CREATOR") {
     return (
       <Alert tone="warning" title="Collaboration access unavailable">
@@ -103,7 +103,7 @@ export function CollaborationWorkspace() {
     );
   }
   return (
-    <OperationalCollaborationWorkspace role={role} userId={session?.user.id} />
+    <OperationalCollaborationWorkspace role={role} userId={session.currentUser?.id} />
   );
 }
 

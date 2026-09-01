@@ -12,7 +12,8 @@ import {
 import { Button, TextField } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../auth/constants";
 import { env } from "../../../shared/config/env";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { getAccessToken } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import { openInstagramOAuth } from "../../../shared/oauth/instagram-oauth";
 import { InstagramConnectModal } from "./instagram-connect-modal";
 
@@ -35,7 +36,7 @@ function isPopupCallback(): boolean {
  */
 export function SocialSyncView() {
   const navigate = useNavigate();
-  const auth = loadAuthSession();
+  const { accessToken } = useAuthSession();
   const handledCodeRef = useRef(false);
 
   const [inviteEmail, setInviteEmail] = useState("");
@@ -52,8 +53,9 @@ export function SocialSyncView() {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
-    if (auth?.accessToken) {
-      headers.Authorization = `Bearer ${auth.accessToken}`;
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
     return headers;
   };
@@ -116,7 +118,7 @@ export function SocialSyncView() {
   }, []);
 
   useEffect(() => {
-    if (!auth?.accessToken || handledCodeRef.current) {
+    if (!accessToken || handledCodeRef.current) {
       return;
     }
     const params = new URLSearchParams(window.location.search);
@@ -180,13 +182,13 @@ export function SocialSyncView() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when code is present
-  }, [auth?.accessToken]);
+  }, [accessToken]);
 
   const launchInstagramOauth = async () => {
     setModalError(null);
     setError(null);
     setMessage(null);
-    if (!auth?.accessToken) {
+    if (!accessToken) {
       setModalError(
         "Sign in / complete password verification before connecting Instagram.",
       );
@@ -222,7 +224,7 @@ export function SocialSyncView() {
   const confirmSkip = async () => {
     setError(null);
     setSkipConfirmOpen(false);
-    if (!auth?.accessToken) {
+    if (!accessToken) {
       navigate(AUTH_ROUTES.brandDashboard);
       return;
     }
@@ -243,7 +245,7 @@ export function SocialSyncView() {
   const sendInvite = async () => {
     setError(null);
     setMessage(null);
-    if (!auth?.accessToken) {
+    if (!accessToken) {
       setError("Sign in before inviting a teammate.");
       return;
     }

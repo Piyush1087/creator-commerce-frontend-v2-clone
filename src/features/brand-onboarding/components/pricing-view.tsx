@@ -2,7 +2,6 @@ import { useLayoutEffect, useState } from "react";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { completeBrandRegistration } from "../../auth/api/auth-client";
 import {
   bootstrapLocalTrial,
   PricingApiError,
@@ -32,10 +31,6 @@ export function PricingView() {
 
     setIsSubmitting(true);
     try {
-      await completeBrandRegistration({
-        brandProfileId: session.brandProfileId,
-      });
-
       try {
         await bootstrapLocalTrial();
       } catch (trialError) {

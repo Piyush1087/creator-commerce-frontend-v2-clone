@@ -4,8 +4,13 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { MobileNavigation } from "./MobileNavigation";
 
-vi.mock("../../shared/auth/auth-session", () => ({
-  loadAuthSession: () => ({ user: { role: "BRAND" } }),
+vi.mock("../../shared/auth/use-auth-session", () => ({
+  useAuthSession: () => ({
+    status: "AUTHENTICATED",
+    currentUser: { role: "BRAND" },
+    accessToken: "test-token",
+    accessTokenExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+  }),
 }));
 vi.mock("../../shared/auth/use-logout", () => ({ useLogout: () => vi.fn() }));
 
