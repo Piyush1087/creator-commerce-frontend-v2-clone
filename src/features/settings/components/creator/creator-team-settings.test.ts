@@ -171,9 +171,12 @@ describe("C05 Creator Team Settings", () => {
   it("submits normalized invite and role actions through bounded callbacks", async () => {
     const props = setup();
     fireEvent.click(screen.getByRole("button", { name: "Invite team member" }));
-    fireEvent.change(screen.getByRole("textbox", { name: /^Recipient email/ }), {
-      target: { value: "  person@example.test  " },
-    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: /^Recipient email/ }),
+      {
+        target: { value: "  person@example.test  " },
+      },
+    );
     fireEvent.change(screen.getByLabelText("Workspace role"), {
       target: { value: "MANAGER" },
     });
@@ -235,7 +238,7 @@ describe("C05 Creator Team Settings", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("ships table-to-card, bottom-sheet, long-value, and full-width mobile seams", () => {
+  it("ships tablet card rows plus mobile bottom-sheet and full-width seams", () => {
     const css = readFileSync(
       join(
         process.cwd(),
@@ -243,6 +246,7 @@ describe("C05 Creator Team Settings", () => {
       ),
       "utf8",
     );
+    expect(css).toContain("@media (max-width: 959px)");
     expect(css).toContain("@media (max-width: 767px)");
     expect(css).toMatch(/creator-team-roster__row\s*{[\s\S]*display: block/);
     expect(css).toContain("overflow-wrap: anywhere");

@@ -31,10 +31,9 @@
 .creator-team-roster__header,
 .creator-team-roster__row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(7rem, 0.75fr) minmax(
-      9rem,
-      1fr
-    ) minmax(10rem, 1fr);
+  grid-template-columns:
+    minmax(0, 2fr) minmax(7rem, 0.75fr) minmax(9rem, 1fr)
+    minmax(10rem, 1fr);
   gap: var(--space-sm);
   align-items: center;
 }
@@ -120,17 +119,7 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 767px) {
-  .creator-team-settings .settings-card__header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .creator-team-settings .settings-card__header .aurora-button,
-  .creator-team-drawer__footer .aurora-button {
-    width: 100%;
-  }
-
+@media (max-width: 959px) {
   .creator-team-roster {
     border: 0;
     overflow: visible;
@@ -173,6 +162,18 @@
   }
 
   .creator-team-roster__actions .aurora-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .creator-team-settings .settings-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .creator-team-settings .settings-card__header .aurora-button,
+  .creator-team-drawer__footer .aurora-button {
     width: 100%;
   }
 
