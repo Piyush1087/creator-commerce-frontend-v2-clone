@@ -1,0 +1,169 @@
+run_id: C01-I7-FRONTEND-RUNTIME-ACCEPTANCE
+execution_mode: HYBRID_RUN
+executed_at: 2026-09-01
+
+lineage:
+  frontend_branch: c01/i7-joint-runtime-acceptance
+  frontend_starting_sha: dcb79ef351bca13cea9c408084e881050e0259f2
+  frontend_remote_start_verified: true
+  frontend_final_sha: SELF_COMMIT_CONTAINING_THIS_LEDGER
+  backend_branch: c01/i7-joint-runtime-acceptance
+  backend_starting_sha: 5ab702647c0f606d514161ca694c9c55032de69a
+  backend_remote_start_verified: true
+  backend_final_sha: SELF_COMMIT_CONTAINING_BACKEND_I7_LEDGER
+  initial_worktrees_clean: true
+
+environment_classification:
+  browser: CODEX_IN_APP_CHROMIUM_TRUE_VIEWPORTS
+  viewport_widths: [1440, 768, 390]
+  frontend_runtime: LOCAL_VITE_WITH_EXPLICIT_LOCAL_API_ORIGIN
+  api_runtime: DETERMINISTIC_LOCAL_HTTP_FAKE_FOR_BROWSER_STATE_MATRIX
+  database_evidence: BACKEND_REAL_SERVICES_WITH_DISPOSABLE_POSTGRESQL
+  provider_evidence_type: MOCKED
+  historical_database: NOT_AUTHORIZED
+  live_meta_oauth: NOT_AUTHORIZED
+
+gates:
+  A_configuration_preflight: PASS
+  B_migration_acceptance: PASS_BACKEND_0_TO_70
+  C_historical_persistent_data: BLOCKED_BY_AUTHORIZATION
+  D_direct_password_creator: PASS_COMPOSED_RUNTIME_EVIDENCE
+  E_google_creator: PASS_DETERMINISTIC_VERIFIER_AND_UI_REGRESSION
+  F_brand_context_conflict: PASS
+  G_shared_session_lifecycle: PASS_AUTOMATED_WITH_BROWSER_RELOAD_EVIDENCE
+  H_initial_instagram_matrix: PASS_MOCKED
+  I_continuing_instagram_matrix: PASS_MOCKED
+  J_disconnect_route_and_permission_matrix: PASS
+  K_campaign_continuation_responsive_accessibility_security: BLOCKED_BY_DEPENDENCY_SECURITY
+
+runtime_journeys:
+  direct_entry_password_and_email_otp_rendering: PASS
+  google_registration_surface: PASS_GOOGLE_UNAVAILABLE_STATE_RENDERED_WITHOUT_LIVE_CREDENTIAL
+  account_context_conflict: PASS
+  session_restore_after_reload: PASS
+  incomplete_instagram_state_recovery_after_login: PASS_AUTOMATED
+  connect_reconnect_revalidate: PASS
+  callback_processing_and_query_scrubbing: PASS
+  provider_denial_recovery: PASS
+  continuation_presence_discard_and_error: PASS
+  campaign_return_route: PASS
+  campaign_application_wizard_after_return: CLOSED
+
+provider_evidence:
+  type: MOCKED
+  deterministic_state_matrix: PASS
+  LIVE_META_OAUTH_E2E: NOT_EXECUTED_NO_AUTHORIZED_TEST_IDENTITY
+
+historical_data:
+  HISTORICAL_PERSISTENT_DATA_SCAN: NOT_EXECUTED_NO_AUTHORIZED_DATABASE
+  historical_persistent_migration_blocker: ACTIVE
+  PRODUCTION_PERSISTENT_MIGRATION_AUTHORIZATION: CLOSED
+
+campaign_zero_mutation_proof:
+  browser_abandonment_cookie_recovery: PASS
+  raw_token_in_issuance_json_js_storage_url: NONE
+  bodyless_authenticated_resolve: PASS
+  ready_to_return_route: /creator/marketplace/:campaignId
+  wizard_immediately_after_return: CLOSED
+  campaign_application_auto_creation: NONE
+  backend_database_counts_and_audit_events: UNCHANGED
+  invite_token_flow_uses_generic_continuation: false
+
+route_matrix:
+  incomplete_creator_denied_to_onboarding:
+    - /creator/home
+    - /creator/analytics
+    - /creator/media-kit
+    - /creator/marketplace
+    - /creator/campaigns
+    - /creator/collaborations
+    - /creator/payouts
+  settings_outside_blanket_platform_guard:
+    - /creator/settings/profile
+    - /creator/settings/social
+    - /creator/settings/payouts
+  backend_guard_authority: PASS_BY_BACKEND_ARCHITECTURE_AND_UNIT_EVIDENCE
+
+responsive_results:
+  desktop_1440:
+    status: PASS
+    horizontal_overflow: NONE
+  tablet_768:
+    status: PASS
+    horizontal_overflow: NONE
+  mobile_390:
+    status: PASS_TRUE_BROWSER_VIEWPORT
+    direct_entry: PASS
+    email_otp: PASS
+    google_surface: PASS
+    context_conflict: PASS
+    connect: PASS
+    reconnect: PASS_LONG_PROVIDER_ERROR_WRAPS
+    revalidate: PASS
+    callback: PASS
+    continuation_messaging_and_error: PASS
+    long_email_wrapping: PASS
+    horizontal_overflow: NONE
+    primary_buttons_usable: PASS
+    campaign_return: PASS
+  390PX_RUNTIME_VALIDATION: PASS
+
+accessibility_results:
+  rendered_dom_landmarks_and_headings: PASS
+  labels_and_autocomplete: PASS
+  otp_form: PASS
+  google_control_status_and_error_copy: PASS
+  buttons_and_alert_roles: PASS
+  aria_busy_role_status_aria_live: PASS
+  visible_focus: PASS
+  no_color_only_status: PASS
+  keyboard_component_tests: PASS
+  end_to_end_tab_traversal: NOT_EXECUTED_TOOLING_LIMITATION
+  release_impact: NONBLOCKING_GAP_WITH_AUTOMATED_KEYBOARD_COVERAGE
+
+dependency_security:
+  evidence: docs/ai-collaboration/c01-i7-frontend-dependency-security-classification.md
+  npm_audit_full: 18_PACKAGES_1_CRITICAL_13_HIGH_2_MODERATE_2_LOW
+  npm_audit_runtime: 9_PACKAGES_0_CRITICAL_8_HIGH_1_MODERATE
+  npm_ls: PASS_EXIT_0
+  FRONTEND_DEPENDENCY_SECURITY: RELEASE_BLOCKED
+  audit_fix_run: false
+  package_upgrades: NONE
+
+production_configuration_validation:
+  typecheck: PASS
+  production_build: PASS
+  build_warning: INHERITED_CHUNK_SIZE_WARNING
+  api_url: EXPLICIT_AND_FAIL_CLOSED_IN_PRODUCTION
+  public_app_origin: EXPLICIT_PRODUCTION_VALUE_VALIDATED
+  google_client_config: INVENTORIED_NO_LIVE_CREDENTIAL_USE
+  callback_route: /creator-marketplace/callback
+  legacy_integrate_instagram: COMPATIBILITY_ROUTE_ONLY
+  hard_coded_development_api_origin: NONE
+
+validations:
+  full_test_suite: PASS_86_FILES_676_ASSERTIONS
+  typecheck: PASS
+  production_build: PASS
+  acceptance_scoped_eslint: PASS
+  broad_lint_slice: INHERITED_2_ERRORS_8_WARNINGS_OUTSIDE_I7_ACCEPTANCE_SCOPE
+  git_diff_check: PASS
+
+bounded_corrections: NONE
+code_corrections: NONE
+new_migrations: NONE
+meta_changes: NONE
+production_or_shared_db_mutations: NONE
+campaign_application_auto_creation: NONE
+development_merge: NONE
+
+remaining_blockers:
+  - FRONTEND_DEPENDENCY_SECURITY_RELEASE_BLOCKED
+  - HISTORICAL_PERSISTENT_DATA_SCAN_NOT_AUTHORIZED
+  - PRODUCTION_PERSISTENT_MIGRATION_AUTHORIZATION_CLOSED
+  - LIVE_META_OAUTH_E2E_NOT_AUTHORIZED
+  - META_APP_A_READ_ONLY_REVALIDATION_PENDING_SYSTEMS_INTEGRATION
+
+checkpoint:
+  status: BLOCKED_PENDING_DEPENDENCY_REMEDIATION_AND_EXTERNAL_GATES
+  candidate_head_self_recorded: false
