@@ -6,7 +6,12 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MarketplaceDetailResponse } from "../contracts/creator-campaigns.contracts";
@@ -71,11 +76,17 @@ function renderCampaign(inviteToken?: string) {
         }),
         createElement(Route, {
           path: "/login",
-          element: createElement("p", null, "Shared login reached"),
+          element: createElement(LoginTarget),
         }),
       ),
     ),
   );
+}
+
+function LoginTarget() {
+  const location = useLocation();
+  const from = (location.state as { from?: unknown } | null)?.from;
+  return createElement("p", null, `Shared login return: ${String(from)}`);
 }
 
 beforeEach(() => mocks.issue.mockReset());
@@ -111,7 +122,11 @@ describe("public Campaign Creator Entry continuation", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Create account to apply" }),
     );
-    expect(await screen.findByText("Shared login reached")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Shared login return: /marketplace/campaign-1?invite_token=invite-token",
+      ),
+    ).toBeTruthy();
     expect(mocks.issue).not.toHaveBeenCalled();
   });
 });

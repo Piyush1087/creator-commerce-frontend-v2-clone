@@ -27,6 +27,7 @@ import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";
 import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
+import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 
 import "../creator-campaigns.css";
 
@@ -166,9 +167,13 @@ export function CampaignDetailWorkspace({
 
   const handlePrimaryCta = async () => {
     if (isGuest) {
-      const returnPath = inviteToken
-        ? `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}?invite_token=${encodeURIComponent(inviteToken)}`
-        : `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}`;
+      const campaignPath = `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(campaign.campaign_id)}`;
+      const returnPath = resolveSafeInternalPath(
+        inviteToken
+          ? `${campaignPath}?invite_token=${encodeURIComponent(inviteToken)}`
+          : campaignPath,
+        PUBLIC_ROUTES.marketplace,
+      );
       if (inviteToken) {
         navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
         return;

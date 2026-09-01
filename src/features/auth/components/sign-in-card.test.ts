@@ -7,16 +7,23 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   loginWithPassword,
   requestLoginOtp,
+  signInWithGoogle,
   verifyLoginOtp,
 } from "../api/auth-client";
 import { AUTH_ROUTES } from "../constants";
 import {
+  adoptAuthSession,
   clearAuthSession,
   resetAuthSessionForTests,
 } from "../../../shared/auth/auth-session";
@@ -30,7 +37,16 @@ vi.mock("../api/auth-client", () => ({
 }));
 
 vi.mock("./google-sign-in-button", () => ({
-  GoogleSignInButton: () => null,
+  GoogleSignInButton: ({
+    onCredential,
+  }: {
+    onCredential: (idToken: string) => void;
+  }) =>
+    createElement(
+      "button",
+      { type: "button", onClick: () => onCredential("google-fixture") },
+      "Continue with Google",
+    ),
 }));
 
 const canonicalSession = {
@@ -44,11 +60,27 @@ const canonicalSession = {
   },
 };
 
-function mount() {
+function LocationTarget() {
+  const location = useLocation();
+  return createElement(
+    "p",
+    null,
+    `Destination: ${location.pathname}${location.search}${location.hash}`,
+  );
+}
+
+function mount(from?: string) {
   return render(
     createElement(
       MemoryRouter,
-      { initialEntries: [AUTH_ROUTES.login] },
+      {
+        initialEntries: [
+          {
+            pathname: AUTH_ROUTES.login,
+            ...(from === undefined ? {} : { state: { from } }),
+          },
+        ],
+      },
       createElement(
         Routes,
         null,
@@ -60,6 +92,10 @@ function mount() {
           path: AUTH_ROUTES.creatorHome,
           element: createElement("h1", null, "Creator home"),
         }),
+        createElement(Route, {
+          path: "*",
+          element: createElement(LocationTarget),
+        }),
       ),
     ),
   );
@@ -70,6 +106,7 @@ beforeEach(() => {
   clearAuthSession();
   vi.mocked(loginWithPassword).mockReset();
   vi.mocked(requestLoginOtp).mockReset();
+  vi.mocked(signInWithGoogle).mockReset();
   vi.mocked(verifyLoginOtp).mockReset();
 });
 
@@ -104,6 +141,24 @@ describe("sign-in card", () => {
       email: "person@example.test",
       password: "synthetic-password",
     });
+  });
+
+  it("uses a safe Campaign guest return after password login", async () => {
+    const campaignId = "11111111-1111-4111-8111-111111111111";
+    vi.mocked(loginWithPassword).mockResolvedValueOnce(canonicalSession);
+    mount(`/marketplace/${campaignId}?invite_token=safe_token`);
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "synthetic-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(
+      await screen.findByText(
+        `Destination: /creator/marketplace/${campaignId}?invite_token=safe_token`,
+      ),
+    ).toBeTruthy();
   });
 
   it("requests, validates, and verifies an email code with resend cooldown", async () => {
@@ -144,5 +199,62 @@ describe("sign-in card", () => {
       }),
     );
     expect(await screen.findByText("Creator home")).toBeTruthy();
+  });
+
+  it("uses a safe Creator onboarding return after OTP login", async () => {
+    vi.mocked(requestLoginOtp).mockResolvedValue();
+    vi.mocked(verifyLoginOtp).mockResolvedValueOnce(canonicalSession);
+    mount("/creator/onboarding");
+    fireEvent.click(screen.getByRole("tab", { name: "Email code" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "person@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send code" }));
+    fireEvent.change(await screen.findByLabelText("6-digit code"), {
+      target: { value: "654321" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Verify and sign in" }));
+    expect(
+      await screen.findByText("Destination: /creator/onboarding"),
+    ).toBeTruthy();
+  });
+
+  it("uses a safe Brand return after Google login", async () => {
+    vi.mocked(signInWithGoogle).mockResolvedValueOnce({
+      ...canonicalSession,
+      user: { ...canonicalSession.user, role: "BRAND" },
+    });
+    mount("/brand/settings/integrations?tab=instagram");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    );
+    expect(
+      await screen.findByText(
+        "Destination: /brand/settings/integrations?tab=instagram",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("sanitizes the already-authenticated session redirect", async () => {
+    adoptAuthSession(canonicalSession);
+    mount("/creator/marketplace");
+    expect(
+      await screen.findByText("Destination: /creator/marketplace"),
+    ).toBeTruthy();
+  });
+
+  it.each([
+    "//evil.example",
+    String.raw`/\evil.example`,
+    "https://evil.example",
+    "javascript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "/%2f%2fevil.example",
+    "/unsupported/internal/route",
+  ])("keeps the malicious return %s inside the role-safe home", async (from) => {
+    adoptAuthSession(canonicalSession);
+    mount(from);
+    expect(await screen.findByText("Creator home")).toBeTruthy();
+    expect(window.location.href).not.toContain("evil.example");
   });
 });

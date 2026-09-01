@@ -13,6 +13,19 @@ lineage:
   backend_final_sha: SELF_COMMIT_CONTAINING_BACKEND_I7_LEDGER
   initial_worktrees_clean: true
 
+bounded_security_correction:
+  executed_at: 2026-09-01
+  authority: PARENT_AUTHORIZED_FRONTEND_ONLY
+  frontend_starting_sha: 9f46709d8135929e500a00e6e0208bf70b01858a
+  frontend_remote_start_verified: true
+  frontend_final_sha: SELF_COMMIT_CONTAINING_THIS_LEDGER
+  backend_observed_sha: 3ec01751d28cfa60840ecf97d95c706f94c3dec9
+  backend_changes: NONE
+  backend_migrations: NONE
+  meta_changes: NONE
+  production_or_shared_db_mutations: NONE
+  intended_commit: "fix(c01): remediate frontend runtime dependencies"
+
 environment_classification:
   browser: CODEX_IN_APP_CHROMIUM_TRUE_VIEWPORTS
   viewport_widths: [1440, 768, 390]
@@ -34,7 +47,7 @@ gates:
   H_initial_instagram_matrix: PASS_MOCKED
   I_continuing_instagram_matrix: PASS_MOCKED
   J_disconnect_route_and_permission_matrix: PASS
-  K_campaign_continuation_responsive_accessibility_security: BLOCKED_BY_DEPENDENCY_SECURITY
+  K_campaign_continuation_responsive_accessibility_security: PASS_WITH_NONBLOCKING_DEPENDENCY_DEBT
 
 runtime_journeys:
   direct_entry_password_and_email_otp_rendering: PASS
@@ -123,12 +136,30 @@ accessibility_results:
 
 dependency_security:
   evidence: docs/ai-collaboration/c01-i7-frontend-dependency-security-classification.md
-  npm_audit_full: 18_PACKAGES_1_CRITICAL_13_HIGH_2_MODERATE_2_LOW
-  npm_audit_runtime: 9_PACKAGES_0_CRITICAL_8_HIGH_1_MODERATE
+  initial_npm_audit_full: 18_PACKAGES_1_CRITICAL_13_HIGH_2_MODERATE_2_LOW
+  initial_npm_audit_runtime: 9_PACKAGES_0_CRITICAL_8_HIGH_1_MODERATE
+  corrected_npm_audit_full: 9_PACKAGES_1_CRITICAL_3_HIGH_5_MODERATE_0_LOW
+  corrected_npm_audit_runtime: 2_PACKAGES_0_CRITICAL_0_HIGH_2_MODERATE
+  residual_runtime_packages:
+    - react-router@6.30.6_MODERATE_LOCALLY_MITIGATED_NAVIGATION
+    - react-router-dom@6.30.6_MODERATE_VIA_REACT_ROUTER
+  residual_runtime_ssr_hydration_reachability: ABSENT_DECLARATIVE_BROWSER_ROUTER_ONLY
+  framework_major_required_for_I7: false
+  framework_major_future_maintenance: true
   npm_ls: PASS_EXIT_0
-  FRONTEND_DEPENDENCY_SECURITY: RELEASE_BLOCKED
+  FRONTEND_DEPENDENCY_SECURITY: PASS_WITH_NONBLOCKING_DEBT
   audit_fix_run: false
-  package_upgrades: NONE
+  package_override_used: false
+  package_changes:
+    axios: REMOVED_REPLACED_BY_FIXED_ORIGIN_NATIVE_FETCH
+    react_router_dom: 6.28.0_TO_6.30.6
+    remix_run_router: 1.21.0_TO_1.23.4
+    socket_io_parser: 4.2.6_TO_4.2.7
+    engine_io_client: 6.6.5_TO_6.6.6
+    ws: 8.20.1_TO_8.21.3
+    dompurify: 3.4.12_TO_3.4.14
+    vite: 5.4.11_TO_5.4.21
+    eslint: 9.18.0_TO_9.39.5
 
 production_configuration_validation:
   typecheck: PASS
@@ -142,15 +173,25 @@ production_configuration_validation:
   hard_coded_development_api_origin: NONE
 
 validations:
-  full_test_suite: PASS_86_FILES_676_ASSERTIONS
+  correction_navigation_suite: PASS_6_FILES_70_ASSERTIONS
+  correction_realtime_pdf_suite: PASS_2_FILES_3_ASSERTIONS
+  full_test_suite: PASS_92_FILES_744_ASSERTIONS
   typecheck: PASS
   production_build: PASS
   acceptance_scoped_eslint: PASS
   broad_lint_slice: INHERITED_2_ERRORS_8_WARNINGS_OUTSIDE_I7_ACCEPTANCE_SCOPE
   git_diff_check: PASS
 
-bounded_corrections: NONE
-code_corrections: NONE
+bounded_corrections:
+  - FRONTEND_RUNTIME_DEPENDENCY_REMEDIATION
+  - CANONICAL_ALLOWLISTED_INTERNAL_RETURN_PATH_POLICY
+  - HEALTH_CLIENT_NATIVE_FETCH_REPLACEMENT
+  - LOCKFILE_REFRESH_WITHOUT_OVERRIDES
+code_corrections:
+  shared_navigation_policy: PASS
+  authenticated_sign_in_fast_path: PASS
+  campaign_and_invite_return_paths: PASS
+  health_client: PASS
 new_migrations: NONE
 meta_changes: NONE
 production_or_shared_db_mutations: NONE
@@ -158,12 +199,11 @@ campaign_application_auto_creation: NONE
 development_merge: NONE
 
 remaining_blockers:
-  - FRONTEND_DEPENDENCY_SECURITY_RELEASE_BLOCKED
   - HISTORICAL_PERSISTENT_DATA_SCAN_NOT_AUTHORIZED
   - PRODUCTION_PERSISTENT_MIGRATION_AUTHORIZATION_CLOSED
   - LIVE_META_OAUTH_E2E_NOT_AUTHORIZED
   - META_APP_A_READ_ONLY_REVALIDATION_PENDING_SYSTEMS_INTEGRATION
 
 checkpoint:
-  status: BLOCKED_PENDING_DEPENDENCY_REMEDIATION_AND_EXTERNAL_GATES
-  candidate_head_self_recorded: false
+  status: READY_FOR_SYSTEMS_REVIEW_WITH_EXTERNAL_GATES
+  candidate_head_self_recorded: true

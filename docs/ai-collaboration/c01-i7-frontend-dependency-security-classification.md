@@ -57,3 +57,53 @@ No package, lockfile, or application code was changed in I7. `npm audit fix` was
 3. Refresh Socket.IO and jsPDF dependency chains to remove `socket.io-parser`, `engine.io-client`/`ws`, and DOMPurify advisories; validate collaboration and PDF export.
 4. Upgrade Vite/ESLint transitive chains using non-major releases where possible. Plan the Vitest major upgrade separately and keep its UI server disabled/unexposed.
 5. Rerun both audits and require an explicit security review for any residual high or critical runtime finding.
+
+## Bounded remediation checkpoint — 2026-09-01
+
+The result above is the retained initial I7 finding. The parent-authorized bounded correction began from frontend SHA `9f46709d8135929e500a00e6e0208bf70b01858a` and remediated the release-blocking runtime chains without changing the backend, database schema, persistent data, or Meta configuration.
+
+### Remediation performed
+
+- Removed direct runtime `axios` use and replaced the fixed-origin `/health` request with native `fetch`. `form-data` is therefore no longer in the production dependency tree.
+- Updated `react-router-dom` within major version 6 from `6.28.0` to `6.30.6`, yielding `react-router@6.30.6` and `@remix-run/router@1.23.4`.
+- Refreshed the existing Socket.IO lockfile chain without an override: `socket.io-parser@4.2.7`, `engine.io-client@6.6.6`, and `ws@8.21.3` under unchanged direct `socket.io-client@4.8.3`.
+- Kept direct `jspdf@4.2.1` and refreshed its optional runtime sanitizer to `dompurify@3.4.14`.
+- Applied bounded non-major toolchain maintenance: `vite@5.4.21`, `eslint@9.39.5`, `@eslint/js@9.39.5`, and `postcss@8.5.26`. Vitest remains `2.1.9`; its audit fix is a separate major-version migration.
+- Added one canonical `resolveSafeInternalPath` policy for externally influenced internal destinations. It rejects protocol-relative paths, literal or encoded backslashes, encoded or double-encoded separators, control characters, malformed encoding, unknown route families, and cross-origin destinations. Shared sign-in, already-authenticated sign-in, route-guard return state, campaign continuation, and public invite navigation now use this policy. Dynamic campaign and invite route components are encoded.
+- Audited remaining external navigation. Instagram OAuth locations are intentional backend-authorized provider redirects; the support URL already accepts only HTTP(S). Other dynamic internal navigation uses constants or fixed route prefixes with encoded route components.
+
+No package override and no forced audit fix were used.
+
+### Audit delta
+
+| Scope | Before | After |
+|---|---:|---:|
+| Production (`npm audit --omit=dev`) | 9 affected: 8 high, 1 moderate | 2 affected: 0 critical, 0 high, 2 moderate |
+| Full dependency tree (`npm audit`) | 18 affected: 1 critical, 13 high, 2 moderate, 2 low | 9 affected: 1 critical, 3 high, 5 moderate, 0 low |
+
+The only residual production findings are `react-router@6.30.6` and its direct wrapper `react-router-dom@6.30.6`, both reported as moderate and both requiring the React Router 7 major line for an upstream fix:
+
+- CVE-2025-68470 / GHSA-wrjc-x8rr-h8h6 concerns backslash-based open redirects in `Link`/`useNavigate`. External return destinations in this application are now constrained by the canonical allowlisted same-origin resolver, including the previously direct authenticated-session fast path. Mandatory malicious-path regression cases pass.
+- GHSA-337j-9hxr-rhxg concerns error deserialization during React Router SSR hydration. This application uses declarative `BrowserRouter`; it has no React Router Data/Framework mode, server rendering, hydration data, RSC, or prerender execution path.
+
+The residual full-tree findings are development/build-only: Vitest UI-server exposure (critical; the UI server is not enabled and acceptance uses `vitest run`), Vite dev-server findings (high; production serves static build output), `brace-expansion` through lint tooling (high), `form-data` through jsdom (high), and moderate `esbuild`, `@vitest/mocker`, and `vite-node` findings. They remain bounded maintenance debt and are not shipped application execution paths.
+
+### Regression and runtime evidence
+
+- Focused return-path/navigation suite: 6 files, 70 tests passed, including malicious encoded, double-encoded, protocol-relative, and backslash destinations.
+- Realtime and PDF-export checks: 2 files, 3 tests passed using the real Socket.IO client construction and real jsPDF/autotable generation paths.
+- Full frontend suite: 92 files, 744 tests passed.
+- Typecheck: passed.
+- Production build: passed; the existing chunk-size warning remains nonblocking.
+- Correction-scoped ESLint: passed. The pre-existing broad lint findings outside this correction remain separately classified.
+- `npm ls`: exit 0 with no invalid or missing dependency entries.
+- True browser viewport smoke: 1440, 768, and 390 pixels passed for shared login, Creator Entry, campaign return, and guarded Creator routing, with no horizontal overflow.
+
+### Final bounded classification
+
+No high or critical finding remains in the production dependency audit. React Router 7 is not required for current I7 acceptance because the browser-relevant input is locally constrained and the other advisory's execution mode is absent; the major upgrade remains explicit future maintenance debt.
+
+```text
+FRONTEND_DEPENDENCY_SECURITY =
+PASS_WITH_NONBLOCKING_DEBT
+```
