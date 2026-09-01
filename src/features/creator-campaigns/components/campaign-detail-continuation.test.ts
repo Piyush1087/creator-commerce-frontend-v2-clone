@@ -5,13 +5,11 @@ import {
   fireEvent,
   render,
   screen,
-  waitFor,
 } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MarketplaceDetailResponse } from "../contracts/creator-campaigns.contracts";
-import { readCreatorEntryContinuation } from "../../creator-onboarding/utils/creator-entry-continuation-session";
 import { CampaignDetailWorkspace } from "./CampaignDetailWorkspace";
 
 const mocks = vi.hoisted(() => ({ issue: vi.fn() }));
@@ -80,14 +78,11 @@ function renderCampaign(inviteToken?: string) {
   );
 }
 
-beforeEach(() => {
-  sessionStorage.clear();
-  mocks.issue.mockReset();
-});
+beforeEach(() => mocks.issue.mockReset());
 afterEach(cleanup);
 
 describe("public Campaign Creator Entry continuation", () => {
-  it("issues exactly once, stores the opaque token, and enters Creator Entry", async () => {
+  it("issues exactly once without a JavaScript token and enters Creator Entry", async () => {
     let complete: ((value: unknown) => void) | undefined;
     mocks.issue.mockReturnValue(
       new Promise((resolve) => {
@@ -103,11 +98,12 @@ describe("public Campaign Creator Entry continuation", () => {
     expect(mocks.issue).toHaveBeenCalledTimes(1);
     complete?.({
       intent: "CAMPAIGN_APPLY",
-      continuationToken: "A".repeat(43),
       expiresAt: "2030-01-01T00:00:00.000Z",
+      continuationPresent: true,
     });
     expect(await screen.findByText("Creator Entry reached")).toBeTruthy();
-    expect(readCreatorEntryContinuation()).toBe("A".repeat(43));
+    expect(mocks.issue).toHaveBeenCalledWith("campaign-1");
+    expect(document.body.textContent).not.toContain("continuationToken");
   });
 
   it("preserves invite-token Campaign-owned sign-in and does not issue a generic continuation", async () => {
@@ -117,6 +113,5 @@ describe("public Campaign Creator Entry continuation", () => {
     );
     expect(await screen.findByText("Shared login reached")).toBeTruthy();
     expect(mocks.issue).not.toHaveBeenCalled();
-    expect(readCreatorEntryContinuation()).toBeNull();
   });
 });

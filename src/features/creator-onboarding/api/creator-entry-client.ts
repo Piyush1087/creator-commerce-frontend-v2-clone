@@ -7,6 +7,7 @@ import {
 import { env } from "../../../shared/config/env";
 import type {
   CampaignContinuationIssued,
+  CampaignContinuationPresence,
   CampaignContinuationResolution,
   CreatorEntryState,
   InstagramAuthorization,
@@ -108,11 +109,26 @@ export const completeCreatorInstagramReconnect = (
     "POST",
     body,
   );
-export const resolveCampaignApplyContinuation = (continuationToken: string) =>
+export const fetchCampaignApplyContinuationStatus = async () =>
+  read<CampaignContinuationPresence>(
+    await fetch(`${BASE}/campaign-apply/continuation/status`, {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    }),
+  );
+export const discardCampaignApplyContinuation = async () =>
+  read<CampaignContinuationPresence>(
+    await fetch(`${BASE}/campaign-apply/continuation/discard`, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    }),
+  );
+export const resolveCampaignApplyContinuation = () =>
   authenticated<CampaignContinuationResolution>(
     "/campaign-apply/continuation/resolve",
     "POST",
-    { continuationToken },
   );
 
 export async function issueCampaignApplyContinuation(

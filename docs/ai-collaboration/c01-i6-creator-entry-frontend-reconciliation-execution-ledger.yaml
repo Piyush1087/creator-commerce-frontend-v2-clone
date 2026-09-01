@@ -1,7 +1,7 @@
 run_id: C01-I6-FRONTEND
 frontend_starting_sha: 3bf9c37adf440eff88e3ccbc681bccfa27511be6
 frontend_branch: c01/i6-creator-entry-frontend-reconciliation
-backend_contract_sha: aa3b726534165f7a8bc8018c40113b8e14d4db60
+backend_contract_sha: 5ab702647c0f606d514161ca694c9c55032de69a
 systems_review:
   initial_checkpoint: b5ca4688da20e3055ab322b895cd92dfa50a4189
   result: BOUNDED_SETTINGS_GUARD_SCOPE_CORRECTION
@@ -44,19 +44,38 @@ creator_settings:
   blanket_creator_platform_guard: false
   section_level_product_authority: DEFERRED_TO_SETTINGS
 campaign_continuation:
-  storage: SESSION_ONLY_OPAQUE_43_CHAR_BASE64URL
-  issuance: PUBLIC_POST_NO_BODY
-  binding: AUTHENTICATED_RESOLVE_TOKEN_ONLY
-  pending: TOKEN_RETAINED
-  completion: TOKEN_CLEARED_AFTER_READY_HANDOFF
+  storage: HTTPONLY_FIRST_PARTY_OPAQUE_COOKIE_REFERENCE
+  issuance: PUBLIC_POST_NO_BODY_TOKEN_FREE_JSON
+  presence: PUBLIC_BOOLEAN_STATUS_WITH_CREDENTIALS
+  discard: PUBLIC_COOKIE_CLEAR_WITHOUT_DATABASE_MUTATION
+  binding: AUTHENTICATED_COOKIE_RESOLVE_NO_BODY
+  pending: SERVER_REFERENCE_RETAINED
+  completion: SERVER_IDEMPOTENCY_GRACE_THEN_COOKIE_CLEAR
   return_route: /creator/marketplace/:campaignId
   auto_apply: NONE
+pre_i7_continuation_durability:
+  status: IMPLEMENTED
+  frontend_starting_sha: 17e44abf68d9e107cdaad6454d1ba9c73c05a680
+  backend_contract_sha: 5ab702647c0f606d514161ca694c9c55032de69a
+  raw_token_in_javascript: NONE
+  session_storage: NONE
+  local_storage: NONE
+  url_transport: NONE
+  unauthenticated_recovery_source: SERVER_BOOLEAN_PRESENCE
+  authenticated_recovery_source: COOKIE_BACKED_SERVER_RESOLVE
+  browser_close_reopen: RECOVERABLE
+  pending_reference: RETAINED_SERVER_SIDE
+  explicit_discard: SERVER_COOKIE_CLEAR
+  invitation_sign_in_return: UNCHANGED
+  campaign_mutations: NONE
 direct_entry_handoff: /creator/home
 invitation_compatibility: CAMPAIGN_OWNED_SIGN_IN_RETURN_PRESERVED_NO_GENERIC_CONTINUATION
 tests:
   status: PASS
-  files: 87
-  assertions: 677
+  files: 86
+  assertions: 676
+  pre_i7_focused_files: 4
+  pre_i7_focused_assertions: 26
   creator_entry_component_contract_guard_callback_and_continuation: PASS
   creator_settings_guard_scope_correction: PASS
   shared_auth_creator_brand_regression: PASS
@@ -74,7 +93,7 @@ responsive_validation:
   requested_browser_viewport_override: TOOL_DID_NOT_APPLY_REQUESTED_DIMENSIONS
 accessibility_validation:
   labels_keyboard_actions_busy_status_live_regions_error_roles: PASS
-backend_changes: NONE
+backend_changes: EXTERNAL_PRE_I7_BOUNDED_TRANSPORT_CORRECTION_AT_5ab702647c0f606d514161ca694c9c55032de69a
 migrations: NONE
 meta_changes: NONE
 persistent_db_changes: NONE

@@ -11,6 +11,8 @@ import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import {
   authorizeCreatorInstagram,
   authorizeCreatorInstagramReconnect,
+  discardCampaignApplyContinuation,
+  fetchCampaignApplyContinuationStatus,
   fetchCreatorEntryState,
   registerCreatorGoogle,
   registerCreatorPassword,
@@ -20,10 +22,6 @@ import {
   verifyCreatorRegistrationOtp,
 } from "../api/creator-entry-client";
 import type { CreatorEntryState } from "../contracts/creator-entry.contracts";
-import {
-  clearCreatorEntryContinuation,
-  readCreatorEntryContinuation,
-} from "../utils/creator-entry-continuation-session";
 import { saveCreatorInstagramFlowMode } from "../utils/creator-entry-oauth-session";
 import "../creator-onboarding.css";
 
@@ -109,39 +107,44 @@ export function CreatorEntryView() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<EntryError | null>(null);
-  const continuation = readCreatorEntryContinuation();
+  const [continuationPresent, setContinuationPresent] = useState<
+    boolean | null
+  >(null);
 
   const evaluate = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const state = await fetchCreatorEntryState();
+      const [state, continuationStatus] = await Promise.all([
+        fetchCreatorEntryState(),
+        fetchCampaignApplyContinuationStatus(),
+      ]);
       setEntryState(state);
-      const token = readCreatorEntryContinuation();
-      if (token) {
+      setContinuationPresent(continuationStatus.present);
+      if (continuationStatus.present) {
         try {
-          const resolution = await resolveCampaignApplyContinuation(token);
+          const resolution = await resolveCampaignApplyContinuation();
           if (resolution.status === "READY_TO_RETURN") {
-            clearCreatorEntryContinuation();
             navigate(
               `/creator/marketplace/${encodeURIComponent(resolution.campaign.campaignId)}`,
               { replace: true },
             );
             return;
           }
+          setEntryState({ ...state, nextAction: resolution.nextAction });
         } catch (resolutionError) {
           const described = describeError(resolutionError);
           if (
             described.code === "CREATOR_ENTRY_CONTINUATION_EXPIRED" ||
             described.code === "CREATOR_ENTRY_CONTINUATION_NOT_FOUND"
           ) {
-            clearCreatorEntryContinuation();
+            setContinuationPresent(false);
           }
           setError(described);
           return;
         }
       }
-      if (state.canEnterCreatorPlatform && !token) {
+      if (state.canEnterCreatorPlatform && !continuationStatus.present) {
         navigate(AUTH_ROUTES.creatorHome, { replace: true });
       }
     } catch (stateError) {
@@ -152,8 +155,37 @@ export function CreatorEntryView() {
   }, [navigate]);
 
   useEffect(() => {
-    if (session.status === "AUTHENTICATED") void evaluate();
+    if (session.status === "AUTHENTICATED") {
+      void evaluate();
+      return;
+    }
+    if (session.status === "UNAUTHENTICATED") {
+      let active = true;
+      void fetchCampaignApplyContinuationStatus()
+        .then(({ present }) => {
+          if (active) setContinuationPresent(present);
+        })
+        .catch(() => {
+          if (active) setContinuationPresent(false);
+        });
+      return () => {
+        active = false;
+      };
+    }
   }, [evaluate, session.status]);
+
+  const discardContinuation = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await discardCampaignApplyContinuation();
+      setContinuationPresent(false);
+    } catch (discardError) {
+      setError(describeError(discardError));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submitPassword = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -249,7 +281,7 @@ export function CreatorEntryView() {
           <span className="cob-badge">Creator Entry</span>
           <h1>Create your Creator account</h1>
           <p>
-            {continuation
+            {continuationPresent
               ? "Create or sign in to your Creator account. After Instagram setup, we’ll return you to the campaign."
               : "Create or sign in, connect your professional Instagram account, and enter Creator Shop."}
           </p>
@@ -337,14 +369,12 @@ export function CreatorEntryView() {
                   Sign in
                 </Link>
               </p>
-              {continuation ? (
+              {continuationPresent ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => {
-                    clearCreatorEntryContinuation();
-                    window.location.reload();
-                  }}
+                  disabled={busy}
+                  onClick={() => void discardContinuation()}
                 >
                   Discard campaign setup
                 </Button>

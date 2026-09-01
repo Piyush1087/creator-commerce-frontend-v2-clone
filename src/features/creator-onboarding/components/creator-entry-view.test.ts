@@ -11,13 +11,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CreatorEntryState } from "../contracts/creator-entry.contracts";
-import { saveCreatorEntryContinuation } from "../utils/creator-entry-continuation-session";
-import { readCreatorEntryContinuation } from "../utils/creator-entry-continuation-session";
 import { ApiRequestError } from "../../../shared/api/parse-api-error";
 import { CreatorEntryView } from "./creator-entry-view";
 
 const mocks = vi.hoisted(() => ({
   session: vi.fn(),
+  continuationStatus: vi.fn(),
+  discardContinuation: vi.fn(),
   fetchState: vi.fn(),
   resolve: vi.fn(),
   revalidate: vi.fn(),
@@ -45,6 +45,8 @@ vi.mock("../../auth/components/google-sign-in-button", () => ({
 vi.mock("../api/creator-entry-client", () => ({
   authorizeCreatorInstagram: vi.fn(),
   authorizeCreatorInstagramReconnect: vi.fn(),
+  discardCampaignApplyContinuation: mocks.discardContinuation,
+  fetchCampaignApplyContinuationStatus: mocks.continuationStatus,
   fetchCreatorEntryState: mocks.fetchState,
   registerCreatorGoogle: mocks.registerGoogle,
   registerCreatorPassword: mocks.registerPassword,
@@ -112,7 +114,10 @@ function renderEntry() {
 }
 
 beforeEach(() => {
-  sessionStorage.clear();
+  mocks.continuationStatus.mockReset();
+  mocks.continuationStatus.mockResolvedValue({ present: false });
+  mocks.discardContinuation.mockReset();
+  mocks.discardContinuation.mockResolvedValue({ present: false });
   mocks.fetchState.mockReset();
   mocks.resolve.mockReset();
   mocks.revalidate.mockReset();
@@ -140,17 +145,25 @@ describe("Creator Entry state surface", () => {
     ).toBe("/login");
   });
 
-  it("renders campaign context without exposing campaign data", () => {
+  it("recovers campaign context from server presence after a component remount", async () => {
     mocks.session.mockReturnValue({
       accessToken: null,
       accessTokenExpiresAt: null,
       currentUser: null,
       status: "UNAUTHENTICATED",
     });
-    saveCreatorEntryContinuation("A".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
+    const firstContext = renderEntry();
+    expect(
+      await screen.findByText(/we’ll return you to the campaign/i),
+    ).toBeTruthy();
+    firstContext.unmount();
     renderEntry();
-    expect(screen.getByText(/we’ll return you to the campaign/i)).toBeTruthy();
-    expect(document.body.textContent).not.toContain("A".repeat(43));
+    expect(
+      await screen.findByText(/we’ll return you to the campaign/i),
+    ).toBeTruthy();
+    expect(mocks.continuationStatus).toHaveBeenCalledTimes(2);
+    expect(document.body.textContent).not.toContain("continuationToken");
   });
 
   it("moves password registration to verification and supports verify plus resend", async () => {
@@ -290,7 +303,7 @@ describe("Creator Entry state surface", () => {
 
   it("retains a pending Campaign continuation while rendering backend next action", async () => {
     mocks.session.mockReturnValue(creator);
-    saveCreatorEntryContinuation("P".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue(incomplete);
     mocks.resolve.mockResolvedValue({
       status: "PENDING_CREATOR_ENTRY",
@@ -301,12 +314,13 @@ describe("Creator Entry state surface", () => {
     expect(
       await screen.findByRole("button", { name: "Connect Instagram" }),
     ).toBeTruthy();
-    expect(readCreatorEntryContinuation()).toBe("P".repeat(43));
+    expect(mocks.resolve).toHaveBeenCalledWith();
+    expect(mocks.discardContinuation).not.toHaveBeenCalled();
   });
 
-  it("clears a ready continuation and returns to Campaign detail without opening Apply", async () => {
+  it("returns ready continuation to Campaign detail without opening Apply", async () => {
     mocks.session.mockReturnValue(creator);
-    saveCreatorEntryContinuation("R".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue({
       ...incomplete,
       canEnterCreatorPlatform: true,
@@ -322,12 +336,12 @@ describe("Creator Entry state surface", () => {
     expect(
       await screen.findByText("Campaign detail rendered; application closed"),
     ).toBeTruthy();
-    expect(readCreatorEntryContinuation()).toBeNull();
+    expect(mocks.resolve).toHaveBeenCalledWith();
   });
 
-  it("clears expired continuation and provides Marketplace recovery", async () => {
+  it("uses backend-cleared expired continuation and provides Marketplace recovery", async () => {
     mocks.session.mockReturnValue(creator);
-    saveCreatorEntryContinuation("E".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue(incomplete);
     mocks.resolve.mockRejectedValue(
       new ApiRequestError({
@@ -340,7 +354,6 @@ describe("Creator Entry state surface", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /campaign setup link expired/i,
     );
-    expect(readCreatorEntryContinuation()).toBeNull();
     expect(
       screen.getByRole("button", { name: "Return to Marketplace" }),
     ).toBeTruthy();
@@ -348,7 +361,7 @@ describe("Creator Entry state surface", () => {
 
   it("fails closed and retains an identity-conflicted continuation", async () => {
     mocks.session.mockReturnValue(creator);
-    saveCreatorEntryContinuation("I".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue(incomplete);
     mocks.resolve.mockRejectedValue(
       new ApiRequestError({
@@ -361,12 +374,12 @@ describe("Creator Entry state surface", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /different signed-in account/i,
     );
-    expect(readCreatorEntryContinuation()).toBe("I".repeat(43));
+    expect(mocks.discardContinuation).not.toHaveBeenCalled();
   });
 
-  it("clears a continuation the backend cannot find", async () => {
+  it("uses backend-cleared not-found continuation recovery", async () => {
     mocks.session.mockReturnValue(creator);
-    saveCreatorEntryContinuation("N".repeat(43));
+    mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue(incomplete);
     mocks.resolve.mockRejectedValue(
       new ApiRequestError({
@@ -379,6 +392,27 @@ describe("Creator Entry state surface", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /unavailable/i,
     );
-    expect(readCreatorEntryContinuation()).toBeNull();
+  });
+
+  it("discards only through the server endpoint", async () => {
+    mocks.session.mockReturnValue({
+      accessToken: null,
+      accessTokenExpiresAt: null,
+      currentUser: null,
+      status: "UNAUTHENTICATED",
+    });
+    mocks.continuationStatus.mockResolvedValue({ present: true });
+    renderEntry();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Discard campaign setup" }),
+    );
+    await waitFor(() =>
+      expect(mocks.discardContinuation).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Discard campaign setup" }),
+      ).toBeNull(),
+    );
   });
 });

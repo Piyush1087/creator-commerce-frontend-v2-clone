@@ -11,6 +11,8 @@ import {
   authorizeCreatorInstagramReconnect,
   completeCreatorInstagram,
   completeCreatorInstagramReconnect,
+  discardCampaignApplyContinuation,
+  fetchCampaignApplyContinuationStatus,
   fetchCreatorEntryState,
   issueCampaignApplyContinuation,
   registerCreatorGoogle,
@@ -131,33 +133,46 @@ describe("Creator Entry API authority", () => {
     expect(bodies).not.toContain("returnUrl");
   });
 
-  it("issues once without a body and resolves using only the opaque token", async () => {
+  it("uses credentialed cookie transport without exposing a JavaScript token", async () => {
     adoptAuthSession(session);
-    const token = "A".repeat(43);
     fetchMock
       .mockResolvedValueOnce(
         response(
           {
             intent: "CAMPAIGN_APPLY",
-            continuationToken: token,
             expiresAt: "2030-01-01T00:00:00.000Z",
+            continuationPresent: true,
           },
           201,
         ),
       )
+      .mockResolvedValueOnce(response({ present: true }))
       .mockResolvedValueOnce(
         response({
           status: "PENDING_CREATOR_ENTRY",
           intent: "CAMPAIGN_APPLY",
           nextAction: "CONNECT_INSTAGRAM",
         }),
-      );
-    await issueCampaignApplyContinuation("campaign-1");
-    await resolveCampaignApplyContinuation(token);
+      )
+      .mockResolvedValueOnce(response({ present: false }));
+    const issued = await issueCampaignApplyContinuation("campaign-1");
+    await fetchCampaignApplyContinuationStatus();
+    await resolveCampaignApplyContinuation();
+    await discardCampaignApplyContinuation();
+    expect(issued).not.toHaveProperty("continuationToken");
     expect(fetchMock.mock.calls[0][1]?.body).toBeUndefined();
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
-      continuationToken: token,
-    });
+    expect(fetchMock.mock.calls[0][1]?.credentials).toBe("include");
+    expect(fetchMock.mock.calls[1][1]?.credentials).toBe("include");
+    expect(fetchMock.mock.calls[2][1]?.body).toBeUndefined();
+    expect(fetchMock.mock.calls[2][1]?.credentials).toBe("include");
+    expect(fetchMock.mock.calls[3][1]?.body).toBeUndefined();
+    expect(fetchMock.mock.calls[3][1]?.credentials).toBe("include");
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("/apply-continuation"),
+      expect.stringContaining("/continuation/status"),
+      expect.stringContaining("/continuation/resolve"),
+      expect.stringContaining("/continuation/discard"),
+    ]);
   });
 
   it("preserves top-level backend error codes for bounded UI handling", async () => {

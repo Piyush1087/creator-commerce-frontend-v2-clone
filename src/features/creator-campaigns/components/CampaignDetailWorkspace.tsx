@@ -27,7 +27,6 @@ import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";
 import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
-import { saveCreatorEntryContinuation } from "../../creator-onboarding/utils/creator-entry-continuation-session";
 
 import "../creator-campaigns.css";
 
@@ -177,10 +176,7 @@ export function CampaignDetailWorkspace({
       if (continuationIssuing) return;
       setContinuationIssuing(true);
       try {
-        const issued = await issueCampaignApplyContinuation(
-          campaign.campaign_id,
-        );
-        saveCreatorEntryContinuation(issued.continuationToken);
+        await issueCampaignApplyContinuation(campaign.campaign_id);
         navigate("/creator/onboarding");
       } catch (issueError) {
         setShareMessage(

@@ -8,7 +8,6 @@ const runtime = [
   "src/features/creator-onboarding/api/creator-entry-client.ts",
   "src/features/creator-onboarding/components/creator-entry-view.tsx",
   "src/features/creator-onboarding/components/creator-platform-route-guard.tsx",
-  "src/features/creator-onboarding/utils/creator-entry-continuation-session.ts",
   "src/pages/creator/onboarding/creator-instagram-oauth-callback-page.tsx",
   "src/routes/creator-onboarding-app.tsx",
 ]
@@ -35,14 +34,29 @@ describe("C01 Creator Entry architecture", () => {
       expect(runtime).not.toContain(forbidden);
   });
 
-  it("keeps continuation secrets session-only and out of URLs/logging", () => {
-    const storage = read(
-      "src/features/creator-onboarding/utils/creator-entry-continuation-session.ts",
+  it("uses only HttpOnly server transport with no JavaScript continuation secret", () => {
+    const continuationRuntime = [
+      "src/features/creator-onboarding/api/creator-entry-client.ts",
+      "src/features/creator-onboarding/components/creator-entry-view.tsx",
+      "src/features/creator-onboarding/contracts/creator-entry.contracts.ts",
+      "src/features/creator-campaigns/components/CampaignDetailWorkspace.tsx",
+    ]
+      .map(read)
+      .join("\n");
+    for (const forbidden of [
+      "continuationToken",
+      "sessionStorage",
+      "localStorage",
+      "document.cookie",
+      "URLSearchParams",
+      "console.",
+    ])
+      expect(continuationRuntime).not.toContain(forbidden);
+    expect(continuationRuntime).toContain(
+      "fetchCampaignApplyContinuationStatus",
     );
-    expect(storage).toContain("sessionStorage");
-    expect(storage).not.toContain("localStorage");
-    expect(storage).not.toContain("URLSearchParams");
-    expect(storage).not.toContain("console.");
+    expect(continuationRuntime).toContain("discardCampaignApplyContinuation");
+    expect(continuationRuntime).toContain("resolveCampaignApplyContinuation()");
   });
 
   it("guards Creator product routes without changing Brand routes", () => {

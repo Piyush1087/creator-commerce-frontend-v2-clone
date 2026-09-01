@@ -44,9 +44,11 @@ export type InstagramRevalidation = {
 
 export type CampaignContinuationIssued = {
   intent: "CAMPAIGN_APPLY";
-  continuationToken: string;
   expiresAt: string;
+  continuationPresent: true;
 };
+
+export type CampaignContinuationPresence = { present: boolean };
 
 export type CampaignContinuationResolution =
   | {
