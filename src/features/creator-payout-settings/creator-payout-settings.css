@@ -1,0 +1,181 @@
+.creator-payout-settings {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.creator-payout-settings--loading {
+  min-height: 12rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.creator-payout-settings__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+  min-width: 0;
+  padding: var(--space-sm);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-subtle);
+}
+
+.creator-payout-settings__summary > .aurora-button {
+  grid-column: 1 / -1;
+}
+
+.creator-payout-settings__icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-workflow);
+  color: var(--color-primary);
+}
+
+.creator-payout-settings__summary-copy {
+  min-width: 0;
+}
+
+.creator-payout-settings__summary-copy p,
+.creator-payout-settings__empty p,
+.creator-payout-settings__notice {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.creator-payout-settings__summary-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.creator-payout-settings__masked {
+  font-family: ui-monospace, monospace;
+  color: var(--text-high);
+}
+
+.creator-payout-settings__meta,
+.creator-payout-settings__notice {
+  color: var(--text-muted);
+  font-size: var(--size-body);
+}
+
+.creator-payout-settings__empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: var(--space-sm);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+}
+
+.creator-payout-settings__legal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.creator-payout-settings__legal-grid > div {
+  min-width: 0;
+  padding: var(--space-sm);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-subtle);
+}
+
+.creator-payout-settings__legal-grid dt {
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.creator-payout-settings__legal-grid dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.creator-payout-settings__drawer-body,
+.creator-payout-settings__form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.creator-payout-settings__drawer-actions {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .creator-payout-settings__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .creator-payout-settings__summary > .aurora-button {
+    grid-column: auto;
+  }
+
+  .creator-payout-settings__legal-grid,
+  .creator-payout-settings__form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  body.creator-payout-sheet-open .aurora-sidedrawer-overlay {
+    align-items: flex-end;
+  }
+
+  body.creator-payout-sheet-open .aurora-sidedrawer {
+    position: relative;
+    width: 100% !important;
+    max-width: 100%;
+    height: min(92dvh, 48rem);
+    border-radius: var(--radius-card-standard) var(--radius-card-standard) 0 0;
+  }
+
+  body.creator-payout-sheet-open .aurora-sidedrawer::before {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    width: 2.5rem;
+    height: 0.25rem;
+    border-radius: var(--radius-pill);
+    background: var(--border-default);
+    transform: translateX(-50%);
+  }
+
+  body.creator-payout-sheet-open .aurora-sidedrawer__header,
+  body.creator-payout-sheet-open .aurora-sidedrawer__content,
+  body.creator-payout-sheet-open .aurora-sidedrawer__footer {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
+  .creator-payout-settings__drawer-actions {
+    flex-direction: column-reverse;
+  }
+
+  .creator-payout-settings__drawer-actions .aurora-button,
+  .creator-payout-settings .settings-card__header > .aurora-button,
+  .creator-payout-settings__summary > .aurora-button {
+    width: 100%;
+  }
+}
