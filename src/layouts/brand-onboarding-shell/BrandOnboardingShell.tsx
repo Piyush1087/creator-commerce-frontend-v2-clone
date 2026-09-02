@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
+import { useLogout } from "../../shared/auth/use-logout";
 import "./brand-onboarding-shell.css";
 
 const MOBILE_NAV = [
@@ -29,6 +30,7 @@ const DRAWER_NAV = [
 
 export function BrandOnboardingShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const logout = useLogout();
   const closeDrawer = () => setDrawerOpen(false);
 
   return (
@@ -69,7 +71,9 @@ export function BrandOnboardingShell() {
           if (drawer) drawer.inert = !drawerOpen;
         }}
         className={
-          drawerOpen ? "bons-shell__drawer bons-shell__drawer--open" : "bons-shell__drawer"
+          drawerOpen
+            ? "bons-shell__drawer bons-shell__drawer--open"
+            : "bons-shell__drawer"
         }
         aria-hidden={!drawerOpen}
       >
@@ -98,7 +102,10 @@ export function BrandOnboardingShell() {
         <button
           type="button"
           className="bons-shell__drawer-logout"
-          onClick={closeDrawer}
+          onClick={() => {
+            closeDrawer();
+            logout();
+          }}
         >
           <LogOut size={18} aria-hidden />
           Log out

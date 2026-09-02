@@ -1,8 +1,7 @@
 import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
-import { loadAuthSession } from "../../shared/auth/auth-session";
+import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { useLogout } from "../../shared/auth/use-logout";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import {
@@ -19,23 +18,10 @@ type MobileNavigationProps = {
 };
 
 export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
-  const drawerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!isOpen) return;
-    // The background is already inert by this effect, so activeElement may be body.
-    const opener = document.querySelector<HTMLElement>(
-      '[aria-controls="application-mobile-navigation"]',
-    );
-    drawerRef.current
-      ?.querySelector<HTMLButtonElement>("button")
-      ?.focus({ preventScroll: true });
-    return () => {
-      opener?.focus();
-    };
-  }, [isOpen]);
   const location = useLocation();
   const logout = useLogout();
-  const role = normalizeUserRole(loadAuthSession()?.user.role);
+  const session = useAuthSession();
+  const role = normalizeUserRole(session.currentUser?.role);
   const navItems = getSidebarNavItemsForRole(role);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
@@ -52,37 +38,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
         }}
         role="presentation"
       />
-      <div
-        ref={drawerRef}
-        id="application-mobile-navigation"
-        role="dialog"
-        aria-modal={isOpen ? true : undefined}
-        aria-label="Application navigation"
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            onClose();
-          }
-          if (event.key !== "Tab") return;
-          const items = Array.from(
-            event.currentTarget.querySelectorAll<HTMLElement>(
-              "a[href], button:not(:disabled)",
-            ),
-          );
-          const first = items[0];
-          const last = items[items.length - 1];
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last?.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first?.focus();
-          }
-        }}
-        className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}
-        aria-hidden={!isOpen}
-        {...(!isOpen ? { inert: "" } : {})}
-      >
+      <aside className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}>
         <div className="aurora-drawer__header">
           <span className="aurora-drawer__title">The Creator Shop</span>
           <button
@@ -143,7 +99,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
             ) : null,
           )}
         </nav>
-      </div>
+      </aside>
     </>
   );
 }

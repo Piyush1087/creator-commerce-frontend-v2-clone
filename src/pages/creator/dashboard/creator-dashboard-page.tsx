@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 import { Button, Card } from "../../../design-system/aurora";
 import { AUTH_ROUTES } from "../../../features/auth/constants";
-import { loadAuthSession } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 
 export function CreatorDashboardPage() {
-  const session = loadAuthSession();
+  const session = useAuthSession();
 
   return (
     <div className="dashboard-content" style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -15,7 +15,9 @@ export function CreatorDashboardPage() {
         </h1>
         <p className="bob-muted" style={{ margin: "0 0 16px" }}>
           Browse campaigns, manage applications, and open chat when a brand approves you.
-          {session?.user.email ? ` Signed in as ${session.user.email}.` : ""}
+          {session.currentUser?.email
+            ? ` Signed in as ${session.currentUser.email}.`
+            : ""}
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           <Link to={AUTH_ROUTES.creatorMarketplace}>

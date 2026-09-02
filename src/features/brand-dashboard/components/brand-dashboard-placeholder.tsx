@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 
 import { Button, Card } from "../../../design-system/aurora";
-import { clearAuthSession, loadAuthSession } from "../../../shared/auth/auth-session";
+import { clearAuthSession } from "../../../shared/auth/auth-session";
+import { useAuthSession } from "../../../shared/auth/use-auth-session";
 
 export function BrandDashboardPlaceholder() {
   const navigate = useNavigate();
-  const session = loadAuthSession();
+  const session = useAuthSession();
 
   const handleLogout = () => {
     clearAuthSession();
@@ -29,7 +30,7 @@ export function BrandDashboardPlaceholder() {
         </h1>
         <p className="bob-muted" style={{ marginBottom: 24 }}>
           Coming soon. You are signed in
-          {session?.user?.email ? ` as ${session.user.email}` : ""}.
+          {session.currentUser?.email ? ` as ${session.currentUser.email}` : ""}.
         </p>
         <Button type="button" variant="secondary" onClick={() => handleLogout()}>
           Log out

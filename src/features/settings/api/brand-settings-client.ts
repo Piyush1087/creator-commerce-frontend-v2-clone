@@ -1,19 +1,28 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   BrandBillingProfileResponse,
   BrandGeneralResponse,
   BrandNotificationsResponse,
-  BrandWithdrawalAccountResponse,
   InviteTeamMemberPayload,
-  LinkBrandWithdrawalAccountPayload,
   UpdateBrandGeneralPayload,
   UpdateBrandNotificationsPayload,
   UpdateTeamRolePayload,
   UpsertBrandBillingProfilePayload,
+  TeamInvitationDispatch,
 } from "../contracts/brand-settings.contracts";
 
 const BASE = `${env.apiUrl}/api/v1/brand/settings`;
+
+export class BrandSettingsApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code: string | null,
+  ) {
+    super(message);
+  }
+}
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -21,7 +30,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -30,7 +41,13 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
       typeof (body as { message?: unknown }).message === "string"
         ? (body as { message: string }).message
         : `Request failed (${response.status}).`;
-    throw new Error(message);
+    const code =
+      typeof body === "object" &&
+      body !== null &&
+      typeof (body as { code?: unknown }).code === "string"
+        ? (body as { code: string }).code
+        : null;
+    throw new BrandSettingsApiError(message, response.status, code);
   }
   return body;
 }
@@ -38,7 +55,6 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
 function jsonHeaders(): HeadersInit {
   return {
     "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -71,32 +87,13 @@ export async function fetchBrandBillingProfile(): Promise<BrandBillingProfileRes
 
 export async function upsertBrandBillingProfile(
   payload: UpsertBrandBillingProfilePayload,
-): Promise<unknown> {
+): Promise<BrandBillingProfileResponse> {
   const response = await fetch(`${BASE}/billing-profile`, {
     method: "PATCH",
     headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  return readJsonOrThrow(response);
-}
-
-export async function fetchBrandWithdrawalAccount(): Promise<BrandWithdrawalAccountResponse> {
-  const response = await fetch(`${BASE}/withdrawal-account`, {
-    method: "GET",
-    headers: jsonHeaders(),
-  });
-  return (await readJsonOrThrow(response)) as BrandWithdrawalAccountResponse;
-}
-
-export async function linkBrandWithdrawalAccount(
-  payload: LinkBrandWithdrawalAccountPayload,
-): Promise<unknown> {
-  const response = await fetch(`${BASE}/withdrawal-account`, {
-    method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify(payload),
-  });
-  return readJsonOrThrow(response);
+  return (await readJsonOrThrow(response)) as BrandBillingProfileResponse;
 }
 
 export async function fetchBrandNotifications(): Promise<BrandNotificationsResponse> {
@@ -118,16 +115,25 @@ export async function updateBrandNotifications(
   return (await readJsonOrThrow(response)) as BrandNotificationsResponse;
 }
 
-export async function inviteBrandTeamMember(payload: InviteTeamMemberPayload): Promise<unknown> {
+export async function inviteBrandTeamMember(
+  payload: InviteTeamMemberPayload,
+): Promise<TeamInvitationDispatch> {
   const response = await fetch(`${BASE}/team/invite`, {
     method: "POST",
     headers: jsonHeaders(),
     body: JSON.stringify(payload),
   });
-  return readJsonOrThrow(response);
+  const result = (await readJsonOrThrow(response)) as TeamInvitationDispatch;
+  if (result?.delivery_status !== "DISPATCHED")
+    throw new Error(
+      "Invitation dispatch was not confirmed. Refresh the team list before trying again.",
+    );
+  return result;
 }
 
-export async function updateBrandTeamRole(payload: UpdateTeamRolePayload): Promise<unknown> {
+export async function updateBrandTeamRole(
+  payload: UpdateTeamRolePayload,
+): Promise<unknown> {
   const response = await fetch(`${BASE}/team/role`, {
     method: "PATCH",
     headers: jsonHeaders(),
@@ -136,15 +142,22 @@ export async function updateBrandTeamRole(payload: UpdateTeamRolePayload): Promi
   return readJsonOrThrow(response);
 }
 
-export async function revokeBrandTeamMember(membershipId: string): Promise<unknown> {
-  const response = await fetch(`${BASE}/team/${encodeURIComponent(membershipId)}`, {
-    method: "DELETE",
-    headers: jsonHeaders(),
-  });
+export async function revokeBrandTeamMember(
+  membershipId: string,
+): Promise<unknown> {
+  const response = await fetch(
+    `${BASE}/team/${encodeURIComponent(membershipId)}`,
+    {
+      method: "DELETE",
+      headers: jsonHeaders(),
+    },
+  );
   return readJsonOrThrow(response);
 }
 
-export async function cancelBrandTeamInvitation(invitationId: string): Promise<unknown> {
+export async function cancelBrandTeamInvitation(
+  invitationId: string,
+): Promise<unknown> {
   const response = await fetch(
     `${BASE}/team/invitations/${encodeURIComponent(invitationId)}`,
     {

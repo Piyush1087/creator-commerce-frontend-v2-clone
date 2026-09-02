@@ -317,10 +317,10 @@ export function resolveHeaderMeta(
       return { breadcrumb: "Settings", title: "Integrations" };
     }
     if (pathname.includes("/escrow")) {
-      return { breadcrumb: "Settings", title: "Secure Escrow" };
+      return { breadcrumb: "Settings", title: "Secure escrow" };
     }
     if (pathname.includes("/billing")) {
-      return { breadcrumb: "Settings", title: "Billing" };
+      return { breadcrumb: "Settings", title: "Billing overview" };
     }
     return { breadcrumb: "Settings", title: "General" };
   }

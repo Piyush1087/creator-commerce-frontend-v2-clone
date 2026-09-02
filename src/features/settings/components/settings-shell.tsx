@@ -1,5 +1,6 @@
 import { CreditCard, Puzzle, Settings2 } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import {
   BRAND_SETTINGS_ROUTES,
@@ -36,6 +37,14 @@ const FINANCE_SUB_NAV = [
 export function SettingsShell() {
   const location = useLocation();
   const showFinanceSubNav = isBrandFinanceRoute(location.pathname);
+  const tabsRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const activeTab = tabsRef.current?.querySelector<HTMLElement>(
+      ".brand-settings__tab--active",
+    );
+    activeTab?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [location.pathname]);
 
   return (
     <div className="brand-settings">
@@ -47,26 +56,29 @@ export function SettingsShell() {
         </p>
       </header>
 
-      <nav className="brand-settings__tabs" aria-label="Settings sections">
+      <nav
+        ref={tabsRef}
+        className="brand-settings__tabs"
+        aria-label="Settings sections"
+      >
         {BRAND_SETTINGS_TABS.map((tab) => {
           const Icon = tab.icon;
           const isFinanceTab = tab.id === "finance";
+          const isActive = isFinanceTab
+            ? showFinanceSubNav
+            : location.pathname === tab.to ||
+              location.pathname.startsWith(`${tab.to}/`);
 
           return (
-            <NavLink
+            <Link
               key={tab.id}
               to={tab.to}
-              end={!isFinanceTab}
-              className={({ isActive }) => {
-                const active = isFinanceTab
-                  ? isBrandFinanceRoute(location.pathname)
-                  : isActive;
-                return `brand-settings__tab ${active ? "brand-settings__tab--active" : ""}`;
-              }}
+              aria-current={isActive ? "page" : undefined}
+              className={`brand-settings__tab ${isActive ? "brand-settings__tab--active" : ""}`}
             >
               <Icon size={18} aria-hidden />
               {tab.label}
-            </NavLink>
+            </Link>
           );
         })}
       </nav>
