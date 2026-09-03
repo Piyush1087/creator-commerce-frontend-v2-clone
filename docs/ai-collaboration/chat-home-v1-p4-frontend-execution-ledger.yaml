@@ -2,7 +2,7 @@ program: CHAT_HOME_V1
 
 phase:
   id: P4
-  status: CANDIDATE_READY_FOR_HUMAN_GATE
+  status: HUMAN_EVIDENCE_COMPLETE_PENDING_SYSTEMS_ACCEPTANCE
 
 authority:
   product_sha: d69ba6b8cb331bfa36b450307d9defcd26d09c6e
@@ -13,6 +13,36 @@ frontend:
   source_branch: development
   source_sha: b50c36fd4b99b6e0ec0718291d794d7a58353f4c
   integration_branch: program/chat-home-v1
+
+backend_runtime:
+  sha: 1b9ed44b54df13e7357e91f16410b4df549a753c
+  branch: program/chat-home-v1
+  health_http_status: 200
+  health_status: ok
+  database_status: up
+  stable: true
+
+frontend_runtime:
+  sha: 20b14055017409d1d6b9d972f3a0dfccd79014a7
+  branch: program/chat-home-v1
+  port: 5173
+  stable: true
+
+fixture:
+  classification: LOCAL_DISPOSABLE_ACCEPTANCE_FIXTURE
+  database: chat_home_p3_module_boundary_01
+  user_id: 244023ed-0031-4e50-967c-ba58a4bc76f5
+  brand_id: 1af76731-f357-434f-96d3-2a37e5045e96
+  offering_id: 549768e1-7d6b-466f-8451-f1f3ea505215
+  campaign_id: 310e6b52-2001-4642-ba8d-d82190aa1ed1
+  campaign_name: Summer Launch Acceptance
+
+gemini:
+  credential: READY
+  provider: GEMINI
+  model: gemini-3.5-flash
+
+intelligence_seeded: false
 
 contract:
   surface: BRAND_HOME
@@ -184,21 +214,118 @@ checkpoint:
 
 human_gate:
   required: true
-  status: PENDING
+  status: HUMAN_EVIDENCE_COMPLETE_PENDING_SYSTEMS_ACCEPTANCE
   token_issued: false
+  authority: P4_HUMAN_E2E_FINAL_RESUME_04
+  authenticated_brand: true
+  conversation_id: 73a8a172-30fa-40d7-b76b-ca114c7ff55b
+  network_boundary:
+    permanent_chat_api_observed: true
+    permanent_chat_api: /api/v1/chat/*
+    legacy_copilot_api_from_home_chat: false
+    direct_domain_business_api_from_home_chat: false
   scenarios:
-    H1: PENDING_HUMAN_VALIDATION
-    H2: PENDING_HUMAN_VALIDATION
-    H3: PENDING_HUMAN_VALIDATION
-    H4: PENDING_HUMAN_VALIDATION
-    H5: PENDING_HUMAN_VALIDATION
-    H6: PENDING_HUMAN_VALIDATION
-    H7: PENDING_HUMAN_VALIDATION
-    H8: PENDING_HUMAN_VALIDATION
-    H9: PENDING_HUMAN_VALIDATION
-    H10: PENDING_HUMAN_VALIDATION
-    H11: PENDING_HUMAN_VALIDATION
-    H12: PENDING_HUMAN_VALIDATION
+    H1:
+      result: PASS
+      human_confirmed: true
+      authenticated_brand: true
+      notes: Brand Home briefing and permanent Ask Creator Shop were visible without legacy Chat controls or material layout breakage.
+    H2:
+      result: PASS
+      human_confirmed: NOT_REQUIRED
+      conversation_id: 73a8a172-30fa-40d7-b76b-ca114c7ff55b
+      network_request: POST /api/v1/chat/conversations
+      http_status: 201
+      scope: GLOBAL
+      notes: Fresh permanent Chat conversation became usable through the real UI.
+    H3:
+      result: PASS
+      human_confirmed: true
+      reload_persistence: PASS
+      privacy_basis: P3_ACCEPTED_BACKEND_USER_X_BRAND_ISOLATION
+      backend_response_status: ANSWERED
+      notes: Exact USER prompt and Gemini-backed ASSISTANT response persisted and reopened after a full page reload.
+    H4:
+      result: PASS
+      human_confirmed: true
+      backend_response_status: PARTIAL
+      grounding_source_types:
+        - CANONICAL
+        - INTELLIGENCE
+      entity_refs:
+        - BRAND:1af76731-f357-434f-96d3-2a37e5045e96
+        - OFFERING:549768e1-7d6b-466f-8451-f1f3ea505215
+      freshness_note_count: 1
+      limitation_count: 3
+      notes: Canonical Brand and Offering facts were rendered; zero-subject Intelligence was disclosed as not ready without fabricated facts.
+    H5:
+      result: PASS
+      human_confirmed: true
+      backend_response_status: ANSWERED
+      campaign_available_for_H6: true
+      test_campaign_name: Summer Launch Acceptance
+      grounding_source_types:
+        - CANONICAL
+      notes: Exactly one authorized Campaign was presented with the expected fixture identity.
+    H6:
+      result: PASS
+      human_confirmed: true
+      backend_response_status: NAVIGATION
+      destination_id: CAMPAIGNS
+      entity_type: CAMPAIGN
+      entity_id: 310e6b52-2001-4642-ba8d-d82190aa1ed1
+      final_path: /brand/uce/campaigns/310e6b52-2001-4642-ba8d-d82190aa1ed1
+      notes: The named authorized Campaign resolved to its specific internal detail path.
+    H7:
+      result: PASS
+      human_confirmed: true
+      evidence_mode: EXACT_BACKEND
+      stale_disclosure: NOT_TESTED
+      partial_disclosure: PASS
+      notes: The H4 PARTIAL response visibly separated canonical facts from unavailable Intelligence and listed limitations.
+    H8:
+      result: PASS
+      human_confirmed: true
+      viewport: 1440x900
+      horizontal_overflow: false
+      notes: Briefing, persistent Chat rail, readable conversation, composer, and recent chats were usable.
+    H9:
+      result: PASS
+      human_confirmed: true
+      viewport: 768x1024
+      horizontal_overflow: false
+      notes: Responsive layout, Chat, composer, recent chats, and primary controls remained usable.
+    H10:
+      result: PASS
+      human_confirmed: true
+      viewport: 390x844
+      fab: PASS
+      sheet: PASS
+      composer: PASS
+      send: PASS
+      recent_chats: PASS
+      conversation_selection: PASS
+      close_reopen: PASS
+      escape_close: PASS
+      horizontal_overflow: false
+      notes: A real mobile Chat turn completed and remained available after recent-chat selection, Escape, close, and reopen.
+    H11:
+      result: PASS
+      human_confirmed: true
+      legacy_usage_visible: false
+      legacy_hitl_visible: false
+      legacy_action_ui_visible: false
+      legacy_copilot_home_network: false
+      direct_domain_business_api_from_home_chat: false
+      notes: Permanent Chat exposed only conversation, source-disclosure, composer, and navigation-safe UI semantics.
+    H12:
+      result: PASS
+      human_confirmed: NOT_REQUIRED
+      material_console_errors: NONE
+      backend_runtime_stable: true
+      final_health_http_status: 200
+      database_status: up
+      notes: Only two non-material React Router v7 future-flag warnings were present; backend and database remained healthy.
 
 next_phase:
   p5_started: false
