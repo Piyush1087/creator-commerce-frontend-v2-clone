@@ -111,9 +111,12 @@ export function parseApiErrorBody(status: number, body: unknown): ApiRequestErro
     }
   }
 
+  const topLevelCode = typeof record.code === "string" ? record.code : undefined;
+
   return new ApiRequestError({
     message: nestHttpMessage(body) ?? `Request failed (${status}).`,
     status,
+    ...(topLevelCode ? { code: topLevelCode } : {}),
     ...(mapConflictFieldErrors(status, nestHttpMessage(body))),
   });
 }

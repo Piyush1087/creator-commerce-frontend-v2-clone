@@ -12,11 +12,6 @@ import {
 } from "../api/brand-client";
 import { GoogleVerifyModal } from "./google-verify-modal";
 import { ONBOARDING_ROUTES } from "../constants";
-import {
-  STUB_OTP_CODE,
-  STUB_OTP_TTL_MINUTES,
-  USE_REAL_BRAND_VERIFICATION_OTP,
-} from "../verification-otp.config";
 import { parseHostnameFromUrl } from "../mappers/map-brand-profile";
 import { loadBrandOnboardingSession } from "../session/onboarding-session";
 import {
@@ -138,20 +133,6 @@ export function BrandVerificationView() {
 
     setIsSending(true);
     try {
-      // Local Brand Step 6: no API / Postmark. Type 123456, then verify still hits the API.
-      if (!USE_REAL_BRAND_VERIFICATION_OTP) {
-        await new Promise((resolve) => window.setTimeout(resolve, 700));
-        setWorkEmail(email);
-        setOtpExpiresAt(Date.now() + STUB_OTP_TTL_MINUTES * 60 * 1000);
-        setOtpValues(Array(6).fill(""));
-        setStep("otp");
-        window.setTimeout(() => {
-          inputRefs.current[0]?.focus();
-        }, 100);
-        return;
-      }
-
-      /* PROD — real OTP send (active when USE_REAL_BRAND_VERIFICATION_OTP is true) */
       const result = await sendBrandVerificationOtp(session.brandProfileId, email);
       setWorkEmail(email);
       setOtpExpiresAt(new Date(result.expiresAt).getTime());
@@ -249,17 +230,6 @@ export function BrandVerificationView() {
 
     setIsVerifying(true);
     try {
-      // Local Brand Step 6: UI accepts 123456, then the API also accepts that same code.
-      if (!USE_REAL_BRAND_VERIFICATION_OTP) {
-        if (code !== STUB_OTP_CODE) {
-          setError("Invalid code. Please check your email and try again.");
-          setOtpValues(Array(6).fill(""));
-          inputRefs.current[0]?.focus();
-          return;
-        }
-      }
-
-      /* PROD — real OTP verify (USE_REAL_BRAND_VERIFICATION_OTP=true) */
       const result = await verifyBrandVerificationOtp(session.brandProfileId, {
         email: workEmail.trim(),
         otp: code,
