@@ -1,0 +1,63 @@
+name: C03 Stage B Frontend Browser Execution Base
+
+on:
+  push:
+    branches:
+      - c03/stage-b-execution-base
+  pull_request:
+    branches:
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c03-stage-b-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  execution-base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Runtime identity
+        run: |
+          node --version
+          npm --version
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Typecheck and production build
+        run: |
+          npm run typecheck
+          npm run build
+
+      - name: Full frontend baseline
+        run: npm test
+
+      - name: Install isolated Chromium
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Frontend startup and Chromium smoke
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/c03-stage-b-frontend.log 2>&1 &
+          ui_pid=$!
+          trap 'kill "$ui_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/ >/dev/null
+          npx --yes playwright@1.55.0 screenshot             --browser chromium             --viewport-size "1440,900"             http://127.0.0.1:4173/             /tmp/c03-stage-b-desktop.png
+          test -s /tmp/c03-stage-b-desktop.png
