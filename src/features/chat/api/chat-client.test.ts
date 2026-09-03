@@ -117,6 +117,43 @@ describe("permanent Chat API client", () => {
     });
   });
 
+  it("rejects an ungrounded recommendation with zero basis refs", async () => {
+    fetchMock.mockResolvedValueOnce(
+      response(
+        chatResponseFixture({
+          recommendation: {
+            text: "Ungrounded recommendation",
+            basisRefs: [],
+            nonMutating: true,
+          },
+        }),
+      ),
+    );
+
+    await expect(
+      postChatTurn(CHAT_TEST_IDS.conversation, {
+        message: "What should I do next?",
+      }),
+    ).rejects.toThrow("invalid Chat turn response");
+  });
+
+  it("accepts a grounded recommendation with at least one basis ref", async () => {
+    const grounded = chatResponseFixture({
+      recommendation: {
+        text: "Review the grounded Campaign result.",
+        basisRefs: ["campaign-current-read"],
+        nonMutating: true,
+      },
+    });
+    fetchMock.mockResolvedValueOnce(response(grounded));
+
+    await expect(
+      postChatTurn(CHAT_TEST_IDS.conversation, {
+        message: "What should I do next?",
+      }),
+    ).resolves.toEqual(grounded);
+  });
+
   it.each([
     "userId",
     "brandId",
