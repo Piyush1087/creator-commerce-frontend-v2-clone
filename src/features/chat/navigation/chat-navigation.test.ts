@@ -12,6 +12,13 @@ describe("code-owned Chat navigation", () => {
   it.each([
     [{ destinationId: "HOME" as const }, AUTH_ROUTES.brandDashboard],
     [{ destinationId: "BRAND_CENTRE" as const }, AUTH_ROUTES.brandCentre],
+    [
+      {
+        destinationId: "BRAND_CENTRE" as const,
+        entityRef: { type: "BRAND" as const, id: CHAT_TEST_IDS.brand },
+      },
+      AUTH_ROUTES.brandCentre,
+    ],
     [{ destinationId: "OFFERINGS" as const }, AUTH_ROUTES.brandCentreOfferings],
     [
       {
@@ -27,6 +34,29 @@ describe("code-owned Chat navigation", () => {
         entityRef: { type: "CAMPAIGN" as const, id: CHAT_TEST_IDS.campaign },
       },
       `/brand/uce/campaigns/${CHAT_TEST_IDS.campaign}`,
+    ],
+    [
+      { destinationId: "COLLABORATIONS" as const },
+      AUTH_ROUTES.brandCollaborations,
+    ],
+    [
+      {
+        destinationId: "COLLABORATIONS" as const,
+        entityRef: {
+          type: "COLLABORATION" as const,
+          id: CHAT_TEST_IDS.conversation,
+        },
+      },
+      `${AUTH_ROUTES.brandCollaborations}?thread=${CHAT_TEST_IDS.conversation}`,
+    ],
+    [{ destinationId: "SETTINGS" as const }, AUTH_ROUTES.brandSettings],
+    [
+      { destinationId: "SETTINGS_INTEGRATIONS" as const },
+      AUTH_ROUTES.brandSettingsIntegrations,
+    ],
+    [
+      { destinationId: "SETTINGS_BILLING" as const },
+      AUTH_ROUTES.brandSettingsBilling,
     ],
   ])("maps %o to the trusted route", (navigation, expected) => {
     expect(resolveChatNavigation(navigation)).toBe(expected);
@@ -45,6 +75,12 @@ describe("code-owned Chat navigation", () => {
         entityRef: { type: "CAMPAIGN", id: CHAT_TEST_IDS.campaign },
       }),
     ).toThrow(UnsafeChatNavigationError);
+    expect(() =>
+      resolveChatNavigation({
+        destinationId: "COLLABORATIONS",
+        entityRef: { type: "CAMPAIGN", id: CHAT_TEST_IDS.campaign },
+      }),
+    ).toThrow(UnsafeChatNavigationError);
   });
 
   it.each(["//evil.example", "\\evil", "%2Fadmin", "campaign/id"])(
@@ -60,6 +96,20 @@ describe("code-owned Chat navigation", () => {
   );
 
   it("rejects unknown destinations and arbitrary backend URLs at validation", () => {
+    expect(
+      ChatNavigationSchema.safeParse({
+        destinationId: "COLLABORATIONS",
+        entityRef: {
+          type: "COLLABORATION",
+          id: CHAT_TEST_IDS.conversation,
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      ChatNavigationSchema.safeParse({
+        destinationId: "SETTINGS_INTEGRATIONS",
+      }).success,
+    ).toBe(true);
     expect(
       ChatNavigationSchema.safeParse({ destinationId: "MARKETPLACE" }).success,
     ).toBe(false);

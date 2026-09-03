@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 const CHAT_ROOT = join(ROOT, "src", "features", "chat");
-const FROZEN_BASE = "b50c36fd4b99b6e0ec0718291d794d7a58353f4c";
+const P6_STARTING_SHA = "18e8363ac40b30a9248e6b529b857d3aa20e1fc0";
 
 function productionFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -80,7 +80,7 @@ describe("permanent Chat architecture boundary", () => {
       [
         "diff",
         "--name-only",
-        FROZEN_BASE,
+        P6_STARTING_SHA,
         "--",
         "src/routes",
         "src/layouts/app-shell/sidebar-items.ts",
@@ -90,19 +90,9 @@ describe("permanent Chat architecture boundary", () => {
     expect(routeDiff).toBe("");
   });
 
-  it("preserves the static Home briefing source byte-for-byte", () => {
-    const briefingDiff = execFileSync(
-      "git",
-      [
-        "diff",
-        "--name-only",
-        FROZEN_BASE,
-        "--",
-        "src/features/brand-dashboard/components/brand-home-briefing-workspace.tsx",
-        "src/features/brand-dashboard/mock-data/brand-home-mock.ts",
-      ],
-      { cwd: ROOT, encoding: "utf8" },
-    ).trim();
-    expect(briefingDiff).toBe("");
+  it("keeps permanent Chat independent from the Home data client", () => {
+    const source = productionSource();
+    expect(source).not.toContain("brand-home-client");
+    expect(source).not.toContain("/api/v1/brand/home");
   });
 });

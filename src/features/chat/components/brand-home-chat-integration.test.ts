@@ -24,6 +24,8 @@ import {
   chatConversationFixture,
   chatResponseFixture,
 } from "../testing/chat-fixtures";
+import { getBrandHome } from "../../brand-dashboard/api/brand-home-client";
+import { brandHomeResponseFixture } from "../../brand-dashboard/testing/brand-home-fixtures";
 
 vi.mock("../api/chat-client", () => ({
   createChatConversation: vi.fn(),
@@ -33,11 +35,16 @@ vi.mock("../api/chat-client", () => ({
   postChatTurn: vi.fn(),
 }));
 
+vi.mock("../../brand-dashboard/api/brand-home-client", () => ({
+  getBrandHome: vi.fn(),
+}));
+
 const createMock = vi.mocked(createChatConversation);
 const getMock = vi.mocked(getChatConversation);
 const listMock = vi.mocked(listChatConversations);
 const patchMock = vi.mocked(patchChatConversation);
 const turnMock = vi.mocked(postChatTurn);
+const homeMock = vi.mocked(getBrandHome);
 
 function mount(includeCampaignRoute = false) {
   const dashboard = createElement(Route, {
@@ -64,6 +71,7 @@ beforeEach(() => {
   const conversation = chatConversationFixture();
   listMock.mockResolvedValue([conversation]);
   getMock.mockResolvedValue({ conversation, messages: [] });
+  homeMock.mockResolvedValue(brandHomeResponseFixture());
 });
 
 afterEach(cleanup);
@@ -74,9 +82,7 @@ describe("Brand Home permanent Chat integration", () => {
     mount();
 
     const composer = await screen.findByLabelText("Message Ask Creator Shop");
-    expect(
-      screen.getByRole("heading", { name: /Good morning, Alex/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Brand Home" })).toBeTruthy();
     fireEvent.change(composer, {
       target: {
         value: "What does Creator Shop understand about my Brand and Products?",
@@ -165,6 +171,15 @@ describe("Brand Home permanent Chat integration", () => {
     expect(screen.getByText("Chat unavailable")).toBeTruthy();
     expect(screen.queryByText("Answered")).toBeNull();
     expect((composer as HTMLTextAreaElement).value).toBe("Please retry safely");
+  });
+
+  it("keeps permanent Chat usable when the Home request fails", async () => {
+    homeMock.mockRejectedValueOnce(new Error("Home request failed"));
+    mount();
+
+    expect(await screen.findByText("Could not load Brand Home")).toBeTruthy();
+    expect(await screen.findByLabelText("Message Ask Creator Shop")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeTruthy();
   });
 
   it("opens and closes an accessible mobile Chat dialog", async () => {

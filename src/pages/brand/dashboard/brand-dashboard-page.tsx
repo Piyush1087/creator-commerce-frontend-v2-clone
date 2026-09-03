@@ -7,9 +7,7 @@ import "../../../features/creator-centre/creator-centre.css";
 import "../../../features/brand-dashboard/brand-dashboard-home.css";
 import "../../../features/chat/chat.css";
 
-/**
- * Brand Home — preserved static Daily Briefing (70%) + permanent Chat (30%).
- */
+/** Brand Home — proactive Home 1.0 briefing (70%) + permanent Chat (30%). */
 export function BrandDashboardPage() {
   const chat = useBrandChat();
   const openChats = () => chat.setConversationDrawerOpen(true);

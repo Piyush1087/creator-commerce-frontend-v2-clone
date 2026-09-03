@@ -23,6 +23,10 @@ export const CHAT_DESTINATION_IDS = [
   "BRAND_CENTRE",
   "OFFERINGS",
   "CAMPAIGNS",
+  "COLLABORATIONS",
+  "SETTINGS",
+  "SETTINGS_INTEGRATIONS",
+  "SETTINGS_BILLING",
 ] as const;
 
 export const ChatEntityRefSchema = z
@@ -51,10 +55,14 @@ export const ChatNavigationSchema = z
   .strict()
   .superRefine((navigation, context) => {
     const expectedType =
-      navigation.destinationId === "OFFERINGS"
+      navigation.destinationId === "BRAND_CENTRE"
+        ? "BRAND"
+        : navigation.destinationId === "OFFERINGS"
         ? "OFFERING"
         : navigation.destinationId === "CAMPAIGNS"
           ? "CAMPAIGN"
+          : navigation.destinationId === "COLLABORATIONS"
+            ? "COLLABORATION"
           : null;
 
     if (expectedType && navigation.entityRef?.type !== expectedType) {

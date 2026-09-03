@@ -42,6 +42,302 @@ body:has(.bdash-home-page) .co-pilot-dialog {
   }
 }
 
+/* Permanent Brand Home 1.0 briefing */
+
+.brand-home {
+  color: var(--text-high);
+}
+
+.brand-home__welcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.brand-home__eyebrow,
+.brand-home__subtitle,
+.brand-home__welcome h1,
+.brand-home__updated,
+.brand-home-request-state > p,
+.brand-home-section h2,
+.brand-home-section h3,
+.brand-home-section p,
+.brand-home-section ul,
+.brand-home-section dl,
+.brand-home-sources p,
+.brand-home-sources ul,
+.brand-home-disclosure ul {
+  margin: 0;
+}
+
+.brand-home__eyebrow,
+.brand-home-item__priority {
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-size: var(--size-caption);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.brand-home__welcome h1 {
+  font-family: var(--font-heading);
+  font-size: var(--size-h1);
+  line-height: 1.2;
+}
+
+.brand-home__subtitle {
+  max-width: 640px;
+  margin-top: var(--space-xs);
+  color: var(--text-muted);
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+.brand-home__updated {
+  color: var(--text-muted);
+  font-size: var(--size-body);
+}
+
+.brand-home-request-state,
+.brand-home-sections {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-md);
+}
+
+.brand-home-request-state > .aurora-button {
+  justify-self: start;
+}
+
+.brand-home-section {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.brand-home-section__heading,
+.brand-home-item__heading,
+.brand-home-item__footer,
+.brand-home-sources__heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.brand-home-section h2 {
+  font-family: var(--font-heading);
+  font-size: var(--size-h2);
+  line-height: 1.25;
+}
+
+.brand-home-section__state-copy,
+.brand-home-item__summary,
+.brand-home-sources p {
+  color: var(--text-muted);
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+.brand-home-section__items {
+  display: grid;
+  gap: var(--space-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.brand-home-item {
+  min-width: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-compact);
+  background: var(--surface-subtle);
+  padding: var(--space-md);
+  overflow-wrap: anywhere;
+}
+
+.brand-home-item article {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-sm);
+}
+
+.brand-home-item__heading h3 {
+  margin-top: 4px;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.brand-home-item__metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  font-size: var(--size-body);
+}
+
+.brand-home-item__metadata div {
+  display: grid;
+  gap: 2px;
+}
+
+.brand-home-item__metadata dt {
+  color: var(--text-muted);
+  font-size: var(--size-caption);
+  font-weight: 600;
+}
+
+.brand-home-item__metadata dd {
+  margin: 0;
+}
+
+.brand-home-item__recommendation,
+.brand-home-disclosure {
+  border-left: 3px solid var(--color-primary);
+  padding-left: var(--space-sm);
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+.brand-home-item__recommendation p {
+  margin-top: 4px;
+}
+
+.brand-home-disclosure ul {
+  padding-left: 20px;
+}
+
+.brand-home-disclosure--global {
+  border: 1px solid var(--color-tertiary);
+  border-left-width: 3px;
+  border-radius: var(--radius-card-compact);
+  background: var(--status-warning);
+  padding: var(--space-sm);
+}
+
+.brand-home-item__footer {
+  align-items: center;
+  border-top: 1px solid var(--border-default);
+  padding-top: var(--space-sm);
+}
+
+.brand-home-item__sources {
+  color: var(--text-muted);
+  font-size: var(--size-caption);
+}
+
+.brand-home-action {
+  border-radius: var(--radius-button);
+  color: var(--color-secondary);
+  font-family: var(--font-heading);
+  font-size: var(--size-body);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.brand-home-action:hover {
+  color: #0d7563;
+}
+
+.brand-home-action:focus-visible,
+.brand-home-sources summary:focus-visible {
+  outline: 2px solid rgba(52, 211, 153, 0.5);
+  outline-offset: 3px;
+}
+
+.brand-home-action--unavailable {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.brand-home-sources {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-compact);
+  background: var(--surface-card);
+  padding: var(--space-sm);
+  font-size: var(--size-body);
+}
+
+.brand-home-sources summary {
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.brand-home-sources > ul {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.brand-home-sources > ul > li {
+  display: grid;
+  gap: var(--space-xs);
+  border-top: 1px solid var(--border-default);
+  padding-top: var(--space-sm);
+}
+
+.brand-home-sources__heading > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+
+.brand-home-section--loading {
+  min-height: 154px;
+}
+
+.brand-home-loading-line {
+  display: block;
+  width: 100%;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--disabled-bg);
+}
+
+.brand-home-loading-line--short {
+  width: 64%;
+}
+
+@media (max-width: 767px) {
+  .brand-home__welcome,
+  .brand-home-section__heading,
+  .brand-home-item__heading,
+  .brand-home-item__footer,
+  .brand-home-sources__heading {
+    flex-direction: column;
+  }
+
+  .brand-home-section,
+  .brand-home-item {
+    padding: var(--space-md);
+  }
+
+  .brand-home-item__footer {
+    align-items: flex-start;
+  }
+
+  .brand-home-action {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .brand-home-sources__heading > span {
+    justify-content: flex-start;
+  }
+}
+
 /* Don’t let full-page co-pilot shell rules fight the home split */
 .aurora-shell:has(.bdash-home-page) {
   height: auto;
