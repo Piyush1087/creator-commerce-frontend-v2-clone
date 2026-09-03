@@ -12,11 +12,11 @@ import {
   formatCompensationTeaser,
   matchTierFromScore,
 } from "../utils/format-campaign-display";
+import { MarketplaceFilterDrawer } from "./MarketplaceFilterDrawer";
 import {
   countActiveFilters,
-  MarketplaceFilterDrawer,
   type MarketplaceFiltersState,
-} from "./MarketplaceFilterDrawer";
+} from "../utils/marketplace-filters";
 import { OptionalMedia } from "./OptionalMedia";
 
 import "../creator-campaigns.css";

@@ -13,8 +13,6 @@ import {
   formatPricingDate,
 } from "../utils/format-pricing";
 
-type CollapsibleId = "billing" | "invoices";
-
 export function PricingBillingDetailsSection() {
   const [open, setOpen] = useState(false);
 

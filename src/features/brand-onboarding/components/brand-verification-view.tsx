@@ -138,8 +138,7 @@ export function BrandVerificationView() {
 
     setIsSending(true);
     try {
-      // PRE-PROD: stub send — no API. PROD: set USE_REAL_BRAND_VERIFICATION_OTP=true
-      // (see creator-commerce-backend-v2/docs/brand-onboarding/VERIFICATION_OTP_TOGGLE.md)
+      // Local Brand Step 6: no API / Postmark. Type 123456, then verify still hits the API.
       if (!USE_REAL_BRAND_VERIFICATION_OTP) {
         await new Promise((resolve) => window.setTimeout(resolve, 700));
         setWorkEmail(email);
@@ -250,7 +249,7 @@ export function BrandVerificationView() {
 
     setIsVerifying(true);
     try {
-      // PRE-PROD: accept STUB_OTP_CODE locally, then verify API (backend stub sets isVerified)
+      // Local Brand Step 6: UI accepts 123456, then the API also accepts that same code.
       if (!USE_REAL_BRAND_VERIFICATION_OTP) {
         if (code !== STUB_OTP_CODE) {
           setError("Invalid code. Please check your email and try again.");

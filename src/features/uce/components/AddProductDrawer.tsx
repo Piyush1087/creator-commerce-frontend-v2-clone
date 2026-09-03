@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Package, Plus, CheckCircle2, Shield, Info, ExternalLink } from "lucide-react";
+import { Plus, CheckCircle2, Info, ExternalLink } from "lucide-react";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
 import { Button } from "../../../design-system/aurora/components/Button";
 import { Card } from "../../../design-system/aurora/components/Card";

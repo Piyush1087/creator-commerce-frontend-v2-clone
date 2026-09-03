@@ -1,5 +1,5 @@
-import { CreatorProfileSettings } from "../../../features/settings/components/creator/creator-profile-settings";
+import { CreatorProfileContactSettings } from "../../../features/settings/components/creator/creator-profile-contact-settings";
 
 export function CreatorSettingsProfilePage() {
-  return <CreatorProfileSettings />;
+  return <CreatorProfileContactSettings />;
 }

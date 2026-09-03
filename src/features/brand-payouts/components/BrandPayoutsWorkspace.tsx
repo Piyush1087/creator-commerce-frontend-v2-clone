@@ -42,7 +42,7 @@ import {
 } from "../utils/payout-document-exports";
 import { useBrandPayoutsHub } from "../hooks/use-brand-payouts-hub";
 import { mapHubLedgerRow, maskSensitiveAccount } from "../utils/map-hub-ledger";
-import type { BrandDisbursalRow, BrandEscrowLockRow } from "../contracts/brand-payouts.contracts";
+import type { BrandEscrowLockRow } from "../contracts/brand-payouts.contracts";
 import {
   filterLedgerForTab,
   ledgerTabLabel,

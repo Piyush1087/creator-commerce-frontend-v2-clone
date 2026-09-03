@@ -16,9 +16,11 @@ import { BrandSettingsLayout } from "../pages/brand/settings/brand-settings-layo
 import { BrandSettingsBillingPage } from "../pages/brand/settings/brand-settings-billing-page";
 import { BrandSettingsEscrowPage } from "../pages/brand/settings/brand-settings-escrow-page";
 import { CreatorSettingsLayout } from "../pages/creator/settings/creator-settings-layout";
+import { CreatorSettingsAccountPage } from "../pages/creator/settings/creator-settings-account-page";
 import { CreatorSettingsPayoutsPage } from "../pages/creator/settings/creator-settings-payouts-page";
 import { CreatorSettingsProfilePage } from "../pages/creator/settings/creator-settings-profile-page";
-import { CreatorSettingsSocialPage } from "../pages/creator/settings/creator-settings-social-page";
+import { CreatorSettingsTeamPage } from "../pages/creator/settings/creator-settings-team-page";
+import { CreatorSettingsInstagramPage } from "../pages/creator/settings/creator-settings-instagram-page";
 import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage";
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
@@ -42,10 +44,13 @@ import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/Marketplace
 import { RequireAuth } from "../shared/auth/require-auth";
 import { CreatorOnboardingAppRoutes } from "./creator-onboarding-app";
 import { BrandOnboardingAppRoutes } from "./brand-onboarding-app";
-import { CreatorInstagramOAuthCallbackPage } from "../pages/creator/onboarding/creator-instagram-oauth-callback-page";
 import { CREATOR_ONBOARDING_ROUTES } from "../features/creator-onboarding/constants";
 import { CollaborationRouteGuard } from "../features/collaboration/components/CollaborationRouteGuard";
 import { UnmatchedRouteHandler } from "./unmatched-route-handler";
+import { RequireCreatorPlatformAccess } from "../features/creator-onboarding/components/creator-platform-route-guard";
+import { CreatorSettingsActionGuard } from "../features/settings/components/creator-settings-action-guard";
+import { CreatorTeamInvitationAcceptance } from "../features/settings/components/creator/creator-team-invitation-acceptance";
+import { CreatorInstagramOAuthCallbackRoute } from "../pages/creator/onboarding/creator-instagram-oauth-callback-route";
 
 export function AppRoutes() {
   return (
@@ -59,6 +64,10 @@ export function AppRoutes() {
       <Route
         path="/brand/team-invitations/accept"
         element={<TeamInvitationPage />}
+      />
+      <Route
+        path={AUTH_ROUTES.creatorTeamInvitationAccept}
+        element={<CreatorTeamInvitationAcceptance />}
       />
       <Route element={<MarketplaceGuestLayout />}>
         <Route
@@ -136,55 +145,102 @@ export function AppRoutes() {
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
-        <Route path={AUTH_ROUTES.creatorHome} element={<CreatorCentrePage />} />
-        <Route
-          path={AUTH_ROUTES.creatorAnalytics}
-          element={<CreatorAnalyticsPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMediaKit}
-          element={<CreatorMediaKitPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorDashboard}
-          element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMarketplace}
-          element={<CreatorMarketplacePage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMarketplaceCampaign}
-          element={<CreatorCampaignDetailPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCampaigns}
-          element={<CreatorCampaignsCommandCenterPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorPayouts}
-          element={<CreatorPayoutsPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCampaignsHistory}
-          element={<CreatorCampaignsHistoryPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCollaborations}
-          element={
-            <CollaborationRouteGuard expectedRole="CREATOR">
-              <CreatorCollaborationsPage />
-            </CollaborationRouteGuard>
-          }
-        />
         <Route
           path={AUTH_ROUTES.creatorSettings}
           element={<CreatorSettingsLayout />}
         >
-          <Route index element={<Navigate to="profile" replace />} />
-          <Route path="profile" element={<CreatorSettingsProfilePage />} />
-          <Route path="social" element={<CreatorSettingsSocialPage />} />
-          <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
+          <Route index element={<Navigate to="account" replace />} />
+          <Route path="account" element={<CreatorSettingsAccountPage />} />
+          <Route
+            path="profile"
+            element={
+              <CreatorSettingsActionGuard requiredAction="WORKSPACE_PROFILE_READ">
+                <CreatorSettingsProfilePage />
+              </CreatorSettingsActionGuard>
+            }
+          />
+          <Route
+            path="team"
+            element={
+              <CreatorSettingsActionGuard requiredAction="TEAM_READ">
+                <CreatorSettingsTeamPage />
+              </CreatorSettingsActionGuard>
+            }
+          />
+          <Route
+            path="instagram"
+            element={
+              <CreatorSettingsActionGuard requiredAction="INSTAGRAM_SETTINGS_READ">
+                <CreatorSettingsInstagramPage />
+              </CreatorSettingsActionGuard>
+            }
+          />
+          <Route
+            path="social"
+            element={
+              <Navigate to={AUTH_ROUTES.creatorSettingsInstagram} replace />
+            }
+          />
+          <Route
+            path="payouts"
+            element={
+              <CreatorSettingsActionGuard requiredAction="PAYOUT_SETTINGS_READ">
+                <CreatorSettingsPayoutsPage />
+              </CreatorSettingsActionGuard>
+            }
+          />
+        </Route>
+        <Route element={<RequireCreatorPlatformAccess />}>
+          <Route
+            path={AUTH_ROUTES.creatorHome}
+            element={<CreatorCentrePage />}
+          />
+          {/* CREATOR_WORKSPACE_ENTRY technical mount. C-02 owns final Home/Center content. */}
+          <Route
+            path={AUTH_ROUTES.creatorCentre}
+            element={<CreatorCentrePage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorAnalytics}
+            element={<CreatorAnalyticsPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorMediaKit}
+            element={<CreatorMediaKitPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorDashboard}
+            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
+          />
+          {/* COMPATIBILITY_RECONCILIATION_ONLY: dormant C-03 routes, not shell navigation authority. */}
+          <Route
+            path={AUTH_ROUTES.creatorMarketplace}
+            element={<CreatorMarketplacePage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorMarketplaceCampaign}
+            element={<CreatorCampaignDetailPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCampaigns}
+            element={<CreatorCampaignsCommandCenterPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorPayouts}
+            element={<CreatorPayoutsPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCampaignsHistory}
+            element={<CreatorCampaignsHistoryPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCollaborations}
+            element={
+              <CollaborationRouteGuard expectedRole="CREATOR">
+                <CreatorCollaborationsPage />
+              </CollaborationRouteGuard>
+            }
+          />
         </Route>
       </Route>
       <Route
@@ -193,7 +249,11 @@ export function AppRoutes() {
       />
       <Route
         path={CREATOR_ONBOARDING_ROUTES.instagramCallback}
-        element={<CreatorInstagramOAuthCallbackPage />}
+        element={<CreatorInstagramOAuthCallbackRoute />}
+      />
+      <Route
+        path={CREATOR_ONBOARDING_ROUTES.legacyInstagramCallback}
+        element={<CreatorInstagramOAuthCallbackRoute />}
       />
       <Route
         path="/*"

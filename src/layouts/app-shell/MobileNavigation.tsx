@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useAuthSession } from "../../shared/auth/use-auth-session";
@@ -11,18 +12,38 @@ import {
 } from "./sidebar-items";
 import { SidebarFooterNavLink } from "./SidebarFooterNavLink";
 import { SidebarNavLink } from "./SidebarNavLink";
+import type { CreatorShellState } from "./creator-shell-capabilities";
 
 type MobileNavigationProps = {
   isOpen: boolean;
   onClose: () => void;
+  creatorShellState?: CreatorShellState;
 };
 
-export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
+export function MobileNavigation({
+  isOpen,
+  onClose,
+  creatorShellState,
+}: MobileNavigationProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    // The background is already inert by this effect, so activeElement may be body.
+    const opener = document.querySelector<HTMLElement>(
+      '[aria-controls="application-mobile-navigation"]',
+    );
+    drawerRef.current
+      ?.querySelector<HTMLButtonElement>("button")
+      ?.focus({ preventScroll: true });
+    return () => {
+      opener?.focus();
+    };
+  }, [isOpen]);
   const location = useLocation();
   const logout = useLogout();
   const session = useAuthSession();
   const role = normalizeUserRole(session.currentUser?.role);
-  const navItems = getSidebarNavItemsForRole(role);
+  const navItems = getSidebarNavItemsForRole(role, creatorShellState);
   const footerNavItems = getSidebarFooterNavItemsForRole(role);
   const utilityItems = getSidebarUtilityItemsForRole(role);
 
@@ -38,7 +59,37 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
         }}
         role="presentation"
       />
-      <aside className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}>
+      <div
+        ref={drawerRef}
+        id="application-mobile-navigation"
+        role="dialog"
+        aria-modal={isOpen ? true : undefined}
+        aria-label="Application navigation"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onClose();
+          }
+          if (event.key !== "Tab") return;
+          const items = Array.from(
+            event.currentTarget.querySelectorAll<HTMLElement>(
+              "a[href], button:not(:disabled)",
+            ),
+          );
+          const first = items[0];
+          const last = items[items.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+        className={`aurora-drawer ${isOpen ? "aurora-drawer--open" : ""}`}
+        aria-hidden={!isOpen}
+        {...(!isOpen ? { inert: "" } : {})}
+      >
         <div className="aurora-drawer__header">
           <span className="aurora-drawer__title">The Creator Shop</span>
           <button
@@ -99,7 +150,7 @@ export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
             ) : null,
           )}
         </nav>
-      </aside>
+      </div>
     </>
   );
 }

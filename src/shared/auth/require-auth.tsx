@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 
 import { useAuthSession } from "./use-auth-session";
+import { resolveSafeInternalPath } from "../navigation/safe-internal-path";
 
 type RequireAuthProps = {
   children: React.ReactNode;
@@ -19,7 +20,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
   }
 
   if (session.status === "UNAUTHENTICATED") {
-    const from = `${location.pathname}${location.search}${location.hash}`;
+    const from = resolveSafeInternalPath(
+      `${location.pathname}${location.search}${location.hash}`,
+      "/",
+    );
     return <Navigate to="/login" replace state={{ from }} />;
   }
 

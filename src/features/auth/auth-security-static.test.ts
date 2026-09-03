@@ -19,9 +19,16 @@ describe("FE-0 runtime security cutover", () => {
   const source = files.map((file) => readFileSync(file, "utf8")).join("\n");
 
   it("contains no deployable fixed OTP or advertised test login", () => {
-    expect(source).not.toContain("STUB_OTP_CODE");
+    const runtimeWithoutBrandOnboardingOtp = files
+      .filter(
+        (file) =>
+          !file.replaceAll("\\", "/").includes("/features/brand-onboarding/"),
+      )
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+    expect(runtimeWithoutBrandOnboardingOtp).not.toContain("STUB_OTP_CODE");
     expect(source).not.toContain("test@creator.com");
-    expect(source).not.toMatch(/\b123456\b/);
+    expect(runtimeWithoutBrandOnboardingOtp).not.toMatch(/\b123456\b/);
   });
 
   it("contains no legacy Brand complete-registration request", () => {

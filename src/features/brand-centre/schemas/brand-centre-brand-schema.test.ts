@@ -17,7 +17,8 @@ describe("strict accepted Brand consumer", () => {
   it("requires exactly seven processor runtime entries", () => {
     const fixture = consumerFixture();
     expect(Object.keys(fixture.processorRuntime)).toEqual(BRAND_PROCESSOR_IDS);
-    const { brand_meaning: _missing, ...incomplete } = fixture.processorRuntime;
+    const { brand_meaning, ...incomplete } = fixture.processorRuntime;
+    expect(brand_meaning).toBeDefined();
     expect(() =>
       parseBrandCentreBrand({ ...fixture, processorRuntime: incomplete }),
     ).toThrow(BrandConsumerContractError);

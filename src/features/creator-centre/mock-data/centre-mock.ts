@@ -47,8 +47,8 @@ export const MOCK_HOME_SNAPSHOT = [
     actionStyle: "link" as const,
   },
   {
-    id: "marketplace",
-    title: "Brand Marketplace",
+    id: "campaigns",
+    title: "Campaign Opportunities",
     emoji: "🛍️",
     value: "14 Briefs",
     detail: "High-match campaigns active in your vertical.",
@@ -205,7 +205,11 @@ export const MOCK_HOME_MOBILE = {
     },
   ],
   tasks: [
-    { id: "lavento", label: "Upload final cut for Bio-Glow series", done: false },
+    {
+      id: "lavento",
+      label: "Upload final cut for Bio-Glow series",
+      done: false,
+    },
     { id: "payout", label: "Update payout bank details", done: false },
     {
       id: "hydro",
@@ -401,7 +405,8 @@ export const MOCK_MEDIA_KIT = {
   visibility: "Public" as const,
   acceptingCollabs: "Accepting collaborations",
   idealIndustries: "Consumer tech, Beauty, Productivity tools",
-  discoveryNote: "Public — discoverable in brand marketplace",
+  discoveryNote:
+    "Visibility behavior remains deferred to Creator Center product definition.",
   acceptingTypes: [
     { id: "brand", label: "Brand Collaborations", on: true },
     { id: "reviews", label: "Product Reviews", on: true },
