@@ -29,7 +29,6 @@ export function MobileBottomNav() {
               to={item.path}
               aria-current={isActive ? "page" : undefined}
               className={`aurora-bottom-nav__item ${isActive ? "aurora-bottom-nav__item--active" : ""}`}
-              aria-current={isActive ? "page" : undefined}
             >
               <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
               <span>{item.label}</span>

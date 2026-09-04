@@ -30,7 +30,6 @@ export function SidebarNavLink({
       title={item.label}
       aria-current={isActive ? "page" : undefined}
       className={`${baseClassName}${isActive ? ` ${activeClassName}` : ""}`}
-      aria-current={isActive ? "page" : undefined}
       onClick={onNavigate}
     >
       <span className={iconClassName}>
