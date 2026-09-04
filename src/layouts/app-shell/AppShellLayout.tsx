@@ -16,7 +16,12 @@ export function AppShellLayout() {
 
   return (
     <BrandCentreShellProvider>
-      <AppShell mainVariant={mainVariant}>
+      <AppShell
+        mainVariant={mainVariant}
+        brandWorkspace={
+          location.pathname === "/brand-centre" && role === "BRAND"
+        }
+      >
         <Outlet />
       </AppShell>
     </BrandCentreShellProvider>

@@ -1,28 +1,21 @@
-import { CalendarDays, Loader2, Shield } from "lucide-react";
-
-import { Button } from "../../../design-system/aurora";
+import { CalendarDays, Shield } from "lucide-react";
 import type { BrandSubscriptionRecord } from "../contracts/pricing.contracts";
 import { FOUNDERS_PREVIEW_FEATURES } from "../constants/pricing-copy";
 import {
-  formatTakeRateLabel,
-  getPostTrialLabel,
+  formatCommercialPrice,
+  formatCommissionRate,
   getRenewalDate,
   getTrialDaysRemaining,
 } from "../utils/format-pricing";
 
 type PricingFoundersTrialStatusProps = {
   subscription: BrandSubscriptionRecord;
-  loading?: boolean;
-  onConnectBilling?: () => void;
 };
 
 export function PricingFoundersTrialStatus({
   subscription,
-  loading = false,
-  onConnectBilling,
 }: PricingFoundersTrialStatusProps) {
   const daysRemaining = getTrialDaysRemaining(subscription);
-  const needsBillingLink = !subscription.razorpaySubscriptionId;
 
   const featureHighlights: string[] = [
     FOUNDERS_PREVIEW_FEATURES.deepIntel[0]?.label ?? "",
@@ -66,9 +59,9 @@ export function PricingFoundersTrialStatus({
         <div>
           <p className="pricing-billing__summary-label">After trial</p>
           <p className="pricing-billing__summary-value">
-            {getPostTrialLabel(subscription.tier)}
+            {formatCommercialPrice(subscription)}
           </p>
-          <p className="pricing-billing__summary-meta">{formatTakeRateLabel(subscription.tier)}</p>
+          <p className="pricing-billing__summary-meta">{formatCommissionRate(subscription)}</p>
         </div>
       </div>
 
@@ -78,25 +71,9 @@ export function PricingFoundersTrialStatus({
         ))}
       </ul>
 
-      {needsBillingLink && onConnectBilling ? (
-        <div className="pricing-billing__trial-active-cta">
-          <div style={{ maxWidth: "32rem" }}>
-            <p className="pricing-billing__summary-meta" style={{ margin: 0 }}>
-              Optional: connect billing before your trial ends to renew on Founder&apos;s Beta at
-              your locked-in rate. You can upgrade to Growth Starter or Professional anytime below
-              — those plans charge immediately via Razorpay.
-            </p>
-            <p className="pricing-billing__summary-meta" style={{ margin: "0.5rem 0 0" }}>
-              We create the Razorpay subscription plan automatically on first connect. You only
-              need valid test API keys in the backend.
-            </p>
-          </div>
-          <Button disabled={loading} onClick={onConnectBilling}>
-            {loading ? <Loader2 size={18} className="animate-spin" aria-hidden /> : null}
-            Connect Billing for Renewal
-          </Button>
-        </div>
-      ) : null}
+      <p className="pricing-billing__summary-meta" style={{ margin: 0 }}>
+        No payment method or billing connection is required while the trial is active.
+      </p>
     </section>
   );
 }

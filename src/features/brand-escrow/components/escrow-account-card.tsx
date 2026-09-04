@@ -1,245 +1,235 @@
-import {
-  CheckCircle2,
-  Loader2,
-  LockOpen,
-  ShieldCheck,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 
-import { Button } from "../../../design-system/aurora";
+import { Alert, Badge, Button } from "../../../design-system/aurora";
+import { canMutateTreasury } from "../contracts/escrow.contracts";
 import { useBrandEscrow } from "../hooks/use-brand-escrow";
-import { EMPTY_DISPLAY } from "../utils/display-value";
+import { displayCurrency } from "../utils/display-value";
+import { BrandReturnDrawer } from "./brand-return-drawer";
+import { BrandReturnHistory } from "./brand-return-history";
 import { EscrowBalanceMetrics } from "./escrow-balance-metrics";
 import { EscrowLedgerPanel } from "./escrow-ledger-panel";
 import { EscrowTopUpDrawer } from "./escrow-top-up-drawer";
-import { EscrowTransactionResultModal } from "./escrow-transaction-result-modal";
-import { EscrowVbaPanel } from "./escrow-vba-panel";
 import "../brand-escrow.css";
 
-type EscrowAccountCardProps = {
-  showLedgerInline?: boolean;
-};
+type EscrowAccountCardProps = { showLedgerInline?: boolean };
 
-export function EscrowAccountCard({ showLedgerInline = false }: EscrowAccountCardProps) {
+export function EscrowAccountCard({
+  showLedgerInline = false,
+}: EscrowAccountCardProps) {
   const {
     status,
     vault,
-    vaultMissing,
+    returnSummary,
+    returnRequests,
     ledger,
+    role,
     errorMessage,
-    initializing,
-    processingPayment,
-    initializeVault,
-    refreshAfterPayment,
+    refreshing,
+    reload,
   } = useBrandEscrow();
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
   const [ledgerOpen, setLedgerOpen] = useState(showLedgerInline);
-  const [resultModal, setResultModal] = useState<"success" | "failed" | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const mutable = canMutateTreasury(role);
 
-  const vaultActive = Boolean(vault) && !vaultMissing;
-  const isProvisioning = initializing;
-  const isProcessing = processingPayment;
-  const isZeroBalance =
-    vaultActive &&
-    (vault?.available_balance ?? 0) === 0 &&
-    (vault?.total_pooled_balance ?? 0) === 0;
+  if (status === "loading" && !vault) {
+    return (
+      <section className="brand-escrow-card brand-escrow-card--loading" aria-busy="true">
+        <Loader2 size={28} className="brand-escrow-spin" aria-hidden />
+        <p>Loading Secure escrow…</p>
+      </section>
+    );
+  }
 
-  const accordionTitle = useMemo(() => {
-    if (isZeroBalance) {
-      return "Your Dedicated Virtual Bank Account Details (For Corporate B2B Transfers)";
-    }
-    return "Virtual Account Transfer Credentials (NEFT / RTGS / IMPS)";
-  }, [isZeroBalance]);
-
-  const handleInitialize = async () => {
-    setActionError(null);
-    try {
-      await initializeVault();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to initialize escrow vault.";
-      setActionError(message);
-    }
-  };
-
-  const handlePaymentSuccess = async () => {
-    setDrawerOpen(false);
-    setActionError(null);
-    try {
-      await refreshAfterPayment();
-      setResultModal("success");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Payment succeeded but refresh failed.";
-      setActionError(message);
-      setResultModal("success");
-    }
-  };
-
-  const handlePaymentFailed = (message: string) => {
-    setDrawerOpen(false);
-    setActionError(message);
-    setResultModal("failed");
-  };
-
-  const showNotInitialized = status !== "loading" && vaultMissing && !isProvisioning;
-  const showActiveVault = vaultActive && !isProvisioning && !isProcessing;
-  const showBusyState = isProvisioning || isProcessing;
+  if (!vault) {
+    return (
+      <section className="brand-escrow-card">
+        <Alert tone="error" title="Secure escrow unavailable">
+          {errorMessage ?? "Treasury state could not be validated."}
+        </Alert>
+        <Button variant="outline" onClick={() => void reload(true)}>
+          Reload Treasury
+        </Button>
+      </section>
+    );
+  }
 
   return (
     <>
-      <section
-        className={`brand-escrow-card ${showBusyState ? "brand-escrow-card--muted" : ""}`}
-      >
-        <div className="brand-escrow-card__glow" aria-hidden />
-
-        <div className="brand-escrow-card__header">
+      <section className="brand-escrow-card">
+        <header className="brand-escrow-card__header">
           <div className="brand-escrow-card__intro">
-            <div className="brand-escrow-card__icon">
-              <ShieldCheck size={32} fill="currentColor" aria-hidden />
+            <div className="brand-escrow-card__icon" aria-hidden>
+              <ShieldCheck size={28} />
             </div>
-            <div style={{ minWidth: 0 }}>
-              <h2 className="brand-escrow-card__title">Secure Escrow Account</h2>
+            <div>
+              <h2 className="brand-escrow-card__title">Secure escrow</h2>
               <p className="brand-escrow-card__desc">
-                Automate creator payouts securely using our high-trust multi-tenant
-                architecture.
+                Review available, locked, and pending balances, add funds, and return
+                eligible unused funds.
               </p>
             </div>
           </div>
+          <div className="brand-escrow-card__header-actions">
+            <Badge tone="success">Active vault</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void reload(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw size={15} aria-hidden />
+              {refreshing ? "Refreshing…" : "Refresh status"}
+            </Button>
+          </div>
+        </header>
 
-          {status === "loading" ? (
-            <span className="brand-escrow-status brand-escrow-status--provisioning">
-              <Loader2 size={16} className="brand-escrow-spin" aria-hidden />
-              Loading
-            </span>
-          ) : null}
+        {errorMessage ? (
+          <Alert tone="error" title="Treasury refresh incomplete">
+            {errorMessage} Existing displayed values remain unchanged.
+          </Alert>
+        ) : null}
+        {notice ? (
+          <div className="brand-escrow-notice" role="status">
+            {notice}
+          </div>
+        ) : null}
 
-          {showActiveVault ? (
-            <span className="brand-escrow-status brand-escrow-status--active">
-              <span aria-hidden>✅</span> Active
-            </span>
-          ) : null}
+        <EscrowBalanceMetrics vault={vault} />
 
-          {showBusyState ? (
-            <span className="brand-escrow-status brand-escrow-status--provisioning">
-              <span aria-hidden>⏳</span>{" "}
-              {isProcessing ? "Processing" : "Provisioning in progress"}
-            </span>
+        <div className="brand-escrow-protection-grid">
+          <div className="brand-escrow-explainer">
+            <strong>Protected commitments</strong>
+            <p>
+              Locked campaign funds and active return commitments cannot be released from
+              Settings. They remain protected until the corresponding Collaboration or
+              return workflow completes.
+            </p>
+          </div>
+          <div className="brand-escrow-explainer">
+            <strong>Creator payouts stay operational</strong>
+            <p>
+              Settings does not approve entitlement, release creator funds, reverse payouts,
+              or expose a provider dashboard.
+            </p>
+          </div>
+        </div>
+
+        <div className="brand-escrow-actions" aria-label="Treasury actions">
+          <div>
+            <strong>Add funds</strong>
+            <p>
+              Checkout creates Pending funding. Available balance changes only after
+              payment confirmation.
+            </p>
+          </div>
+          {mutable ? (
+            <Button onClick={() => setTopUpOpen(true)}>Add funds</Button>
           ) : null}
         </div>
 
-        {errorMessage || actionError ? (
-          <div
-            className="brand-escrow-callout"
-            role="alert"
-            style={{ borderColor: "var(--status-error)" }}
-          >
-            {errorMessage ?? actionError}
+        {returnSummary ? (
+          <div className="brand-escrow-return-panel">
+            <div className="brand-escrow-return-panel__heading">
+              <div>
+                <strong>Return unused funds</strong>
+                <p>
+                  Eligible available money is returned to original payment source(s),
+                  selected automatically. You cannot choose a destination or source.
+                </p>
+              </div>
+              {mutable ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setReturnOpen(true)}
+                  disabled={
+                    returnSummary.currency === null ||
+                    returnSummary.self_service_returnable_balance <= 0
+                  }
+                >
+                  Return unused funds
+                </Button>
+              ) : null}
+            </div>
+            <dl className="brand-escrow-return-summary">
+              <div>
+                <dt>Available</dt>
+                <dd>
+                  {displayCurrency(
+                    returnSummary.available_balance,
+                    returnSummary.currency,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Self-service returnable</dt>
+                <dd>
+                  {displayCurrency(
+                    returnSummary.self_service_returnable_balance,
+                    returnSummary.currency,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>Source reconciliation required</dt>
+                <dd>
+                  {displayCurrency(
+                    returnSummary.source_reconciliation_required_amount,
+                    returnSummary.currency,
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {returnSummary.currency === null ? (
+              <p className="brand-escrow-return-panel__guidance">
+                Return currency is currently unavailable. Refresh Treasury status before
+                requesting a return.
+              </p>
+            ) : null}
+            {returnSummary.source_reconciliation_required_amount > 0 ? (
+              <p className="brand-escrow-return-panel__guidance">
+                Some available money lacks eligible source evidence for self-service return.
+                It remains visible and is not treated as lost or automatically returnable.
+              </p>
+            ) : null}
           </div>
         ) : null}
 
-        {showNotInitialized ? (
-          <>
-            <div className="brand-escrow-callout">
-              To initiate collaborations, launch campaigns, and process automated milestone
-              payouts, you must first initialize your workspace escrow vault. The Creator
-              Shop uses a secured virtual routing infrastructure to lock funds safely during
-              content production and disburse payouts directly to verified creators upon
-              automated live-post compliance checks.
-            </div>
-            <div className="brand-escrow-setup-row">
-              <p className="brand-escrow-setup-note">
-                <CheckCircle2 size={16} color="#006c4b" aria-hidden />
-                Setting up this system creates a dedicated, RBI-compliant corporate banking
-                node. No registration or platform infrastructure setup fees apply.
-              </p>
-              <Button onClick={() => void handleInitialize()} disabled={initializing}>
-                Initialize Secure Escrow Vault
-                <LockOpen size={18} style={{ marginLeft: 8 }} aria-hidden />
-              </Button>
-            </div>
-          </>
+        {!mutable ? (
+          <Alert tone="warning" title="Campaign Manager read-only access">
+            You can review Treasury state and Brand Return lifecycle. Brand Owner or Finance
+            Admin authority is required to add or return funds.
+          </Alert>
         ) : null}
 
-        {showBusyState ? (
-          <>
-            <div className="brand-escrow-callout">
-              {isProcessing
-                ? "Your corporate card payment is being verified with our banking partner. Available balance will update once the gateway confirms settlement."
-                : "We are currently setting up your dedicated corporate banking nodes and automated micro-ledger architecture via our processing partner Razorpay."}
-              <div className="brand-escrow-progress" aria-hidden>
-                <div className="brand-escrow-progress__bar" />
-              </div>
-            </div>
-            <div className="brand-escrow-setup-row">
-              <p className="brand-escrow-setup-note">
-                <CheckCircle2 size={16} color="#006c4b" aria-hidden />
-                This validation typically takes between 2 to 10 minutes. Campaign execution
-                paths remain locked until verification concludes.
-              </p>
-              <div className="brand-escrow-verifying">
-                <Loader2 size={20} className="brand-escrow-spin" aria-hidden />
-                System Verification...
-              </div>
-            </div>
-          </>
-        ) : null}
+        <BrandReturnHistory requests={returnRequests} />
 
-        {(showActiveVault || status === "loading") && !showNotInitialized ? (
-          <>
-            <EscrowBalanceMetrics vault={vault} />
-            <EscrowVbaPanel
-              vault={vault}
-              defaultExpanded={isZeroBalance}
-              accordionTitle={accordionTitle}
-            />
-            <div className="brand-escrow-footer">
-              {!showLedgerInline ? (
-                <button
-                  type="button"
-                  className="brand-escrow-footer__link"
-                  onClick={() => setLedgerOpen((value) => !value)}
-                >
-                  {ledgerOpen ? "Hide Financial Ledger" : "View Financial Ledger"}
-                </button>
-              ) : (
-                <span style={{ fontFamily: "var(--font-body)", color: "var(--text-muted)" }}>
-                  {ledger.length > 0
-                    ? `${ledger.length} ledger entries`
-                    : `Ledger: ${EMPTY_DISPLAY}`}
-                </span>
-              )}
-              <Button
-                onClick={() => setDrawerOpen(true)}
-                disabled={!vaultActive || status === "loading"}
-                style={{ background: "#006c4b", color: "#fff" }}
-              >
-                Top Up Balance
-              </Button>
-            </div>
-            {ledgerOpen || showLedgerInline ? (
-              <div style={{ marginTop: "var(--space-md)" }}>
-                <EscrowLedgerPanel entries={ledger} />
-              </div>
-            ) : null}
-          </>
-        ) : null}
+        <div className="brand-escrow-ledger-toggle">
+          {!showLedgerInline ? (
+            <Button variant="ghost" onClick={() => setLedgerOpen((open) => !open)}>
+              {ledgerOpen ? "Hide financial ledger" : "View financial ledger"}
+            </Button>
+          ) : null}
+        </div>
+        {ledgerOpen ? <EscrowLedgerPanel entries={ledger} /> : null}
       </section>
 
       <EscrowTopUpDrawer
-        open={drawerOpen}
+        open={topUpOpen}
         vault={vault}
-        onClose={() => setDrawerOpen(false)}
-        onPaymentSuccess={() => void handlePaymentSuccess()}
-        onPaymentFailed={handlePaymentFailed}
+        onClose={() => setTopUpOpen(false)}
+        onRefresh={() => reload(true)}
+        onNotice={setNotice}
       />
-
-      {resultModal ? (
-        <EscrowTransactionResultModal
-          variant={resultModal}
-          onClose={() => setResultModal(null)}
+      {returnSummary ? (
+        <BrandReturnDrawer
+          open={returnOpen}
+          summary={returnSummary}
+          onClose={() => setReturnOpen(false)}
+          onRefresh={() => reload(true)}
+          onNotice={setNotice}
         />
       ) : null}
     </>

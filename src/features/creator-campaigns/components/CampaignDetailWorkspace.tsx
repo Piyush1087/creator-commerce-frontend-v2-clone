@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Calendar, ChevronDown, ChevronUp, Lock, Radio, Share2 } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Lock,
+  Radio,
+  Share2,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Alert, Badge, Button, Chip } from "../../../design-system/aurora";
@@ -10,12 +17,17 @@ import {
   fetchMarketplaceShareLink,
 } from "../api/creator-campaigns-client";
 import { publicBrandPath } from "../../public-brand/utils/brand-page-session";
-import type { MarketplaceCampaignRow, MarketplaceDetailResponse } from "../contracts/creator-campaigns.contracts";
+import type {
+  MarketplaceCampaignRow,
+  MarketplaceDetailResponse,
+} from "../contracts/creator-campaigns.contracts";
 import { displayCurrency, displayValue } from "../utils/display-value";
 import { formatCompensationTeaser } from "../utils/format-campaign-display";
 import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";
+import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
+import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 
 import "../creator-campaigns.css";
 
@@ -43,12 +55,16 @@ export function CampaignDetailWorkspace({
   const [wizardOpen, setWizardOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [brandLandingUrl, setBrandLandingUrl] = useState<string | null>(null);
-  const [alternatives, setAlternatives] = useState<MarketplaceCampaignRow[]>([]);
+  const [alternatives, setAlternatives] = useState<MarketplaceCampaignRow[]>(
+    [],
+  );
   const [alternativesLoading, setAlternativesLoading] = useState(false);
+  const [continuationIssuing, setContinuationIssuing] = useState(false);
 
   const isGuest = mode === "guest" || detail.is_authenticated === false;
   const listPath =
-    marketplacePath ?? (isGuest ? PUBLIC_ROUTES.marketplace : AUTH_ROUTES.creatorMarketplace);
+    marketplacePath ??
+    (isGuest ? PUBLIC_ROUTES.marketplace : AUTH_ROUTES.creatorMarketplace);
 
   const uiState = detail.ui_access_state;
   const campaign = detail.campaign;
@@ -63,7 +79,8 @@ export function CampaignDetailWorkspace({
     (uiState === "unlocked" || uiState === "invite");
 
   const primaryCta = isGuest
-    ? detail.registration_cta?.label ?? "Sign up to view compensation and apply"
+    ? (detail.registration_cta?.label ??
+      "Sign up to view compensation and apply")
     : detail.already_applied
       ? "Application already submitted"
       : uiState === "invite"
@@ -106,7 +123,9 @@ export function CampaignDetailWorkspace({
           : "Campaign link copied to clipboard.",
       );
     } catch (err) {
-      setShareMessage(err instanceof Error ? err.message : "Could not copy link.");
+      setShareMessage(
+        err instanceof Error ? err.message : "Could not copy link.",
+      );
     }
   };
 
@@ -142,14 +161,36 @@ export function CampaignDetailWorkspace({
     setShareMessage("Brand page is not available for this campaign.");
   };
 
-  const brandPagePath = campaign.brand_slug ? publicBrandPath(campaign.brand_slug) : null;
+  const brandPagePath = campaign.brand_slug
+    ? publicBrandPath(campaign.brand_slug)
+    : null;
 
   const handlePrimaryCta = async () => {
     if (isGuest) {
-      const returnPath = inviteToken
-        ? `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}?invite_token=${encodeURIComponent(inviteToken)}`
-        : `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}`;
-      navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
+      const campaignPath = `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(campaign.campaign_id)}`;
+      const returnPath = resolveSafeInternalPath(
+        inviteToken
+          ? `${campaignPath}?invite_token=${encodeURIComponent(inviteToken)}`
+          : campaignPath,
+        PUBLIC_ROUTES.marketplace,
+      );
+      if (inviteToken) {
+        navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
+        return;
+      }
+      if (continuationIssuing) return;
+      setContinuationIssuing(true);
+      try {
+        await issueCampaignApplyContinuation(campaign.campaign_id);
+        navigate("/creator/onboarding");
+      } catch (issueError) {
+        setShareMessage(
+          issueError instanceof Error
+            ? issueError.message
+            : "Campaign setup could not start.",
+        );
+        setContinuationIssuing(false);
+      }
       return;
     }
     if (uiState === "invite" && inviteToken) {
@@ -185,8 +226,8 @@ export function CampaignDetailWorkspace({
       {inviteToken ? (
         <div className="cc-guest-banner">
           <p className="cc-muted" style={{ margin: 0 }}>
-            Priority invitation link detected. Sign in with the invited creator profile to claim
-            this campaign.
+            Priority invitation link detected. Sign in with the invited creator
+            profile to claim this campaign.
           </p>
         </div>
       ) : null}
@@ -194,7 +235,8 @@ export function CampaignDetailWorkspace({
       {isGuest ? (
         <div className="cc-guest-banner">
           <p className="cc-muted" style={{ margin: 0 }}>
-            Teaser view — compensation and brief details are masked until you sign in.
+            Teaser view — compensation and brief details are masked until you
+            sign in.
           </p>
         </div>
       ) : null}
@@ -216,22 +258,31 @@ export function CampaignDetailWorkspace({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="cc-detail-hero__heading">
               <div>
-                <h1 className="cc-detail-hero__title">{displayValue(campaign.campaign_name)}</h1>
+                <h1 className="cc-detail-hero__title">
+                  {displayValue(campaign.campaign_name)}
+                </h1>
                 <p className="cc-muted">
-                  Sponsored by <strong>{displayValue(campaign.brand_name)}</strong>
+                  Sponsored by{" "}
+                  <strong>{displayValue(campaign.brand_name)}</strong>
                 </p>
                 <p className="cc-muted" style={{ marginTop: 4 }}>
                   Tagline: {displayValue(campaign.brand_tagline)}
                 </p>
                 {brandPagePath ? (
                   <p className="cc-muted" style={{ marginTop: 4 }}>
-                    <Link to={brandPagePath}>Visit brand collaboration page</Link>
+                    <Link to={brandPagePath}>
+                      Visit brand collaboration page
+                    </Link>
                   </p>
                 ) : null}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <Badge tone="selected">{displayValue(campaign.core_objective)}</Badge>
-                {detail.is_invited ? <Badge tone="pending">Invited</Badge> : null}
+                <Badge tone="selected">
+                  {displayValue(campaign.core_objective)}
+                </Badge>
+                {detail.is_invited ? (
+                  <Badge tone="pending">Invited</Badge>
+                ) : null}
               </div>
             </div>
           </div>
@@ -290,13 +341,19 @@ export function CampaignDetailWorkspace({
               placeholderClassName="cc-media-placeholder cc-detail-product-thumb"
             />
             <div>
-              <p className="cc-detail-product-name">{displayValue(campaign.product_name)}</p>
+              <p className="cc-detail-product-name">
+                {displayValue(campaign.product_name)}
+              </p>
               <p className="cc-muted">
                 Retail value:{" "}
-                {isGuest ? "Sign in to view" : displayCurrency(campaign.product_retail_value)}
+                {isGuest
+                  ? "Sign in to view"
+                  : displayCurrency(campaign.product_retail_value)}
               </p>
               <p className="cc-muted" style={{ marginTop: 8 }}>
-                {isGuest ? "Compensation: Sign in to view" : `${compensation.label}: ${compensation.value}`}
+                {isGuest
+                  ? "Compensation: Sign in to view"
+                  : `${compensation.label}: ${compensation.value}`}
               </p>
             </div>
           </div>
@@ -319,7 +376,8 @@ export function CampaignDetailWorkspace({
             <div className="cc-locked-alert cc-locked-alert--critical">
               <h4>Application Parameters Mismatched</h4>
               <p>
-                Your synced audience profile does not meet this campaign&apos;s target criteria.
+                Your synced audience profile does not meet this campaign&apos;s
+                target criteria.
               </p>
             </div>
           ) : null}
@@ -327,7 +385,9 @@ export function CampaignDetailWorkspace({
           {uiState === "teaser" || isGuest ? (
             <div className="cc-gated-wrap">
               <div className="cc-gated-blur" aria-hidden>
-                <p>Brief and compliance parameters are masked in teaser mode.</p>
+                <p>
+                  Brief and compliance parameters are masked in teaser mode.
+                </p>
               </div>
               <div className="cc-gated-overlay">
                 <div className="cc-gated-overlay__lock">
@@ -338,7 +398,10 @@ export function CampaignDetailWorkspace({
                     ? "Sign in to unlock creative guidelines and apply."
                     : "Connect your social account to unlock brief details."}
                 </p>
-                <Button variant="primary" onClick={() => void handlePrimaryCta()}>
+                <Button
+                  variant="primary"
+                  onClick={() => void handlePrimaryCta()}
+                >
                   {isGuest ? "Sign in" : "Connect Social to Unlock"}
                 </Button>
               </div>
@@ -349,7 +412,10 @@ export function CampaignDetailWorkspace({
                 briefSections.map((section) => {
                   const open = openSectionId === section.brief_id;
                   return (
-                    <div key={section.brief_id} className="cc-brief-accordion__item">
+                    <div
+                      key={section.brief_id}
+                      className="cc-brief-accordion__item"
+                    >
                       <button
                         type="button"
                         className="cc-brief-accordion__trigger"
@@ -358,7 +424,11 @@ export function CampaignDetailWorkspace({
                         }
                       >
                         {displayValue(section.title)}
-                        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        {open ? (
+                          <ChevronUp size={18} />
+                        ) : (
+                          <ChevronDown size={18} />
+                        )}
                       </button>
                       {open ? (
                         <div className="cc-brief-accordion__body">
@@ -387,13 +457,22 @@ export function CampaignDetailWorkspace({
 
           <div className="cc-detail-cta-row">
             <Button
-              variant={canApply || isGuest || uiState === "invite" ? "primary" : "disabled"}
+              variant={
+                canApply || isGuest || uiState === "invite"
+                  ? "primary"
+                  : "disabled"
+              }
               fullWidthOnMobile
               onClick={() => void handlePrimaryCta()}
+              disabled={continuationIssuing}
             >
-              {primaryCta}
+              {continuationIssuing ? "Starting secure setup…" : primaryCta}
             </Button>
-            <Button variant="outline" fullWidthOnMobile onClick={() => void handleShare()}>
+            <Button
+              variant="outline"
+              fullWidthOnMobile
+              onClick={() => void handleShare()}
+            >
               <Share2 size={16} style={{ marginRight: 8 }} aria-hidden />
               Share campaign link
             </Button>

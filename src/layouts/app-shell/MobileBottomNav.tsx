@@ -27,6 +27,7 @@ export function MobileBottomNav() {
             <Link
               key={item.label}
               to={item.path}
+              aria-current={isActive ? "page" : undefined}
               className={`aurora-bottom-nav__item ${isActive ? "aurora-bottom-nav__item--active" : ""}`}
               aria-current={isActive ? "page" : undefined}
             >

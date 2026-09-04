@@ -1,5 +1,6 @@
 import { AUTH_ROUTES, getHomeRouteForRole } from "./constants";
 import type { UserRole } from "../../shared/auth/user-role";
+import { resolveSafeInternalPath } from "../../shared/navigation/safe-internal-path";
 
 const UUID_PATH =
   /^\/marketplace\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\?.*)?$/i;
@@ -11,25 +12,33 @@ export function resolvePostLoginPath(
   role: UserRole | null,
   from: unknown,
 ): string {
-  if (typeof from !== "string" || !from.startsWith("/")) {
-    return getHomeRouteForRole(role);
-  }
+  const fallback = getHomeRouteForRole(role);
+  const safeFrom = resolveSafeInternalPath(from, fallback);
 
   if (role === "CREATOR") {
-    const detailMatch = from.match(UUID_PATH);
+    const detailMatch = safeFrom.match(UUID_PATH);
     if (detailMatch) {
       return `${AUTH_ROUTES.creatorMarketplace}/${detailMatch[1]}${detailMatch[2] ?? ""}`;
     }
-    if (from === AUTH_ROUTES.creatorMarketplace || from.startsWith(`${AUTH_ROUTES.creatorMarketplace}?`)) {
-      return from;
+    if (
+      safeFrom === AUTH_ROUTES.creatorMarketplace ||
+      safeFrom.startsWith(`${AUTH_ROUTES.creatorMarketplace}?`)
+    ) {
+      return safeFrom;
     }
-    if (from === "/marketplace" || from.startsWith("/marketplace?")) {
-      return AUTH_ROUTES.creatorMarketplace + from.slice("/marketplace".length);
+    if (
+      safeFrom === "/marketplace" ||
+      safeFrom.startsWith("/marketplace?")
+    ) {
+      return (
+        AUTH_ROUTES.creatorMarketplace +
+        safeFrom.slice("/marketplace".length)
+      );
     }
-    if (from.startsWith("/brand/")) {
-      return from;
+    if (safeFrom.startsWith("/brand/")) {
+      return safeFrom;
     }
   }
 
-  return from;
+  return safeFrom;
 }

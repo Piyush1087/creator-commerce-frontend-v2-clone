@@ -6,12 +6,18 @@ import { MobileNavigation } from "./MobileNavigation";
 import { MobileShellNav } from "./MobileShellNav";
 import type { AppShellMainVariant } from "./sidebar-items";
 import "./app-shell.css";
+import "./brand-workspace-shell.css";
 
 type AppShellProps = PropsWithChildren<{
   mainVariant?: AppShellMainVariant;
+  brandWorkspace?: boolean;
 }>;
 
-export function AppShell({ children, mainVariant = "default" }: AppShellProps) {
+export function AppShell({
+  children,
+  mainVariant = "default",
+  brandWorkspace = false,
+}: AppShellProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -31,11 +37,20 @@ export function AppShell({ children, mainVariant = "default" }: AppShellProps) {
       : "aurora-shell__main";
 
   return (
-    <div className="aurora-shell">
+    <div
+      className={`aurora-shell${brandWorkspace ? " aurora-shell--brand-workspace" : ""}`}
+    >
       <AppSidebar />
-      <div className="aurora-shell__wrapper">
-        <AppHeader onToggleMenu={() => setIsMenuOpen(true)} />
-        <MobileShellNav />
+      <div
+        className="aurora-shell__wrapper"
+        {...(isMenuOpen ? { inert: "" } : {})}
+      >
+        <AppHeader
+          onToggleMenu={() => setIsMenuOpen(true)}
+          brandWorkspace={brandWorkspace}
+          menuOpen={isMenuOpen}
+        />
+        {!brandWorkspace ? <MobileShellNav /> : null}
         <main className={mainClassName}>{children}</main>
         <footer className="aurora-footer">
           <div
@@ -55,7 +70,9 @@ export function AppShell({ children, mainVariant = "default" }: AppShellProps) {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
       />
-      <MobileBottomNav />
+      <div {...(isMenuOpen ? { inert: "" } : {})}>
+        <MobileBottomNav />
+      </div>
     </div>
   );
 }

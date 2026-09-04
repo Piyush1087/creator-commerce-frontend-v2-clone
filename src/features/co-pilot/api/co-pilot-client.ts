@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import {
   CoPilotThreadRowSchema,
   isCoPilotHitlConfirmResponse,
@@ -28,7 +28,6 @@ const JSON_HEADERS = {
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -38,7 +37,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -110,7 +111,9 @@ export async function fetchCoPilotUsage(): Promise<CoPilotUsageSnapshot | null> 
   return json.usage;
 }
 
-export async function fetchCoPilotThreads(limit = 30): Promise<CoPilotThreadRow[]> {
+export async function fetchCoPilotThreads(
+  limit = 30,
+): Promise<CoPilotThreadRow[]> {
   const response = await fetch(
     `${env.apiUrl}/api/v1/co-pilot/threads?limit=${limit}`,
     {
@@ -397,14 +400,18 @@ export async function streamCoPilotHitlConfirm(
 
       if (parsed.event === "follow_up") {
         const payload = JSON.parse(parsed.data) as { payload?: unknown };
-        const parsedPayload = CoPilotChatPayloadSchema.safeParse(payload.payload);
+        const parsedPayload = CoPilotChatPayloadSchema.safeParse(
+          payload.payload,
+        );
         if (parsedPayload.success) {
           followUpPayload = parsedPayload.data;
         }
       }
 
       if (parsed.event === "done") {
-        const payload = JSON.parse(parsed.data) as { result?: Record<string, unknown> };
+        const payload = JSON.parse(parsed.data) as {
+          result?: Record<string, unknown>;
+        };
         result = payload.result;
       }
 

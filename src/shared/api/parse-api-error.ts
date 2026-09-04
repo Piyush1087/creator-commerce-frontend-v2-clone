@@ -30,14 +30,19 @@ function flattenZodFieldErrors(
   for (const [key, value] of Object.entries(fieldErrors)) {
     const path = prefix ? `${prefix}.${key}` : key;
     if (Array.isArray(value)) {
-      const first = value.find((item): item is string => typeof item === "string");
+      const first = value.find(
+        (item): item is string => typeof item === "string",
+      );
       if (first) {
         out[path] = first;
       }
       continue;
     }
     if (value && typeof value === "object") {
-      Object.assign(out, flattenZodFieldErrors(value as Record<string, unknown>, path));
+      Object.assign(
+        out,
+        flattenZodFieldErrors(value as Record<string, unknown>, path),
+      );
     }
   }
   return out;
@@ -52,7 +57,9 @@ function nestHttpMessage(body: unknown): string | undefined {
     return raw;
   }
   if (Array.isArray(raw)) {
-    const parts = raw.filter((item): item is string => typeof item === "string");
+    const parts = raw.filter(
+      (item): item is string => typeof item === "string",
+    );
     if (parts.length > 0) {
       return parts.join(" ");
     }
@@ -60,7 +67,10 @@ function nestHttpMessage(body: unknown): string | undefined {
   return undefined;
 }
 
-export function parseApiErrorBody(status: number, body: unknown): ApiRequestError {
+export function parseApiErrorBody(
+  status: number,
+  body: unknown,
+): ApiRequestError {
   if (typeof body !== "object" || body === null) {
     return new ApiRequestError({
       message: `Request failed (${status}).`,
@@ -87,7 +97,9 @@ export function parseApiErrorBody(status: number, body: unknown): ApiRequestErro
         zodShape.fieldErrors as Record<string, unknown>,
       );
       const formErrors = Array.isArray(zodShape.formErrors)
-        ? zodShape.formErrors.filter((item): item is string => typeof item === "string")
+        ? zodShape.formErrors.filter(
+            (item): item is string => typeof item === "string",
+          )
         : [];
       const firstField = Object.values(fieldErrors)[0];
       return new ApiRequestError({
@@ -114,7 +126,8 @@ export function parseApiErrorBody(status: number, body: unknown): ApiRequestErro
   return new ApiRequestError({
     message: nestHttpMessage(body) ?? `Request failed (${status}).`,
     status,
-    ...(mapConflictFieldErrors(status, nestHttpMessage(body))),
+    code: typeof record.code === "string" ? record.code : undefined,
+    ...mapConflictFieldErrors(status, nestHttpMessage(body)),
   });
 }
 

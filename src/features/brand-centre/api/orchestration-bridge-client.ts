@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json",
@@ -8,7 +8,6 @@ const JSON_HEADERS = {
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -18,7 +17,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -36,7 +37,11 @@ export type BridgeLaunchPayload = {
   signal_type: "LAUNCH_NEW_FRAMEWORK";
   brand_id: string;
   campaign_name: string;
-  industry_sector: "D2C_ECOMMERCE" | "HEALTHCARE" | "AI_SAAS" | "OFFLINE_EXPERIENCES";
+  industry_sector:
+    | "D2C_ECOMMERCE"
+    | "HEALTHCARE"
+    | "AI_SAAS"
+    | "OFFLINE_EXPERIENCES";
   assigned_macro_objective: "PRODUCTION" | "PULSE" | "PROOF_PUSH";
   raw_budget_expression: string;
   timeline_expression: string;
@@ -50,8 +55,17 @@ export type BridgeInjectPayload = {
   raw_strategic_context: string;
   creative_briefs: Array<{
     brief_name: string;
-    deliverable_type: "REEL_VIDEO" | "TIKTOK_POST" | "YOUTUBE_SHORTS" | "IG_STORIES" | "UGC_RAW_ASSET";
-    compensation_type: "FIXED_FEE" | "BARTER" | "REVENUE_SHARE" | "HYBRID_MILESTONE";
+    deliverable_type:
+      | "REEL_VIDEO"
+      | "TIKTOK_POST"
+      | "YOUTUBE_SHORTS"
+      | "IG_STORIES"
+      | "UGC_RAW_ASSET";
+    compensation_type:
+      | "FIXED_FEE"
+      | "BARTER"
+      | "REVENUE_SHARE"
+      | "HYBRID_MILESTONE";
   }>;
 };
 
@@ -77,11 +91,13 @@ export type BridgeProcessSignalResponse = {
 export async function postBridgeProcessSignal(
   payload: BridgeProcessSignalPayload,
 ): Promise<BridgeProcessSignalResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/orchestration/process-signal`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/orchestration/process-signal`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    },
+  );
   return (await readJsonOrThrow(response)) as BridgeProcessSignalResponse;
 }
-

@@ -1,90 +1,70 @@
-import { Receipt } from "lucide-react";
-
-import { Button } from "../../../design-system/aurora";
 import type { BrandSubscriptionRecord } from "../contracts/pricing.contracts";
 import {
+  formatCommercialPrice,
+  formatCommissionRate,
   formatCurrencyLabel,
-  formatStatusLabel,
-  formatTakeRateLabel,
   getBillingCycleLabel,
-  getPostTrialLabel,
+  getLifecyclePresentation,
   getRenewalDate,
   getRenewalLabel,
-  getStatusDescription,
   getTierDisplayName,
   getTrialDaysRemaining,
 } from "../utils/format-pricing";
 
-type PricingCurrentPlanSummaryProps = {
-  subscription: BrandSubscriptionRecord | null;
-  onUpgrade?: () => void;
-  showActions?: boolean;
-};
-
 export function PricingCurrentPlanSummary({
   subscription,
-  onUpgrade,
-  showActions = true,
-}: PricingCurrentPlanSummaryProps) {
+}: {
+  subscription: BrandSubscriptionRecord;
+}) {
+  const presentation = getLifecyclePresentation(
+    subscription.lifecycleStatus,
+    subscription,
+  );
   const trialDaysRemaining = getTrialDaysRemaining(subscription);
 
   return (
     <div className="pricing-billing__summary-grid">
       <div>
-        <p className="pricing-billing__summary-label">Plan Type</p>
+        <p className="pricing-billing__summary-label">Current plan</p>
         <p className="pricing-billing__summary-value">
-          Active Workspace Tier: {getTierDisplayName(subscription?.tier ?? null)}
+          {getTierDisplayName(subscription.plan)}
+        </p>
+        <p className="pricing-billing__summary-meta">
+          {formatCommercialPrice(subscription)} · {formatCommissionRate(subscription)}
         </p>
       </div>
       <div>
-        <p className="pricing-billing__summary-label">Subscription Status</p>
+        <p className="pricing-billing__summary-label">Lifecycle</p>
         <p className="pricing-billing__summary-value">
-          Status:{" "}
-          <span className="pricing-billing__status-pill">
-            {formatStatusLabel(subscription?.status ?? null)}
-          </span>{" "}
-          ({getStatusDescription(subscription?.status ?? null)})
+          <span className="pricing-billing__status-pill">{presentation.label}</span>
         </p>
-        <p className="pricing-billing__summary-meta">
-          Billing Cycle Term: {getBillingCycleLabel(subscription)}
-        </p>
+        <p className="pricing-billing__summary-meta">{presentation.description}</p>
       </div>
       <div>
-        <p className="pricing-billing__summary-label">Financials</p>
-        <p className="pricing-billing__summary-meta">
-          Tracking Ledger Currency: {formatCurrencyLabel(subscription?.currency ?? null)}
-        </p>
+        <p className="pricing-billing__summary-label">Billing</p>
         <p className="pricing-billing__summary-value">
           {getRenewalLabel(subscription)}: {getRenewalDate(subscription)}
+        </p>
+        <p className="pricing-billing__summary-meta">
+          {getBillingCycleLabel(subscription)} · {formatCurrencyLabel(subscription.currency)}
         </p>
         {trialDaysRemaining !== null ? (
           <p className="pricing-billing__summary-meta">
             {trialDaysRemaining === 0
               ? "Trial ends today"
-              : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left in preview`}
+              : `${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} remaining`}
           </p>
         ) : null}
-        <p className="pricing-billing__summary-meta" style={{ fontStyle: "italic" }}>
-          {subscription?.status === "TRIALING" ? "After trial: " : "Billing: "}
-          {getPostTrialLabel(subscription?.tier ?? null)}
+      </div>
+      <div>
+        <p className="pricing-billing__summary-label">Workspace access</p>
+        <p className="pricing-billing__summary-value">
+          {subscription.accessMode === "FULL_ACCESS" ? "Full access" : "Restricted wind-down"}
         </p>
         <p className="pricing-billing__summary-meta">
-          Escrow: {formatTakeRateLabel(subscription?.tier ?? null)}
+          Required action: {subscription.requiredAction.replace(/_/g, " ").toLowerCase()}
         </p>
       </div>
-      {showActions ? (
-        <div className="pricing-billing__actions" style={{ gridColumn: "1 / -1" }}>
-          <Button variant="outline" disabled>
-            <Receipt size={18} aria-hidden />
-            Download History
-          </Button>
-          {onUpgrade ? (
-            <Button onClick={onUpgrade}>Upgrade Workspace</Button>
-          ) : (
-            <Button disabled>Upgrade Workspace</Button>
-          )}
-        </div>
-      ) : null}
     </div>
   );
 }

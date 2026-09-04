@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import {
   isBrandCentreAccountResponse,
   isBrandCentreBudgetResponse,
@@ -24,7 +24,6 @@ const JSON_HEADERS = {
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -34,7 +33,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -73,10 +74,13 @@ export async function fetchBrandCentreBudget(): Promise<BrandCentreBudgetRespons
 }
 
 export async function fetchBrandCentreAccount(): Promise<BrandCentreAccountResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/dna/account`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/dna/account`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (!isBrandCentreAccountResponse(json)) {
     throw new Error("Unexpected account response.");
@@ -85,10 +89,13 @@ export async function fetchBrandCentreAccount(): Promise<BrandCentreAccountRespo
 }
 
 export async function fetchBrandCentreScanStatus(): Promise<BrandCentreScanStatusResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/scan-status`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/scan-status`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (!isBrandCentreScanStatusResponse(json)) {
     throw new Error("Unexpected scan status response.");
@@ -97,10 +104,13 @@ export async function fetchBrandCentreScanStatus(): Promise<BrandCentreScanStatu
 }
 
 export async function fetchBrandCentreIntelligence(): Promise<BrandCentreIntelligenceResponse> {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/intelligence`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/intelligence`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (!isBrandCentreIntelligenceResponse(json)) {
     throw new Error("Unexpected intelligence response.");
@@ -183,10 +193,13 @@ export async function fetchBrandCollaborationPageMeta(): Promise<{
   company_name: string;
   public_path: string;
 }> {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/collaboration-page`, {
-    method: "GET",
-    headers: authHeaders(),
-  });
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/collaboration-page`,
+    {
+      method: "GET",
+      headers: authHeaders(),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (
     !json ||
@@ -203,11 +216,16 @@ export async function fetchBrandCollaborationPageMeta(): Promise<{
   };
 }
 
-export async function postBrandCentreSessionEvict(): Promise<{ archived: number }> {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/session/evict`, {
-    method: "POST",
-    headers: authHeaders(),
-  });
+export async function postBrandCentreSessionEvict(): Promise<{
+  archived: number;
+}> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/brand-centre/session/evict`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+    },
+  );
   const json = await readJsonOrThrow(response);
   if (!json || typeof json !== "object") {
     return { archived: 0 };
