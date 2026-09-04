@@ -13,6 +13,8 @@ import { publicBrandPath } from "../../public-brand/utils/brand-page-session";
 import type { MarketplaceCampaignRow, MarketplaceDetailResponse } from "../contracts/creator-campaigns.contracts";
 import { displayCurrency, displayValue } from "../utils/display-value";
 import { formatCompensationTeaser } from "../utils/format-campaign-display";
+import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
+import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";
@@ -45,6 +47,7 @@ export function CampaignDetailWorkspace({
   const [brandLandingUrl, setBrandLandingUrl] = useState<string | null>(null);
   const [alternatives, setAlternatives] = useState<MarketplaceCampaignRow[]>([]);
   const [alternativesLoading, setAlternativesLoading] = useState(false);
+  const [continuationIssuing, setContinuationIssuing] = useState(false);
 
   const isGuest = mode === "guest" || detail.is_authenticated === false;
   const listPath =
@@ -146,10 +149,30 @@ export function CampaignDetailWorkspace({
 
   const handlePrimaryCta = async () => {
     if (isGuest) {
-      const returnPath = inviteToken
-        ? `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}?invite_token=${encodeURIComponent(inviteToken)}`
-        : `${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}`;
-      navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
+      const campaignPath = `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(campaign.campaign_id)}`;
+      const returnPath = resolveSafeInternalPath(
+        inviteToken
+          ? `${campaignPath}?invite_token=${encodeURIComponent(inviteToken)}`
+          : campaignPath,
+        PUBLIC_ROUTES.marketplace,
+      );
+      if (inviteToken) {
+        navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
+        return;
+      }
+      if (continuationIssuing) return;
+      setContinuationIssuing(true);
+      try {
+        await issueCampaignApplyContinuation(campaign.campaign_id);
+        navigate("/creator/onboarding");
+      } catch (issueError) {
+        setShareMessage(
+          issueError instanceof Error
+            ? issueError.message
+            : "Campaign setup could not start.",
+        );
+        setContinuationIssuing(false);
+      }
       return;
     }
     if (uiState === "invite" && inviteToken) {
@@ -390,8 +413,9 @@ export function CampaignDetailWorkspace({
               variant={canApply || isGuest || uiState === "invite" ? "primary" : "disabled"}
               fullWidthOnMobile
               onClick={() => void handlePrimaryCta()}
+              disabled={continuationIssuing}
             >
-              {primaryCta}
+              {continuationIssuing ? "Starting secure setup…" : primaryCta}
             </Button>
             <Button variant="outline" fullWidthOnMobile onClick={() => void handleShare()}>
               <Share2 size={16} style={{ marginRight: 8 }} aria-hidden />
