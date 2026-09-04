@@ -1,0 +1,71 @@
+name: C03 Frontend Integration Gate
+
+on:
+  push:
+    branches:
+      - c03/campaign-participation-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c03-frontend-integration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  p0-execution-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Runtime and immutable base identity
+        run: |
+          node --version
+          npm --version
+          echo "base=323658d4b147b95b5629ff8d91fa90b8fe9077e4"
+          echo "lock_sha256=$(sha256sum package-lock.json | cut -d ' ' -f 1)"
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Typecheck, lint, tests, and production build
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Install isolated Chromium
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Frontend startup and Chromium smoke
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 5303 >/tmp/c03-p0-frontend.log 2>&1 &
+          ui_pid=$!
+          trap 'kill "$ui_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5303/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:5303/ >/dev/null
+          npx --yes playwright@1.55.0 screenshot \
+            --browser chromium \
+            --viewport-size "1440,900" \
+            http://127.0.0.1:5303/ \
+            /tmp/c03-p0-desktop.png
+          test -s /tmp/c03-p0-desktop.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c03-p0-frontend-browser
+          path: /tmp/c03-p0-desktop.png
+          if-no-files-found: error
