@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -27,9 +29,14 @@ jobs:
 
       - name: Runtime and immutable base identity
         run: |
+          expected_base=323658d4b147b95b5629ff8d91fa90b8fe9077e4
+          remote_base=$(git ls-remote origin refs/heads/development | cut -f 1)
+          test "$remote_base" = "$expected_base"
+          git merge-base --is-ancestor "$expected_base" HEAD
+          test -z "$(git status --porcelain)"
           node --version
           npm --version
-          echo "base=323658d4b147b95b5629ff8d91fa90b8fe9077e4"
+          echo "base=$expected_base"
           echo "lock_sha256=$(sha256sum package-lock.json | cut -d ' ' -f 1)"
 
       - name: Locked install
@@ -72,3 +79,8 @@ jobs:
           name: c03-p0-frontend-browser
           path: /tmp/c03-p0-desktop.png
           if-no-files-found: error
+
+      - name: Final repository integrity
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain)"
