@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mountGoogleIdButton } from "./google-id-token";
 
 describe("Google Identity Services configuration", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
   it("fails safely when the public client ID is not configured", async () => {
+    vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "");
     const onCredential = vi.fn();
     await expect(
       mountGoogleIdButton({
