@@ -21,6 +21,7 @@ vi.mock("../../shared/api/authenticated-fetch", () => ({
 
 import {
   BrandPayoutsApiError,
+  fetchBrandPayoutsBrandReturnDetail,
   fetchBrandPayoutsOverview,
 } from "./api/brand-payouts-client";
 import { PayoutObligations } from "./components/PayoutObligations";
@@ -32,12 +33,14 @@ import {
   BRAND_PAYOUTS_V2_MEDIA_TYPE,
   brandPayoutsActivityDetailResponseSchema,
   brandPayoutsActivityResponseSchema,
+  brandPayoutsBrandReturnDetailResponseSchema,
   brandPayoutsObligationDetailResponseSchema,
   brandPayoutsObligationsResponseSchema,
   brandPayoutsOverviewResponseSchema,
   type BrandPayoutsActivityResponse,
   type BrandPayoutsObligationsResponse,
   type BrandPayoutsOverviewResponse,
+  resolveBrandFinancialCommandSurface,
 } from "./contracts/brand-payouts.contracts";
 import {
   mergeActivityPage,
@@ -168,6 +171,36 @@ function makeOverviewWithSettingsAction(
             action: "OPEN_SETTINGS_ADD_FUNDS",
             resource_reference: "vault:brand-a",
             resource_version: "membership:v1",
+            authorized_as_of: NOW,
+          },
+        ],
+      },
+    ],
+  });
+}
+
+function makeOverviewWithPayoutsActions(
+  coverage: "COMPLETE" | "PARTIAL" = "PARTIAL",
+): BrandPayoutsOverviewResponse {
+  const response = makeOverview();
+  const section = response.sections[0];
+  return brandPayoutsOverviewResponseSchema.parse({
+    ...response,
+    sections: [
+      {
+        ...section,
+        coverage,
+        available_actions: [
+          {
+            action: "ADD_FUNDS",
+            resource_reference: "brand-payouts:vault:add-funds",
+            resource_version: "vault:v1",
+            authorized_as_of: NOW,
+          },
+          {
+            action: "REQUEST_BRAND_RETURN",
+            resource_reference: "brand-payouts:vault:brand-return",
+            resource_version: "vault:v1:membership:v1",
             authorized_as_of: NOW,
           },
         ],
@@ -315,6 +348,33 @@ function makeObligationDetail(id = "obligation-one") {
         ...sectionMetadata,
         coverage: "PARTIAL",
         payload: obligationItem(id),
+      },
+    ],
+  });
+}
+
+function makeBrandReturnDetail(id = "return-one") {
+  return brandPayoutsBrandReturnDetailResponseSchema.parse({
+    schema_version: "brand-payouts.v2",
+    as_of: NOW,
+    viewer: { role: "BRAND_OWNER", projection_scope: "FULL_FINANCIAL" },
+    sections: [
+      {
+        section_id: "BRAND_RETURNS",
+        ...sectionMetadata,
+        payload: {
+          brand_return_id: id,
+          public_reference: `brand-return:${id}`,
+          resource_version: "observed:v1",
+          status: "PROCESSING",
+          requested_value: money("1000.00"),
+          completed_value: money("0.00"),
+          unresolved_value: money("1000.00"),
+          requested_at: NOW,
+          last_observed_at: NOW,
+          action_required_reason_code: null,
+          legacy: null,
+        },
       },
     ],
   });
@@ -474,6 +534,33 @@ describe("Brand Payouts V2 runtime contract", () => {
     ).toBe(false);
   });
 
+  it("fails a mixed or missing command-surface capability closed", () => {
+    const payouts = makeOverviewWithPayoutsActions();
+    expect(resolveBrandFinancialCommandSurface(payouts)).toBe("PAYOUTS");
+    const section = payouts.sections[0];
+    const mixed = brandPayoutsOverviewResponseSchema.parse({
+      ...payouts,
+      sections: [
+        {
+          ...section,
+          available_actions: [
+            ...section.available_actions,
+            {
+              action: "OPEN_SETTINGS_ADD_FUNDS",
+              resource_reference: "brand-settings:secure-escrow:add-funds",
+              resource_version: "vault:v1",
+              authorized_as_of: NOW,
+            },
+          ],
+        },
+      ],
+    });
+    expect(resolveBrandFinancialCommandSurface(mixed)).toBe("UNAVAILABLE");
+    expect(resolveBrandFinancialCommandSurface(makeOverview())).toBe(
+      "UNAVAILABLE",
+    );
+  });
+
   it("requests only the V2 media type and rejects representation drift", async () => {
     mocks.authenticatedFetch.mockResolvedValueOnce(
       new Response(JSON.stringify(makeOverview()), {
@@ -600,8 +687,48 @@ describe("route and detail fail-closed behavior", () => {
       kind: "OBLIGATION",
       reference: "payout-obligation:one",
     });
+    expect(
+      resolvePayoutsDetailTarget("?brand_return=brand-return%3Areturn-one"),
+    ).toEqual({
+      kind: "BRAND_RETURN",
+      reference: "brand-return:return-one",
+    });
     expect(resolvePayoutsDetailTarget("?activity=a&obligation=b")).toBe(
       "INVALID",
+    );
+  });
+
+  it("loads a URL-addressable Brand Return detail without exposing source data", async () => {
+    mocks.authenticatedFetch.mockImplementation(() =>
+      Promise.resolve(jsonResponse(makeBrandReturnDetail())),
+    );
+    render(
+      createElement(
+        MemoryRouter,
+        {
+          initialEntries: [
+            "/brand/payouts?brand_return=brand-return:return-one",
+          ],
+        },
+        createElement(PayoutsDetail, {
+          target: {
+            kind: "BRAND_RETURN",
+            reference: "brand-return:return-one",
+          },
+        }),
+      ),
+    );
+    expect(await screen.findByText("Processing")).toBeTruthy();
+    expect(screen.getByText(/original funding sources/u)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(
+      /account number|ifsc|provider id/iu,
+    );
+
+    await expect(
+      fetchBrandPayoutsBrandReturnDetail("brand-return:return-one"),
+    ).resolves.toMatchObject({ schema_version: "brand-payouts.v2" });
+    expect(String(mocks.authenticatedFetch.mock.calls.at(-1)?.[0])).toContain(
+      "/brand-returns/brand-return%3Areturn-one",
     );
   });
 });
@@ -835,6 +962,34 @@ describe("truthful first-slice rendering", () => {
       makeOverviewWithSettingsAction("COMPLETE", "STALE"),
       false,
     );
+  });
+
+  it("exposes both canonical commands only when the server selects Payouts", async () => {
+    mocks.authenticatedFetch.mockImplementation((input: string) => {
+      if (input.includes("/activity?")) {
+        return Promise.resolve(jsonResponse(makeActivity()));
+      }
+      if (input.includes("/obligations?")) {
+        return Promise.resolve(jsonResponse(makeObligations()));
+      }
+      return Promise.resolve(jsonResponse(makeOverviewWithPayoutsActions()));
+    });
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/brand/payouts"] },
+        createElement(BrandPayoutsWorkspace),
+      ),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Add funds" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("link", { name: "Open Secure escrow Settings" }),
+    ).toBeNull();
   });
 });
 
@@ -1112,7 +1267,7 @@ describe("stable financial detail navigation", () => {
   });
 });
 
-describe("P2 architecture constraints", () => {
+describe("P2 and P3A architecture constraints", () => {
   const featureSource = [
     "api/brand-payouts-client.ts",
     "components/BrandPayoutsRouteGuard.tsx",
@@ -1122,6 +1277,7 @@ describe("P2 architecture constraints", () => {
     "components/PayoutsDetail.tsx",
     "components/PayoutsOverview.tsx",
     "components/PayoutsSectionStatus.tsx",
+    "components/PayoutsTreasuryActions.tsx",
     "hooks/use-brand-payouts-detail.ts",
     "hooks/use-brand-payouts-workspace.ts",
     "utils/brand-payouts-presentation.ts",
@@ -1134,10 +1290,8 @@ describe("P2 architecture constraints", () => {
     )
     .join("\n");
 
-  it("contains no parallel Treasury fetch, synthetic document, tax, tranche, or provider-ID path", () => {
-    expect(featureSource).not.toMatch(
-      /useBrandEscrow|EscrowTopUpDrawer|jsPDF|30\s*\/\s*70/iu,
-    );
+  it("contains no parallel Settings hook, synthetic document, tax, tranche, or provider-ID path", () => {
+    expect(featureSource).not.toMatch(/useBrandEscrow|jsPDF|30\s*\/\s*70/iu);
     expect(featureSource).not.toMatch(
       /\bTDS\b|razorpay|provider_(?:id|account|transfer)/iu,
     );
@@ -1146,7 +1300,7 @@ describe("P2 architecture constraints", () => {
     );
   });
 
-  it("keeps Settings as the existing command surface and wraps the Payouts route guard", () => {
+  it("reuses canonical drawers and keeps the Payouts route guard", () => {
     const settings = readFileSync(
       resolve(
         process.cwd(),
@@ -1160,6 +1314,7 @@ describe("P2 architecture constraints", () => {
     );
     expect(settings).toContain("Add funds");
     expect(settings).toContain("EscrowTopUpDrawer");
+    expect(featureSource).toContain("EscrowTopUpDrawer");
     expect(routes).toMatch(/BrandPayoutsRouteGuard>[\s\S]*<BrandPayoutsPage/u);
   });
 

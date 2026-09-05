@@ -3,17 +3,20 @@ import { useEffect, useState } from "react";
 import {
   BrandPayoutsApiError,
   fetchBrandPayoutsActivityDetail,
+  fetchBrandPayoutsBrandReturnDetail,
   fetchBrandPayoutsObligationDetail,
   isBrandPayoutsAuthorizationError,
 } from "../api/brand-payouts-client";
 import type {
   BrandPayoutsActivityDetailResponse,
+  BrandPayoutsBrandReturnDetailResponse,
   BrandPayoutsObligationDetailResponse,
 } from "../contracts/brand-payouts.contracts";
 
 export type BrandPayoutsDetailTarget =
   | { readonly kind: "ACTIVITY"; readonly reference: string }
-  | { readonly kind: "OBLIGATION"; readonly reference: string };
+  | { readonly kind: "OBLIGATION"; readonly reference: string }
+  | { readonly kind: "BRAND_RETURN"; readonly reference: string };
 
 export function resolvePayoutsDetailTarget(
   search: string,
@@ -21,13 +24,16 @@ export function resolvePayoutsDetailTarget(
   const params = new URLSearchParams(search);
   const activity = params.get("activity");
   const obligation = params.get("obligation");
-  if (activity && obligation) return "INVALID";
-  const reference = activity ?? obligation;
+  const brandReturn = params.get("brand_return");
+  if ([activity, obligation, brandReturn].filter(Boolean).length > 1) {
+    return "INVALID";
+  }
+  const reference = activity ?? obligation ?? brandReturn;
   if (!reference) return null;
   if (reference.length > 512 || reference.trim().length === 0) return "INVALID";
-  return activity
-    ? { kind: "ACTIVITY", reference }
-    : { kind: "OBLIGATION", reference };
+  if (activity) return { kind: "ACTIVITY", reference };
+  if (obligation) return { kind: "OBLIGATION", reference };
+  return { kind: "BRAND_RETURN", reference };
 }
 
 type DetailState =
@@ -41,6 +47,12 @@ type DetailState =
       readonly kind: "OBLIGATION";
       readonly status: "LOADING" | "READY" | "UNAVAILABLE" | "ACCESS_DENIED";
       readonly response: BrandPayoutsObligationDetailResponse | null;
+      readonly error: string | null;
+    }
+  | {
+      readonly kind: "BRAND_RETURN";
+      readonly status: "LOADING" | "READY" | "UNAVAILABLE" | "ACCESS_DENIED";
+      readonly response: BrandPayoutsBrandReturnDetailResponse | null;
       readonly error: string | null;
     };
 
@@ -92,7 +104,7 @@ export function useBrandPayoutsDetail(target: BrandPayoutsDetailTarget) {
           });
         })
         .catch(reject);
-    } else {
+    } else if (target.kind === "OBLIGATION") {
       void fetchBrandPayoutsObligationDetail(
         target.reference,
         controller.signal,
@@ -100,6 +112,20 @@ export function useBrandPayoutsDetail(target: BrandPayoutsDetailTarget) {
         .then((response) => {
           setState({
             kind: "OBLIGATION",
+            status: "READY",
+            response,
+            error: null,
+          });
+        })
+        .catch(reject);
+    } else {
+      void fetchBrandPayoutsBrandReturnDetail(
+        target.reference,
+        controller.signal,
+      )
+        .then((response) => {
+          setState({
+            kind: "BRAND_RETURN",
             status: "READY",
             response,
             error: null,

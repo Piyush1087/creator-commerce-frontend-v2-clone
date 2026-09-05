@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Button, SideDrawer, TextField } from "../../../design-system/aurora";
 import {
+  Alert,
+  Button,
+  SideDrawer,
+  TextField,
+} from "../../../design-system/aurora";
+import {
+  type BrandFinancialCommandSurface,
   createBrandReturn,
   EscrowApiError,
 } from "../api/brand-escrow-client";
@@ -19,6 +25,7 @@ type BrandReturnDrawerProps = {
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onNotice: (message: string) => void;
+  commandSurface: BrandFinancialCommandSurface;
 };
 
 function definiteErrorCopy(error: EscrowApiError): string {
@@ -37,6 +44,7 @@ export function BrandReturnDrawer({
   onClose,
   onRefresh,
   onNotice,
+  commandSurface,
 }: BrandReturnDrawerProps) {
   const [amountInput, setAmountInput] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -83,6 +91,7 @@ export function BrandReturnDrawer({
       const request = await createBrandReturn({
         amount: amount.majorAmount,
         idempotencyIdentity: requestIdentity,
+        commandSurface,
       });
       const state = BRAND_RETURN_PRESENTATION[request.status];
       onClose();
@@ -136,14 +145,18 @@ export function BrandReturnDrawer({
       <div className="settings-drawer-body">
         {currencyUnavailable ? (
           <Alert tone="warning" title="Return currency unavailable">
-            Return currency is currently unavailable. Refresh Treasury status before
-            requesting a return.
+            Return currency is currently unavailable. Refresh Treasury status
+            before requesting a return.
           </Alert>
         ) : null}
         {submitError ? (
           <Alert
             tone="error"
-            title={outcomeUnknown ? "Return status is unknown" : "Return not confirmed"}
+            title={
+              outcomeUnknown
+                ? "Return status is unknown"
+                : "Return not confirmed"
+            }
           >
             {submitError}
           </Alert>
@@ -165,18 +178,18 @@ export function BrandReturnDrawer({
           autoComplete="off"
           placeholder="0.00"
           disabled={currencyUnavailable}
-          error={amountInput ? validationError ?? undefined : undefined}
+          error={amountInput ? (validationError ?? undefined) : undefined}
         />
         <div className="brand-escrow-explainer">
           <strong>How Brand Return works</strong>
           <p>
-            Eligible original funding sources are selected automatically in order. One
-            request may span multiple sources. You cannot select a bank, card, payment, or
-            source.
+            Eligible original funding sources are selected automatically in
+            order. One request may span multiple sources. You cannot select a
+            bank, card, payment, or source.
           </p>
           <p>
-            Processing is asynchronous. An accepted request is not complete until its
-            status changes to Completed.
+            Processing is asynchronous. An accepted request is not complete
+            until its status changes to Completed.
           </p>
         </div>
         <label className="settings-modal__confirm">
@@ -187,8 +200,8 @@ export function BrandReturnDrawer({
             disabled={currencyUnavailable}
           />
           <span>
-            I confirm that I am returning unused eligible funds to original payment
-            source(s), selected automatically.
+            I confirm that I am returning unused eligible funds to original
+            payment source(s), selected automatically.
           </span>
         </label>
       </div>

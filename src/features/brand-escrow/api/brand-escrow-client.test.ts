@@ -106,7 +106,8 @@ describe("FE-D Treasury runtime contracts", () => {
   it("accepts every exact vault bucket and rejects a missing or future field", () => {
     expect(escrowVaultSchema.safeParse(vault()).success).toBe(true);
     expect(
-      escrowVaultSchema.safeParse({ ...vault(), pending_funding: undefined }).success,
+      escrowVaultSchema.safeParse({ ...vault(), pending_funding: undefined })
+        .success,
     ).toBe(false);
     expect(
       escrowVaultSchema.safeParse({ ...vault(), reserved_balance: 12 }).success,
@@ -114,7 +115,9 @@ describe("FE-D Treasury runtime contracts", () => {
   });
 
   it("fails closed on an unknown Brand Return lifecycle", () => {
-    expect(brandReturnRequestSchema.safeParse(returnRequest()).success).toBe(true);
+    expect(brandReturnRequestSchema.safeParse(returnRequest()).success).toBe(
+      true,
+    );
     expect(
       brandReturnRequestSchema.safeParse(
         returnRequest({ status: "REFUNDED_TO_BANK" }),
@@ -130,10 +133,12 @@ describe("FE-D Treasury API client", () => {
       available_balance: 7000,
       pending_funding: 5000,
     });
-    expect(String(fetchMock.mock.calls[0][0])).toContain("/api/v1/escrow/vault");
-    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("Authorization")).toBe(
-      "Bearer treasury-token",
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/api/v1/escrow/vault",
     );
+    expect(
+      new Headers(fetchMock.mock.calls[0][1]?.headers).get("Authorization"),
+    ).toBe("Bearer treasury-token");
   });
 
   it("uses a UUID idempotency key and exact major-unit top-up body", async () => {
@@ -150,16 +155,26 @@ describe("FE-D Treasury API client", () => {
     await createEscrowTopUpIntent({
       targetAllocation: 5000,
       idempotencyKey: ids.identity,
+      commandSurface: "PAYOUTS",
     });
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       target_allocation: 5000,
       idempotency_key: ids.identity,
     });
+    expect(
+      new Headers(fetchMock.mock.calls[0][1]?.headers).get(
+        "X-Brand-Financial-Command-Surface",
+      ),
+    ).toBe("PAYOUTS");
   });
 
   it("uses only amount and UUID identity for Brand Return", async () => {
     fetchMock.mockResolvedValue(response(returnRequest(), 202));
-    await createBrandReturn({ amount: 1000, idempotencyIdentity: ids.identity });
+    await createBrandReturn({
+      amount: 1000,
+      idempotencyIdentity: ids.identity,
+      commandSurface: "SETTINGS",
+    });
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       amount: 1000,
       idempotency_identity: ids.identity,
@@ -167,6 +182,11 @@ describe("FE-D Treasury API client", () => {
     expect(String(fetchMock.mock.calls[0][1]?.body)).not.toMatch(
       /bank|destination|source|provider|payment/i,
     );
+    expect(
+      new Headers(fetchMock.mock.calls[0][1]?.headers).get(
+        "X-Brand-Financial-Command-Surface",
+      ),
+    ).toBe("SETTINGS");
   });
 
   it("validates summary, list, and detail read routes", async () => {
@@ -190,9 +210,15 @@ describe("FE-D Treasury API client", () => {
     await expect(fetchBrandReturnRequest(ids.request)).resolves.toMatchObject({
       status: "PROCESSING",
     });
-    expect(String(fetchMock.mock.calls[0][0])).toContain("/brand-returns/summary");
-    expect(String(fetchMock.mock.calls[1][0])).toMatch(/brand-returns\?limit=50$/);
-    expect(String(fetchMock.mock.calls[2][0])).toContain(`/brand-returns/${ids.request}`);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      "/brand-returns/summary",
+    );
+    expect(String(fetchMock.mock.calls[1][0])).toMatch(
+      /brand-returns\?limit=50$/,
+    );
+    expect(String(fetchMock.mock.calls[2][0])).toContain(
+      `/brand-returns/${ids.request}`,
+    );
   });
 
   it("preserves provider-deferred codes and never maps them to completion", async () => {
@@ -210,6 +236,7 @@ describe("FE-D Treasury API client", () => {
     const error = await createBrandReturn({
       amount: 1000,
       idempotencyIdentity: ids.identity,
+      commandSurface: "PAYOUTS",
     }).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(EscrowApiError);
     expect(error).toMatchObject({
@@ -235,6 +262,7 @@ describe("FE-D Treasury API client", () => {
     const error = await createBrandReturn({
       amount: 1000,
       idempotencyIdentity: ids.identity,
+      commandSurface: "PAYOUTS",
     }).catch((caught: unknown) => caught);
     expect(error).toMatchObject({
       code: "SOURCE_PROVENANCE_REQUIRED",
@@ -249,8 +277,12 @@ describe("FE-D Treasury API client", () => {
     const error = await createBrandReturn({
       amount: 1000,
       idempotencyIdentity: ids.identity,
+      commandSurface: "PAYOUTS",
     }).catch((caught: unknown) => caught);
-    expect(error).toMatchObject({ code: "OUTCOME_UNKNOWN", outcomeUnknown: true });
+    expect(error).toMatchObject({
+      code: "OUTCOME_UNKNOWN",
+      outcomeUnknown: true,
+    });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 });

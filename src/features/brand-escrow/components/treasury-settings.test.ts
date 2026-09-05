@@ -36,9 +36,9 @@ vi.mock("../hooks/use-brand-escrow", () => ({
 }));
 
 vi.mock("../api/brand-escrow-client", async () => {
-  const actual = await vi.importActual<typeof import("../api/brand-escrow-client")>(
-    "../api/brand-escrow-client",
-  );
+  const actual = await vi.importActual<
+    typeof import("../api/brand-escrow-client")
+  >("../api/brand-escrow-client");
   return {
     ...actual,
     createEscrowTopUpIntent: mocks.topUp,
@@ -108,10 +108,7 @@ function request(
   };
 }
 
-function setState(
-  role: TreasuryRole,
-  overrides: Record<string, unknown> = {},
-) {
+function setState(role: TreasuryRole, overrides: Record<string, unknown> = {}) {
   mocks.useEscrow.mockReturnValue({
     status: "ready",
     vault,
@@ -194,9 +191,15 @@ describe("FE-D Treasury role matrix", () => {
     ).toBeNull();
     expect(screen.getByText("Available balance")).toBeTruthy();
     expect(screen.getByText("Funding load")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /approve creator payment/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /release creator funds/i })).toBeNull();
-    expect(screen.queryByRole("button", { name: /reverse payout/i })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /approve creator payment/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /release creator funds/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /reverse payout/i }),
+    ).toBeNull();
   });
 });
 
@@ -208,15 +211,23 @@ describe("FE-D vault and fixed-point money truth", () => {
     expect(screen.getByText("Available balance")).toBeTruthy();
     expect(screen.getAllByText("₹5,000.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("₹7,000.00").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Not usable or returnable until payment is confirmed/)).toBeTruthy();
+    expect(
+      screen.getByText(/Not usable or returnable until payment is confirmed/),
+    ).toBeTruthy();
   });
 
   it("compares user input and authoritative limits with scaled integers", () => {
     const belowMinimum = parseTreasuryAmount("4999.99");
     const exactMinimum = parseTreasuryAmount("5000.00");
-    expect(belowMinimum && meetsIndiaTopUpMinimum(belowMinimum, "INR")).toBe(false);
-    expect(exactMinimum && meetsIndiaTopUpMinimum(exactMinimum, "INR")).toBe(true);
-    expect(exactMinimum && amountIsWithinAuthoritativeLimit(exactMinimum, 5000)).toBe(true);
+    expect(belowMinimum && meetsIndiaTopUpMinimum(belowMinimum, "INR")).toBe(
+      false,
+    );
+    expect(exactMinimum && meetsIndiaTopUpMinimum(exactMinimum, "INR")).toBe(
+      true,
+    );
+    expect(
+      exactMinimum && amountIsWithinAuthoritativeLimit(exactMinimum, 5000),
+    ).toBe(true);
     expect(parseTreasuryAmount("0.1")).toMatchObject({ canonical: "0.10" });
     expect(parseTreasuryAmount("1.001")).toBeNull();
   });
@@ -233,7 +244,9 @@ describe("FE-D vault and fixed-point money truth", () => {
       },
     });
     render(createElement(EscrowAccountCard));
-    expect(screen.getByText(/Some available money lacks eligible source evidence/)).toBeTruthy();
+    expect(
+      screen.getByText(/Some available money lacks eligible source evidence/),
+    ).toBeTruthy();
     expect(screen.getAllByText("₹1,000.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("₹7,000.00").length).toBeGreaterThan(0);
   });
@@ -241,27 +254,36 @@ describe("FE-D vault and fixed-point money truth", () => {
 
 describe("FE-D top-up fail-closed handoff", () => {
   it("enforces the INR minimum and never credits on checkout success", async () => {
-    mocks.checkout.mockImplementation(async (input: { onSuccess: () => void }) => {
-      input.onSuccess();
-    });
+    mocks.checkout.mockImplementation(
+      async (input: { onSuccess: () => void }) => {
+        input.onSuccess();
+      },
+    );
     render(createElement(EscrowAccountCard));
     fireEvent.click(screen.getByRole("button", { name: "Add funds" }));
     const amount = screen.getByLabelText("Amount (INR)");
     fireEvent.change(amount, { target: { value: "4999" } });
     expect(screen.getByText("The minimum INR top-up is ₹5,000.")).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Continue to provider" }).hasAttribute("disabled"),
+      screen
+        .getByRole("button", { name: "Continue to provider" })
+        .hasAttribute("disabled"),
     ).toBe(true);
     fireEvent.change(amount, { target: { value: "5000" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continue to provider" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to provider" }),
+    );
     await waitFor(() =>
       expect(mocks.topUp).toHaveBeenCalledWith({
         targetAllocation: 5000,
         idempotencyKey: ids.identity,
+        commandSurface: "SETTINGS",
       }),
     );
     await waitFor(() => expect(mocks.reload).toHaveBeenCalled());
-    expect(document.body.textContent).not.toMatch(/funds added|vault credited/i);
+    expect(document.body.textContent).not.toMatch(
+      /funds added|vault credited/i,
+    );
     expect(screen.getByText(/Payment was submitted/)).toBeTruthy();
   });
 
@@ -272,16 +294,24 @@ describe("FE-D top-up fail-closed handoff", () => {
     fireEvent.change(screen.getByLabelText("Amount (INR)"), {
       target: { value: "5000" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continue to provider" }));
-    expect(await screen.findByText(/funding request may already exist/i)).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/funds added|credited successfully/i);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue to provider" }),
+    );
+    expect(
+      await screen.findByText(/funding request may already exist/i),
+    ).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(
+      /funds added|credited successfully/i,
+    );
   });
 });
 
 describe("FE-D Brand Return", () => {
   it("renders backend-authoritative INR and keeps an eligible mutation available", () => {
     render(createElement(EscrowAccountCard));
-    const openButton = screen.getByRole("button", { name: "Return unused funds" });
+    const openButton = screen.getByRole("button", {
+      name: "Return unused funds",
+    });
     expect(openButton.hasAttribute("disabled")).toBe(false);
     fireEvent.click(openButton);
     const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
@@ -309,7 +339,9 @@ describe("FE-D Brand Return", () => {
       },
     });
     render(createElement(EscrowAccountCard));
-    const openButton = screen.getByRole("button", { name: "Return unused funds" });
+    const openButton = screen.getByRole("button", {
+      name: "Return unused funds",
+    });
     expect(openButton.hasAttribute("disabled")).toBe(false);
     fireEvent.click(openButton);
     const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
@@ -362,6 +394,7 @@ describe("FE-D Brand Return", () => {
         onClose: vi.fn(),
         onRefresh: mocks.reload,
         onNotice: vi.fn(),
+        commandSurface: "SETTINGS",
       }),
     );
     const dialog = screen.getByRole("dialog", { name: "Return unused funds" });
@@ -378,23 +411,31 @@ describe("FE-D Brand Return", () => {
         .getByLabelText("Return amount (currency unavailable)")
         .hasAttribute("disabled"),
     ).toBe(true);
-    expect(within(dialog).getByRole("checkbox").hasAttribute("disabled")).toBe(true);
+    expect(within(dialog).getByRole("checkbox").hasAttribute("disabled")).toBe(
+      true,
+    );
     expect(
       within(dialog)
         .getByRole("button", { name: "Confirm Brand Return" })
         .hasAttribute("disabled"),
     ).toBe(true);
-    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm Brand Return" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Confirm Brand Return" }),
+    );
     expect(mocks.brandReturn).not.toHaveBeenCalled();
   });
 
   it("uses only amount plus explicit confirmation and has no destination/source fields", () => {
     render(createElement(EscrowAccountCard));
-    fireEvent.click(screen.getByRole("button", { name: "Return unused funds" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    );
     expect(screen.getByLabelText("Return amount (INR)")).toBeTruthy();
     expect(screen.getByRole("checkbox")).toBeTruthy();
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
-    expect(screen.queryByLabelText(/account number|ifsc|provider payment id/i)).toBeNull();
+    expect(
+      screen.queryByLabelText(/account number|ifsc|provider payment id/i),
+    ).toBeNull();
   });
 
   it("blocks an amount above the backend-confirmed returnable balance", () => {
@@ -409,7 +450,9 @@ describe("FE-D Brand Return", () => {
       },
     });
     render(createElement(EscrowAccountCard));
-    fireEvent.click(screen.getByRole("button", { name: "Return unused funds" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    );
     fireEvent.change(screen.getByLabelText("Return amount (INR)"), {
       target: { value: "1000.01" },
     });
@@ -417,44 +460,57 @@ describe("FE-D Brand Return", () => {
       screen.getByText(/exceeds the current self-service returnable balance/i),
     ).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: "Confirm Brand Return" }).hasAttribute("disabled"),
+      screen
+        .getByRole("button", { name: "Confirm Brand Return" })
+        .hasAttribute("disabled"),
     ).toBe(true);
   });
 
   it("submits an eligible amount and presents PROCESSING, not completion", async () => {
     render(createElement(EscrowAccountCard));
-    fireEvent.click(screen.getByRole("button", { name: "Return unused funds" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    );
     fireEvent.change(screen.getByLabelText("Return amount (INR)"), {
       target: { value: "1000" },
     });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm Brand Return" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm Brand Return" }),
+    );
     await waitFor(() =>
       expect(mocks.brandReturn).toHaveBeenCalledWith({
         amount: 1000,
         idempotencyIdentity: ids.identity,
+        commandSurface: "SETTINGS",
       }),
     );
-    expect(await screen.findByText(/Processing return\. Provider operations remain in progress/)).toBeTruthy();
+    expect(
+      await screen.findByText(
+        /Processing return\. Provider operations remain in progress/,
+      ),
+    ).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/return completed.*1000/i);
   });
 
   it("fails closed when provider execution is unavailable", async () => {
     mocks.brandReturn.mockRejectedValue(
-      new EscrowApiError(
-        "adapter unavailable",
-        503,
-        "PROVIDER_SETUP_REQUIRED",
-      ),
+      new EscrowApiError("adapter unavailable", 503, "PROVIDER_SETUP_REQUIRED"),
     );
     render(createElement(EscrowAccountCard));
-    fireEvent.click(screen.getByRole("button", { name: "Return unused funds" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    );
     fireEvent.change(screen.getByLabelText("Return amount (INR)"), {
       target: { value: "1000" },
     });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm Brand Return" }));
-    expect(await screen.findByText(/return provider is unavailable/i)).toBeTruthy();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm Brand Return" }),
+    );
+    expect(
+      await screen.findByText(/return provider is unavailable/i),
+    ).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/Return completed/);
   });
 
@@ -472,8 +528,10 @@ describe("FE-D Brand Return", () => {
       returnRequests: statuses.map((status, index) =>
         request(status, {
           brand_return_request_id: `${String(index + 1).padStart(8, "0")}-1111-4111-8111-111111111111`,
-          successful_amount: status === "PARTIAL" ? 400 : status === "COMPLETED" ? 1000 : 0,
-          unresolved_amount: status === "PARTIAL" ? 600 : status === "COMPLETED" ? 0 : 1000,
+          successful_amount:
+            status === "PARTIAL" ? 400 : status === "COMPLETED" ? 1000 : 0,
+          unresolved_amount:
+            status === "PARTIAL" ? 600 : status === "COMPLETED" ? 0 : 1000,
         }),
       ),
     });
@@ -489,6 +547,8 @@ describe("FE-D Brand Return", () => {
     ]) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText(/Provider reconciliation is required/)).toBeTruthy();
+    expect(
+      screen.getByText(/Provider reconciliation is required/),
+    ).toBeTruthy();
   });
 });

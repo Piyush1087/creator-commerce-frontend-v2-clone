@@ -6,12 +6,14 @@ import {
   BRAND_PAYOUTS_V2_MEDIA_TYPE,
   brandPayoutsActivityDetailResponseSchema,
   brandPayoutsActivityResponseSchema,
+  brandPayoutsBrandReturnDetailResponseSchema,
   brandPayoutsObligationDetailResponseSchema,
   brandPayoutsObligationsResponseSchema,
   brandPayoutsOverviewResponseSchema,
   type BrandPayoutsActivityCategory,
   type BrandPayoutsActivityDetailResponse,
   type BrandPayoutsActivityResponse,
+  type BrandPayoutsBrandReturnDetailResponse,
   type BrandPayoutsObligationDetailResponse,
   type BrandPayoutsObligationsResponse,
   type BrandPayoutsOverviewResponse,
@@ -201,6 +203,17 @@ export function fetchBrandPayoutsObligationDetail(
   return requestV2(
     `/obligations/${encodeURIComponent(reference)}`,
     brandPayoutsObligationDetailResponseSchema,
+    signal,
+  );
+}
+
+export function fetchBrandPayoutsBrandReturnDetail(
+  reference: string,
+  signal?: AbortSignal,
+): Promise<BrandPayoutsBrandReturnDetailResponse> {
+  return requestV2(
+    `/brand-returns/${encodeURIComponent(reference)}`,
+    brandPayoutsBrandReturnDetailResponseSchema,
     signal,
   );
 }

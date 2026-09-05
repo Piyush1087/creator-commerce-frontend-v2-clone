@@ -79,7 +79,94 @@ export function PayoutsDetail({
       detail.response ? (
         <ObligationDetail response={detail.response} />
       ) : null}
+      {detail.status === "READY" &&
+      detail.kind === "BRAND_RETURN" &&
+      detail.response ? (
+        <BrandReturnDetail response={detail.response} />
+      ) : null}
     </div>
+  );
+}
+
+function BrandReturnDetail({
+  response,
+}: {
+  readonly response: NonNullable<
+    Extract<
+      ReturnType<typeof useBrandPayoutsDetail>,
+      { kind: "BRAND_RETURN" }
+    >["response"]
+  >;
+}) {
+  const section = response.sections[0];
+  const item = section.payload;
+  const tone = item
+    ? item.status === "COMPLETED"
+      ? "success"
+      : item.status === "FAILED" || item.status === "ACTION_REQUIRED"
+        ? "error"
+        : "pending"
+    : "neutral";
+  return (
+    <Card
+      eyebrow="Brand Return"
+      title={
+        item ? shortReference(item.public_reference) : "Return unavailable"
+      }
+      className="bp-section-card"
+    >
+      {item ? (
+        <>
+          <div className="bp-detail-heading">
+            <Badge tone={tone}>{readableState(item.status)}</Badge>
+            {item.legacy ? (
+              <Badge tone="pending">Legacy / limited</Badge>
+            ) : null}
+          </div>
+          {item.action_required_reason_code ? (
+            <Alert tone="warning" title="Brand Return requires attention">
+              {payoutReason(item.action_required_reason_code)}
+            </Alert>
+          ) : null}
+          <dl className="bp-detail-grid">
+            <DetailValue
+              label="Requested"
+              value={formatPayoutsMoney(item.requested_value)}
+            />
+            <DetailValue
+              label="Completed"
+              value={formatPayoutsMoney(item.completed_value)}
+            />
+            <DetailValue
+              label="Unresolved"
+              value={formatPayoutsMoney(item.unresolved_value)}
+            />
+            <DetailValue
+              label="Requested at"
+              value={formatPayoutsTimestamp(item.requested_at)}
+            />
+            <DetailValue
+              label="Last observed"
+              value={formatPayoutsTimestamp(item.last_observed_at)}
+            />
+          </dl>
+          <p className="bp-detail-note">
+            Eligible funds return only to their original funding sources. This
+            lifecycle is distinct from a Collaboration refund or payout
+            reversal.
+          </p>
+        </>
+      ) : (
+        <Alert tone="warning" title="Brand Return unavailable">
+          This snapshot does not contain an authoritative Brand Return record.
+        </Alert>
+      )}
+      <PayoutsSectionStatus
+        asOf={response.as_of}
+        loadStatus="READY"
+        metadata={section}
+      />
+    </Card>
   );
 }
 

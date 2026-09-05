@@ -77,6 +77,8 @@ const legacyLimitationSchema = z
 
 const readActionSchema = z.enum([
   "VIEW_DETAIL",
+  "ADD_FUNDS",
+  "REQUEST_BRAND_RETURN",
   "OPEN_SETTINGS_ADD_FUNDS",
   "OPEN_SETTINGS_BRAND_RETURN",
   "DOWNLOAD_FINANCIAL_ACTIVITY_CSV",
@@ -247,6 +249,30 @@ export const brandPayoutsObligationSchema = z
   })
   .strict();
 
+export const brandPayoutsBrandReturnSchema = z
+  .object({
+    brand_return_id: boundedText,
+    public_reference: boundedText,
+    resource_version: boundedText,
+    status: z.enum([
+      "REQUESTED",
+      "ALLOCATING_ORIGINAL_SOURCES",
+      "PROCESSING",
+      "PARTIAL",
+      "COMPLETED",
+      "ACTION_REQUIRED",
+      "FAILED",
+    ]),
+    requested_value: brandPayoutsMoneySchema,
+    completed_value: brandPayoutsMoneySchema,
+    unresolved_value: brandPayoutsMoneySchema,
+    requested_at: utcInstant,
+    last_observed_at: utcInstant,
+    action_required_reason_code: reasonCode.nullable(),
+    legacy: legacyStateSchema.nullable(),
+  })
+  .strict();
+
 export const brandPayoutsActivityCategorySchema = z.enum([
   "MONEY_MOVEMENT",
   "PROTECTED_ALLOCATION",
@@ -330,6 +356,15 @@ const obligationDetailSectionSchema = z
     section_id: z.literal("OBLIGATIONS"),
     ...sectionMetadata,
     payload: brandPayoutsObligationSchema.nullable(),
+    page: pageMetadataSchema.optional(),
+  })
+  .strict();
+
+const brandReturnDetailSectionSchema = z
+  .object({
+    section_id: z.literal("BRAND_RETURNS"),
+    ...sectionMetadata,
+    payload: brandPayoutsBrandReturnSchema.nullable(),
     page: pageMetadataSchema.optional(),
   })
   .strict();
@@ -429,6 +464,20 @@ export const brandPayoutsObligationDetailResponseSchema = envelope(
     });
   }
 });
+export const brandPayoutsBrandReturnDetailResponseSchema = envelope(
+  brandReturnDetailSectionSchema,
+).superRefine((response, context) => {
+  if (
+    response.viewer.projection_scope === "NO_FINANCIAL_ROWS" &&
+    (response.sections[0].payload !== null ||
+      response.sections[0].available_actions.length > 0)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Fail-closed viewer cannot receive Brand Return detail",
+    });
+  }
+});
 
 export type BrandPayoutsViewerRole = z.infer<
   typeof brandPayoutsViewerRoleSchema
@@ -446,6 +495,9 @@ export type BrandPayoutsActivityCategory = z.infer<
 export type BrandPayoutsObligation = z.infer<
   typeof brandPayoutsObligationSchema
 >;
+export type BrandPayoutsBrandReturn = z.infer<
+  typeof brandPayoutsBrandReturnSchema
+>;
 export type BrandPayoutsOverviewResponse = z.infer<
   typeof brandPayoutsOverviewResponseSchema
 >;
@@ -461,6 +513,9 @@ export type BrandPayoutsObligationsResponse = z.infer<
 export type BrandPayoutsObligationDetailResponse = z.infer<
   typeof brandPayoutsObligationDetailResponseSchema
 >;
+export type BrandPayoutsBrandReturnDetailResponse = z.infer<
+  typeof brandPayoutsBrandReturnDetailResponseSchema
+>;
 export type BrandPayoutsSectionMetadata = Pick<
   z.infer<typeof overviewSectionSchema>,
   | "coverage"
@@ -470,3 +525,27 @@ export type BrandPayoutsSectionMetadata = Pick<
   | "legacy_limitations"
   | "available_actions"
 >;
+
+export type BrandFinancialCommandSurface =
+  | "SETTINGS"
+  | "PAYOUTS"
+  | "UNAVAILABLE";
+
+export function resolveBrandFinancialCommandSurface(
+  response: BrandPayoutsOverviewResponse,
+): BrandFinancialCommandSurface {
+  const actions = response.sections[0].available_actions.filter(
+    (action) => action.authorized_as_of === response.as_of,
+  );
+  const settings = actions.some(
+    (action) =>
+      action.action === "OPEN_SETTINGS_ADD_FUNDS" ||
+      action.action === "OPEN_SETTINGS_BRAND_RETURN",
+  );
+  const payouts = actions.some(
+    (action) =>
+      action.action === "ADD_FUNDS" || action.action === "REQUEST_BRAND_RETURN",
+  );
+  if (settings === payouts) return "UNAVAILABLE";
+  return payouts ? "PAYOUTS" : "SETTINGS";
+}

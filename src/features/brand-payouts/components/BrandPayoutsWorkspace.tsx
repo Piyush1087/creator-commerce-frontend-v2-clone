@@ -11,6 +11,7 @@ import { PayoutObligations } from "./PayoutObligations";
 import { PayoutsActivity } from "./PayoutsActivity";
 import { PayoutsDetail } from "./PayoutsDetail";
 import { PayoutsOverview } from "./PayoutsOverview";
+import { PayoutsTreasuryActions } from "./PayoutsTreasuryActions";
 import "../brand-payouts.css";
 
 export function BrandPayoutsWorkspace() {
@@ -87,21 +88,6 @@ function PayoutsWorkspaceOverview({
     );
   }
 
-  const overviewResponse = workspace.overview.data;
-  const overviewSection = overviewResponse?.sections[0];
-  const canOpenSettings = Boolean(
-    viewer?.projection_scope === "FULL_FINANCIAL" &&
-      workspace.overview.status === "READY" &&
-      overviewSection?.coverage === "COMPLETE" &&
-      overviewSection.freshness === "CURRENT" &&
-      overviewSection.available_actions.some(
-        (action) =>
-          (action.action === "OPEN_SETTINGS_ADD_FUNDS" ||
-            action.action === "OPEN_SETTINGS_BRAND_RETURN") &&
-          action.authorized_as_of === overviewResponse?.as_of,
-      ),
-  );
-
   return (
     <main className="bp-workspace">
       <header className="bp-workspace__header">
@@ -109,8 +95,8 @@ function PayoutsWorkspaceOverview({
           <p className="bp-workspace__eyebrow">Brand financial operations</p>
           <h1 className="bp-workspace__title">Payouts</h1>
           <p className="bp-workspace__subtitle">
-            A read-only operational view of pooled funds, Creator obligations,
-            and financial activity.
+            One operational view of pooled funds, Creator obligations, and
+            financial activity.
           </p>
         </div>
         <div className="bp-workspace__header-actions">
@@ -128,23 +114,10 @@ function PayoutsWorkspaceOverview({
           </Button>
         </div>
       </header>
-      <aside
-        className="bp-read-only-note"
-        aria-label="Payouts command availability"
-      >
-        <div>
-          <strong>Read-only phase</strong>
-          <p>
-            Add funds and Brand Return remain in Secure escrow Settings until
-            the separately accepted command-surface cutover.
-          </p>
-        </div>
-        {canOpenSettings ? (
-          <Link className="bp-detail-link" to={AUTH_ROUTES.brandSettingsEscrow}>
-            Open Secure escrow Settings
-          </Link>
-        ) : null}
-      </aside>
+      <PayoutsTreasuryActions
+        state={workspace.overview}
+        onRefresh={workspace.refresh}
+      />
       <PayoutsOverview state={workspace.overview} onRetry={workspace.refresh} />
       <div className="bp-content-grid">
         <PayoutObligations
