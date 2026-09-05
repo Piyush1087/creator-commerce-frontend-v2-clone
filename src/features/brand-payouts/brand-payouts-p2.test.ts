@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createElement } from "react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 
 const mocks = vi.hoisted(() => ({ authenticatedFetch: vi.fn() }));
 
@@ -32,6 +32,7 @@ import {
   BRAND_PAYOUTS_V2_MEDIA_TYPE,
   brandPayoutsActivityDetailResponseSchema,
   brandPayoutsActivityResponseSchema,
+  brandPayoutsObligationDetailResponseSchema,
   brandPayoutsObligationsResponseSchema,
   brandPayoutsOverviewResponseSchema,
   type BrandPayoutsActivityResponse,
@@ -288,7 +289,7 @@ function makeActivity(
   });
 }
 
-function makeActivityDetail() {
+function makeActivityDetail(id = "ledger:one:recorded") {
   return brandPayoutsActivityDetailResponseSchema.parse({
     schema_version: "brand-payouts.v2",
     as_of: NOW,
@@ -297,7 +298,23 @@ function makeActivityDetail() {
       {
         section_id: "ACTIVITY",
         ...sectionMetadata,
-        payload: activityItem(),
+        payload: activityItem(id),
+      },
+    ],
+  });
+}
+
+function makeObligationDetail(id = "obligation-one") {
+  return brandPayoutsObligationDetailResponseSchema.parse({
+    schema_version: "brand-payouts.v2",
+    as_of: NOW,
+    viewer: { role: "BRAND_OWNER", projection_scope: "FULL_FINANCIAL" },
+    sections: [
+      {
+        section_id: "OBLIGATIONS",
+        ...sectionMetadata,
+        coverage: "PARTIAL",
+        payload: obligationItem(id),
       },
     ],
   });
@@ -373,6 +390,15 @@ function deferred<T>() {
     rejectPromise = reject;
   });
   return { promise, resolve: resolvePromise, reject: rejectPromise };
+}
+
+function BrowserBackControl() {
+  const navigate = useNavigate();
+  return createElement(
+    "button",
+    { onClick: () => navigate(-1) },
+    "Simulate browser Back",
+  );
 }
 
 afterEach(() => {
@@ -813,6 +839,116 @@ describe("truthful first-slice rendering", () => {
 });
 
 describe("stable financial detail navigation", () => {
+  it("preserves expanded activity and obligation pages across both detail return paths", async () => {
+    const firstActivityId = "ledger:first:recorded";
+    const secondActivityId = "ledger:second:recorded";
+    const firstObligationId = "obligation-first";
+    const secondObligationId = "obligation-second";
+    let initialActivityRequests = 0;
+    let initialObligationRequests = 0;
+
+    mocks.authenticatedFetch.mockImplementation((input: string) => {
+      if (input.includes(`/activity/${encodeURIComponent(secondActivityId)}`)) {
+        return Promise.resolve(
+          jsonResponse(makeActivityDetail(secondActivityId)),
+        );
+      }
+      if (
+        input.includes(
+          `/obligations/${encodeURIComponent(`payout-obligation:${secondObligationId}`)}`,
+        )
+      ) {
+        return Promise.resolve(
+          jsonResponse(makeObligationDetail(secondObligationId)),
+        );
+      }
+      if (input.includes("/activity?")) {
+        if (input.includes("cursor=activity-next")) {
+          return Promise.resolve(jsonResponse(makeActivity(secondActivityId)));
+        }
+        initialActivityRequests += 1;
+        return Promise.resolve(
+          jsonResponse(makeActivity(firstActivityId, "activity-next")),
+        );
+      }
+      if (input.includes("/obligations?")) {
+        if (input.includes("cursor=obligations-next")) {
+          return Promise.resolve(
+            jsonResponse(makeObligations(secondObligationId)),
+          );
+        }
+        initialObligationRequests += 1;
+        return Promise.resolve(
+          jsonResponse(makeObligations(firstObligationId, "obligations-next")),
+        );
+      }
+      if (input.endsWith("/api/v1/brand/payouts")) {
+        return Promise.resolve(jsonResponse(makeOverview()));
+      }
+      return Promise.reject(new Error(`Unexpected Payouts request: ${input}`));
+    });
+
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/brand/payouts"] },
+        createElement(
+          "div",
+          null,
+          createElement(BrandPayoutsWorkspace),
+          createElement(BrowserBackControl),
+        ),
+      ),
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Load more activity" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Load more obligations" }),
+    );
+    const activityLinks = await screen.findAllByRole("link", {
+      name: `View activity ${secondActivityId}`,
+    });
+    const obligationLinks = await screen.findAllByRole("link", {
+      name: `View payout obligation payout-obligation:${secondObligationId}`,
+    });
+    expect(activityLinks).toHaveLength(2);
+    expect(obligationLinks).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Load more activity" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Load more obligations" }),
+    ).toBeNull();
+
+    fireEvent.click(activityLinks[0]);
+    await screen.findByText("Financial activity", { selector: "p" });
+    fireEvent.click(screen.getByRole("button", { name: "Back to Payouts" }));
+    expect(
+      await screen.findAllByRole("link", {
+        name: `View activity ${secondActivityId}`,
+      }),
+    ).toHaveLength(2);
+
+    fireEvent.click(
+      screen.getAllByRole("link", {
+        name: `View payout obligation payout-obligation:${secondObligationId}`,
+      })[0],
+    );
+    await screen.findByText("Creator payout obligation", { selector: "p" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simulate browser Back" }),
+    );
+    expect(
+      await screen.findAllByRole("link", {
+        name: `View payout obligation payout-obligation:${secondObligationId}`,
+      }),
+    ).toHaveLength(2);
+    expect(initialActivityRequests).toBe(1);
+    expect(initialObligationRequests).toBe(1);
+  });
+
   it("routes desktop and mobile activity links by activity ID while preserving the public reference", async () => {
     const activityId = "ledger:canonical-row:recorded";
     const publicReference = "activity-public-ref";

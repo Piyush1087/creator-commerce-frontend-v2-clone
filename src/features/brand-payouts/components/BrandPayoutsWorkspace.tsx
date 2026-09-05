@@ -15,6 +15,7 @@ import "../brand-payouts.css";
 
 export function BrandPayoutsWorkspace() {
   const location = useLocation();
+  const workspace = useBrandPayoutsWorkspace();
   const target = resolvePayoutsDetailTarget(location.search);
   if (target && target !== "INVALID") {
     return <PayoutsDetail target={target} />;
@@ -31,11 +32,14 @@ export function BrandPayoutsWorkspace() {
       </div>
     );
   }
-  return <PayoutsWorkspaceOverview />;
+  return <PayoutsWorkspaceOverview workspace={workspace} />;
 }
 
-function PayoutsWorkspaceOverview() {
-  const workspace = useBrandPayoutsWorkspace();
+function PayoutsWorkspaceOverview({
+  workspace,
+}: {
+  readonly workspace: ReturnType<typeof useBrandPayoutsWorkspace>;
+}) {
   const viewers = [
     workspace.overview.data?.viewer,
     workspace.activity.data?.viewer,
