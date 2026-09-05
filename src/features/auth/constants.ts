@@ -27,6 +27,10 @@ export const AUTH_ROUTES = {
   creatorMarketplace: "/creator/marketplace",
   creatorMarketplaceCampaign: "/creator/marketplace/:campaignId",
   creatorCampaigns: "/creator/campaigns",
+  creatorOpportunities: "/creator/campaigns/opportunities",
+  creatorOpportunity: "/creator/campaigns/opportunities/:campaignId",
+  creatorApplications: "/creator/campaigns/applications",
+  creatorApplication: "/creator/campaigns/applications/:applicationId",
   creatorCampaignsHistory: "/creator/campaigns/history",
   creatorCollaborations: "/creator/collaborations",
   creatorPayouts: "/creator/payouts",
@@ -42,6 +46,7 @@ export const AUTH_ROUTES = {
 
 /** Public guest marketplace (no auth required). */
 export const PUBLIC_ROUTES = {
+  campaign: "/campaigns/:campaignId",
   marketplace: "/marketplace",
   marketplaceCampaign: "/marketplace/:campaignId",
   marketplaceInvite: "/marketplace/invite/:token",

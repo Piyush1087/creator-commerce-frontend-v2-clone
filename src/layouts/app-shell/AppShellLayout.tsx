@@ -44,6 +44,7 @@ export function AppShellLayout() {
 
   return (
     <CreatorWorkspaceActorProvider
+      key={`${session.currentUser?.id ?? ""}:${session.currentUser?.sessionId ?? ""}:${session.currentUser?.organizationId ?? ""}`}
       enabled={creatorSession}
       actorUserId={session.currentUser?.id}
     >

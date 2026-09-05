@@ -1,6 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 
-import { Button } from "../../design-system/aurora";
 import { AUTH_ROUTES } from "../../features/auth/constants";
 import "../../features/creator-campaigns/creator-campaigns.css";
 import "./MarketplaceGuestLayout.css";
@@ -12,14 +11,16 @@ export function MarketplaceGuestLayout() {
   return (
     <div className="cc-guest-shell">
       <header className="cc-guest-shell__header">
-        <Link to="/marketplace" className="cc-guest-shell__brand">
-          Creator Marketplace
-        </Link>
+        <span className="cc-guest-shell__brand">
+          Campaign opportunity entry
+        </span>
         <div className="cc-guest-shell__actions">
-          <Link to={AUTH_ROUTES.login} state={loginState}>
-            <Button variant="outline" size="sm">
-              Sign in
-            </Button>
+          <Link
+            className="aurora-button aurora-button--outline"
+            to={AUTH_ROUTES.login}
+            state={loginState}
+          >
+            Sign in
           </Link>
         </div>
       </header>
