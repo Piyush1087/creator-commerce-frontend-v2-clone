@@ -25,9 +25,11 @@ export function useCampaignScope() {
 export function ScopedCampaigns({
   children,
   authority,
+  fallback,
 }: {
   children: ReactNode;
   authority?: string;
+  fallback?: ReactNode;
 }) {
   const [scope] = useState(() => new CampaignScope(authority));
   const mounted = useRef(false);
@@ -41,6 +43,7 @@ export function ScopedCampaigns({
       });
     };
   }, [scope]);
+  if (!current && fallback) return <>{fallback}</>;
   if (!current)
     return (
       <div className="cc-workspace" role="alert">

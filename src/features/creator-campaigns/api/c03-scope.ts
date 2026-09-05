@@ -7,6 +7,11 @@ import type { CreatorWorkspaceActorContext } from "../../../shared/creator/creat
 const scopes = new Set<CampaignScope>();
 const attempts = new Map<string, string>();
 let commandAuthority = "";
+let observedSession: {
+  id: string;
+  sessionId: string | undefined;
+  organizationId: string | null;
+} | null = null;
 export function invalidateCampaignScopes() {
   attempts.clear();
   scopes.forEach((scope) => scope.clear());
@@ -14,13 +19,30 @@ export function invalidateCampaignScopes() {
 
 export function sessionIdentity() {
   const user = getAuthSessionSnapshot().currentUser;
-  return user
-    ? JSON.stringify([
-        user.id,
-        user.sessionId ?? null,
-        user.organizationId ?? null,
-      ])
-    : "anonymous";
+  if (!user) {
+    observedSession = null;
+    return "anonymous";
+  }
+  // /auth/me omits organizationId; omission is not a workspace switch.
+  // Explicit replacements still invalidate synchronously, while C05 owns subject authority.
+  if (
+    !observedSession ||
+    observedSession.id !== user.id ||
+    observedSession.sessionId !== user.sessionId
+  ) {
+    observedSession = {
+      id: user.id,
+      sessionId: user.sessionId,
+      organizationId: user.organizationId ?? null,
+    };
+  } else if (user.organizationId !== undefined)
+    observedSession.organizationId = user.organizationId;
+  return JSON.stringify([
+    user.id,
+    user.sessionId ?? null,
+    observedSession.organizationId,
+    user.role,
+  ]);
 }
 export function actorIdentity(actor: CreatorWorkspaceActorContext) {
   return JSON.stringify([

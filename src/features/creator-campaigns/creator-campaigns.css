@@ -1,6 +1,26 @@
 /* Creator campaigns — scoped feature styles (Aurora tokens only) */
 
 /* C03 reconciles the existing card/dossier/review geometry to canonical content. */
+.c03-notification-bell {
+  min-width: 44px;
+  min-height: 44px;
+  position: relative;
+}
+.c03-notification-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-radius: 12px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 18px;
+  background: var(--color-primary);
+  color: var(--surface-card);
+}
+.c03-notification-bell:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
 .c03-content {
   display: flex;
   flex-direction: column;

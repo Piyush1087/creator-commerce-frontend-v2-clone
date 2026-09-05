@@ -8,6 +8,7 @@ import { CreatorWorkspaceActorProvider } from "../../shared/creator/creator-work
 import { useCreatorWorkspaceActorState } from "../../shared/creator/creator-workspace-actor-context-value";
 import { AppShell } from "./AppShell";
 import { resolveAppShellMainVariant } from "./sidebar-items";
+import { sessionIdentity } from "../../features/creator-campaigns/api/c03-scope";
 
 type AppShellLayoutContentProps = {
   brandWorkspace: boolean;
@@ -44,7 +45,7 @@ export function AppShellLayout() {
 
   return (
     <CreatorWorkspaceActorProvider
-      key={`${session.currentUser?.id ?? ""}:${session.currentUser?.sessionId ?? ""}:${session.currentUser?.organizationId ?? ""}`}
+      key={sessionIdentity()}
       enabled={creatorSession}
       actorUserId={session.currentUser?.id}
     >

@@ -6,6 +6,7 @@ import type { AuthUser } from "../../shared/auth/auth-session";
 import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { Button } from "../../design-system/aurora";
 import { useAppShellBreadcrumbs } from "./use-app-shell-breadcrumbs";
+import { CreatorNotifications } from "../../features/creator-campaigns/components/CreatorNotifications";
 
 type AppHeaderProps = {
   onToggleMenu: () => void;
@@ -68,13 +69,17 @@ export function AppHeader({
           </Button>
         ) : null}
 
-        <button
-          type="button"
-          className="aurora-header__btn"
-          aria-label="Notifications"
-        >
-          <Bell size={18} />
-        </button>
+        {session.currentUser?.role === "CREATOR" ? (
+          <CreatorNotifications />
+        ) : (
+          <button
+            type="button"
+            className="aurora-header__btn"
+            aria-label="Notifications"
+          >
+            <Bell size={18} />
+          </button>
+        )}
 
         <div className="aurora-header__user">
           <div className="aurora-header__avatar" aria-hidden>
