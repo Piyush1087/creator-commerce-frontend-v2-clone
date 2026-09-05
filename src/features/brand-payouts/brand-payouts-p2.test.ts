@@ -52,6 +52,43 @@ import {
 
 const NOW = "2026-09-04T12:00:00.000Z";
 
+function cssHexValue(source: string, customProperty: string): string {
+  const declaration = source
+    .split("\n")
+    .find((line) => line.trim().startsWith(`${customProperty}:`));
+  const value = declaration?.match(/#[0-9a-f]{6}/iu)?.[0];
+  if (!value) {
+    throw new Error(`Missing six-digit color token ${customProperty}`);
+  }
+  return value;
+}
+
+function relativeLuminance(hex: string): number {
+  const channels = hex
+    .slice(1)
+    .match(/.{2}/gu)
+    ?.map((channel) => Number.parseInt(channel, 16) / 255);
+  if (!channels || channels.length !== 3) {
+    throw new Error(`Invalid six-digit color ${hex}`);
+  }
+  const [red, green, blue] = channels.map((channel) =>
+    channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const lighter = Math.max(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  );
+  const darker = Math.min(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  );
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 const sourceCoverage = [
   {
     source: "FINANCIAL_LEDGER" as const,
@@ -940,6 +977,32 @@ describe("P2 architecture constraints", () => {
       "utf8",
     );
     expect(tokens).toContain("--space-md: 24px");
+  });
+
+  it("keeps small Payouts accent text at WCAG AA contrast on page and card surfaces", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/features/brand-payouts/brand-payouts.css"),
+      "utf8",
+    );
+    const tokens = readFileSync(
+      resolve(process.cwd(), "src/design-system/aurora/tokens.css"),
+      "utf8",
+    );
+
+    expect(css).toMatch(
+      /\.bp-workspace__eyebrow\s*\{[^}]*color:\s*var\(--text-high\)/iu,
+    );
+    expect(css).toMatch(
+      /\.bp-workspace \.aurora-button--outline:not\(:disabled\)\s*\{[^}]*color:\s*var\(--text-high\)/iu,
+    );
+
+    const foreground = cssHexValue(tokens, "--text-high");
+    expect(
+      contrastRatio(foreground, cssHexValue(tokens, "--surface-page")),
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastRatio(foreground, cssHexValue(tokens, "--surface-card")),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
   it("keeps both table and mobile-card structures labelled for assistive technology", () => {

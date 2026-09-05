@@ -21,12 +21,16 @@
 
 .bp-workspace__eyebrow {
   margin: 0 0 4px;
-  color: var(--color-primary);
+  color: var(--text-high);
   font-family: var(--font-heading);
   font-size: var(--size-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.bp-workspace .aurora-button--outline:not(:disabled) {
+  color: var(--text-high);
 }
 
 .bp-workspace__title {
