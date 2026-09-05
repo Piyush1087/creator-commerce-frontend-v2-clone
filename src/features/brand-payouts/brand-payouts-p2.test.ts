@@ -813,7 +813,83 @@ describe("truthful first-slice rendering", () => {
 });
 
 describe("stable financial detail navigation", () => {
-  it("loads an activity detail directly from its URL-safe public reference", async () => {
+  it("routes desktop and mobile activity links by activity ID while preserving the public reference", async () => {
+    const activityId = "ledger:canonical-row:recorded";
+    const publicReference = "activity-public-ref";
+    const activityResponse = makeActivity(activityId);
+    const activitySection = activityResponse.sections[0];
+    const activitySeed = activitySection.payload?.[0];
+    if (!activitySeed) throw new Error("Expected one activity fixture");
+    const item = {
+      ...activitySeed,
+      public_reference: publicReference,
+    };
+    const listResponse = brandPayoutsActivityResponseSchema.parse({
+      ...activityResponse,
+      sections: [{ ...activitySection, payload: [item] }],
+    });
+    const detailSeed = makeActivityDetail();
+    const detailResponse = brandPayoutsActivityDetailResponseSchema.parse({
+      ...detailSeed,
+      sections: [
+        {
+          ...detailSeed.sections[0],
+          payload: item,
+        },
+      ],
+    });
+    mocks.authenticatedFetch.mockImplementation((input: string) => {
+      if (input.includes("/activity?")) {
+        return Promise.resolve(jsonResponse(listResponse));
+      }
+      if (input.includes("/obligations?")) {
+        return Promise.resolve(jsonResponse(makeObligations()));
+      }
+      if (input.endsWith("/api/v1/brand/payouts")) {
+        return Promise.resolve(jsonResponse(makeOverview()));
+      }
+      if (input.includes(`/activity/${encodeURIComponent(activityId)}`)) {
+        return Promise.resolve(jsonResponse(detailResponse));
+      }
+      return Promise.reject(new Error(`Unexpected Payouts request: ${input}`));
+    });
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/brand/payouts"] },
+        createElement(BrandPayoutsWorkspace),
+      ),
+    );
+
+    const links = await screen.findAllByRole("link", {
+      name: `View activity ${publicReference}`,
+    });
+    expect(links).toHaveLength(2);
+    expect(screen.getAllByText(publicReference)).toHaveLength(2);
+    for (const link of links) {
+      expect(link.getAttribute("href")).toBe(
+        `/brand/payouts?activity=${encodeURIComponent(activityId)}`,
+      );
+    }
+
+    fireEvent.click(links[0]);
+    await waitFor(() =>
+      expect(
+        mocks.authenticatedFetch.mock.calls.some(([input]) =>
+          String(input).includes(`/activity/${encodeURIComponent(activityId)}`),
+        ),
+      ).toBe(true),
+    );
+    expect(
+      mocks.authenticatedFetch.mock.calls.some(([input]) =>
+        String(input).includes(
+          `/activity/${encodeURIComponent(publicReference)}`,
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("loads an activity detail directly from its stable activity ID", async () => {
     mocks.authenticatedFetch.mockResolvedValueOnce(
       jsonResponse(makeActivityDetail()),
     );

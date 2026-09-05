@@ -222,7 +222,7 @@ function DetailLink({
   return (
     <Link
       className="bp-detail-link"
-      to={`${pathname}?activity=${encodeURIComponent(item.public_reference)}`}
+      to={`${pathname}?activity=${encodeURIComponent(item.activity_id)}`}
       state={{ fromPayoutsList: true }}
       aria-label={`View activity ${item.public_reference}`}
     >
