@@ -22,8 +22,14 @@ export function useCampaignScope() {
   if (!scope) throw new Error("Campaign authority is required");
   return scope;
 }
-export function ScopedCampaigns({ children }: { children: ReactNode }) {
-  const [scope] = useState(() => new CampaignScope());
+export function ScopedCampaigns({
+  children,
+  authority,
+}: {
+  children: ReactNode;
+  authority?: string;
+}) {
+  const [scope] = useState(() => new CampaignScope(authority));
   const mounted = useRef(false);
   const current = useSyncExternalStore(scope.subscribe, scope.getSnapshot);
   useEffect(() => {
@@ -59,6 +65,7 @@ export function CampaignAuthority({ children }: { children?: ReactNode }) {
   return (
     <ScopedCampaigns
       key={sessionIdentity() + actorIdentity(actor.actorContext)}
+      authority={sessionIdentity() + actorIdentity(actor.actorContext)}
     >
       {children ?? <Outlet />}
     </ScopedCampaigns>

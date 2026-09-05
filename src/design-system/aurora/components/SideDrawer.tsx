@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import type { PropsWithChildren, ReactNode } from "react";
+import type { PropsWithChildren, ReactNode, RefObject } from "react";
 import { X } from "lucide-react";
 
 type SideDrawerProps = PropsWithChildren<{
@@ -11,6 +11,7 @@ type SideDrawerProps = PropsWithChildren<{
   footer?: ReactNode;
   width?: string;
   closeLabel?: string;
+  initialFocusRef?: RefObject<HTMLElement>;
 }>;
 
 export function SideDrawer({
@@ -22,6 +23,7 @@ export function SideDrawer({
   footer,
   width = "600px",
   closeLabel,
+  initialFocusRef,
 }: SideDrawerProps) {
   const titleId = useId();
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -36,9 +38,19 @@ export function SideDrawer({
     if (!isOpen) return;
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement;
+    const background = Array.from(document.body.children)
+      .filter(
+        (element): element is HTMLElement =>
+          element instanceof HTMLElement &&
+          element !== drawerRef.current?.parentElement,
+      )
+      .map((element) => ({ element, inert: element.inert }));
+    background.forEach(({ element }) => {
+      element.inert = true;
+    });
     document.body.style.overflow = "hidden";
     const focusFrame = window.requestAnimationFrame(() => {
-      closeButtonRef.current?.focus();
+      (initialFocusRef?.current ?? closeButtonRef.current)?.focus();
     });
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -66,9 +78,12 @@ export function SideDrawer({
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      background.forEach(({ element, inert }) => {
+        element.inert = inert;
+      });
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
-  }, [isOpen]);
+  }, [isOpen, initialFocusRef]);
 
   if (!isOpen) return null;
 

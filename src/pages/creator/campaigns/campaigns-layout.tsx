@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import "../../../../features/creator-campaigns/creator-campaigns.css";
+import "../../../features/creator-campaigns/creator-campaigns.css";
 
 export function CampaignsLayout() {
   return (

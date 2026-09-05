@@ -24,6 +24,19 @@ export async function request<T>(
   schema: z.ZodType<T>,
   init: RequestInit = {},
 ): Promise<T> {
+  scope.begin();
+  try {
+    return await readRequest(scope, path, schema, init);
+  } finally {
+    scope.end();
+  }
+}
+async function readRequest<T>(
+  scope: CampaignScope,
+  path: string,
+  schema: z.ZodType<T>,
+  init: RequestInit,
+): Promise<T> {
   scope.assertCurrent();
   let response: Response;
   try {

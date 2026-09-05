@@ -1,16 +1,11 @@
+import { OpportunityCollection } from "../../../features/creator-campaigns/components/OpportunityCollection";
+import { OpportunityWorkspace } from "../../../features/creator-campaigns/components/OpportunityWorkspace";
+import { PublicCampaignEntry } from "../../../features/creator-campaigns/components/PublicCampaignEntry";
 export function OpportunitiesPage() {
-  return (
-    <section>
-      <h1>Opportunities</h1>
-    </section>
-  );
+  return <OpportunityCollection />;
 }
 export function OpportunityPage() {
-  return (
-    <section>
-      <h1>Campaign opportunity</h1>
-    </section>
-  );
+  return <OpportunityWorkspace />;
 }
 export function ApplicationsPage() {
   return (
@@ -27,9 +22,5 @@ export function ApplicationPage() {
   );
 }
 export function PublicCampaignPage() {
-  return (
-    <main className="cc-workspace">
-      <h1>Campaign opportunity entry</h1>
-    </main>
-  );
+  return <PublicCampaignEntry />;
 }
