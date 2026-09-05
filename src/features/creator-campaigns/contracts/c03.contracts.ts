@@ -141,6 +141,26 @@ export const opportunitySchema = z
   ])
   .superRefine((value, ctx) => {
     if (value.state !== "AUTHORIZED") return;
+    if (
+      value.canApply &&
+      (!value.applicationsOpen ||
+        value.applyBlockedReason !== null ||
+        "state" in value.campaign.commercial ||
+        !value.assets.some(
+          (asset) =>
+            asset.status === "ACTIVE" &&
+            asset.briefs.some(
+              (brief) =>
+                brief.status === "PUBLISHED" &&
+                brief.applicationSelection.state === "AVAILABLE",
+            ),
+        ))
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Inconsistent Application projection",
+      });
+    }
     for (const asset of value.assets) {
       if (
         asset.campaignId !== value.campaign.id ||
@@ -161,6 +181,7 @@ export const statusSchema = z.enum([
   "REJECTED",
   "WITHDRAWN",
   "EXPIRED",
+  "SUPERSEDED",
 ]);
 const historyBrief = z
   .object({

@@ -1,5 +1,31 @@
 /* Creator campaigns — scoped feature styles (Aurora tokens only) */
 
+.c03-content .cc-detail-hero__top,
+.c03-content .cc-detail-telemetry > div {
+  padding: 24px;
+}
+.c03-content .cc-detail-hero:not(:has(.cc-detail-hero__top)) {
+  padding: 24px;
+}
+
+.c03-content a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  max-width: 100%;
+}
+.aurora-shell:has(.c03-content) .aurora-header__btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.aurora-sidedrawer:has(.c03-content) .aurora-sidedrawer__footer {
+  flex-wrap: wrap;
+}
+.c03-content .cc-detail-hero,
+.c03-content .cc-detail-hero__top > div {
+  min-width: 0;
+}
+
 /* C03 reconciles the existing card/dossier/review geometry to canonical content. */
 .c03-notification-bell {
   min-width: 44px;

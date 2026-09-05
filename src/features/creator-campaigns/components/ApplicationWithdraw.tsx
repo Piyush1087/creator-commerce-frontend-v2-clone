@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button, SideDrawer } from "../../../design-system/aurora";
 import {
   CampaignError,
@@ -7,8 +7,8 @@ import {
 } from "../api/c03-client";
 import type { ApplicationDetail } from "../contracts/c03.contracts";
 import { messageForError } from "../utils/c03-errors";
-import { useCampaignScope } from "./CampaignAuthority";
-import { assetName } from "./CampaignContent";
+import { useCampaignScope } from "../hooks/campaign-scope-context";
+import { assetName } from "../utils/c03-selection";
 
 export function ApplicationWithdraw({
   application,
@@ -22,6 +22,7 @@ export function ApplicationWithdraw({
   onWithdrawn: () => void;
 }) {
   const scope = useCampaignScope();
+  const errorId = useId();
   const cancel = useRef<HTMLButtonElement>(null);
   const inFlight = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -78,6 +79,7 @@ export function ApplicationWithdraw({
             Keep Application
           </button>
           <Button
+            aria-describedby={error ? errorId : undefined}
             disabled={busy || (!!error && !uncertain)}
             onClick={() => void submit()}
           >
@@ -105,7 +107,7 @@ export function ApplicationWithdraw({
           <p role="status">Waiting for the server to confirm Withdraw…</p>
         )}
         {!!error && (
-          <div role="alert">
+          <div role="alert" id={errorId}>
             <p>{messageForError(error)}</p>
             {!uncertain && (
               <Button variant="outline" onClick={onRefresh}>

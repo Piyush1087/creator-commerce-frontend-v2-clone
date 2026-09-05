@@ -8,7 +8,7 @@ import { exchangeCampaignEntry } from "../api/c03-entry";
 import { idSchema } from "../contracts/c03.contracts";
 import { useCampaignResource } from "../hooks/use-c03-resource";
 import { messageForError } from "../utils/c03-errors";
-import { useCampaignScope } from "./CampaignAuthority";
+import { useCampaignScope } from "../hooks/campaign-scope-context";
 import { CampaignUnavailable } from "./CampaignCompatibility";
 import { OpportunityDossier } from "./OpportunityDossier";
 import { OpportunityRecovery } from "./OpportunityRecovery";

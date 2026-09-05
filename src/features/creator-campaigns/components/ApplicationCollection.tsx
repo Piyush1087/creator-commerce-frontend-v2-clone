@@ -5,7 +5,8 @@ import { fetchApplications } from "../api/c03-client";
 import type { CampaignScope } from "../api/c03-scope";
 import { useCampaignResource } from "../hooks/use-c03-resource";
 import { messageForError } from "../utils/c03-errors";
-import { DateValue, assetName } from "./CampaignContent";
+import { DateValue } from "./CampaignContent";
+import { assetName } from "../utils/c03-selection";
 
 export function ApplicationCollection() {
   const [cursor, setCursor] = useState<string | null>(null);

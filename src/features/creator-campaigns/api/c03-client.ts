@@ -3,6 +3,7 @@ import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import { env } from "../../../shared/config/env";
 import * as dto from "../contracts/c03.contracts";
 import { invalidateCampaignScopes, type CampaignScope } from "./c03-scope";
+import { reasonCopy } from "../utils/c03-reasons";
 
 export class CampaignError extends Error {
   constructor(
@@ -16,7 +17,10 @@ export class CampaignError extends Error {
 function errorCode(body: unknown): string | null {
   if (!body || typeof body !== "object") return null;
   const value = body as Record<string, unknown>;
-  return typeof value.code === "string" ? value.code : errorCode(value.message);
+  return typeof value.code === "string" &&
+    Object.prototype.hasOwnProperty.call(reasonCopy, value.code)
+    ? value.code
+    : errorCode(value.message);
 }
 export async function request<T>(
   scope: CampaignScope,

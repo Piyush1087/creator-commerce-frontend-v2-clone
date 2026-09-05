@@ -139,3 +139,13 @@ export class CampaignScope {
     scopes.delete(this);
   }
 }
+
+// Pending command keys must also clear if a session ends while no C03 view is mounted.
+let rememberedIdentity = sessionIdentity();
+subscribeToAuthSession(() => {
+  const next = sessionIdentity();
+  if (next !== rememberedIdentity) {
+    invalidateCampaignScopes();
+    rememberedIdentity = next;
+  }
+});

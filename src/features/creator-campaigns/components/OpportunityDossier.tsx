@@ -10,15 +10,15 @@ import type {
   Receipt,
 } from "../contracts/c03.contracts";
 import { messageForError, messageForReason } from "../utils/c03-errors";
-import { useCampaignScope } from "./CampaignAuthority";
+import { useCampaignScope } from "../hooks/campaign-scope-context";
 import {
   AssetContent,
   BriefContent,
   CommercialContent,
   DateValue,
   SafeReference,
-  assetName,
 } from "./CampaignContent";
+import { assetName, type ApplyDraft } from "../utils/c03-selection";
 import { OptionalMedia } from "./OptionalMedia";
 import { OpportunityApply } from "./OpportunityApply";
 
@@ -31,6 +31,7 @@ export function OpportunityDossier({
 }) {
   const scope = useCampaignScope();
   const actor = useCreatorWorkspaceActorState();
+  const [draft, setDraft] = useState<ApplyDraft | null>(null);
   const [overlay, setOverlay] = useState<
     | { kind: "asset"; asset: Asset }
     | { kind: "brief"; brief: Brief }
@@ -45,6 +46,7 @@ export function OpportunityDossier({
     actor.actorContext.allowedActions.includes("CAMPAIGN_APPLICATION_APPLY");
   const { campaign } = opportunity;
   const success = async (value: Receipt) => {
+    setDraft(null);
     setOverlay(null);
     setReceipt(value);
     setReceiptError(null);
@@ -214,9 +216,14 @@ export function OpportunityDossier({
         <OpportunityApply
           opportunity={opportunity}
           initialBriefId={overlay.briefId}
-          onClose={() => setOverlay(null)}
+          initialDraft={draft}
+          onClose={(value) => {
+            setDraft(value);
+            setOverlay(null);
+          }}
           onRefresh={() => {
             setOverlay(null);
+            setDraft(null);
             refresh();
           }}
           onSuccess={(value) => void success(value)}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CampaignScope } from "../api/c03-scope";
-import { useCampaignScope } from "../components/CampaignAuthority";
+import { useCampaignScope } from "./campaign-scope-context";
 
 export function useCampaignResource<T>(
   load: (scope: CampaignScope) => Promise<T>,
@@ -27,8 +27,9 @@ export function useCampaignResource<T>(
   }, [load, scope]);
   useEffect(() => {
     void refresh();
+    const lifecycle = generation;
     return () => {
-      generation.current++;
+      lifecycle.current++;
     };
   }, [refresh]);
   return { ...state, refresh };

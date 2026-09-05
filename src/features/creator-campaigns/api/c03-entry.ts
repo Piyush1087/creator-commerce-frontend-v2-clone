@@ -12,6 +12,14 @@ let credential: string | undefined;
 let entryCampaign: string | undefined;
 let exchange: Promise<void> | undefined;
 if (typeof window !== "undefined") {
+  if (
+    /^\/(?:creator\/(?:campaigns|marketplace)|marketplace)(?:\/|$)/.test(
+      window.location.pathname,
+    ) &&
+    (window.location.hash || window.location.search)
+  ) {
+    window.history.replaceState(null, "", window.location.pathname);
+  }
   const match = /^\/campaigns\/([0-9a-f-]{36})$/i.exec(
     window.location.pathname,
   );

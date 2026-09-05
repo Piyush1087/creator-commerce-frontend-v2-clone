@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useRef,
   useState,
@@ -8,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { Outlet } from "react-router-dom";
+import { Button } from "../../../design-system/aurora";
 import { useCreatorWorkspaceActorState } from "../../../shared/creator/creator-workspace-actor-context-value";
 import { useAuthSession } from "../../../shared/auth/use-auth-session";
 import {
@@ -16,12 +15,7 @@ import {
   sessionIdentity,
 } from "../api/c03-scope";
 
-const ScopeContext = createContext<CampaignScope | null>(null);
-export function useCampaignScope() {
-  const scope = useContext(ScopeContext);
-  if (!scope) throw new Error("Campaign authority is required");
-  return scope;
-}
+import { ScopeContext } from "../hooks/campaign-scope-context";
 export function ScopedCampaigns({
   children,
   authority,
@@ -47,7 +41,11 @@ export function ScopedCampaigns({
   if (!current)
     return (
       <div className="cc-workspace" role="alert">
-        Your access changed. Reload to verify your current workspace.
+        <h1>Campaigns</h1>
+        <p>Your access changed. Reload to verify your current workspace.</p>
+        <Button onClick={() => window.location.reload()}>
+          Reload workspace access
+        </Button>
       </div>
     );
   return (
@@ -60,9 +58,12 @@ export function CampaignAuthority({ children }: { children?: ReactNode }) {
   if (actor?.status !== "READY")
     return (
       <div className="cc-workspace" role="status">
-        {actor?.status === "RECOVERY"
-          ? actor.reason
-          : "Verifying Creator workspace access…"}
+        <h1>Campaigns</h1>
+        <p>
+          {actor?.status === "RECOVERY"
+            ? actor.reason
+            : "Verifying Creator workspace access…"}
+        </p>
       </div>
     );
   return (
@@ -72,5 +73,20 @@ export function CampaignAuthority({ children }: { children?: ReactNode }) {
     >
       {children ?? <Outlet />}
     </ScopedCampaigns>
+  );
+}
+
+export function CampaignOpportunityAuthority() {
+  const actor = useCreatorWorkspaceActorState();
+  return actor?.status === "READY" &&
+    actor.actorContext.allowedActions.includes("CAMPAIGN_OPPORTUNITY_VIEW") ? (
+    <Outlet />
+  ) : (
+    <section className="c03-content">
+      <h1>Opportunities</h1>
+      <p role="status">
+        Your current workspace access does not allow viewing Opportunities.
+      </p>
+    </section>
   );
 }

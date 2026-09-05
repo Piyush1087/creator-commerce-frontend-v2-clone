@@ -15,7 +15,8 @@ vi.mock("../api/c03-client", async (original) => ({
   submitApplication: api.submit,
 }));
 import { ScopedCampaigns } from "./CampaignAuthority";
-import { OpportunityApply, selectablePairs } from "./OpportunityApply";
+import { OpportunityApply } from "./OpportunityApply";
+import { selectablePairs } from "../utils/c03-selection";
 import { opportunityFixture, receiptFixture } from "../testing/c03-fixtures";
 import {
   opportunitySchema,

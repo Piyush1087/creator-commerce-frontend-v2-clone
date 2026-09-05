@@ -1,4 +1,7 @@
-import { CampaignAuthority } from "../features/creator-campaigns/components/CampaignAuthority";
+import {
+  CampaignAuthority,
+  CampaignOpportunityAuthority,
+} from "../features/creator-campaigns/components/CampaignAuthority";
 import {
   CampaignUnavailable,
   LegacyCampaignRedirect,
@@ -76,22 +79,30 @@ export function AppRoutes() {
         element={<CreatorTeamInvitationAcceptance />}
       />
       <Route path={PUBLIC_ROUTES.campaign} element={<PublicCampaignPage />} />
+      <Route
+        path={PUBLIC_ROUTES.marketplace}
+        element={<CampaignUnavailable />}
+      />
+      <Route
+        path={PUBLIC_ROUTES.marketplaceInvite}
+        element={<CampaignUnavailable invitation />}
+      />
+      <Route
+        path={PUBLIC_ROUTES.marketplaceCampaign}
+        element={<LegacyCampaignRedirect />}
+      />
+      <Route
+        path={AUTH_ROUTES.creatorMarketplace}
+        element={<Navigate to={AUTH_ROUTES.creatorOpportunities} replace />}
+      />
+      <Route
+        path={AUTH_ROUTES.creatorMarketplaceCampaign}
+        element={<LegacyCampaignRedirect creator />}
+      />
       <Route element={<MarketplaceGuestLayout />}>
         <Route
           path={PUBLIC_ROUTES.brandLanding}
           element={<PublicBrandLandingPage />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplace}
-          element={<CampaignUnavailable />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplaceInvite}
-          element={<CampaignUnavailable invitation />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplaceCampaign}
-          element={<LegacyCampaignRedirect />}
         />
       </Route>
       <Route
@@ -199,14 +210,6 @@ export function AppRoutes() {
         </Route>
         <Route element={<CampaignAuthority />}>
           <Route
-            path={AUTH_ROUTES.creatorMarketplace}
-            element={<Navigate to={AUTH_ROUTES.creatorOpportunities} replace />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorMarketplaceCampaign}
-            element={<LegacyCampaignRedirect creator />}
-          />
-          <Route
             path={AUTH_ROUTES.creatorCollaborations}
             element={
               <CollaborationRouteGuard expectedRole="CREATOR">
@@ -219,11 +222,13 @@ export function AppRoutes() {
             element={<CampaignsLayout />}
           >
             <Route index element={<Navigate to="opportunities" replace />} />
-            <Route path="opportunities" element={<OpportunitiesPage />} />
-            <Route
-              path="opportunities/:campaignId"
-              element={<OpportunityPage />}
-            />
+            <Route element={<CampaignOpportunityAuthority />}>
+              <Route path="opportunities" element={<OpportunitiesPage />} />
+              <Route
+                path="opportunities/:campaignId"
+                element={<OpportunityPage />}
+              />
+            </Route>
             <Route path="applications" element={<ApplicationsPage />} />
             <Route
               path="applications/:applicationId"

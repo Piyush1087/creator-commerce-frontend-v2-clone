@@ -6,6 +6,7 @@ import type {
   commercialSchema,
   definitionSchema,
 } from "../contracts/c03.contracts";
+import { assetName } from "../utils/c03-selection";
 import { OptionalMedia } from "./OptionalMedia";
 
 export function SafeReference({ value }: { value: string | null }) {
@@ -117,13 +118,6 @@ export function CommercialContent({
       )}
     </section>
   );
-}
-export function assetName(asset: Pick<Asset, "kind" | "offering" | "offer">) {
-  return asset.kind === "BRAND"
-    ? "Brand"
-    : asset.kind === "OFFERING"
-      ? (asset.offering?.name ?? "Offering")
-      : (asset.offer?.offerName ?? "Offer");
 }
 export function AssetContent({
   asset,

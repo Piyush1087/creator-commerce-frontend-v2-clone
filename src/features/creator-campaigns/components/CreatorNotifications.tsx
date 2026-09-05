@@ -12,7 +12,8 @@ import {
 import { actorIdentity, sessionIdentity } from "../api/c03-scope";
 import { useCampaignResource } from "../hooks/use-c03-resource";
 import { messageForError } from "../utils/c03-errors";
-import { ScopedCampaigns, useCampaignScope } from "./CampaignAuthority";
+import { ScopedCampaigns } from "./CampaignAuthority";
+import { useCampaignScope } from "../hooks/campaign-scope-context";
 import { DateValue } from "./CampaignContent";
 
 function UnavailableBell() {
