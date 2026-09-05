@@ -995,6 +995,9 @@ describe("P2 architecture constraints", () => {
     expect(css).toMatch(
       /\.bp-workspace \.aurora-button--outline:not\(:disabled\)\s*\{[^}]*color:\s*var\(--text-high\)/iu,
     );
+    expect(css).toMatch(
+      /\.bp-workspace \.aurora-button--ghost:not\(:disabled\)\s*\{[^}]*color:\s*var\(--text-high\)/iu,
+    );
 
     const foreground = cssHexValue(tokens, "--text-high");
     expect(

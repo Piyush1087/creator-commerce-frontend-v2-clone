@@ -33,6 +33,10 @@
   color: var(--text-high);
 }
 
+.bp-workspace .aurora-button--ghost:not(:disabled) {
+  color: var(--text-high);
+}
+
 .bp-workspace__title {
   margin: 0;
   color: var(--text-high);
