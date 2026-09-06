@@ -108,6 +108,16 @@ function request(
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function setState(role: TreasuryRole, overrides: Record<string, unknown> = {}) {
   mocks.useEscrow.mockReturnValue({
     status: "ready",
@@ -253,6 +263,44 @@ describe("FE-D vault and fixed-point money truth", () => {
 });
 
 describe("FE-D top-up fail-closed handoff", () => {
+  it("keeps submission focus inside the drawer and rejects duplicate top-ups", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof mocks.topUp>>>();
+    mocks.topUp.mockReturnValue(pending.promise);
+    render(createElement(EscrowAccountCard));
+    fireEvent.click(screen.getByRole("button", { name: "Add funds" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Close Add funds" }),
+      ),
+    );
+    fireEvent.change(screen.getByLabelText("Amount (INR)"), {
+      target: { value: "5000" },
+    });
+    const submit = screen.getByRole("button", {
+      name: "Continue to provider",
+    });
+    submit.focus();
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(submit.getAttribute("aria-disabled")).toBe("true"),
+    );
+    expect(submit.hasAttribute("disabled")).toBe(false);
+    expect(document.activeElement).toBe(submit);
+    fireEvent.click(submit);
+    expect(mocks.topUp).toHaveBeenCalledTimes(1);
+
+    pending.reject(
+      new EscrowApiError("adapter unavailable", 503, "PROVIDER_SETUP_REQUIRED"),
+    );
+    expect(await screen.findByText("adapter unavailable")).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(submit));
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Close Add funds" }),
+    );
+  });
+
   it("enforces the INR minimum and never credits on checkout success", async () => {
     mocks.checkout.mockImplementation(
       async (input: { onSuccess: () => void }) => {
@@ -307,6 +355,49 @@ describe("FE-D top-up fail-closed handoff", () => {
 });
 
 describe("FE-D Brand Return", () => {
+  it("keeps submission focus inside the drawer and rejects duplicate returns", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof mocks.brandReturn>>>();
+    mocks.brandReturn.mockReturnValue(pending.promise);
+    render(createElement(EscrowAccountCard));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Return unused funds" }),
+    );
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Close Return unused funds" }),
+      ),
+    );
+    fireEvent.change(screen.getByLabelText("Return amount (INR)"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    const submit = screen.getByRole("button", {
+      name: "Confirm Brand Return",
+    });
+    submit.focus();
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(submit.getAttribute("aria-disabled")).toBe("true"),
+    );
+    expect(submit.hasAttribute("disabled")).toBe(false);
+    expect(document.activeElement).toBe(submit);
+    fireEvent.click(submit);
+    expect(mocks.brandReturn).toHaveBeenCalledTimes(1);
+
+    pending.reject(
+      new EscrowApiError("adapter unavailable", 503, "PROVIDER_SETUP_REQUIRED"),
+    );
+    expect(
+      await screen.findByText(/return provider is unavailable/i),
+    ).toBeTruthy();
+    await waitFor(() => expect(document.activeElement).toBe(submit));
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Close Return unused funds" }),
+    );
+  });
+
   it("renders backend-authoritative INR and keeps an eligible mutation available", () => {
     render(createElement(EscrowAccountCard));
     const openButton = screen.getByRole("button", {

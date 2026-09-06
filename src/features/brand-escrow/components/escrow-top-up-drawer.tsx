@@ -71,6 +71,7 @@ export function EscrowTopUpDrawer({
   };
 
   const handleProceed = async () => {
+    if (submitting || outcomeUnknown) return;
     setSubmitError(null);
     if (!amount || validationError || !idempotencyKey) return;
     setSubmitting(true);
@@ -135,7 +136,8 @@ export function EscrowTopUpDrawer({
           </Button>
           <Button
             onClick={() => void handleProceed()}
-            disabled={Boolean(validationError) || submitting || outcomeUnknown}
+            disabled={Boolean(validationError)}
+            aria-disabled={submitting || outcomeUnknown ? true : undefined}
           >
             {submitting ? "Opening checkout…" : "Continue to provider"}
           </Button>

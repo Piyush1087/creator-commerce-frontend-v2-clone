@@ -82,7 +82,9 @@ export function BrandReturnDrawer({
       !amount ||
       validationError ||
       !confirmed ||
-      !requestIdentity
+      !requestIdentity ||
+      submitting ||
+      outcomeUnknown
     )
       return;
     setSubmitting(true);
@@ -130,12 +132,9 @@ export function BrandReturnDrawer({
           <Button
             onClick={() => void handleSubmit()}
             disabled={
-              Boolean(validationError) ||
-              currencyUnavailable ||
-              !confirmed ||
-              submitting ||
-              outcomeUnknown
+              Boolean(validationError) || currencyUnavailable || !confirmed
             }
+            aria-disabled={submitting || outcomeUnknown ? true : undefined}
           >
             {submitting ? "Requesting return…" : "Confirm Brand Return"}
           </Button>
