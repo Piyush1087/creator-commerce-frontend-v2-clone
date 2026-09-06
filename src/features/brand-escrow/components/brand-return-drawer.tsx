@@ -123,7 +123,7 @@ export function BrandReturnDrawer({
       subtitle="Return eligible available money to its original external source(s)."
       width="500px"
       footer={
-        <div className="settings-drawer-footer">
+        <div className="settings-drawer-footer brand-escrow-drawer-footer">
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>

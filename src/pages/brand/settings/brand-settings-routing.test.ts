@@ -79,6 +79,14 @@ const escrowCss = readFileSync(
   resolve("src/features/brand-escrow/brand-escrow.css"),
   "utf8",
 );
+const topUpDrawerSource = readFileSync(
+  resolve("src/features/brand-escrow/components/escrow-top-up-drawer.tsx"),
+  "utf8",
+);
+const brandReturnDrawerSource = readFileSync(
+  resolve("src/features/brand-escrow/components/brand-return-drawer.tsx"),
+  "utf8",
+);
 
 function renderSettingsRoute(pathname: string) {
   return render(
@@ -153,6 +161,18 @@ describe("FE-E Brand Settings routing and composition", () => {
     );
     expect(escrowCss).toMatch(
       /\.brand-escrow-card \.aurora-button--outline:not\(:disabled\)\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+  });
+
+  it("keeps active Treasury drawer ghost actions contrast-safe", () => {
+    expect(escrowCss).toMatch(
+      /\.brand-escrow-drawer-footer \.aurora-button--ghost:not\(:disabled\)\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(topUpDrawerSource).toContain(
+      'className="settings-drawer-footer brand-escrow-drawer-footer"',
+    );
+    expect(brandReturnDrawerSource).toContain(
+      'className="settings-drawer-footer brand-escrow-drawer-footer"',
     );
   });
 

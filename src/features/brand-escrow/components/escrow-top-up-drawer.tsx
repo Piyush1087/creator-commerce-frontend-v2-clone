@@ -129,7 +129,7 @@ export function EscrowTopUpDrawer({
       subtitle="Open checkout for this Brand vault."
       width="480px"
       footer={
-        <div className="settings-drawer-footer">
+        <div className="settings-drawer-footer brand-escrow-drawer-footer">
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
