@@ -15,6 +15,10 @@
   opacity: 0.85;
 }
 
+.brand-escrow-card .aurora-button--outline:not(:disabled) {
+  color: #006c4b;
+}
+
 .brand-escrow-card__glow {
   position: absolute;
   top: -6rem;

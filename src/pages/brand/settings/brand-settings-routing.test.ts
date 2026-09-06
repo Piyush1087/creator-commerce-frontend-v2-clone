@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createElement } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -69,6 +71,15 @@ import { BrandSettingsEscrowPage } from "./brand-settings-escrow-page";
 import { BrandSettingsGeneralPage } from "./brand-settings-general-page";
 import { BrandSettingsIntegrationsPage } from "./brand-settings-integrations-page";
 
+const settingsCss = readFileSync(
+  resolve("src/features/settings/settings.css"),
+  "utf8",
+);
+const escrowCss = readFileSync(
+  resolve("src/features/brand-escrow/brand-escrow.css"),
+  "utf8",
+);
+
 function renderSettingsRoute(pathname: string) {
   return render(
     createElement(
@@ -133,6 +144,18 @@ beforeEach(() => {
 });
 
 describe("FE-E Brand Settings routing and composition", () => {
+  it("keeps active navigation, compatibility actions, and escrow outline actions contrast-safe", () => {
+    expect(settingsCss).toMatch(
+      /\.brand-settings__tab--active\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(settingsCss).toMatch(
+      /\.settings-team__action-link\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(escrowCss).toMatch(
+      /\.brand-escrow-card \.aurora-button--outline:not\(:disabled\)\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+  });
+
   it("redirects the Settings root deterministically to General", async () => {
     renderSettingsRoute(BRAND_SETTINGS_ROUTES.root);
     expect(await screen.findByText("General content")).toBeTruthy();
