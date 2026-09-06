@@ -93,7 +93,75 @@
 
 @media (min-width: 768px) {
   .pricing-billing__summary-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pricing-billing__section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.pricing-billing__section-icon {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: var(--radius-card-standard);
+  color: var(--color-primary);
+  background: var(--surface-workflow);
+}
+
+.pricing-billing__readiness,
+.pricing-billing__lifecycle-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--border-default));
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-subtle);
+}
+
+.pricing-billing__readiness {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--border-default));
+}
+
+.pricing-billing__readiness p,
+.pricing-billing__lifecycle-action p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.pricing-billing__lifecycle-action {
+  margin-top: var(--space-md);
+}
+
+.pricing-billing__lifecycle-action--warning {
+  border-color: color-mix(in srgb, #f59e0b 35%, var(--border-default));
+  background: color-mix(in srgb, #f59e0b 7%, var(--surface-card));
+}
+
+.pricing-billing__lifecycle-action--restricted {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--border-default));
+}
+
+.pricing-billing__action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .pricing-billing__readiness,
+  .pricing-billing__lifecycle-action {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
   }
 }
 
@@ -283,6 +351,7 @@
   }
 }
 
+.pricing-billing__feature-group h3,
 .pricing-billing__feature-group h4 {
   margin: 0 0 var(--space-sm);
   font-family: var(--font-heading);
@@ -326,8 +395,21 @@
 
 @media (min-width: 900px) {
   .pricing-billing__plan-cards {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.pricing-billing__plan-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.pricing-billing__plan-card-heading h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--size-h2);
 }
 
 .pricing-billing__plan-card {
@@ -538,6 +620,33 @@
   font-style: italic;
 }
 
+.pricing-billing__invoice-list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.pricing-billing__invoice-card {
+  display: grid;
+  gap: var(--space-sm);
+  align-items: center;
+  padding: var(--space-md);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card-standard);
+  background: var(--surface-card);
+  overflow-wrap: anywhere;
+}
+
+.pricing-billing__invoice-card p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+@media (min-width: 768px) {
+  .pricing-billing__invoice-card {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
 @media (max-width: 767px) {
   .pricing-billing__actions .aurora-button {
     width: 100%;
@@ -546,5 +655,12 @@
   .pricing-billing__founders-footer {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .pricing-billing__action-row,
+  .pricing-billing__action-row .aurora-button,
+  .pricing-billing__lifecycle-action .aurora-button,
+  .pricing-billing__readiness .aurora-button {
+    width: 100%;
   }
 }

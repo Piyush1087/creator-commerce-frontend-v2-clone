@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   CampaignsHistoryResponse,
   CampaignsWorkspaceResponse,
@@ -22,7 +22,6 @@ const CAMPAIGNS_BASE = `${env.apiUrl}/api/v1/creator/campaigns`;
 function authHeaders(): Record<string, string> {
   return {
     ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -32,7 +31,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
@@ -48,11 +49,15 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
 
 function toQueryString(query: MarketplaceListQuery): string {
   const params = new URLSearchParams();
-  if (query.search_query?.trim()) params.set("search_query", query.search_query.trim());
-  if (query.brand_slug?.trim()) params.set("brand_slug", query.brand_slug.trim());
-  if (query.show_match_eligible_only) params.set("show_match_eligible_only", "true");
+  if (query.search_query?.trim())
+    params.set("search_query", query.search_query.trim());
+  if (query.brand_slug?.trim())
+    params.set("brand_slug", query.brand_slug.trim());
+  if (query.show_match_eligible_only)
+    params.set("show_match_eligible_only", "true");
   if (query.niche?.trim()) params.set("niche", query.niche.trim());
-  if (query.deliverable_type) params.set("deliverable_type", query.deliverable_type);
+  if (query.deliverable_type)
+    params.set("deliverable_type", query.deliverable_type);
   if (query.target_geography?.trim()) {
     params.set("target_geography", query.target_geography.trim().toUpperCase());
   }
@@ -114,7 +119,11 @@ export async function fetchMarketplaceShareLink(
 
 export async function claimMarketplaceInvitation(
   inviteToken: string,
-): Promise<{ collaboration_id: string; campaign_id: string; claimed: boolean }> {
+): Promise<{
+  collaboration_id: string;
+  campaign_id: string;
+  claimed: boolean;
+}> {
   const response = await fetch(`${MARKETPLACE_BASE}/invitations/claim`, {
     method: "POST",
     headers: authHeaders(),
@@ -132,9 +141,11 @@ export async function fetchCampaignsWorkspace(
 ): Promise<CampaignsWorkspaceResponse> {
   const params = new URLSearchParams();
   if (query.currentView) params.set("currentView", query.currentView);
-  if (query.searchQuery?.trim()) params.set("searchQuery", query.searchQuery.trim());
+  if (query.searchQuery?.trim())
+    params.set("searchQuery", query.searchQuery.trim());
   if (query.platformFilter) params.set("platformFilter", query.platformFilter);
-  if (query.dependencyFilter) params.set("dependencyFilter", query.dependencyFilter);
+  if (query.dependencyFilter)
+    params.set("dependencyFilter", query.dependencyFilter);
   const qs = params.toString();
   const response = await fetch(
     `${CAMPAIGNS_BASE}/workspace${qs ? `?${qs}` : ""}`,

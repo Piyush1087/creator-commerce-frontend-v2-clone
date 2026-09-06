@@ -1,42 +1,59 @@
 import type { EscrowVaultApiResponse } from "../contracts/escrow.contracts";
 import { displayCurrency } from "../utils/display-value";
 
-type EscrowBalanceMetricsProps = {
-  vault: EscrowVaultApiResponse | null;
-};
+type EscrowBalanceMetricsProps = { vault: EscrowVaultApiResponse };
 
 export function EscrowBalanceMetrics({ vault }: EscrowBalanceMetricsProps) {
-  const currency = vault?.currency ?? null;
+  const metrics = [
+    {
+      label: "Available balance",
+      value: vault.available_balance,
+      hint: "Cleared, uncommitted vault money. Source eligibility may still limit external return.",
+      accent: true,
+    },
+    {
+      label: "Locked campaign funds",
+      value: vault.locked_campaign_funds,
+      hint: "Committed to Collaboration obligations; there is no Settings release control.",
+    },
+    {
+      label: "Pending funding",
+      value: vault.pending_funding,
+      hint: "Not usable or returnable until payment is confirmed.",
+    },
+    {
+      label: "Active return commitment",
+      value: vault.active_return_commitment,
+      hint: "Accepted Brand Return amount still awaiting a final outcome.",
+    },
+    {
+      label: "TDS buffer",
+      value: vault.tds_buffer_balance,
+      hint: "Tax buffer managed automatically; no Settings action is available.",
+    },
+    {
+      label: "Total pooled balance",
+      value: vault.total_pooled_balance,
+      hint: "Total cleared balance across the pooled Brand vault.",
+    },
+  ];
 
   return (
-    <div className="brand-escrow-metrics">
-      <div className="brand-escrow-metrics__item">
-        <p className="brand-escrow-metrics__label">Total Pooled Balance</p>
-        <p className="brand-escrow-metrics__value brand-escrow-metrics__value--accent">
-          {displayCurrency(vault?.total_pooled_balance, currency)}
-        </p>
-        <p className="brand-escrow-metrics__hint">
-          Sum total of all cleared liquidity within your virtual banking node.
-        </p>
-      </div>
-      <div className="brand-escrow-metrics__item">
-        <p className="brand-escrow-metrics__label">Locked Campaign Funds</p>
-        <p className="brand-escrow-metrics__value">
-          {displayCurrency(vault?.locked_campaign_funds, currency)}
-        </p>
-        <p className="brand-escrow-metrics__hint">
-          Escrow capital securely frozen for active Stage 2 to Stage 5 contracts.
-        </p>
-      </div>
-      <div className="brand-escrow-metrics__item">
-        <p className="brand-escrow-metrics__label">Available Balance</p>
-        <p className="brand-escrow-metrics__value brand-escrow-metrics__value--accent">
-          {displayCurrency(vault?.available_balance, currency)}
-        </p>
-        <p className="brand-escrow-metrics__hint">
-          Free unallocated capital ready to fund newly approved creators.
-        </p>
-      </div>
+    <div className="brand-escrow-metrics" aria-label="Vault monetary state">
+      {metrics.map((metric) => (
+        <div className="brand-escrow-metrics__item" key={metric.label}>
+          <p className="brand-escrow-metrics__label">{metric.label}</p>
+          <p
+            className={`brand-escrow-metrics__value${
+              metric.accent ? " brand-escrow-metrics__value--accent" : ""
+            }`}
+            aria-label={`${metric.label}: ${displayCurrency(metric.value, vault.currency)}`}
+          >
+            {displayCurrency(metric.value, vault.currency)}
+          </p>
+          <p className="brand-escrow-metrics__hint">{metric.hint}</p>
+        </div>
+      ))}
     </div>
   );
 }

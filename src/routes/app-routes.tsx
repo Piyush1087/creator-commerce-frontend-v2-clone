@@ -46,6 +46,7 @@ import { CreatorInstagramOAuthCallbackPage } from "../pages/creator/onboarding/c
 import { CREATOR_ONBOARDING_ROUTES } from "../features/creator-onboarding/constants";
 import { CollaborationRouteGuard } from "../features/collaboration/components/CollaborationRouteGuard";
 import { UnmatchedRouteHandler } from "./unmatched-route-handler";
+import { RequireCreatorPlatformAccess } from "../features/creator-onboarding/components/creator-platform-route-guard";
 
 export function AppRoutes() {
   return (
@@ -136,47 +137,6 @@ export function AppRoutes() {
           <Route path="billing" element={<BrandSettingsBillingPage />} />
           <Route path="escrow" element={<BrandSettingsEscrowPage />} />
         </Route>
-        <Route path={AUTH_ROUTES.creatorHome} element={<CreatorCentrePage />} />
-        <Route
-          path={AUTH_ROUTES.creatorAnalytics}
-          element={<CreatorAnalyticsPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMediaKit}
-          element={<CreatorMediaKitPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorDashboard}
-          element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMarketplace}
-          element={<CreatorMarketplacePage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorMarketplaceCampaign}
-          element={<CreatorCampaignDetailPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCampaigns}
-          element={<CreatorCampaignsCommandCenterPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorPayouts}
-          element={<CreatorPayoutsPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCampaignsHistory}
-          element={<CreatorCampaignsHistoryPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.creatorCollaborations}
-          element={
-            <CollaborationRouteGuard expectedRole="CREATOR">
-              <CreatorCollaborationsPage />
-            </CollaborationRouteGuard>
-          }
-        />
         <Route
           path={AUTH_ROUTES.creatorSettings}
           element={<CreatorSettingsLayout />}
@@ -186,6 +146,52 @@ export function AppRoutes() {
           <Route path="social" element={<CreatorSettingsSocialPage />} />
           <Route path="payouts" element={<CreatorSettingsPayoutsPage />} />
         </Route>
+        <Route element={<RequireCreatorPlatformAccess />}>
+          <Route
+            path={AUTH_ROUTES.creatorHome}
+            element={<CreatorCentrePage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorAnalytics}
+            element={<CreatorAnalyticsPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorMediaKit}
+            element={<CreatorMediaKitPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorDashboard}
+            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorMarketplace}
+            element={<CreatorMarketplacePage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorMarketplaceCampaign}
+            element={<CreatorCampaignDetailPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCampaigns}
+            element={<CreatorCampaignsCommandCenterPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorPayouts}
+            element={<CreatorPayoutsPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCampaignsHistory}
+            element={<CreatorCampaignsHistoryPage />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCollaborations}
+            element={
+              <CollaborationRouteGuard expectedRole="CREATOR">
+                <CreatorCollaborationsPage />
+              </CollaborationRouteGuard>
+            }
+          />
+        </Route>
       </Route>
       <Route
         path="/creator/onboarding/*"
@@ -193,6 +199,10 @@ export function AppRoutes() {
       />
       <Route
         path={CREATOR_ONBOARDING_ROUTES.instagramCallback}
+        element={<CreatorInstagramOAuthCallbackPage />}
+      />
+      <Route
+        path={CREATOR_ONBOARDING_ROUTES.legacyInstagramCallback}
         element={<CreatorInstagramOAuthCallbackPage />}
       />
       <Route

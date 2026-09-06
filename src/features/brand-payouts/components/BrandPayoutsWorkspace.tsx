@@ -23,7 +23,6 @@ import { Alert, Badge, Button } from "../../../design-system/aurora";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
 import { AUTH_ROUTES } from "../../auth/constants";
 import { EscrowTopUpDrawer } from "../../brand-escrow/components/escrow-top-up-drawer";
-import { EscrowTransactionResultModal } from "../../brand-escrow/components/escrow-transaction-result-modal";
 import { useBrandEscrow } from "../../brand-escrow/hooks/use-brand-escrow";
 import type { EscrowLedgerEntry } from "../../brand-escrow/types";
 import {
@@ -42,7 +41,7 @@ import {
 } from "../utils/payout-document-exports";
 import { useBrandPayoutsHub } from "../hooks/use-brand-payouts-hub";
 import { mapHubLedgerRow, maskSensitiveAccount } from "../utils/map-hub-ledger";
-import type { BrandDisbursalRow, BrandEscrowLockRow } from "../contracts/brand-payouts.contracts";
+import type { BrandEscrowLockRow } from "../contracts/brand-payouts.contracts";
 import {
   filterLedgerForTab,
   ledgerTabLabel,
@@ -137,7 +136,6 @@ export function BrandPayoutsWorkspace() {
 
   const [activeTab, setActiveTab] = useState<PayoutsLedgerTab>("all");
   const [topUpOpen, setTopUpOpen] = useState(false);
-  const [resultModal, setResultModal] = useState<"success" | "failed" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<EscrowLedgerEntry | null>(null);
@@ -206,18 +204,6 @@ export function BrandPayoutsWorkspace() {
     setCopySuccess(ok);
     if (ok) {
       window.setTimeout(() => setCopySuccess(false), 2000);
-    }
-  };
-
-  const handlePaymentSuccess = async () => {
-    setTopUpOpen(false);
-    setActionError(null);
-    try {
-      await refreshAfterPayment();
-      await reloadHub();
-      setResultModal("success");
-    } catch {
-      setResultModal("success");
     }
   };
 
@@ -707,20 +693,12 @@ export function BrandPayoutsWorkspace() {
         open={topUpOpen}
         vault={hub?.vault ?? vault}
         onClose={() => setTopUpOpen(false)}
-        onPaymentSuccess={() => void handlePaymentSuccess()}
-        onPaymentFailed={(message) => {
-          setTopUpOpen(false);
-          setActionError(message);
-          setResultModal("failed");
+        onRefresh={async () => {
+          await refreshAfterPayment();
+          await reloadHub();
         }}
+        onNotice={setActionError}
       />
-
-      {resultModal ? (
-        <EscrowTransactionResultModal
-          variant={resultModal}
-          onClose={() => setResultModal(null)}
-        />
-      ) : null}
 
       <SideDrawer
         isOpen={detailDrawerOpen}

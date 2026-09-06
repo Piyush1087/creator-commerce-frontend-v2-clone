@@ -1,5 +1,5 @@
-import { CreatorLandingPageView } from "../../../features/creator-onboarding/components/landing-page-view";
+import { CreatorEntryView } from "../../../features/creator-onboarding/components/creator-entry-view";
 
 export function CreatorOnboardingLandingPage() {
-  return <CreatorLandingPageView />;
+  return <CreatorEntryView />;
 }

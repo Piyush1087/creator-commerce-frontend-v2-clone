@@ -27,7 +27,8 @@ export function CollaborationRouteGuard({
   if (access.kind === "unsupported") {
     return (
       <Alert tone="warning" title="Collaboration access unavailable">
-        This account does not have an operational Brand or Creator Collaboration workspace.
+        This account does not have an operational Brand or Creator Collaboration
+        workspace.
       </Alert>
     );
   }

@@ -2,13 +2,27 @@ import type { EscrowLedgerApiEntry } from "../contracts/escrow.contracts";
 import type { EscrowLedgerEntry } from "../types";
 
 const CREDIT_TYPES = new Set([
+  "LOAD",
+  "RELEASE",
   "VBA_TOPUP_WIRE",
   "GATEWAY_TOPUP_CARD",
   "TDS_BUFFER_REVERSAL",
   "FAILED_COLLAB_REFUND",
+  "COLLAB_REFUND",
+  "CREATOR_PAYOUT_REVERSAL",
 ]);
 
 const TYPE_LABELS: Record<string, string> = {
+  LOAD: "Funding load",
+  LOAD_FEE: "Funding fee",
+  RESERVE: "Collaboration reserve",
+  RELEASE: "Released commitment",
+  CREATOR_PAYOUT: "Creator payout execution",
+  PLATFORM_COMMISSION: "Platform commission",
+  GST: "Tax on platform fee",
+  COLLAB_REFUND: "Collaboration funds released",
+  BRAND_RETURN: "External Brand Return",
+  REVERSAL_CORRECTION: "Provider reversal correction",
   VBA_TOPUP_WIRE: "Bank wire top-up",
   GATEWAY_TOPUP_CARD: "Card top-up",
   CONTRACT_LOCK_RESERVE: "Contract lock reserve",

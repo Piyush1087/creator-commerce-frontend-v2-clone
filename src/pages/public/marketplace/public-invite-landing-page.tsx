@@ -4,6 +4,7 @@ import { Navigate, useParams } from "react-router-dom";
 import { Alert } from "../../../design-system/aurora";
 import { PUBLIC_ROUTES } from "../../../features/auth/constants";
 import { resolvePublicInvitation } from "../../../features/creator-campaigns/api/public-marketplace-client";
+import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 import "../../../features/creator-campaigns/creator-campaigns.css";
 
 export function PublicInviteLandingPage() {
@@ -22,7 +23,10 @@ export function PublicInviteLandingPage() {
       .then((resolved) => {
         if (cancelled) return;
         setRedirectTo(
-          `${PUBLIC_ROUTES.marketplace}/${resolved.campaign_id}?invite_token=${encodeURIComponent(token)}`,
+          resolveSafeInternalPath(
+            `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(resolved.campaign_id)}?invite_token=${encodeURIComponent(token)}`,
+            PUBLIC_ROUTES.marketplace,
+          ),
         );
       })
       .catch((err) => {
