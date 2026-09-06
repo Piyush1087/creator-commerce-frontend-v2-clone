@@ -14,6 +14,7 @@ import {
   DateValue,
 } from "./CampaignContent";
 import { ApplicationWithdraw } from "./ApplicationWithdraw";
+import { BriefPackDownload } from "./BriefPackDownload";
 
 export function ApplicationWorkspace() {
   const { applicationId } = useParams();
@@ -86,6 +87,7 @@ function ApplicationResource({ applicationId }: { applicationId: string }) {
       <p className="cc-muted">
         These details were recorded when this Application was submitted.
       </p>
+      <BriefPackDownload applicationId={application.applicationId} />
       <section className="cc-detail-panel">
         <h2>Campaign snapshot</h2>
         <p>{application.campaign.objective ?? "Objective not provided"}</p>

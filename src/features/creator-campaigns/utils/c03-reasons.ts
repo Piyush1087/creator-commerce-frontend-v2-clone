@@ -1,4 +1,6 @@
 export const reasonCopy: Readonly<Record<string, string>> = {
+  APPLICATION_BRIEF_PACK_UNAVAILABLE:
+    "The historical downloadable pack is unavailable for this Application.",
   OPPORTUNITY_NOT_AVAILABLE: "This opportunity is unavailable.",
   AUTHENTICATION_REQUIRED: "Sign in or create a Creator account to continue.",
   CREATOR_ACCOUNT_REQUIRED: "Use a Creator account to continue.",

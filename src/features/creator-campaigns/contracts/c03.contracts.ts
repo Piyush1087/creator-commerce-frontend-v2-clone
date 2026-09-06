@@ -1,6 +1,130 @@
 import { z } from "zod";
 
 export const idSchema = z.string().uuid();
+const packContent: z.ZodType<Json> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number().finite(),
+    z.boolean(),
+    z.null(),
+    z.array(packContent),
+    z
+      .record(packContent)
+      .refine((value) =>
+        Object.keys(value).every(
+          (key) =>
+            !/^(actor|membership|subject|creatorIdentity|email|phone|shipping|contact|firstQualifiedTouch|conversionTouch|utm|invitation|campaignInvitation|eligibility|matchScore|provider|nativePlatform|instagramNative|integrationId|internalReview|privateBrand|notification|idempotency|commandReceipt|eventMetadata)/i.test(
+              key.replace(/[_-]/g, ""),
+            ),
+        ),
+      ),
+  ]),
+);
+const packTree = packContent.refine(
+  (value): boolean => value === null || typeof value === "object",
+);
+export const creatorBriefPackSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    application: z
+      .object({
+        applicationId: idSchema,
+        reference: idSchema,
+        submittedAt: z.string().datetime(),
+      })
+      .strict(),
+    brand: z
+      .object({
+        name: z.string().nullable(),
+        description: z.string().nullable(),
+        logoUrl: z.string().nullable(),
+        domain: z.string().nullable(),
+      })
+      .strict()
+      .nullable(),
+    campaign: z
+      .object({
+        name: z.string(),
+        objective: z.string().nullable(),
+        platforms: z.array(z.enum(["INSTAGRAM", "TIKTOK", "YOUTUBE"])),
+        publishingStart: z.string().datetime().nullable(),
+        publishingEnd: z.string().datetime().nullable(),
+        applicationDeadline: z.string().datetime().nullable(),
+      })
+      .strict(),
+    commercial: z
+      .object({
+        compensationModel: z.enum(["FIXED", "NEGOTIABLE"]),
+        offer: z.string().regex(/^\d+(?:\.\d+)?$/),
+        currency: z.enum(["INR", "USD"]),
+        receivesBrandSupport: z.boolean(),
+        brandSupportType: z.string().nullable(),
+        brandSupportEstimatedValue: z
+          .string()
+          .regex(/^\d+(?:\.\d+)?$/)
+          .nullable(),
+      })
+      .strict(),
+    asset: z
+      .object({
+        kind: z.enum(["BRAND", "OFFERING", "OFFER"]),
+        offering: z
+          .object({
+            name: z.string().nullable(),
+            description: z.string().nullable(),
+            imageUrl: z.string().nullable(),
+            url: z.string().nullable(),
+          })
+          .strict()
+          .nullable(),
+        offer: z
+          .object({
+            offerName: z.string().nullable(),
+            description: z.string().nullable(),
+            entityLink: z.string().nullable(),
+          })
+          .strict()
+          .nullable(),
+      })
+      .strict(),
+    brief: z
+      .object({
+        briefName: z.string().min(1),
+        creativeIntent: z.string().min(1),
+        creatorBrief: z.string().min(1),
+        briefType: z.enum(["CREATOR_LED", "BRAND_LED"]),
+        platform: z.enum(["INSTAGRAM", "TIKTOK", "YOUTUBE"]),
+        briefLevelGuidance: packTree,
+        referenceContent: packTree,
+        usageRights: packTree,
+        creatorRequirements: z.string().nullable(),
+        deliverables: z
+          .array(
+            z
+              .object({
+                id: idSchema,
+                format: z.enum([
+                  "REEL_VIDEO",
+                  "STORY",
+                  "PHOTOSHOOT",
+                  "BANNER_CAROUSEL",
+                ]),
+                displayOrder: z.number().int().min(0),
+                configuration: packTree,
+                creativeGuidance: packTree,
+                amplifyTargetDeliverableId: idSchema.nullable(),
+              })
+              .strict(),
+          )
+          .min(1),
+      })
+      .strict(),
+  })
+  .strict()
+  .refine(
+    (value) => value.application.reference === value.application.applicationId,
+  );
+export type CreatorBriefPackV1 = z.infer<typeof creatorBriefPackSchema>;
 const text = z.string().nullable();
 const date = z.string().datetime({ offset: true }).nullable();
 const decimal = z.string().regex(/^-?\d+(\.\d+)?$/);

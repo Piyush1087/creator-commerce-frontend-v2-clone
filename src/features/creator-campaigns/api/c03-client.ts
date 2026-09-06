@@ -104,6 +104,19 @@ export const fetchApplication = (s: CampaignScope, applicationId: string) =>
     `/creator/applications/${id(applicationId)}`,
     dto.applicationDetailSchema,
   );
+export async function fetchCreatorBriefPack(
+  s: CampaignScope,
+  applicationId: string,
+) {
+  const result = await request(
+    s,
+    `/creator/applications/${id(applicationId)}/brief-pack`,
+    dto.creatorBriefPackSchema,
+  );
+  if (result.application.applicationId !== applicationId)
+    throw new CampaignError(502);
+  return result;
+}
 export const fetchNotifications = (s: CampaignScope) =>
   request(s, "/creator/notifications", dto.notificationsSchema);
 export const fetchUnread = (s: CampaignScope) =>

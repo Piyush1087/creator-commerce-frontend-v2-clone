@@ -33,6 +33,7 @@ import {
   CampaignError,
   commandKey,
   fetchOpportunity,
+  fetchCreatorBriefPack,
   submitApplication,
 } from "./c03-client";
 import {
@@ -42,6 +43,60 @@ import {
 } from "../testing/c03-fixtures";
 import { reasonCopy } from "../utils/c03-reasons";
 import { messageForError } from "../utils/c03-errors";
+import { briefPackFixture } from "../testing/brief-pack-fixture";
+it("fetches only the requested immutable Brief Pack with private request options", async () => {
+  const pack = briefPackFixture(),
+    current = scope();
+  const fetcher = vi.fn(async () => json(pack));
+  vi.stubGlobal("fetch", fetcher);
+  expect(
+    await fetchCreatorBriefPack(current, pack.application.applicationId),
+  ).toEqual(pack);
+  expect(fetcher).toHaveBeenCalledWith(
+    expect.stringContaining(
+      `/creator/applications/${pack.application.applicationId}/brief-pack`,
+    ),
+    expect.objectContaining({
+      credentials: "include",
+      cache: "no-store",
+      signal: current.signal,
+    }),
+  );
+});
+it("rejects malformed or wrong-Application packs and recognizes bounded unavailability", async () => {
+  const pack = briefPackFixture();
+  for (const body of [
+    { ...pack, actorRole: "PRIVATE_SENTINEL" },
+    {
+      ...pack,
+      application: {
+        ...pack.application,
+        applicationId: fixtureId(900),
+        reference: fixtureId(900),
+      },
+    },
+  ]) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json(body)),
+    );
+    await expect(
+      fetchCreatorBriefPack(scope(), pack.application.applicationId),
+    ).rejects.toMatchObject({ status: 502 });
+  }
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      json({ code: "APPLICATION_BRIEF_PACK_UNAVAILABLE" }, 409),
+    ),
+  );
+  await expect(
+    fetchCreatorBriefPack(scope(), pack.application.applicationId),
+  ).rejects.toMatchObject({
+    status: 409,
+    code: "APPLICATION_BRIEF_PACK_UNAVAILABLE",
+  });
+});
 const scopes: CampaignScope[] = [];
 const scope = () => {
   const result = new CampaignScope();
