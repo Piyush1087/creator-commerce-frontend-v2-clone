@@ -28,6 +28,7 @@ import { PayoutObligations } from "./components/PayoutObligations";
 import { PayoutsActivity } from "./components/PayoutsActivity";
 import { PayoutsDetail } from "./components/PayoutsDetail";
 import { PayoutsOverview } from "./components/PayoutsOverview";
+import { PayoutsTreasuryActions } from "./components/PayoutsTreasuryActions";
 import { BrandPayoutsWorkspace } from "./components/BrandPayoutsWorkspace";
 import {
   BRAND_PAYOUTS_V2_MEDIA_TYPE,
@@ -1078,6 +1079,196 @@ describe("truthful first-slice rendering", () => {
       );
       expect(document.activeElement).toBe(trigger);
 
+      cleanup();
+      mocks.authenticatedFetch.mockReset();
+    }
+  });
+
+  it("preserves an open Return drawer through a retained-data refresh without enabling new commands", async () => {
+    const refreshedOverview = deferred<Response>();
+    const returnSubmission = deferred<Response>();
+    let overviewRequests = 0;
+    let returnPosts = 0;
+    const returnSummary = {
+      available_balance: 7_000,
+      proven_source_available_balance: 6_000,
+      self_service_returnable_balance: 5_500,
+      active_return_commitment: 500,
+      source_reconciliation_required_amount: 1_000,
+      currency: "INR",
+    };
+
+    mocks.authenticatedFetch.mockImplementation(
+      (input: string, init?: RequestInit) => {
+        if (
+          input.endsWith("/api/v1/escrow/brand-returns") &&
+          init?.method === "POST"
+        ) {
+          returnPosts += 1;
+          return returnSubmission.promise;
+        }
+        if (input.includes("/api/v1/escrow/brand-returns/summary")) {
+          return Promise.resolve(jsonResponse(returnSummary));
+        }
+        if (input.includes("/activity?")) {
+          return Promise.resolve(jsonResponse(makeActivity()));
+        }
+        if (input.includes("/obligations?")) {
+          return Promise.resolve(jsonResponse(makeObligations()));
+        }
+        overviewRequests += 1;
+        return overviewRequests === 1
+          ? Promise.resolve(jsonResponse(makeOverviewWithPayoutsActions()))
+          : refreshedOverview.promise;
+      },
+    );
+
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/brand/payouts"] },
+        createElement(BrandPayoutsWorkspace),
+      ),
+    );
+    const invoker = await screen.findByRole("button", {
+      name: "Return unused funds",
+    });
+    invoker.focus();
+    fireEvent.click(invoker);
+    await screen.findByRole("dialog", { name: "Return unused funds" });
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Close Return unused funds" }),
+      ),
+    );
+    fireEvent.change(screen.getByLabelText("Return amount (INR)"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+    const submit = screen.getByRole("button", {
+      name: "Confirm Brand Return",
+    });
+    submit.focus();
+    fireEvent.click(submit);
+    await waitFor(() =>
+      expect(submit.getAttribute("aria-disabled")).toBe("true"),
+    );
+    expect(submit.hasAttribute("disabled")).toBe(false);
+    expect(document.activeElement).toBe(submit);
+    fireEvent.click(submit);
+    fireEvent.keyDown(submit, { key: "Enter" });
+    expect(returnPosts).toBe(1);
+
+    returnSubmission.resolve(
+      jsonResponse(
+        {
+          code: "PROVIDER_SETUP_REQUIRED",
+          message: "Brand Return provider runtime is not enabled",
+        },
+        503,
+      ),
+    );
+    expect(
+      await screen.findByText(/return provider is unavailable/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("dialog", { name: "Return unused funds" }),
+    ).toBeTruthy();
+    expect(document.activeElement).toBe(submit);
+
+    const addFunds = screen.getByRole("button", { name: "Add funds" });
+    expect(addFunds.hasAttribute("disabled")).toBe(true);
+    expect(invoker.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(addFunds);
+    expect(
+      mocks.authenticatedFetch.mock.calls.filter(([input]) =>
+        String(input).includes("/api/v1/escrow/vault"),
+      ),
+    ).toHaveLength(0);
+
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Close Return unused funds" }),
+    );
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(submit);
+
+    refreshedOverview.resolve(jsonResponse(makeOverviewWithPayoutsActions()));
+    await waitFor(() => expect(invoker.hasAttribute("disabled")).toBe(false));
+    expect(
+      screen.getByRole("dialog", { name: "Return unused funds" }),
+    ).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Return unused funds" }),
+      ).toBeNull(),
+    );
+    expect(document.activeElement).toBe(invoker);
+  });
+
+  it("closes an open Treasury drawer when retained command authority is genuinely lost", async () => {
+    const stale = makeOverviewWithPayoutsActions();
+    const staleSection = stale.sections[0];
+    const staleOverview = brandPayoutsOverviewResponseSchema.parse({
+      ...stale,
+      sections: [{ ...staleSection, freshness: "STALE" }],
+    });
+    const cases: Array<{
+      name: string;
+      state: PayoutsResourceState<BrandPayoutsOverviewResponse>;
+    }> = [
+      { name: "stale", state: ready(staleOverview) },
+      {
+        name: "unavailable",
+        state: { data: null, status: "UNAVAILABLE", error: "unavailable" },
+      },
+      { name: "unauthorized", state: ready(makeCampaignManagerOverview()) },
+      { name: "cross-surface", state: ready(makeOverviewWithSettingsAction()) },
+      { name: "capability-revoked", state: ready(makeOverview()) },
+    ];
+
+    for (const testCase of cases) {
+      mocks.authenticatedFetch.mockResolvedValue(
+        jsonResponse({
+          available_balance: 7_000,
+          proven_source_available_balance: 6_000,
+          self_service_returnable_balance: 5_500,
+          active_return_commitment: 500,
+          source_reconciliation_required_amount: 1_000,
+          currency: "INR",
+        }),
+      );
+      const { rerender } = render(
+        createElement(
+          MemoryRouter,
+          null,
+          createElement(PayoutsTreasuryActions, {
+            state: ready(makeOverviewWithPayoutsActions()),
+            onRefresh: vi.fn(),
+          }),
+        ),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Return unused funds" }),
+      );
+      await screen.findByRole("dialog", { name: "Return unused funds" });
+      rerender(
+        createElement(
+          MemoryRouter,
+          null,
+          createElement(PayoutsTreasuryActions, {
+            state: testCase.state,
+            onRefresh: vi.fn(),
+          }),
+        ),
+      );
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("dialog", { name: "Return unused funds" }),
+          testCase.name,
+        ).toBeNull(),
+      );
       cleanup();
       mocks.authenticatedFetch.mockReset();
     }

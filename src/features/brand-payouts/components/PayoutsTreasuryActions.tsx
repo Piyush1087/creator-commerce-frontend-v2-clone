@@ -56,6 +56,11 @@ export function PayoutsTreasuryActions({
     section?.freshness === "CURRENT" &&
     response?.viewer.projection_scope === "FULL_FINANCIAL" &&
     surface === "PAYOUTS";
+  const retainedCommandContext =
+    (state.status === "READY" || state.status === "REFRESHING") &&
+    section?.freshness === "CURRENT" &&
+    response?.viewer.projection_scope === "FULL_FINANCIAL" &&
+    surface === "PAYOUTS";
   const canAddFunds = currentActions.some(
     (action) => action.action === "ADD_FUNDS",
   );
@@ -64,10 +69,9 @@ export function PayoutsTreasuryActions({
   );
 
   useEffect(() => {
-    if (actionable) return;
-    setTopUpOpen(false);
-    setReturnOpen(false);
-  }, [actionable]);
+    if (!retainedCommandContext || !canAddFunds) setTopUpOpen(false);
+    if (!retainedCommandContext || !canRequestReturn) setReturnOpen(false);
+  }, [canAddFunds, canRequestReturn, retainedCommandContext]);
 
   const openAddFunds = async () => {
     if (!actionable || !canAddFunds || loadingAction !== null) return;
@@ -172,7 +176,7 @@ export function PayoutsTreasuryActions({
     );
   }
 
-  if (!actionable) {
+  if (!retainedCommandContext) {
     return (
       <aside
         className="bp-read-only-note"
@@ -206,7 +210,7 @@ export function PayoutsTreasuryActions({
           {canAddFunds ? (
             <Button
               onClick={() => void openAddFunds()}
-              disabled={loadingAction === "BRAND_RETURN"}
+              disabled={!actionable || loadingAction === "BRAND_RETURN"}
               aria-disabled={loadingAction === "ADD_FUNDS" ? true : undefined}
             >
               {loadingAction === "ADD_FUNDS" ? "Verifying…" : "Add funds"}
@@ -216,7 +220,7 @@ export function PayoutsTreasuryActions({
             <Button
               variant="outline"
               onClick={() => void openBrandReturn()}
-              disabled={loadingAction === "ADD_FUNDS"}
+              disabled={!actionable || loadingAction === "ADD_FUNDS"}
               aria-disabled={
                 loadingAction === "BRAND_RETURN" ? true : undefined
               }
