@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { HandCoins } from "lucide-react";
 import { Alert, Button, TextField } from "../../../../design-system/aurora";
 import type { UserRole } from "../../../../shared/auth/user-role";
 import type { CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
 import { collaborationCapabilities } from "../../utils/collaboration-capabilities";
 import { formatCommercialAmount } from "../../utils/collaboration-commercial-display";
-import { actionRequiredLabel } from "../../utils/stage-labels";
 
 export type NegotiationAction =
   | "accept-proposal"
@@ -18,6 +16,7 @@ type Props = {
   busyAction: string | null;
   onAction: (action: NegotiationAction) => void;
   onCounter: (amount: number) => void;
+  onProposal: (amount: number) => void;
 };
 
 export function NegotiationPanel({
@@ -26,9 +25,12 @@ export function NegotiationPanel({
   busyAction,
   onAction,
   onCounter,
+  onProposal,
 }: Props) {
   const [counter, setCounter] = useState("");
   const [counterError, setCounterError] = useState<string | undefined>();
+  const [proposal, setProposal] = useState("");
+  const [proposalError, setProposalError] = useState<string | undefined>();
   const capabilities = collaborationCapabilities(detail);
   const commercial = detail.commercial;
   const state = commercial?.negotiationState;
@@ -41,6 +43,8 @@ export function NegotiationPanel({
   useEffect(() => {
     setCounter("");
     setCounterError(undefined);
+    setProposal("");
+    setProposalError(undefined);
   }, [detail.workflow.aggregateVersion]);
 
   const submitCounter = () => {
@@ -52,54 +56,50 @@ export function NegotiationPanel({
     setCounterError(undefined);
     onCounter(value);
   };
+  const submitProposal = () => {
+    const value = Number(proposal);
+    const minimum = commercial?.minimumCreatorFeeSnapshot ?? 0;
+    if (!proposal.trim() || !Number.isFinite(value) || value < minimum) {
+      setProposalError(`Enter ${minimum.toLocaleString()} or more.`);
+      return;
+    }
+    setProposalError(undefined);
+    onProposal(value);
+  };
   const waitingCopy =
-    state === "AWAITING_BRAND_DECISION"
+    state === "AWAITING_CREATOR_PROPOSAL"
       ? isBrand
-        ? "Review the Creator proposal and accept it or make one counter-offer."
-        : "Your proposal was sent. Waiting for the Brand to accept or counter."
-      : state === "AWAITING_CREATOR_DECISION"
+        ? "Waiting for the Creator's first proposal."
+        : "Submit your first proposal. The snapshotted minimum is enforced."
+      : state === "AWAITING_BRAND_DECISION"
         ? isBrand
-          ? "Counter-offer sent. Waiting for the Creator."
-          : "Review the Brand counter-offer. You can accept or decline."
-        : "Commercial terms are confirmed.";
+          ? "Review the Creator proposal and accept it or make one counter-offer."
+          : "Your proposal was sent. Waiting for the Brand to accept or counter."
+        : state === "AWAITING_CREATOR_DECISION"
+          ? isBrand
+            ? "Counter-offer sent. Waiting for the Creator."
+            : "Review the Brand counter-offer. You can accept or decline."
+          : "Commercial terms are confirmed.";
   const askToEnd = () => {
     if (window.confirm("Are you sure you want to end this collaboration?"))
       onAction("end");
   };
 
-  const amountLabel =
-    state === "AWAITING_CREATOR_DECISION"
-      ? "Brand counter-offer"
-      : "Creator proposed fee";
-
   return (
     <section
-      className="collab-exec-card collab-stage-card collab-negotiation"
+      className="collab-exec-card"
       aria-labelledby="collab-negotiation-title"
     >
-      <header className="collab-stage-card__header">
-        <span className="collab-stage-card__icon" aria-hidden="true">
-          <HandCoins size={20} />
-        </span>
+      <h4 id="collab-negotiation-title">Negotiation</h4>
+      <dl className="collab-facts">
         <div>
-          <p className="collab-stage-card__eyebrow">Commercial terms</p>
-          <h4 id="collab-negotiation-title">Negotiation</h4>
+          <dt>
+            {state === "AWAITING_CREATOR_DECISION"
+              ? "Brand counter-offer"
+              : "Creator proposed fee"}
+          </dt>
+          <dd>{formatCommercialAmount(amount, commercial?.currency)}</dd>
         </div>
-        <span className="collab-stage-card__status">
-          {actionRequiredLabel(detail.workflow.actionRequiredBy)}
-        </span>
-      </header>
-
-      <p className="collab-stage-card__lead" role="status">
-        {waitingCopy}
-      </p>
-
-      <section className="collab-amount-card" aria-label={amountLabel}>
-        <span>{amountLabel}</span>
-        <strong>{formatCommercialAmount(amount, commercial?.currency)}</strong>
-      </section>
-
-      <dl className="collab-facts collab-facts--stage">
         <div>
           <dt>Commercial terms</dt>
           <dd>{state === "NOT_REQUIRED" ? "Fixed" : "Negotiable"}</dd>
@@ -111,20 +111,43 @@ export function NegotiationPanel({
           </div>
         ) : null}
       </dl>
-
+      <p>{waitingCopy}</p>
       {state === "NOT_REQUIRED" || state === "LOCKED" ? (
         <Alert tone="success" title="Terms confirmed">
           No negotiation action is required.
         </Alert>
       ) : null}
-
-      <div
-        className="collab-exec-actions collab-stage-actions"
-        aria-busy={busyAction !== null}
-      >
+      <div className="collab-exec-actions" aria-busy={busyAction !== null}>
+        {capabilities.has("submit-creator-proposal") ? (
+          <div className="collab-command-form">
+            <TextField
+              label={`Your proposal (${commercial?.currency ?? "currency"})`}
+              type="number"
+              min={commercial?.minimumCreatorFeeSnapshot ?? 0}
+              step="0.01"
+              inputMode="decimal"
+              value={proposal}
+              error={proposalError}
+              helperText="This is the first Creator proposal for this Collaboration."
+              disabled={busyAction !== null}
+              onChange={(event) => {
+                setProposal(event.target.value);
+                setProposalError(undefined);
+              }}
+            />
+            <Button
+              disabled={busyAction !== null}
+              onClick={submitProposal}
+              fullWidthOnMobile
+            >
+              {busyAction === "creator-proposal"
+                ? "Submitting…"
+                : "Submit proposal"}
+            </Button>
+          </div>
+        ) : null}
         {capabilities.has("accept-proposal") ? (
           <Button
-            className="collab-stage-actions__primary"
             disabled={busyAction !== null}
             onClick={() => onAction("accept-proposal")}
             fullWidthOnMobile
@@ -134,19 +157,8 @@ export function NegotiationPanel({
               : "Accept proposal"}
           </Button>
         ) : null}
-        {capabilities.has("accept-counter") ? (
-          <Button
-            className="collab-stage-actions__primary"
-            disabled={busyAction !== null}
-            onClick={() => onAction("accept-counter")}
-            fullWidthOnMobile
-          >
-            {busyAction === "accept-counter" ? "Accepting…" : "Accept"}
-          </Button>
-        ) : null}
         {capabilities.has("counter") ? (
-          <div className="collab-command-form collab-command-form--stage">
-            <h5>Make one counter-offer</h5>
+          <div className="collab-command-form">
             <TextField
               label={`Counter-offer (${commercial?.currency ?? "currency"})`}
               type="number"
@@ -172,9 +184,17 @@ export function NegotiationPanel({
             </Button>
           </div>
         ) : null}
+        {capabilities.has("accept-counter") ? (
+          <Button
+            disabled={busyAction !== null}
+            onClick={() => onAction("accept-counter")}
+            fullWidthOnMobile
+          >
+            {busyAction === "accept-counter" ? "Accepting…" : "Accept"}
+          </Button>
+        ) : null}
         {capabilities.has("decline-negotiation") ? (
           <Button
-            className="collab-stage-actions__restrained"
             variant="secondary"
             disabled={busyAction !== null}
             onClick={() => onAction("decline-negotiation")}
@@ -189,7 +209,6 @@ export function NegotiationPanel({
         ) : null}
         {isBrand && capabilities.has("end") ? (
           <Button
-            className="collab-stage-actions__restrained"
             variant="secondary"
             disabled={busyAction !== null}
             onClick={askToEnd}

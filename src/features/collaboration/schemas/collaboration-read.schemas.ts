@@ -42,7 +42,9 @@ const identitySummarySchema = z
 
 const sourceContextSchema = z
   .object({
-    campaign: z.object({ id: z.string().min(1), name: z.string() }).passthrough(),
+    campaign: z
+      .object({ id: z.string().min(1), name: z.string() })
+      .passthrough(),
     campaignAsset: z.record(z.unknown()).nullable(),
     brief: z.object({ id: z.string().min(1), title: z.string() }).passthrough(),
   })
@@ -98,10 +100,10 @@ const compatibilityThreadSchema = threadBaseSchema.extend({
   legacyCompatibility: legacyCompatibilitySchema,
 });
 
-export const collaborationThreadSchema = z.discriminatedUnion("projectionSource", [
-  canonicalThreadSchema,
-  compatibilityThreadSchema,
-]);
+export const collaborationThreadSchema = z.discriminatedUnion(
+  "projectionSource",
+  [canonicalThreadSchema, compatibilityThreadSchema],
+);
 
 const deliverableSchema = z
   .object({
@@ -121,7 +123,7 @@ const detailBaseSchema = z
         campaignId: z.string().min(1),
         campaignCreatorId: z.string().nullable(),
         campaignAssetId: z.string().nullable(),
-        briefId: z.string().min(1),
+        briefId: z.string().min(1).nullable(),
         brand: identitySummarySchema,
         creator: identitySummarySchema,
       })
@@ -157,10 +159,10 @@ const compatibilityDetailSchema = detailBaseSchema.extend({
   legacyCompatibility: legacyCompatibilitySchema,
 });
 
-export const collaborationDetailSchema = z.discriminatedUnion("projectionSource", [
-  canonicalDetailSchema,
-  compatibilityDetailSchema,
-]);
+export const collaborationDetailSchema = z.discriminatedUnion(
+  "projectionSource",
+  [canonicalDetailSchema, compatibilityDetailSchema],
+);
 
 export const collaborationMessageSchema = z
   .object({
@@ -173,7 +175,9 @@ export const collaborationMessageSchema = z
   })
   .passthrough();
 
-const listThreadsResponseSchema = z.object({ rows: z.array(collaborationThreadSchema) });
+const listThreadsResponseSchema = z.object({
+  rows: z.array(collaborationThreadSchema),
+});
 const listMessagesResponseSchema = z.object({
   messages: z.array(collaborationMessageSchema),
 });
@@ -205,20 +209,38 @@ function parseRead<T>(
 }
 
 export function parseCollaborationThreads(value: unknown): ListThreadsResponse {
-  return parseRead<ListThreadsResponse>("threads", listThreadsResponseSchema, value);
+  return parseRead<ListThreadsResponse>(
+    "threads",
+    listThreadsResponseSchema,
+    value,
+  );
 }
 
-export function parseCollaborationDetail(value: unknown): CollaborationDetailResponse {
-  return parseRead<CollaborationDetailResponse>("detail", collaborationDetailSchema, value);
+export function parseCollaborationDetail(
+  value: unknown,
+): CollaborationDetailResponse {
+  return parseRead<CollaborationDetailResponse>(
+    "detail",
+    collaborationDetailSchema,
+    value,
+  );
 }
 
-export function parseCollaborationMessages(value: unknown): ListMessagesResponse {
-  return parseRead<ListMessagesResponse>("messages", listMessagesResponseSchema, value);
+export function parseCollaborationMessages(
+  value: unknown,
+): ListMessagesResponse {
+  return parseRead<ListMessagesResponse>(
+    "messages",
+    listMessagesResponseSchema,
+    value,
+  );
 }
 
 export function isCompatibilityThread(
   row: CollaborationThreadRow,
-): row is CollaborationThreadRow & { projectionSource: "LEGACY_COMPATIBILITY" } {
+): row is CollaborationThreadRow & {
+  projectionSource: "LEGACY_COMPATIBILITY";
+} {
   return row.projectionSource === "LEGACY_COMPATIBILITY";
 }
 

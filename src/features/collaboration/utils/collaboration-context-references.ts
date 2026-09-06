@@ -26,7 +26,7 @@ export function collaborationCanonicalContextReferences(
   const campaignAssetId = detail.identity.campaignAssetId?.trim() || null;
   const briefId =
     campaignAssetId &&
-    detail.identity.briefId.trim() &&
+    detail.identity.briefId?.trim() &&
     detail.sourceContext.brief.id === detail.identity.briefId
       ? detail.identity.briefId
       : null;
