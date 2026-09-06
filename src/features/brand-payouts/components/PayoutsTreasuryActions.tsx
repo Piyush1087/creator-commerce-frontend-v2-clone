@@ -70,7 +70,7 @@ export function PayoutsTreasuryActions({
   }, [actionable]);
 
   const openAddFunds = async () => {
-    if (!actionable || !canAddFunds) return;
+    if (!actionable || !canAddFunds || loadingAction !== null) return;
     setError(null);
     setLoadingAction("ADD_FUNDS");
     try {
@@ -86,7 +86,7 @@ export function PayoutsTreasuryActions({
   };
 
   const openBrandReturn = async () => {
-    if (!actionable || !canRequestReturn) return;
+    if (!actionable || !canRequestReturn || loadingAction !== null) return;
     setError(null);
     setLoadingAction("BRAND_RETURN");
     try {
@@ -206,7 +206,8 @@ export function PayoutsTreasuryActions({
           {canAddFunds ? (
             <Button
               onClick={() => void openAddFunds()}
-              disabled={loadingAction !== null}
+              disabled={loadingAction === "BRAND_RETURN"}
+              aria-disabled={loadingAction === "ADD_FUNDS" ? true : undefined}
             >
               {loadingAction === "ADD_FUNDS" ? "Verifying…" : "Add funds"}
             </Button>
@@ -215,7 +216,10 @@ export function PayoutsTreasuryActions({
             <Button
               variant="outline"
               onClick={() => void openBrandReturn()}
-              disabled={loadingAction !== null}
+              disabled={loadingAction === "ADD_FUNDS"}
+              aria-disabled={
+                loadingAction === "BRAND_RETURN" ? true : undefined
+              }
             >
               {loadingAction === "BRAND_RETURN"
                 ? "Verifying…"

@@ -991,6 +991,97 @@ describe("truthful first-slice rendering", () => {
       screen.queryByRole("link", { name: "Open Secure escrow Settings" }),
     ).toBeNull();
   });
+
+  it("restores focus to each async Treasury command invoker after Escape", async () => {
+    const cases = [
+      {
+        triggerName: "Add funds",
+        endpoint: "/api/v1/escrow/vault",
+        dialogName: "Add funds",
+        response: {
+          vault_id: "11111111-1111-4111-8111-111111111111",
+          brand_id: "22222222-2222-4222-8222-222222222222",
+          razorpay_virtual_account_id: null,
+          virtual_account_number: null,
+          ifsc_code: null,
+          upi_vpa: null,
+          bank_name: null,
+          virtual_account_enabled: false,
+          currency: "INR",
+          total_pooled_balance: 10_000,
+          locked_campaign_funds: 2_500,
+          available_balance: 7_000,
+          active_return_commitment: 500,
+          tds_buffer_balance: 0,
+          pending_funding: 5_000,
+          created_at: NOW,
+          updated_at: NOW,
+        },
+      },
+      {
+        triggerName: "Return unused funds",
+        endpoint: "/api/v1/escrow/brand-returns/summary",
+        dialogName: "Return unused funds",
+        response: {
+          available_balance: 7_000,
+          proven_source_available_balance: 6_000,
+          self_service_returnable_balance: 5_500,
+          active_return_commitment: 500,
+          source_reconciliation_required_amount: 1_000,
+          currency: "INR",
+        },
+      },
+    ];
+
+    for (const testCase of cases) {
+      const actionResponse = deferred<Response>();
+      mocks.authenticatedFetch.mockImplementation((input: string) => {
+        if (input.includes(testCase.endpoint)) return actionResponse.promise;
+        if (input.includes("/activity?")) {
+          return Promise.resolve(jsonResponse(makeActivity()));
+        }
+        if (input.includes("/obligations?")) {
+          return Promise.resolve(jsonResponse(makeObligations()));
+        }
+        return Promise.resolve(jsonResponse(makeOverviewWithPayoutsActions()));
+      });
+      render(
+        createElement(
+          MemoryRouter,
+          { initialEntries: ["/brand/payouts"] },
+          createElement(BrandPayoutsWorkspace),
+        ),
+      );
+
+      const trigger = await screen.findByRole("button", {
+        name: testCase.triggerName,
+      });
+      trigger.focus();
+      fireEvent.click(trigger);
+
+      await waitFor(() =>
+        expect(trigger.getAttribute("aria-disabled")).toBe("true"),
+      );
+      expect(trigger.hasAttribute("disabled")).toBe(false);
+      expect(document.activeElement).toBe(trigger);
+
+      actionResponse.resolve(jsonResponse(testCase.response));
+      const close = await screen.findByRole("button", {
+        name: `Close ${testCase.dialogName}`,
+      });
+      await waitFor(() => expect(document.activeElement).toBe(close));
+      fireEvent.keyDown(document, { key: "Escape" });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("dialog", { name: testCase.dialogName }),
+        ).toBeNull(),
+      );
+      expect(document.activeElement).toBe(trigger);
+
+      cleanup();
+      mocks.authenticatedFetch.mockReset();
+    }
+  });
 });
 
 describe("stable financial detail navigation", () => {
