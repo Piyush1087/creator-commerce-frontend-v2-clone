@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "status": "BLOCKED_BEFORE_SOURCE_MUTATION",
+  "checks": {
+    "frontend_exact_base": "PASS",
+    "frontend_clean_before_evidence": "PASS",
+    "backend_exact_head_tree": "PASS",
+    "backend_clean": "PASS",
+    "migration_hash": "PASS",
+    "c05_destination_version_fence_present": "PASS",
+    "production_provider_fail_closed": "PASS",
+    "reserve_approval_state_reachable": "FAIL_CLASS_C"
+  },
+  "source_changes": "NONE",
+  "provider_actions": "NONE",
+  "non_disposable_database_mutation": "NONE"
+}

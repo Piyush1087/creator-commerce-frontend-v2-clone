@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "runner": "BRAND_PAYOUTS_WAVE_C_COHERENT_FRONTEND_EXECUTION_RUNNER_V1",
+  "result": "GENUINE_CLASS_C_BLOCKED",
+  "stable_signature": "WAVE_C_CLASS_C_RESERVE_APPROVAL_AUTHORITY_UNREACHABLE",
+  "binding": {
+    "frontend_base_sha": "7c75a4c8f5a0df3a1fb82d2f707b1c6b03d56d2a",
+    "frontend_base_tree": "956bae22a91aeaf53733f9e913d500b9750577e2",
+    "backend_sha": "46c71fd554d7621d9bd13d1bbc3115646a7c56bd",
+    "backend_tree": "40c1f931be6c2e358394ed5944f67d714b98f09d",
+    "migration_id": "20260912100000_brand_payouts_wave_b_normal_path",
+    "migration_sql_sha256": "887e5bb6bd262a4dd02e42a798db55bd136d97bf6a923df7e6466573f11d1f84",
+    "migration_count": 86
+  },
+  "contradiction": {
+    "command_requires": "reserve_instruction_id UUID",
+    "read_endpoint": "GET /api/v1/brand/payouts/reserve-requests",
+    "read_endpoint_projection": {
+      "coverage": "UNAVAILABLE",
+      "available_actions": [],
+      "payload": [],
+      "source_complete": false
+    },
+    "approval_read_action_defined": false,
+    "safe_frontend_resolution": false,
+    "reason": "The frontend cannot obtain server-owned reserve instruction authority. Fabricating or privately sourcing the identifier would violate financial authority and fail-closed requirements."
+  },
+  "changes": {
+    "frontend_source": "NONE",
+    "migration_files": "NONE",
+    "provider_actions": "NONE",
+    "non_disposable_database_mutation": "NONE"
+  }
+}
