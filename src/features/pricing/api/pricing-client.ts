@@ -1,39 +1,36 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import {
+  isBillingInvoiceRecord,
+  isBrandSubscriptionRecord,
   isGeoContextApiResponse,
+  isInvoicesApiResponse,
   isPlansApiResponse,
   isSubscriptionApiResponse,
   isUsageApiResponse,
-  isInvoicesApiResponse,
   type BillingInvoiceRecord,
   type BrandSubscriptionRecord,
   type CatalogPlanView,
   type GeoContext,
-  type SubscriptionCurrency,
   type SubscriptionTier,
   type UsageSnapshot,
 } from "../contracts/pricing.contracts";
 
-const JSON_HEADERS = {
-  "Content-Type": "application/json",
-} as const;
+const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 
 export class PricingApiError extends Error {
-  readonly status: number;
-
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly missingRequiredFields: string[] = [],
+  ) {
     super(message);
     this.name = "PricingApiError";
-    this.status = status;
   }
 }
 
-function authHeaders(): Record<string, string> {
-  return {
-    ...JSON_HEADERS,
-    ...authAuthorizationHeader(),
-  };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
@@ -49,16 +46,19 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   }
 
   if (!response.ok) {
-    const rawMessage =
-      typeof body === "object" && body !== null
-        ? (body as { message?: unknown }).message
-        : undefined;
+    const rawMessage = isRecord(body) ? body.message : undefined;
     const message = Array.isArray(rawMessage)
       ? rawMessage.filter((item): item is string => typeof item === "string").join(", ")
       : typeof rawMessage === "string"
         ? rawMessage
         : `Request failed (${response.status}).`;
-    throw new PricingApiError(message, response.status);
+    const missingRequiredFields =
+      isRecord(body) && Array.isArray(body.missing_required_fields)
+        ? body.missing_required_fields.filter(
+            (field): field is string => typeof field === "string",
+          )
+        : [];
+    throw new PricingApiError(message, response.status, missingRequiredFields);
   }
 
   return body;
@@ -67,7 +67,7 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
 export async function fetchVisiblePlans(): Promise<CatalogPlanView[]> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/plans`, {
     method: "GET",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
   if (!isPlansApiResponse(json)) {
@@ -79,7 +79,7 @@ export async function fetchVisiblePlans(): Promise<CatalogPlanView[]> {
 export async function fetchSubscription(): Promise<BrandSubscriptionRecord | null> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/subscription`, {
     method: "GET",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
   if (!isSubscriptionApiResponse(json)) {
@@ -91,7 +91,7 @@ export async function fetchSubscription(): Promise<BrandSubscriptionRecord | nul
 export async function fetchUsageSnapshot(): Promise<UsageSnapshot | null> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/usage`, {
     method: "GET",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
   if (!isUsageApiResponse(json)) {
@@ -103,7 +103,7 @@ export async function fetchUsageSnapshot(): Promise<UsageSnapshot | null> {
 export async function fetchBillingInvoices(): Promise<BillingInvoiceRecord[]> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/invoices`, {
     method: "GET",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
   if (!isInvoicesApiResponse(json)) {
@@ -112,10 +112,25 @@ export async function fetchBillingInvoices(): Promise<BillingInvoiceRecord[]> {
   return json.invoices;
 }
 
+export async function fetchBillingInvoice(
+  razorpayInvoiceId: string,
+): Promise<BillingInvoiceRecord> {
+  const response = await fetch(
+    `${env.apiUrl}/api/v1/pricing/invoices/${encodeURIComponent(razorpayInvoiceId)}`,
+    { method: "GET", headers: JSON_HEADERS },
+  );
+  const json = await readJsonOrThrow(response);
+  const invoice = isRecord(json) ? json.invoice : undefined;
+  if (!isBillingInvoiceRecord(invoice)) {
+    throw new PricingApiError("Unexpected invoice response.", response.status);
+  }
+  return invoice;
+}
+
 export async function fetchGeoContext(): Promise<GeoContext> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/geo-context`, {
     method: "GET",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
   if (!isGeoContextApiResponse(json)) {
@@ -124,56 +139,20 @@ export async function fetchGeoContext(): Promise<GeoContext> {
   return json.geoContext;
 }
 
-export async function initializeRazorpayTrial(
-  currency?: SubscriptionCurrency,
-): Promise<BrandSubscriptionRecord> {
-  const response = await fetch(`${env.apiUrl}/api/v1/pricing/trial/razorpay`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(currency ? { currency } : {}),
-  });
-  const json = await readJsonOrThrow(response);
-  if (
-    !(
-      typeof json === "object" &&
-      json !== null &&
-      "subscription" in json &&
-      isSubscriptionApiResponse({ subscription: (json as { subscription: unknown }).subscription })
-    )
-  ) {
-    throw new PricingApiError("Unexpected Razorpay trial response.", response.status);
+function requireSubscription(json: unknown, response: Response): BrandSubscriptionRecord {
+  if (!isRecord(json) || !isBrandSubscriptionRecord(json.subscription)) {
+    throw new PricingApiError("Unexpected subscription action response.", response.status);
   }
-  const subscription = (json as { subscription: BrandSubscriptionRecord }).subscription;
-  if (!subscription) {
-    throw new PricingApiError("Razorpay trial did not return a subscription.", response.status);
-  }
-  return subscription;
+  return json.subscription;
 }
 
-export async function bootstrapLocalTrial(
-  currency?: SubscriptionCurrency,
-): Promise<BrandSubscriptionRecord> {
+export async function bootstrapLocalTrial(): Promise<BrandSubscriptionRecord> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/trial/bootstrap`, {
     method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(currency ? { currency } : {}),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
-  if (
-    !(
-      typeof json === "object" &&
-      json !== null &&
-      "subscription" in json &&
-      isSubscriptionApiResponse({ subscription: (json as { subscription: unknown }).subscription })
-    )
-  ) {
-    throw new PricingApiError("Unexpected trial bootstrap response.", response.status);
-  }
-  const subscription = (json as { subscription: BrandSubscriptionRecord }).subscription;
-  if (!subscription) {
-    throw new PricingApiError("Trial bootstrap did not return a subscription.", response.status);
-  }
-  return subscription;
+  return requireSubscription(json, response);
 }
 
 export type PricingCheckoutSession = {
@@ -182,113 +161,87 @@ export type PricingCheckoutSession = {
   targetTier: SubscriptionTier;
 };
 
-export type TierChangeResult = {
+export type PaidConversionResult = {
   subscription: BrandSubscriptionRecord;
-  checkout: PricingCheckoutSession | null;
+  checkout: PricingCheckoutSession;
 };
 
 function isPricingCheckoutSession(value: unknown): value is PricingCheckoutSession {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
+  if (!isRecord(value)) return false;
   return (
-    typeof record.subscriptionId === "string" &&
-    typeof record.razorpayKeyId === "string" &&
-    typeof record.targetTier === "string"
+    typeof value.subscriptionId === "string" &&
+    typeof value.razorpayKeyId === "string" &&
+    typeof value.targetTier === "string"
   );
 }
 
-export async function changeSubscriptionTier(
-  targetTier: SubscriptionTier,
-): Promise<TierChangeResult> {
-  const response = await fetch(`${env.apiUrl}/api/v1/pricing/tier/change`, {
+function readCheckoutResult(json: unknown, response: Response): PaidConversionResult {
+  const subscription = requireSubscription(json, response);
+  const checkout = isRecord(json) ? json.checkout : undefined;
+  if (!isPricingCheckoutSession(checkout)) {
+    throw new PricingApiError("Checkout session was not returned.", response.status);
+  }
+  return { subscription, checkout };
+}
+
+export async function startPaidConversion(): Promise<PaidConversionResult> {
+  const response = await fetch(`${env.apiUrl}/api/v1/pricing/paid-conversion/start`, {
     method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ target_tier: targetTier }),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
-  if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected tier change response.", response.status);
-  }
-  const payload = json as { subscription: unknown; checkout?: unknown };
-  if (!payload.subscription || typeof payload.subscription !== "object") {
-    throw new PricingApiError("Tier change did not return a subscription.", response.status);
-  }
-  const checkout =
-    payload.checkout === null || payload.checkout === undefined
-      ? null
-      : isPricingCheckoutSession(payload.checkout)
-        ? payload.checkout
-        : null;
-  if (payload.checkout != null && checkout === null) {
-    throw new PricingApiError("Tier change returned an invalid checkout session.", response.status);
-  }
-  return {
-    subscription: payload.subscription as BrandSubscriptionRecord,
-    checkout,
-  };
+  return readCheckoutResult(json, response);
 }
 
 export type ReactivateSubscriptionResult = {
   subscription: BrandSubscriptionRecord;
-  recovery_mode:
-    | "resume_submitted"
-    | "new_subscription"
+  recovery_mode?:
+    | "continuation_authorization"
     | "update_payment"
     | "trial_restored";
   payment_links?: string[];
+  checkout?: PricingCheckoutSession;
 };
-
-export async function restoreFoundersTrial(): Promise<BrandSubscriptionRecord> {
-  const response = await fetch(`${env.apiUrl}/api/v1/pricing/trial/restore`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({}),
-  });
-  const json = await readJsonOrThrow(response);
-  if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected trial restore response.", response.status);
-  }
-  const subscription = (json as { subscription: unknown }).subscription;
-  if (!subscription || typeof subscription !== "object") {
-    throw new PricingApiError("Trial restore did not return a subscription.", response.status);
-  }
-  return subscription as BrandSubscriptionRecord;
-}
 
 export async function reactivateSubscription(): Promise<ReactivateSubscriptionResult> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/reactivate`, {
     method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({}),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
-  if (!(typeof json === "object" && json !== null && "subscription" in json)) {
+  const subscription = requireSubscription(json, response);
+  if (!isRecord(json)) {
     throw new PricingApiError("Unexpected reactivate response.", response.status);
   }
-  const payload = json as ReactivateSubscriptionResult;
-  if (!payload.subscription || typeof payload.subscription !== "object") {
-    throw new PricingApiError("Reactivate did not return a subscription.", response.status);
+  const recoveryMode = json.recovery_mode;
+  if (
+    recoveryMode !== undefined &&
+    recoveryMode !== "continuation_authorization" &&
+    recoveryMode !== "update_payment" &&
+    recoveryMode !== "trial_restored"
+  ) {
+    throw new PricingApiError("Unknown reactivation response mode.", response.status);
   }
-  return payload;
+  const checkout = json.checkout;
+  if (checkout !== undefined && !isPricingCheckoutSession(checkout)) {
+    throw new PricingApiError("Invalid reactivation checkout session.", response.status);
+  }
+  const paymentLinks = Array.isArray(json.payment_links)
+    ? json.payment_links.filter((link): link is string => typeof link === "string")
+    : undefined;
+  return {
+    subscription,
+    recovery_mode: recoveryMode,
+    payment_links: paymentLinks,
+    checkout,
+  };
 }
 
-export async function cancelSubscription(
-  cancelAtCycleEnd = false,
-): Promise<BrandSubscriptionRecord> {
+export async function cancelSubscription(): Promise<BrandSubscriptionRecord> {
   const response = await fetch(`${env.apiUrl}/api/v1/pricing/cancel`, {
     method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify({ cancel_at_cycle_end: cancelAtCycleEnd }),
+    headers: JSON_HEADERS,
   });
   const json = await readJsonOrThrow(response);
-  if (!(typeof json === "object" && json !== null && "subscription" in json)) {
-    throw new PricingApiError("Unexpected cancel response.", response.status);
-  }
-  const subscription = (json as { subscription: unknown }).subscription;
-  if (!subscription || typeof subscription !== "object") {
-    throw new PricingApiError("Cancel did not return a subscription.", response.status);
-  }
-  return subscription as BrandSubscriptionRecord;
+  return requireSubscription(json, response);
 }

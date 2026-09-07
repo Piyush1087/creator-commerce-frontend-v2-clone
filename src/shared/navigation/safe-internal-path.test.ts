@@ -22,6 +22,8 @@ describe("safe internal navigation", () => {
     "/brand/dashboard",
     "/brand/settings/integrations?tab=instagram",
     "/brand/onboarding/verification",
+    "/brand-centre",
+    "/brand-centre/offerings",
     "/forgot-password",
     "/reset-password",
   ])("accepts the supported Creator Shop path %s", (path) => {
@@ -36,6 +38,7 @@ describe("safe internal navigation", () => {
     String.raw`/\evil.example`,
     "javascript:alert(1)",
     "data:text/html, alert(1) ",
+    "data:text/html,<script>alert(1)</script>",
     "https://evil.example",
     "/%2f%2fevil.example",
     "/%5cevil.example",

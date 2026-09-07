@@ -1,5 +1,5 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch as fetch } from "../../../shared/api/authenticated-fetch";
 import type {
   AnalyticsPulseResponse,
   MediaKitResponse,
@@ -11,7 +11,6 @@ const BASE = `${env.apiUrl}/api/v1/creator-centre`;
 function jsonHeaders(): Record<string, string> {
   return {
     "Content-Type": "application/json",
-    ...authAuthorizationHeader(),
   };
 }
 
@@ -21,7 +20,9 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   try {
     body = text.length > 0 ? (JSON.parse(text) as unknown) : undefined;
   } catch {
-    throw new Error("The server returned an invalid response. Please try again.");
+    throw new Error(
+      "The server returned an invalid response. Please try again.",
+    );
   }
   if (!response.ok) {
     const message =
