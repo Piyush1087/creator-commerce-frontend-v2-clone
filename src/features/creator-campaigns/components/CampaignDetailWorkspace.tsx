@@ -23,6 +23,8 @@ import type {
 } from "../contracts/creator-campaigns.contracts";
 import { displayCurrency, displayValue } from "../utils/display-value";
 import { formatCompensationTeaser } from "../utils/format-campaign-display";
+import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
+import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";

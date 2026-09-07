@@ -9,7 +9,7 @@ import {
 import { SettingsSectionCard } from "../settings-section-card";
 import { BrandTeamSettings } from "./brand-team-settings";
 import { SettingsUnsavedBar } from "../settings-unsaved-bar";
-import { AccountSecuritySettings } from "./account-security-settings";
+import { AccountSecuritySettings } from "../account-security-settings";
 type FormState = {
   firstName: string;
   lastName: string;

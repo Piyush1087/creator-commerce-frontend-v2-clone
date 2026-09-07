@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import { ChevronRight } from "lucide-react";
 
 import { useLocation } from "react-router-dom";

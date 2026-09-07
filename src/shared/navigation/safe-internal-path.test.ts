@@ -10,6 +10,11 @@ describe("safe internal navigation", () => {
     "/creator/onboarding",
     "/creator/marketplace",
     "/creator/marketplace/11111111-1111-4111-8111-111111111111?source=invite",
+    "/creator/centre",
+    "/creator/settings/account",
+    "/creator/settings/team",
+    "/creator/settings/instagram",
+    "/creator/team-invitations/accept#token=safe-token",
     "/marketplace",
     "/marketplace/11111111-1111-4111-8111-111111111111",
     "/marketplace/invite/safe_token-123",
@@ -17,6 +22,8 @@ describe("safe internal navigation", () => {
     "/brand/dashboard",
     "/brand/settings/integrations?tab=instagram",
     "/brand/onboarding/verification",
+    "/brand-centre",
+    "/brand-centre/offerings",
     "/forgot-password",
     "/reset-password",
   ])("accepts the supported Creator Shop path %s", (path) => {
@@ -30,6 +37,7 @@ describe("safe internal navigation", () => {
     String.raw`/\/evil.example`,
     String.raw`/\evil.example`,
     "javascript:alert(1)",
+    "data:text/html, alert(1) ",
     "data:text/html,<script>alert(1)</script>",
     "https://evil.example",
     "/%2f%2fevil.example",
@@ -48,8 +56,8 @@ describe("safe internal navigation", () => {
   });
 
   it("uses root when even the caller fallback is unsupported", () => {
-    expect(resolveSafeInternalPath("//evil.example", "https://evil.example")).toBe(
-      "/",
-    );
+    expect(
+      resolveSafeInternalPath("//evil.example", "https://evil.example"),
+    ).toBe("/");
   });
 });

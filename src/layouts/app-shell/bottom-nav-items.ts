@@ -1,19 +1,20 @@
-import {
-  Megaphone,
-  MessageCircle,
-  Home,
-  Store,
-  UserRound,
-} from "lucide-react";
+import { Megaphone, MessageCircle, Home, Store } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
 import type { UserRole } from "../../shared/auth/user-role";
+import {
+  projectCreatorShellItems,
+  type CreatorShellState,
+} from "./creator-shell-capabilities";
 
 export type BottomNavItem = {
   icon: ElementType;
   label: string;
   path?: string;
+  availability?: "AVAILABLE" | "UNAVAILABLE";
+  unavailableReason?: string;
+  requiresCreatorWorkspace?: boolean;
 };
 
 export const brandBottomNavItems: BottomNavItem[] = [
@@ -39,33 +40,43 @@ export const brandBottomNavItems: BottomNavItem[] = [
   },
 ];
 
-/** Phase G: Home · Campaigns · Collaborations · Profile */
+/** C-05 MVP: Home · Campaigns · Collaborations · Creator Center. */
 export const creatorBottomNavItems: BottomNavItem[] = [
   {
     label: "Home",
     icon: Home,
     path: AUTH_ROUTES.creatorHome,
+    requiresCreatorWorkspace: true,
   },
   {
     label: "Campaigns",
     icon: Megaphone,
     path: AUTH_ROUTES.creatorCampaigns,
+    requiresCreatorWorkspace: true,
   },
   {
     label: "Collaborations",
     icon: MessageCircle,
     path: AUTH_ROUTES.creatorCollaborations,
+    requiresCreatorWorkspace: true,
   },
   {
-    label: "Profile",
-    icon: UserRound,
-    path: AUTH_ROUTES.creatorMediaKit,
+    label: "Creator Center",
+    icon: Store,
+    path: AUTH_ROUTES.creatorCentre,
+    requiresCreatorWorkspace: true,
   },
 ];
 
-export function getBottomNavItemsForRole(role: UserRole | null): BottomNavItem[] {
+export function getBottomNavItemsForRole(
+  role: UserRole | null,
+  creatorShellState?: CreatorShellState,
+): BottomNavItem[] {
   if (role === "CREATOR") {
-    return creatorBottomNavItems;
+    return projectCreatorShellItems(
+      creatorBottomNavItems,
+      creatorShellState ?? { status: "LOADING", actorContext: null },
+    );
   }
   if (role === "BRAND") {
     return brandBottomNavItems;
@@ -79,11 +90,15 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.brandCollaborations,
   AUTH_ROUTES.creatorAnalytics,
   AUTH_ROUTES.creatorMediaKit,
+  AUTH_ROUTES.creatorCentre,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorCollaborations,
 ] as const;
 
-export function isBottomNavItemActive(pathname: string, item: BottomNavItem): boolean {
+export function isBottomNavItemActive(
+  pathname: string,
+  item: BottomNavItem,
+): boolean {
   if (!item.path) {
     return false;
   }

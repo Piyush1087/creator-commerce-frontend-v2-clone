@@ -25,4 +25,14 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: [
+      "src/design-system/aurora/components/Toast.tsx",
+      "src/features/brand-centre/context/brand-centre-shell-context.tsx",
+      "src/features/creator-centre/components/creator-assistant/creator-assistant-context.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

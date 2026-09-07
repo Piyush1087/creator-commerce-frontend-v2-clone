@@ -31,6 +31,8 @@ import "./CampaignListTabs.css";
 
 type TabType = "operations" | "financial";
 
+const EMPTY_CAMPAIGN_ROWS: CampaignListRow[] = [];
+
 export function CampaignListTabs() {
   const [activeTab, setActiveTab] = useState<TabType>("operations");
 
@@ -99,7 +101,8 @@ function OperationsTab() {
 
   const { state, reload } = useUceApiJson(true, listFetcher);
 
-  const campaigns = localRows ?? (state.status === "ready" ? state.data : []);
+  const remoteCampaigns = state.status === "ready" ? state.data : EMPTY_CAMPAIGN_ROWS;
+  const campaigns = localRows ?? remoteCampaigns;
 
   const visibleCampaigns = useMemo(
     () =>

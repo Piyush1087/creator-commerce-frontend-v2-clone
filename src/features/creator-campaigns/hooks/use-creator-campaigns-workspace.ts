@@ -11,7 +11,12 @@ import type {
   HistoryArchiveQuery,
 } from "../contracts/creator-campaigns.contracts";
 
-export function useCreatorCampaignsWorkspace(query: CommandCenterQuery = {}) {
+export function useCreatorCampaignsWorkspace({
+  currentView,
+  searchQuery,
+  platformFilter,
+  dependencyFilter,
+}: CommandCenterQuery = {}) {
   const [workspace, setWorkspace] = useState<CampaignsWorkspaceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +25,12 @@ export function useCreatorCampaignsWorkspace(query: CommandCenterQuery = {}) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaignsWorkspace(query);
+      const response = await fetchCampaignsWorkspace({
+        currentView,
+        searchQuery,
+        platformFilter,
+        dependencyFilter,
+      });
       setWorkspace(response);
     } catch (err) {
       setWorkspace(null);
@@ -28,7 +38,7 @@ export function useCreatorCampaignsWorkspace(query: CommandCenterQuery = {}) {
     } finally {
       setLoading(false);
     }
-  }, [query.currentView, query.searchQuery, query.platformFilter, query.dependencyFilter]);
+  }, [currentView, searchQuery, platformFilter, dependencyFilter]);
 
   useEffect(() => {
     void load();
@@ -37,7 +47,11 @@ export function useCreatorCampaignsWorkspace(query: CommandCenterQuery = {}) {
   return { workspace, loading, error, reload: load };
 }
 
-export function useCreatorCampaignsHistory(query: HistoryArchiveQuery = {}) {
+export function useCreatorCampaignsHistory({
+  page,
+  limit,
+  archiveStatus,
+}: HistoryArchiveQuery = {}) {
   const [history, setHistory] = useState<CampaignsHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +60,11 @@ export function useCreatorCampaignsHistory(query: HistoryArchiveQuery = {}) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchCampaignsHistory(query);
+      const response = await fetchCampaignsHistory({
+        page,
+        limit,
+        archiveStatus,
+      });
       setHistory(response);
     } catch (err) {
       setHistory(null);
@@ -54,7 +72,7 @@ export function useCreatorCampaignsHistory(query: HistoryArchiveQuery = {}) {
     } finally {
       setLoading(false);
     }
-  }, [query.page, query.limit, query.archiveStatus]);
+  }, [page, limit, archiveStatus]);
 
   useEffect(() => {
     void load();

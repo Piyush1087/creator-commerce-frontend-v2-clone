@@ -14,7 +14,7 @@ import {
 
   type MarketplaceFiltersState,
 
-} from "../../../features/creator-campaigns/components/MarketplaceFilterDrawer";
+} from "../../../features/creator-campaigns/utils/marketplace-filters";
 
 import { useCreatorMarketplace } from "../../../features/creator-campaigns/hooks/use-creator-marketplace";
 

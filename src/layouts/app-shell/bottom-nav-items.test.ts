@@ -4,18 +4,26 @@ import { AUTH_ROUTES } from "../../features/auth/constants";
 import { creatorBottomNavItems } from "./bottom-nav-items";
 
 describe("Creator mobile bottom navigation", () => {
-  it("exposes Collaborations and removes Insights from the four-slot nav", () => {
+  it("uses the frozen four-slot Creator navigation", () => {
     expect(creatorBottomNavItems.map((item) => item.label)).toEqual([
       "Home",
       "Campaigns",
       "Collaborations",
-      "Profile",
+      "Creator Center",
     ]);
     expect(
-      creatorBottomNavItems.find((item) => item.label === "Collaborations")?.path,
+      creatorBottomNavItems.find((item) => item.label === "Collaborations")
+        ?.path,
     ).toBe(AUTH_ROUTES.creatorCollaborations);
-    expect(creatorBottomNavItems.some((item) => item.label === "Insights")).toBe(
-      false,
-    );
+    expect(
+      creatorBottomNavItems.find((item) => item.label === "Creator Center")
+        ?.path,
+    ).toBe(AUTH_ROUTES.creatorCentre);
+    expect(
+      creatorBottomNavItems.some((item) => item.label === "Insights"),
+    ).toBe(false);
+    expect(
+      creatorBottomNavItems.some((item) => item.label === "Marketplace"),
+    ).toBe(false);
   });
 });

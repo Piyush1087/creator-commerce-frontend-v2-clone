@@ -10,7 +10,7 @@ import {
   signInWithGoogle,
   verifyLoginOtp,
 } from "../api/auth-client";
-import { AUTH_ROUTES, getHomeRouteForRole } from "../constants";
+import { AUTH_ROUTES } from "../constants";
 import { resolvePostLoginPath } from "../post-login-redirect";
 import { GoogleSignInButton } from "./google-sign-in-button";
 import "../auth-pages.css";
@@ -57,13 +57,9 @@ export function SignInCard() {
 
   useEffect(() => {
     if (session.status === "AUTHENTICATED" && session.currentUser) {
-      navigate(
-        state.from ??
-          getHomeRouteForRole(normalizeUserRole(session.currentUser.role)),
-        { replace: true },
-      );
+      navigate(destination(session.currentUser.role), { replace: true });
     }
-  }, [navigate, session.currentUser, session.status, state.from]);
+  }, [destination, navigate, session.currentUser, session.status]);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;

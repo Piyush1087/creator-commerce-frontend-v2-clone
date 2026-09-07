@@ -22,6 +22,9 @@ Use this folder to keep external AI work organized before it becomes repo code.
 
 ## Recent intakes
 
+- `2026-09-03-c01-c05-clone-reconcile.md` — C-01 Entry + C-05 Creator
+  shell/Settings onto origin. Origin verification (both repos) is recorded in
+  backend `docs/handoff-audit/creator/`.
 - `2026-08-13-collaboration-clone-reconcile.md` — Canonical Collaboration UI
   from frozen clone commit `3951003`. Feature-scoped CSS is an approved
   prototype layout port; Aurora remains the primitive set.

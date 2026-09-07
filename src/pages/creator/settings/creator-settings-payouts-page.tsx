@@ -1,5 +1,5 @@
-import { CreatorPayoutsSettings } from "../../../features/settings/components/creator/creator-payouts-settings";
+import { CreatorPayoutLegalSettings } from "../../../features/creator-payout-settings/components/creator-payout-legal-settings";
 
 export function CreatorSettingsPayoutsPage() {
-  return <CreatorPayoutsSettings />;
+  return <CreatorPayoutLegalSettings />;
 }

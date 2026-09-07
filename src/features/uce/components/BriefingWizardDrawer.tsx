@@ -395,7 +395,14 @@ export function BriefingWizardDrawer({
       setStep(2);
       return;
     }
-    const inventory = deliverables.map(({ id: _id, ...rest }) => rest);
+    const inventory = deliverables.map(
+      ({ id, ...rest }): CreateCampaignBriefDeliverable => {
+        if (!id) {
+          throw new Error("deliverable draft is missing a client id");
+        }
+        return rest;
+      },
+    );
     const matrix: CreateCampaignBriefGuidance[] = deliverables.map((d) => {
       const base: CreateCampaignBriefGuidance = {
         deliverable_id: d.id,

@@ -8,7 +8,10 @@ export const BRAND_SETTINGS_ROUTES = {
 
 export const CREATOR_SETTINGS_ROUTES = {
   root: "/creator/settings",
+  account: "/creator/settings/account",
   profile: "/creator/settings/profile",
+  team: "/creator/settings/team",
+  instagram: "/creator/settings/instagram",
   social: "/creator/settings/social",
   payouts: "/creator/settings/payouts",
 } as const;

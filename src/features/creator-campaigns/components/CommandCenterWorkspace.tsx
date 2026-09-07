@@ -16,12 +16,6 @@ import "../creator-campaigns.css";
 
 type CommandView = "active" | "pending";
 
-type CommandCenterWorkspaceProps = {
-  workspace?: never;
-  loading?: never;
-  error?: never;
-};
-
 function collaborationHref(workflowId: string | null): string {
   if (workflowId) {
     return `${AUTH_ROUTES.creatorCollaborations}?collaboration=${encodeURIComponent(workflowId)}`;
@@ -219,7 +213,7 @@ function PendingTable({ rows }: { rows: PendingCollaborationRowApi[] }) {
   );
 }
 
-export function CommandCenterWorkspace(_props: CommandCenterWorkspaceProps = {}) {
+export function CommandCenterWorkspace() {
   const [view, setView] = useState<CommandView>("active");
   const { workspace, loading, error } = useCreatorCampaignsWorkspace({
     currentView: view === "active" ? "ACTIVE_PRODUCTION" : "PENDING_APPLICATIONS",

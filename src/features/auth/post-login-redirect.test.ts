@@ -7,14 +7,26 @@ const CAMPAIGN_ID = "11111111-1111-4111-8111-111111111111";
 describe("post-login redirect policy", () => {
   it.each([
     ["/creator/onboarding", "/creator/onboarding"],
-    ["/creator/marketplace", "/creator/marketplace"],
-    [`/marketplace/${CAMPAIGN_ID}`, `/creator/marketplace/${CAMPAIGN_ID}`],
-    ["/marketplace?brand_slug=safe-brand", "/creator/marketplace?brand_slug=safe-brand"],
-    ["/marketplace/invite/safe_token-123", "/marketplace/invite/safe_token-123"],
+    [
+      "/marketplace/invite/safe_token-123",
+      "/marketplace/invite/safe_token-123",
+    ],
     ["/brand/safe-brand", "/brand/safe-brand"],
   ])("preserves the supported Creator return %s", (from, expected) => {
     expect(resolvePostLoginPath("CREATOR", from)).toBe(expected);
   });
+
+  it.each([
+    "/creator/marketplace",
+    `/creator/marketplace/${CAMPAIGN_ID}?source=return`,
+    `/marketplace/${CAMPAIGN_ID}`,
+    "/marketplace?brand_slug=safe-brand",
+  ])(
+    "reconciles the authenticated Marketplace return %s to Campaigns",
+    (from) => {
+      expect(resolvePostLoginPath("CREATOR", from)).toBe("/creator/campaigns");
+    },
+  );
 
   it.each([
     "/brand/dashboard",

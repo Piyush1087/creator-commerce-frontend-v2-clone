@@ -1,20 +1,11 @@
 import { useState } from "react";
-import { 
-  X, 
-  Plus, 
-  Check, 
-  ArrowLeft, 
-  ArrowRight, 
-  Video, 
-  Instagram, 
-  Youtube, 
-  Shield, 
-  Zap, 
-  Clock, 
-  DollarSign, 
-  Layout,
-  MessageSquare,
-  Sparkles
+import {
+  Plus,
+  Check,
+  ArrowRight,
+  Video,
+  Instagram,
+  Youtube,
 } from "lucide-react";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
 import { Button } from "../../../design-system/aurora/components/Button";

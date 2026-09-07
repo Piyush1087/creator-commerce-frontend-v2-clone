@@ -36,6 +36,8 @@ export default $config({
       process.env.RAZORPAY_API_KEY_ID?.trim() ||
       "";
     const googleClientId = process.env.VITE_GOOGLE_CLIENT_ID?.trim() || "";
+    const googleMapsApiKey =
+      process.env.VITE_GOOGLE_MAPS_API_KEY?.trim() || "";
 
     const defaultPublicAppUrl =
       $app.stage === "prod"
@@ -73,6 +75,7 @@ export default $config({
             : "https://api.dev.thecreatorshop.in",
         VITE_STAGE: $app.stage,
         VITE_GOOGLE_CLIENT_ID: googleClientId,
+        VITE_GOOGLE_MAPS_API_KEY: googleMapsApiKey,
         VITE_RAZORPAY_KEY_ID: razorpayPublicKeyId,
         VITE_PUBLIC_APP_URL:
           $app.stage === "dev" || $app.stage === "prod"

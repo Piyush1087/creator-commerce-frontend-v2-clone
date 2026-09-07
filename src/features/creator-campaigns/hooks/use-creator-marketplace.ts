@@ -22,6 +22,19 @@ export function useCreatorMarketplace(
   query: MarketplaceListQuery,
   mode: "authenticated" | "guest" = "authenticated",
 ) {
+  const {
+    search_query,
+    brand_slug,
+    show_match_eligible_only,
+    niche,
+    deliverable_type,
+    target_geography,
+    creator_tier,
+    production_timeline,
+  } = query;
+  const creatorTierKey = JSON.stringify(creator_tier);
+  const productionTimelineKey = JSON.stringify(production_timeline);
+
   const [state, setState] = useState<MarketplaceState>({
     campaigns: [],
     totalCount: 0,
@@ -32,12 +45,29 @@ export function useCreatorMarketplace(
   });
 
   const load = useCallback(async () => {
+    const requestQuery: MarketplaceListQuery = {
+      search_query,
+      brand_slug,
+      show_match_eligible_only,
+      niche,
+      deliverable_type,
+      target_geography,
+      creator_tier:
+        creatorTierKey === undefined
+          ? undefined
+          : (JSON.parse(creatorTierKey) as MarketplaceListQuery["creator_tier"]),
+      production_timeline:
+        productionTimelineKey === undefined
+          ? undefined
+          : (JSON.parse(productionTimelineKey) as MarketplaceListQuery["production_timeline"]),
+    };
+
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response =
         mode === "guest"
-          ? await fetchPublicMarketplaceCampaigns(query)
-          : await fetchMarketplaceCampaigns(query);
+          ? await fetchPublicMarketplaceCampaigns(requestQuery)
+          : await fetchMarketplaceCampaigns(requestQuery);
       setState({
         campaigns: response.campaigns,
         totalCount: response.total_count,
@@ -55,14 +85,14 @@ export function useCreatorMarketplace(
     }
   }, [
     mode,
-    query.search_query,
-    query.brand_slug,
-    query.show_match_eligible_only,
-    query.niche,
-    query.deliverable_type,
-    query.target_geography,
-    JSON.stringify(query.creator_tier),
-    JSON.stringify(query.production_timeline),
+    search_query,
+    brand_slug,
+    show_match_eligible_only,
+    niche,
+    deliverable_type,
+    target_geography,
+    creatorTierKey,
+    productionTimelineKey,
   ]);
 
   useEffect(() => {

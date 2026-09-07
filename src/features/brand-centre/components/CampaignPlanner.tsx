@@ -1,20 +1,13 @@
-import { 
-  Calendar, 
-  Info, 
-  Target, 
-  Users, 
-  Package, 
-  FileText, 
-  Rocket, 
-  Trash2, 
-  ChevronRight, 
+import {
+  Info,
+  Target,
+  Users,
+  ChevronRight,
   X,
   Zap,
   ShieldAlert,
   PauseCircle,
-  CheckCircle2,
   AlertTriangle,
-  Menu
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
