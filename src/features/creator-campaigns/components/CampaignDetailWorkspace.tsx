@@ -28,8 +28,6 @@ import { resolveSafeInternalPath } from "../../../shared/navigation/safe-interna
 import { CampaignApplicationWizard } from "./CampaignApplicationWizard";
 import { CrossSellTray } from "./CrossSellTray";
 import { OptionalMedia } from "./OptionalMedia";
-import { issueCampaignApplyContinuation } from "../../creator-onboarding/api/creator-entry-client";
-import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 
 import "../creator-campaigns.css";
 
