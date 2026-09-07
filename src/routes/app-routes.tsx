@@ -43,6 +43,7 @@ import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignD
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
 import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
 import { CreatorCentrePage } from "../pages/creator/centre/creator-centre-page";
+import { CreatorHomePage } from "../pages/creator/centre/creator-home-page";
 import { CreatorAnalyticsPage } from "../pages/creator/centre/creator-analytics-page";
 import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
@@ -243,10 +244,7 @@ export function AppRoutes() {
           </Route>
         </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
-          <Route
-            path={AUTH_ROUTES.creatorHome}
-            element={<CreatorCentrePage />}
-          />
+          <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           {/* CREATOR_WORKSPACE_ENTRY technical mount. C-02 owns final Home/Center content. */}
           <Route
             path={AUTH_ROUTES.creatorCentre}
