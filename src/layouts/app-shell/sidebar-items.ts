@@ -134,7 +134,7 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     path: AUTH_ROUTES.creatorCampaigns,
     roles: ["CREATOR"],
     breadcrumb: "Campaigns",
-    headerTitle: "Campaigns Command Center",
+    headerTitle: "Campaigns",
     mainVariant: "flush",
     requiresCreatorWorkspace: true,
   },

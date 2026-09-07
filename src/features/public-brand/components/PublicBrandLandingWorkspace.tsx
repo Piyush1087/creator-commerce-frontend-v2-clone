@@ -88,7 +88,7 @@ export function PublicBrandLandingWorkspace({
   const loginRedirectState = { from: brandPagePath };
   const campaignsHref = brandSlug
     ? brandMarketplacePath(brandSlug, true)
-    : AUTH_ROUTES.creatorMarketplace;
+    : AUTH_ROUTES.creatorCampaigns;
 
   useEffect(() => {
     if (!primary) return;
@@ -242,7 +242,7 @@ export function PublicBrandLandingWorkspace({
                     ? "Creators sign in to browse live briefs"
                     : landing.open_campaign_count > 0
                       ? `${landing.open_campaign_count} live brief${landing.open_campaign_count === 1 ? "" : "s"}`
-                      : "Check marketplace for new briefs"}
+                      : "Check Campaigns for new briefs"}
               </span>
             </div>
           </div>
@@ -402,15 +402,11 @@ export function PublicBrandLandingWorkspace({
           {isCreator ? (
             <div className="pb-brand__gateway-shell">
               <p className="cc-muted">
-                You&apos;re signed in. Browse {companyName}&apos;s open campaigns or explore the
-                full marketplace.
+                You&apos;re signed in. Continue to your Campaigns workspace.
               </p>
               <div className="pb-brand__hero-cta">
                 <Link to={campaignsHref}>
-                  <Button variant="primary">View open campaigns</Button>
-                </Link>
-                <Link to={AUTH_ROUTES.creatorMarketplace}>
-                  <Button variant="outline">Browse all brands</Button>
+                  <Button variant="primary">Open Campaigns</Button>
                 </Link>
               </div>
             </div>

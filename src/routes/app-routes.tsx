@@ -1,3 +1,19 @@
+import {
+  CampaignAuthority,
+  CampaignOpportunityAuthority,
+} from "../features/creator-campaigns/components/CampaignAuthority";
+import {
+  CampaignUnavailable,
+  LegacyCampaignRedirect,
+} from "../features/creator-campaigns/components/CampaignCompatibility";
+import { CampaignsLayout } from "../pages/creator/campaigns/campaigns-layout";
+import {
+  OpportunitiesPage,
+  OpportunityPage,
+  ApplicationsPage,
+  ApplicationPage,
+  PublicCampaignPage,
+} from "../pages/creator/campaigns/c03-pages";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
@@ -26,19 +42,12 @@ import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignC
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
 import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
-import { CreatorCampaignsCommandCenterPage } from "../pages/creator/campaigns/creator-campaigns-command-center-page";
-import { CreatorCampaignsHistoryPage } from "../pages/creator/campaigns/creator-campaigns-history-page";
-import { CreatorCampaignDetailPage } from "../pages/creator/marketplace/creator-campaign-detail-page";
-import { CreatorMarketplacePage } from "../pages/creator/marketplace/creator-marketplace-page";
 import { CreatorCentrePage } from "../pages/creator/centre/creator-centre-page";
 import { CreatorAnalyticsPage } from "../pages/creator/centre/creator-analytics-page";
 import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
-import { PublicCampaignDetailPage } from "../pages/public/marketplace/public-campaign-detail-page";
-import { PublicInviteLandingPage } from "../pages/public/marketplace/public-invite-landing-page";
-import { PublicMarketplacePage } from "../pages/public/marketplace/public-marketplace-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/MarketplaceGuestLayout";
 import { RequireAuth } from "../shared/auth/require-auth";
@@ -69,22 +78,31 @@ export function AppRoutes() {
         path={AUTH_ROUTES.creatorTeamInvitationAccept}
         element={<CreatorTeamInvitationAcceptance />}
       />
+      <Route path={PUBLIC_ROUTES.campaign} element={<PublicCampaignPage />} />
+      <Route
+        path={PUBLIC_ROUTES.marketplace}
+        element={<CampaignUnavailable />}
+      />
+      <Route
+        path={PUBLIC_ROUTES.marketplaceInvite}
+        element={<CampaignUnavailable invitation />}
+      />
+      <Route
+        path={PUBLIC_ROUTES.marketplaceCampaign}
+        element={<LegacyCampaignRedirect />}
+      />
+      <Route
+        path={AUTH_ROUTES.creatorMarketplace}
+        element={<Navigate to={AUTH_ROUTES.creatorOpportunities} replace />}
+      />
+      <Route
+        path={AUTH_ROUTES.creatorMarketplaceCampaign}
+        element={<LegacyCampaignRedirect creator />}
+      />
       <Route element={<MarketplaceGuestLayout />}>
         <Route
           path={PUBLIC_ROUTES.brandLanding}
           element={<PublicBrandLandingPage />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplace}
-          element={<PublicMarketplacePage />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplaceInvite}
-          element={<PublicInviteLandingPage />}
-        />
-        <Route
-          path={PUBLIC_ROUTES.marketplaceCampaign}
-          element={<PublicCampaignDetailPage />}
         />
       </Route>
       <Route
@@ -190,6 +208,40 @@ export function AppRoutes() {
             }
           />
         </Route>
+        <Route element={<CampaignAuthority />}>
+          <Route
+            path={AUTH_ROUTES.creatorCollaborations}
+            element={
+              <CollaborationRouteGuard expectedRole="CREATOR">
+                <CreatorCollaborationsPage />
+              </CollaborationRouteGuard>
+            }
+          />
+          <Route
+            path={AUTH_ROUTES.creatorCampaigns}
+            element={<CampaignsLayout />}
+          >
+            <Route index element={<Navigate to="opportunities" replace />} />
+            <Route element={<CampaignOpportunityAuthority />}>
+              <Route path="opportunities" element={<OpportunitiesPage />} />
+              <Route
+                path="opportunities/:campaignId"
+                element={<OpportunityPage />}
+              />
+            </Route>
+            <Route path="applications" element={<ApplicationsPage />} />
+            <Route
+              path="applications/:applicationId"
+              element={<ApplicationPage />}
+            />
+            <Route
+              path="history"
+              element={
+                <Navigate to={AUTH_ROUTES.creatorApplications} replace />
+              }
+            />
+          </Route>
+        </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route
             path={AUTH_ROUTES.creatorHome}
@@ -212,34 +264,9 @@ export function AppRoutes() {
             path={AUTH_ROUTES.creatorDashboard}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
-          {/* COMPATIBILITY_RECONCILIATION_ONLY: dormant C-03 routes, not shell navigation authority. */}
-          <Route
-            path={AUTH_ROUTES.creatorMarketplace}
-            element={<CreatorMarketplacePage />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorMarketplaceCampaign}
-            element={<CreatorCampaignDetailPage />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorCampaigns}
-            element={<CreatorCampaignsCommandCenterPage />}
-          />
           <Route
             path={AUTH_ROUTES.creatorPayouts}
             element={<CreatorPayoutsPage />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorCampaignsHistory}
-            element={<CreatorCampaignsHistoryPage />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorCollaborations}
-            element={
-              <CollaborationRouteGuard expectedRole="CREATOR">
-                <CreatorCollaborationsPage />
-              </CollaborationRouteGuard>
-            }
           />
         </Route>
       </Route>
