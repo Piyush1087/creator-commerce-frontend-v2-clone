@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "runner": "BRAND_PAYOUTS_WAVE_D_JOINT_PROVIDER_DISABLED_ACCEPTANCE_AND_HANDOFF_RUNNER_V1",
+  "result": "PASS",
+  "sources": {
+    "backend_sha": "a38102fd9662f1654c9572b19913b9e228385b73",
+    "backend_tree": "adb8c129744dc5e9574328a75e59d802728bbe37",
+    "frontend_sha": "25441dd4fd228bec4d6c9fe9f39c2297318b6167",
+    "frontend_tree": "3490d5c936b207d6e1685aee6baff37e073257e0"
+  },
+  "gates": {
+    "fresh_migrations": "PASS_86_OF_86",
+    "backend_build": "PASS",
+    "frontend_build": "PASS_2111_MODULES",
+    "focused_contract_tests": "PASS_48",
+    "focused_postgresql_tests": "PASS_3_OF_3",
+    "reused_frontend_full_suite": "PASS_895_OF_895",
+    "owner_finance_approvals": "PASS_2_OF_2",
+    "exactly_one_effect": "PASS_2_OF_2",
+    "campaign_manager_read_only": "PASS",
+    "cross_brand": "PASS",
+    "brand_return_provider_disabled": "PASS_POSITIVE_AVAILABLE_ZERO_SELF_SERVICE",
+    "activity_back_refresh": "PASS",
+    "mobile_desktop_overflow": "PASS",
+    "unauthenticated_redirect": "PASS",
+    "browser_console": "PASS_ZERO",
+    "axe_serious": 0,
+    "axe_critical": 0,
+    "non_loopback_application_attempts": 0,
+    "provider_actions": 0
+  },
+  "test_only_launcher_sha256": "78d8d00b91ed7140af5678667786eb22474d88fab68e9d352fe928aee1f9be54",
+  "cleanup": "PASS",
+  "non_disposable_database_mutation": "NONE",
+  "source_corrections": "NONE"
+}
