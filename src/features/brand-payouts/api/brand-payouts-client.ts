@@ -10,6 +10,8 @@ import {
   brandPayoutsObligationDetailResponseSchema,
   brandPayoutsObligationsResponseSchema,
   brandPayoutsOverviewResponseSchema,
+  brandPayoutsReserveRequestsResponseSchema,
+  approveReserveResponseSchema,
   type BrandPayoutsActivityCategory,
   type BrandPayoutsActivityDetailResponse,
   type BrandPayoutsActivityResponse,
@@ -17,6 +19,8 @@ import {
   type BrandPayoutsObligationDetailResponse,
   type BrandPayoutsObligationsResponse,
   type BrandPayoutsOverviewResponse,
+  type BrandPayoutsReserveRequestsResponse,
+  type ApproveReserveResponse,
 } from "../contracts/brand-payouts.contracts";
 
 const BASE = `${env.apiUrl}/api/v1/brand/payouts`;
@@ -183,6 +187,55 @@ export function fetchBrandPayoutsObligations(
     brandPayoutsObligationsResponseSchema,
     signal,
   );
+}
+
+export function fetchBrandPayoutsReserveRequests(
+  query: PageQuery = {},
+  signal?: AbortSignal,
+): Promise<BrandPayoutsReserveRequestsResponse> {
+  const search = pageSearch(query);
+  return requestV2(
+    `/reserve-requests?${search.toString()}`,
+    brandPayoutsReserveRequestsResponseSchema,
+    signal,
+  );
+}
+
+export async function approveBrandPayoutsReserve(input: {
+  readonly reserveInstructionId: string;
+  readonly idempotencyKey: string;
+}): Promise<ApproveReserveResponse> {
+  const response = await authenticatedFetch(`${BASE}/reserve-approvals`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      reserve_instruction_id: input.reserveInstructionId,
+      idempotency_key: input.idempotencyKey,
+    }),
+  });
+  if (!response.ok) throw await responseError(response);
+  let body: unknown;
+  try {
+    body = (await response.json()) as unknown;
+  } catch {
+    throw new BrandPayoutsApiError(
+      "CONTRACT",
+      response.status,
+      "BRAND_PAYOUTS_INVALID_COMMAND_JSON",
+      "The reserve response could not be verified.",
+    );
+  }
+  const parsed = approveReserveResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new BrandPayoutsApiError(
+      "CONTRACT",
+      response.status,
+      "BRAND_PAYOUTS_COMMAND_SCHEMA_MISMATCH",
+      "The reserve response could not be verified.",
+    );
+  }
+  return parsed.data;
 }
 
 export function fetchBrandPayoutsActivityDetail(

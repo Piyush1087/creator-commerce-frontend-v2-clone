@@ -77,6 +77,7 @@ const legacyLimitationSchema = z
 
 const readActionSchema = z.enum([
   "VIEW_DETAIL",
+  "APPROVE_RESERVE",
   "ADD_FUNDS",
   "REQUEST_BRAND_RETURN",
   "OPEN_SETTINGS_ADD_FUNDS",
@@ -273,6 +274,34 @@ export const brandPayoutsBrandReturnSchema = z
   })
   .strict();
 
+export const brandPayoutsReserveRequestSchema = z
+  .object({
+    reserve_request_id: boundedText,
+    reserve_instruction_id: z.string().uuid(),
+    public_reference: boundedText,
+    resource_version: boundedText,
+    campaign_id: boundedText,
+    collaboration_id: boundedText,
+    status: z.enum([
+      "REQUESTED",
+      "APPROVAL_REQUIRED",
+      "APPROVED_AWAITING_EXECUTION",
+      "EXECUTING",
+      "AWAITING_FUNDS",
+      "COMPLETED",
+      "ACTION_REQUIRED",
+      "SUPERSEDED",
+      "LEGACY_UNRECONCILED",
+    ]),
+    reserve_value: brandPayoutsMoneySchema.nullable(),
+    approval_required: z.boolean(),
+    requested_at: utcInstant,
+    last_observed_at: utcInstant,
+    action_required_reason_code: reasonCode.nullable(),
+    legacy: legacyStateSchema.nullable(),
+  })
+  .strict();
+
 export const brandPayoutsActivityCategorySchema = z.enum([
   "MONEY_MOVEMENT",
   "PROTECTED_ALLOCATION",
@@ -366,6 +395,15 @@ const brandReturnDetailSectionSchema = z
     ...sectionMetadata,
     payload: brandPayoutsBrandReturnSchema.nullable(),
     page: pageMetadataSchema.optional(),
+  })
+  .strict();
+
+const reserveRequestsSectionSchema = z
+  .object({
+    section_id: z.literal("RESERVE_REQUESTS"),
+    ...sectionMetadata,
+    payload: z.array(brandPayoutsReserveRequestSchema).nullable(),
+    page: pageMetadataSchema,
   })
   .strict();
 
@@ -478,6 +516,30 @@ export const brandPayoutsBrandReturnDetailResponseSchema = envelope(
     });
   }
 });
+export const brandPayoutsReserveRequestsResponseSchema = envelope(
+  reserveRequestsSectionSchema,
+).superRefine(requireNoRowsForFailClosedViewer);
+
+export const approveReserveResponseSchema = z
+  .object({
+    approval: z
+      .object({
+        id: z.string().uuid(),
+        reserveInstructionId: z.string().uuid(),
+        requestId: boundedText,
+        status: z.enum([
+          "APPROVED_AWAITING_EXECUTION",
+          "EXECUTING",
+          "AWAITING_FUNDS",
+          "ACTION_REQUIRED",
+          "COMPLETED",
+          "SUPERSEDED",
+        ]),
+      })
+      .passthrough(),
+    replayed: z.boolean(),
+  })
+  .strict();
 
 export type BrandPayoutsViewerRole = z.infer<
   typeof brandPayoutsViewerRoleSchema
@@ -498,6 +560,9 @@ export type BrandPayoutsObligation = z.infer<
 export type BrandPayoutsBrandReturn = z.infer<
   typeof brandPayoutsBrandReturnSchema
 >;
+export type BrandPayoutsReserveRequest = z.infer<
+  typeof brandPayoutsReserveRequestSchema
+>;
 export type BrandPayoutsOverviewResponse = z.infer<
   typeof brandPayoutsOverviewResponseSchema
 >;
@@ -515,6 +580,12 @@ export type BrandPayoutsObligationDetailResponse = z.infer<
 >;
 export type BrandPayoutsBrandReturnDetailResponse = z.infer<
   typeof brandPayoutsBrandReturnDetailResponseSchema
+>;
+export type BrandPayoutsReserveRequestsResponse = z.infer<
+  typeof brandPayoutsReserveRequestsResponseSchema
+>;
+export type ApproveReserveResponse = z.infer<
+  typeof approveReserveResponseSchema
 >;
 export type BrandPayoutsSectionMetadata = Pick<
   z.infer<typeof overviewSectionSchema>,

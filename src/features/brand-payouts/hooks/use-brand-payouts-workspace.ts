@@ -5,6 +5,7 @@ import {
   fetchBrandPayoutsActivity,
   fetchBrandPayoutsObligations,
   fetchBrandPayoutsOverview,
+  fetchBrandPayoutsReserveRequests,
   isBrandPayoutsAuthorizationError,
 } from "../api/brand-payouts-client";
 import type {
@@ -12,6 +13,7 @@ import type {
   BrandPayoutsObligationsResponse,
   BrandPayoutsOverviewResponse,
   BrandPayoutsViewer,
+  BrandPayoutsReserveRequestsResponse,
 } from "../contracts/brand-payouts.contracts";
 
 export type PayoutsLoadStatus =
@@ -126,6 +128,39 @@ export function mergeObligationsPage(
   };
 }
 
+export function mergeReserveRequestsPage(
+  current: BrandPayoutsReserveRequestsResponse,
+  next: BrandPayoutsReserveRequestsResponse,
+): BrandPayoutsReserveRequestsResponse {
+  if (
+    current.as_of !== next.as_of ||
+    !sameViewer(current.viewer, next.viewer)
+  ) {
+    throw new BrandPayoutsApiError(
+      "CONTRACT",
+      null,
+      "BRAND_PAYOUTS_CURSOR_SNAPSHOT_MISMATCH",
+      "The next reserve page did not belong to the current snapshot.",
+    );
+  }
+  return {
+    ...next,
+    sections: [
+      {
+        ...next.sections[0],
+        payload: [
+          ...(current.sections[0].payload ?? []),
+          ...(next.sections[0].payload ?? []),
+        ],
+        available_actions: [
+          ...current.sections[0].available_actions,
+          ...next.sections[0].available_actions,
+        ],
+      },
+    ],
+  };
+}
+
 export function useBrandPayoutsWorkspace() {
   const [overview, setOverview] =
     useState<PayoutsResourceState<BrandPayoutsOverviewResponse>>(initialState);
@@ -133,6 +168,10 @@ export function useBrandPayoutsWorkspace() {
     useState<PayoutsResourceState<BrandPayoutsActivityResponse>>(initialState);
   const [obligations, setObligations] =
     useState<PayoutsResourceState<BrandPayoutsObligationsResponse>>(
+      initialState,
+    );
+  const [reserveRequests, setReserveRequests] =
+    useState<PayoutsResourceState<BrandPayoutsReserveRequestsResponse>>(
       initialState,
     );
   const [accessDenied, setAccessDenied] = useState(false);
@@ -146,6 +185,7 @@ export function useBrandPayoutsWorkspace() {
     setOverview(initialState());
     setActivity(initialState());
     setObligations(initialState());
+    setReserveRequests(initialState());
   }, []);
 
   const refresh = useCallback(() => {
@@ -158,6 +198,7 @@ export function useBrandPayoutsWorkspace() {
     setOverview(beginLoad);
     setActivity(beginLoad);
     setObligations(beginLoad);
+    setReserveRequests(beginLoad);
 
     void fetchBrandPayoutsOverview(controller.signal)
       .then((data) => {
@@ -204,6 +245,22 @@ export function useBrandPayoutsWorkspace() {
         }
         if (generation.current === requestGeneration) {
           setObligations((state) => failLoad(state, error));
+        }
+      });
+
+    void fetchBrandPayoutsReserveRequests({}, controller.signal)
+      .then((data) => {
+        if (generation.current !== requestGeneration) return;
+        setReserveRequests({ data, status: "READY", error: null });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (isBrandPayoutsAuthorizationError(error)) {
+          denyAccess();
+          return;
+        }
+        if (generation.current === requestGeneration) {
+          setReserveRequests((state) => failLoad(state, error));
         }
       });
   }, [denyAccess]);
@@ -261,13 +318,39 @@ export function useBrandPayoutsWorkspace() {
     }
   }, [denyAccess, obligations.data]);
 
+  const loadMoreReserveRequests = useCallback(async () => {
+    const current = reserveRequests.data;
+    const cursor = current?.sections[0].page.next_cursor;
+    if (!current || !cursor) return;
+    const requestGeneration = generation.current;
+    setReserveRequests(beginLoad);
+    try {
+      const next = await fetchBrandPayoutsReserveRequests({ cursor });
+      if (generation.current !== requestGeneration) return;
+      setReserveRequests({
+        data: mergeReserveRequestsPage(current, next),
+        status: "READY",
+        error: null,
+      });
+    } catch (error: unknown) {
+      if (generation.current !== requestGeneration) return;
+      if (isBrandPayoutsAuthorizationError(error)) {
+        denyAccess();
+        return;
+      }
+      setReserveRequests((state) => failLoad(state, error));
+    }
+  }, [denyAccess, reserveRequests.data]);
+
   return {
     accessDenied,
     activity,
     loadMoreActivity,
     loadMoreObligations,
+    loadMoreReserveRequests,
     obligations,
     overview,
+    reserveRequests,
     refresh,
   };
 }

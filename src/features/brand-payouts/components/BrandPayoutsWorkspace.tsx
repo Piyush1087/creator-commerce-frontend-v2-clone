@@ -12,6 +12,7 @@ import { PayoutsActivity } from "./PayoutsActivity";
 import { PayoutsDetail } from "./PayoutsDetail";
 import { PayoutsOverview } from "./PayoutsOverview";
 import { PayoutsTreasuryActions } from "./PayoutsTreasuryActions";
+import { PayoutReserveRequests } from "./PayoutReserveRequests";
 import "../brand-payouts.css";
 
 export function BrandPayoutsWorkspace() {
@@ -55,7 +56,8 @@ function PayoutsWorkspaceOverview({
   const refreshing =
     workspace.overview.status === "REFRESHING" ||
     workspace.activity.status === "REFRESHING" ||
-    workspace.obligations.status === "REFRESHING";
+    workspace.obligations.status === "REFRESHING" ||
+    workspace.reserveRequests.status === "REFRESHING";
 
   if (workspace.accessDenied) {
     return (
@@ -119,6 +121,11 @@ function PayoutsWorkspaceOverview({
         onRefresh={workspace.refresh}
       />
       <PayoutsOverview state={workspace.overview} onRetry={workspace.refresh} />
+      <PayoutReserveRequests
+        state={workspace.reserveRequests}
+        onLoadMore={() => void workspace.loadMoreReserveRequests()}
+        onRefresh={workspace.refresh}
+      />
       <div className="bp-content-grid">
         <PayoutObligations
           state={workspace.obligations}

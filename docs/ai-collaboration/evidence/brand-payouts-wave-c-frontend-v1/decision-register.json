@@ -1,34 +1,21 @@
 {
-  "schema_version": "1.0",
-  "runner": "BRAND_PAYOUTS_WAVE_C_COHERENT_FRONTEND_EXECUTION_RUNNER_V1",
-  "result": "GENUINE_CLASS_C_BLOCKED",
-  "stable_signature": "WAVE_C_CLASS_C_RESERVE_APPROVAL_AUTHORITY_UNREACHABLE",
+  "schema_version": "2.0",
+  "runner": "BRAND_PAYOUTS_WAVE_C_RESERVE_READ_CONTRACT_CORRECTION_AND_CONTINUATION_V1",
+  "result": "PASS",
   "binding": {
-    "frontend_base_sha": "7c75a4c8f5a0df3a1fb82d2f707b1c6b03d56d2a",
-    "frontend_base_tree": "956bae22a91aeaf53733f9e913d500b9750577e2",
-    "backend_sha": "46c71fd554d7621d9bd13d1bbc3115646a7c56bd",
-    "backend_tree": "40c1f931be6c2e358394ed5944f67d714b98f09d",
-    "migration_id": "20260912100000_brand_payouts_wave_b_normal_path",
-    "migration_sql_sha256": "887e5bb6bd262a4dd02e42a798db55bd136d97bf6a923df7e6466573f11d1f84",
-    "migration_count": 86
+    "frontend_parent_sha": "460282d9634d0c3d4cf3767df8a4a72459aa57c8",
+    "accepted_p3a_source_sha": "7c75a4c8f5a0df3a1fb82d2f707b1c6b03d56d2a",
+    "backend_correction_sha": "a38102fd9662f1654c9572b19913b9e228385b73",
+    "backend_correction_tree": "adb8c129744dc5e9574328a75e59d802728bbe37",
+    "migration_count": 86,
+    "migration_sql_sha256": "887e5bb6bd262a4dd02e42a798db55bd136d97bf6a923df7e6466573f11d1f84"
   },
-  "contradiction": {
-    "command_requires": "reserve_instruction_id UUID",
-    "read_endpoint": "GET /api/v1/brand/payouts/reserve-requests",
-    "read_endpoint_projection": {
-      "coverage": "UNAVAILABLE",
-      "available_actions": [],
-      "payload": [],
-      "source_complete": false
-    },
-    "approval_read_action_defined": false,
-    "safe_frontend_resolution": false,
-    "reason": "The frontend cannot obtain server-owned reserve instruction authority. Fabricating or privately sourcing the identifier would violate financial authority and fail-closed requirements."
-  },
-  "changes": {
-    "frontend_source": "NONE",
-    "migration_files": "NONE",
-    "provider_actions": "NONE",
-    "non_disposable_database_mutation": "NONE"
-  }
+  "decisions": [
+    {"class":"B","outcome":"FIXED","subject":"canonical reserve read/action contract"},
+    {"class":"A","outcome":"FIXED","subject":"parallel reserve mock ordering"},
+    {"class":"ENVIRONMENT","outcome":"FIXED_WITH_DISCLOSED_CADENCE_EXCEPTION","subject":"local production-build API origin"},
+    {"class":"ACCESSIBILITY","outcome":"ACCEPTED_INHERITED_MODERATE","subject":"three shell landmark findings; serious/critical zero"},
+    {"class":"NETWORK","outcome":"DISCLOSED_NON_PROVIDER_REJECTED_ATTEMPT","subject":"queued Postmark test notifications; payout provider zero"}
+  ],
+  "excluded": ["Wave D","P6","P3S","generalized P4R/P5R","production/AWS","canonical merge/deploy"]
 }

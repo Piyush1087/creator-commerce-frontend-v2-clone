@@ -1,58 +1,51 @@
-# Brand Payouts Wave C frontend preflight handoff
+# Brand Payouts Wave C frontend completion handoff
 
-Status: `GENUINE_CLASS_C_BLOCKED`
+Status: `PASS`
 
-This handoff records the bounded preflight for `BRAND_PAYOUTS_WAVE_C_COHERENT_FRONTEND_EXECUTION_RUNNER_V1`. No frontend source was changed because the accepted Wave B contract cannot authorize the first-reserve command from any frontend state.
+This closes `BRAND_PAYOUTS_WAVE_C_RESERVE_READ_CONTRACT_CORRECTION_AND_CONTINUATION_V1` and supersedes the preflight blocker at `460282d9634d0c3d4cf3767df8a4a72459aa57c8`.
 
-## Immutable binding
+## Binding and backend correction
 
-- Wave C branch: `brand-payouts/wave-c-frontend-v1`
-- Accepted frontend base: `7c75a4c8f5a0df3a1fb82d2f707b1c6b03d56d2a`
-- Accepted frontend base tree: `956bae22a91aeaf53733f9e913d500b9750577e2`
-- Bound backend: `46c71fd554d7621d9bd13d1bbc3115646a7c56bd`
-- Bound backend tree: `40c1f931be6c2e358394ed5944f67d714b98f09d`
-- Migration: `20260912100000_brand_payouts_wave_b_normal_path`
-- Migration SQL SHA-256: `887e5bb6bd262a4dd02e42a798db55bd136d97bf6a923df7e6466573f11d1f84`
-- Migration count: 86
+- Backend branch: `brand-payouts/wave-c-reserve-read-v1`
+- Backend SHA/tree: `a38102fd9662f1654c9572b19913b9e228385b73` / `adb8c129744dc5e9574328a75e59d802728bbe37`
+- Backend parent: `46c71fd554d7621d9bd13d1bbc3115646a7c56bd`
+- Frontend branch/parent: `brand-payouts/wave-c-frontend-v1` / `460282d9634d0c3d4cf3767df8a4a72459aa57c8`
+- Accepted P3A source base: `7c75a4c8f5a0df3a1fb82d2f707b1c6b03d56d2a`
+- Migration count: 86; no migration changed. Migration 86 SQL SHA-256: `887e5bb6bd262a4dd02e42a798db55bd136d97bf6a923df7e6466573f11d1f84`.
 
-The frontend and backend worktrees were clean at preflight. The frontend branch was created directly from the accepted base. The backend head/tree and migration hash match the frozen Wave C inputs.
+The backend now projects canonical C04 reserve instructions with fixed-as-of pagination/filtering, distinct public request reference, server-owned `reserve_instruction_id`, and `reserve-instruction:vN` version. `APPROVE_RESERVE` appears only for current Owner/Finance viewers on an eligible current unsuperseded instruction. Campaign Manager receives no row, amount, or action. Transactional scope, membership, currentness, supersession, economics, and idempotency revalidation remain authoritative.
 
-## Stable blocker signature
+Backend proof passed: 4 files / 28 tests, scoped ESLint, Prisma validate, Nest build, root/health/database startup smoke, and disposable PostgreSQL 0→86. It covered Owner/Finance, Campaign denial, cross-Brand isolation, concurrent replay/exactly-one effect, insufficient funds, C05/P5 fencing, and provider-disabled/test-neutral boundaries. Remote fetch-back matched and the worktree was clean.
 
-`WAVE_C_CLASS_C_RESERVE_APPROVAL_AUTHORITY_UNREACHABLE`
+## Frontend and automated gates
 
-The accepted backend command `POST /api/v1/brand/payouts/reserve-approvals` requires a UUID `reserve_instruction_id` and an idempotency key. The ID is intentionally server-owned financial authority. However, the only public reserve-request read endpoint (`GET /api/v1/brand/payouts/reserve-requests`) is hard-coded to return:
+Wave C consumes only server-emitted action/ID/version/as-of. It displays persisted amount without an editable amount, hides financial data/actions for Campaign Manager, and uses a stable per-dialog UUID idempotency key. The drawer preserves native submit semantics, announces pending via `aria-disabled`, deduplicates activation, traps focus, restores the invoker on Escape, and refocuses the command on errors. Responsive behavior switches at 768px.
 
-- `coverage: UNAVAILABLE`;
-- `available_actions: []`;
-- `payload: []`;
-- `source_complete: false`.
+- Focused sweep: 4 files / 63 tests passed.
+- Scoped lint and TypeScript: passed.
+- Full suite: 114 files / 895 tests passed.
+- Corrected production build: 2,111 modules; 0.51 kB HTML, 437.44 kB CSS, 1,205.42 kB JS. The inherited >500 kB advisory is non-blocking.
 
-The accepted `BrandPayoutsReadAction` union also has no reserve-approval action. Consequently no authenticated Owner or Finance frontend state can obtain a current reserve instruction ID, its version, or a server-authorized approval action. Calling the mutation would require inventing or importing a private identifier and would violate the runner's prohibition on caller-authored financial authority and weakened capability/RBAC checks.
+## Built-stack browser evidence
 
-This is not a CSS, focus, pagination, fixture, or local-preview defect. A test-only fabricated row would prove a UI against a contract production never emits and would not make the required built-stack state reachable.
+The exact builds ran on loopback through a disposable static/API proxy and owned PostgreSQL 16. Refresh-cookie rotation authenticated disposable fixtures.
 
-## Exact reproduction
+| Width | Viewer | Result |
+| ---: | --- | --- |
+| 390 | Owner | exact ₹118 action; no overflow; drawer keyboard path; repeated Enter yielded one approval/effect; ₹118 protected success |
+| 1440 | Finance Admin | exact ₹118 action; no overflow; Escape restored invoker; keyboard submit yielded one approval/effect |
+| 767 | Campaign Manager | read-only; no protected amount, row, or command; no overflow |
+| 768 | Campaign Manager | breakpoint edge remained fail-closed with no overflow |
+| representative | unauthenticated | `/brand/payouts` redirected to `/login` |
 
-1. At backend SHA `46c71fd554d7621d9bd13d1bbc3115646a7c56bd`, inspect `src/features/brand-payouts/dto/brand-payouts-command.dto.ts`: approval requires `reserve_instruction_id` as a UUID.
-2. Inspect `src/features/brand-payouts/services/brand-payouts-query.service.ts`, method `listReserveRequests`: it unconditionally emits unavailable coverage, no actions, and an empty payload.
-3. Inspect `src/features/brand-payouts/contracts/brand-payouts-v2.contract.ts`: `BrandPayoutsReadAction` has no reserve approval action.
-4. There is no other public Brand Payouts response that exposes `reserve_instruction_id`.
+Database verification found exactly one approval per exercised instruction. A fresh corrected-build tab had zero console warnings/errors. Axe 4.10.3 reported serious 0, critical 0, and three inherited moderate shell-landmark findings (`landmark-main-is-top-level`, `landmark-no-duplicate-main`, `landmark-unique`). CUA supplied live screenshots and AX/DOM snapshots; its browser bridge exposed no repository-safe screenshot sink, so no screenshot file is fabricated.
 
-## Completed gates
+## Decision register and disclosures
 
-- Exact frontend base/head/tree and remote ref verified.
-- Exact backend head/tree and clean worktree verified.
-- Migration identity, count, and SQL SHA-256 verified.
-- Existing P3A frontend contract reviewed for identity, list/detail navigation, pagination, stale restoration, responsive 767/768 cutover, command-surface exclusivity, focus, deduplication, and fail-closed role handling.
-- Wave B C05 binding reviewed: provider-neutral execution fences current destination ID/version before claim.
-- Wave B production provider boundary reviewed: capability absence fails closed before transfer creation.
-- No source, migration, provider, production, AWS, or database mutation occurred.
+- `CLASS_B_FIXED`: completed the bounded reserve read/action contract with no economics, policy, or migration change.
+- `CLASS_A_FIXED`: updated one existing P2 mock order for the new parallel read.
+- `PREPARED_ENV_FIXED`: an initial passing packaging command lacked local `VITE_API_URL` and rendered blank. It was not accepted. The corrected build used `VITE_STAGE=local` and `VITE_API_URL=http://127.0.0.1:4173`; this second packaging attempt is disclosed as a cadence exception.
+- `NETWORK_DISCLOSURE`: an earlier populated-database startup processed queued test notifications and made rejected Postmark calls using a deliberately invalid token. No payout-provider method/action or financial-provider request occurred. Recipients were cleared before the accepted browser stack.
+- `AXE_MODERATE_ACCEPTED`: three inherited moderate landmark findings; serious/critical zero.
 
-## Required upstream correction
-
-The backend authority must add a safe, versioned read contract that exposes the current server-owned reserve instruction through a Brand-scoped row and explicit server-authorized approval action (or define another Product-authorized command initiation contract). It must specify the public/display reference separately from the API resource ID and the response contract for approval. Any such financial API change requires upstream approval and a new bound backend SHA; it cannot be invented in Wave C frontend scope.
-
-## Deferred scope
-
-All Wave C source implementation and browser-matrix work remains deferred until the contradiction is corrected. Wave D, provider-enabled P6, P3S, generalized recovery, production/AWS action, canonical merge, and deployment remain excluded.
+No provider credential was present, no payout-provider action occurred, and no production/AWS/non-disposable database was mutated. Wave D, P6, P3S, generalized P4R/P5R, canonical merge, and deployment remain deferred.

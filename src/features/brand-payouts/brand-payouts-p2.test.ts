@@ -245,6 +245,26 @@ function makeCampaignManagerOverview(): BrandPayoutsOverviewResponse {
   });
 }
 
+function makeReserveRequests() {
+  return {
+    schema_version: "brand-payouts.v2",
+    as_of: NOW,
+    viewer: { role: "BRAND_OWNER", projection_scope: "FULL_FINANCIAL" },
+    sections: [
+      {
+        section_id: "RESERVE_REQUESTS",
+        ...sectionMetadata,
+        payload: [],
+        page: {
+          next_cursor: null,
+          page_complete: true,
+          source_complete: true,
+        },
+      },
+    ],
+  };
+}
+
 function activityItem(id = "ledger:one:recorded") {
   return {
     activity_id: id,
@@ -1115,6 +1135,9 @@ describe("truthful first-slice rendering", () => {
         }
         if (input.includes("/obligations?")) {
           return Promise.resolve(jsonResponse(makeObligations()));
+        }
+        if (input.includes("/reserve-requests?")) {
+          return Promise.resolve(jsonResponse(makeReserveRequests()));
         }
         overviewRequests += 1;
         return overviewRequests === 1
