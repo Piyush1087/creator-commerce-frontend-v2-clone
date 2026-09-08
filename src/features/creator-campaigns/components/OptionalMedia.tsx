@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type OptionalMediaProps = {
   src: string | null | undefined;
   alt?: string;
@@ -11,8 +13,17 @@ export function OptionalMedia({
   className,
   placeholderClassName = "cc-media-placeholder",
 }: OptionalMediaProps) {
-  if (src?.trim()) {
-    return <img src={src} alt={alt} className={className} />;
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  if (src?.trim() && src !== failedSource) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={className}
+        referrerPolicy="no-referrer"
+        onError={() => setFailedSource(src)}
+      />
+    );
   }
   return (
     <div className={placeholderClassName} aria-hidden>

@@ -34,6 +34,13 @@ vi.mock("../../pages/creator/centre/creator-centre-page", () => ({
 vi.mock("../../pages/creator/marketplace/creator-marketplace-page", () => ({
   CreatorMarketplacePage: () => "Creator Marketplace",
 }));
+vi.mock("../../pages/creator/campaigns/c03-pages", () => ({
+  OpportunitiesPage: () => "Creator Opportunities",
+  ApplicationsPage: () => "Creator Applications",
+  OpportunityPage: () => "Creator Opportunity",
+  ApplicationPage: () => "Creator Application",
+  PublicCampaignPage: () => "Public Campaign",
+}));
 vi.mock("../../pages/creator/payouts/creator-payouts-page", () => ({
   CreatorPayoutsPage: () => "Creator Payout Product",
 }));
@@ -118,6 +125,7 @@ beforeEach(() => {
       subjectCreatorProfileId: "creator-profile-1",
       subjectOwnerUserId: "creator-1",
       allowedActions: [
+        "CAMPAIGN_OPPORTUNITY_VIEW",
         "WORKSPACE_PROFILE_READ",
         "TEAM_READ",
         "INSTAGRAM_SETTINGS_READ",
@@ -141,9 +149,24 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Creator Settings guard-scope correction", () => {
+  it.each([AUTH_ROUTES.creatorMarketplace, AUTH_ROUTES.creatorOpportunities])(
+    "keeps C03 opportunity route %s outside the Instagram guard",
+    async (path) => {
+      renderPath(path);
+      expect(await screen.findByText("Creator Opportunities")).toBeTruthy();
+      expect(mocks.fetchState).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    AUTH_ROUTES.creatorCampaignsHistory,
+    AUTH_ROUTES.creatorApplications,
+  ])("preserves C03 history route %s without Instagram", async (path) => {
+    renderPath(path);
+    expect(await screen.findByText("Creator Applications")).toBeTruthy();
+    expect(mocks.fetchState).not.toHaveBeenCalled();
+  });
   for (const [path, label] of [
     [AUTH_ROUTES.creatorHome, "home"],
-    [AUTH_ROUTES.creatorMarketplace, "marketplace"],
     [AUTH_ROUTES.creatorPayouts, "payout product"],
   ] as const) {
     it(`redirects incomplete Creator ${label} access to Creator Entry`, async () => {
