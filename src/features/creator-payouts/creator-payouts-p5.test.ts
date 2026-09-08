@@ -26,6 +26,7 @@ describe("C06 P5 Creator payout workspace", () => {
     ])
       expect(source).toContain(text);
     expect(source).toContain("SideDrawer");
+    expect(source).toContain("detailRequestId.current += 1");
     expect(source).toContain('role="status"');
     expect(source).toContain('aria-live="polite"');
     expect(source).toContain("accessDenied");
@@ -44,6 +45,7 @@ describe("C06 P5 Creator payout workspace", () => {
     expect(css).toContain("@media (max-width: 767px)");
     expect(css).toContain("table-layout: fixed");
     expect(css).toContain("overflow-wrap: anywhere");
+    expect(css).toContain("#047857");
     expect(css).not.toMatch(/min-width:\s*(?:5|6|7|8|9)\d{2}px/);
   });
 
@@ -57,5 +59,12 @@ describe("C06 P5 Creator payout workspace", () => {
     expect(drawer).toContain('event.key === "Escape"');
     expect(drawer).toContain('event.key !== "Tab"');
     expect(drawer).toContain("previousFocus.focus()");
+  });
+
+  it("keeps Manager-readable payouts outside the Instagram platform guard", () => {
+    const routes = readFileSync("src/routes/app-routes.tsx", "utf8");
+    expect(routes.indexOf("path={AUTH_ROUTES.creatorPayouts}")).toBeLessThan(
+      routes.indexOf("<Route element={<RequireCreatorPlatformAccess />}>"),
+    );
   });
 });

@@ -251,6 +251,10 @@ export function AppRoutes() {
             />
           </Route>
         </Route>
+        <Route
+          path={AUTH_ROUTES.creatorPayouts}
+          element={<CreatorPayoutsPage />}
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           {/* CREATOR_WORKSPACE_ENTRY technical mount. C-02 owns final Home/Center content. */}
@@ -271,11 +275,6 @@ export function AppRoutes() {
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
           {/* COMPATIBILITY_RECONCILIATION_ONLY: dormant C-03 routes, not shell navigation authority. */}
-
-          <Route
-            path={AUTH_ROUTES.creatorPayouts}
-            element={<CreatorPayoutsPage />}
-          />
         </Route>
       </Route>
       <Route

@@ -12,14 +12,23 @@ describe("G1C Collaboration bank writer removal", () => {
     expect(client).not.toContain("/creator/bank-details");
   });
 
-  it("routes CreatorBankDetailsDrawer through Settings/Payout bank API", () => {
-    const drawer = readFileSync(
-      resolve(__dirname, "../../creator-payouts/components/CreatorBankDetailsDrawer.tsx"),
+  it("keeps payout method writes exclusively in Settings and out of C06", () => {
+    const workspace = readFileSync(
+      resolve(
+        __dirname,
+        "../../creator-payouts/components/CreatorPayoutsWorkspace.tsx",
+      ),
       "utf8",
     );
-    expect(drawer).toContain("upsertCreatorPayoutBank");
-    expect(drawer).toContain("creator-settings-client");
-    expect(drawer).not.toContain("upsertCreatorBankDetails");
-    expect(drawer).not.toContain("collaboration-client");
+    const settings = readFileSync(
+      resolve(__dirname, "../../settings/api/creator-settings-client.ts"),
+      "utf8",
+    );
+    expect(workspace).toContain("Manage in Settings");
+    expect(workspace).not.toMatch(
+      /upsertCreatorPayoutBank|CreatorBankDetailsDrawer|accountNumber/,
+    );
+    expect(settings).toContain("upsertCreatorPayoutBank");
+    expect(settings).not.toContain("upsertCreatorBankDetails");
   });
 });

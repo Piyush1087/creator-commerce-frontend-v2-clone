@@ -165,16 +165,17 @@ describe("Creator Settings guard-scope correction", () => {
     expect(await screen.findByText("Creator Applications")).toBeTruthy();
     expect(mocks.fetchState).not.toHaveBeenCalled();
   });
-  for (const [path, label] of [
-    [AUTH_ROUTES.creatorHome, "home"],
-    [AUTH_ROUTES.creatorPayouts, "payout product"],
-  ] as const) {
-    it(`redirects incomplete Creator ${label} access to Creator Entry`, async () => {
-      renderPath(path);
-      expect(await screen.findByText("Creator Entry recovery")).toBeTruthy();
-      expect(mocks.fetchState).toHaveBeenCalled();
-    });
-  }
+  it("redirects incomplete Creator home access to Creator Entry", async () => {
+    renderPath(AUTH_ROUTES.creatorHome);
+    expect(await screen.findByText("Creator Entry recovery")).toBeTruthy();
+    expect(mocks.fetchState).toHaveBeenCalled();
+  });
+
+  it("keeps Creator payouts independent of Instagram platform access", async () => {
+    renderPath(AUTH_ROUTES.creatorPayouts);
+    expect(await screen.findByText("Creator Payout Product")).toBeTruthy();
+    expect(mocks.fetchState).not.toHaveBeenCalled();
+  });
 
   for (const [path, text] of [
     [`${AUTH_ROUTES.creatorSettings}/account`, "Creator Settings Account"],

@@ -24,7 +24,7 @@
   max-width: 48rem;
 }
 .cp-eyebrow {
-  color: var(--color-primary) !important;
+  color: #047857 !important;
   font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
@@ -83,8 +83,11 @@ td small {
 }
 .cp-link,
 .cp-row-action {
-  color: var(--color-primary);
+  color: #047857;
   font-weight: 700;
+}
+.cp-workspace .aurora-button--ghost {
+  color: #047857;
 }
 .cp-panel {
   display: grid;

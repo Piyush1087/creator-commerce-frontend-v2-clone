@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CalendarClock,
@@ -56,6 +56,7 @@ export function CreatorPayoutsWorkspace() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const detailRequestId = useRef(0);
 
   useEffect(() => {
     setMoreObligations([]);
@@ -122,6 +123,7 @@ export function CreatorPayoutsWorkspace() {
   }
 
   async function openDetail(value: Selection) {
+    const requestId = ++detailRequestId.current;
     setSelection(value);
     setDetailLoading(true);
     setDetailError(null);
@@ -130,20 +132,29 @@ export function CreatorPayoutsWorkspace() {
         const response = await fetchCreatorPayoutObligation(
           value.item.public_reference,
         );
+        if (detailRequestId.current !== requestId) return;
         setSelection({ kind: "obligation", item: response.obligation });
       } else {
         const response = await fetchCreatorPayoutHistoryDetail(
           value.item.public_reference,
         );
+        if (detailRequestId.current !== requestId) return;
         setSelection({ kind: "history", item: response.history });
       }
     } catch {
+      if (detailRequestId.current !== requestId) return;
       setDetailError(
         "This payout record is unavailable for your current access.",
       );
     } finally {
-      setDetailLoading(false);
+      if (detailRequestId.current === requestId) setDetailLoading(false);
     }
+  }
+
+  function closeDetail() {
+    detailRequestId.current += 1;
+    setSelection(null);
+    setDetailLoading(false);
   }
 
   return (
@@ -247,7 +258,7 @@ export function CreatorPayoutsWorkspace() {
 
       <SideDrawer
         isOpen={selection !== null}
-        onClose={() => setSelection(null)}
+        onClose={closeDetail}
         title={
           selection?.kind === "obligation"
             ? "Obligation detail"
