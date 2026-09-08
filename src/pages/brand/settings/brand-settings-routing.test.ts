@@ -1,17 +1,24 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createElement } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
-import {
-  MemoryRouter,
-  Navigate,
-  Route,
-  Routes,
-} from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter, Navigate, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const payoutMocks = vi.hoisted(() => ({
+  fetchOverview: vi.fn(),
+}));
+
+vi.mock("../../../features/brand-payouts/api/brand-payouts-client", () => ({
+  fetchBrandPayoutsOverview: payoutMocks.fetchOverview,
+}));
 
 vi.mock(
   "../../../features/settings/components/brand/brand-general-settings",
-  () => ({ BrandGeneralSettings: () => createElement("div", null, "General content") }),
+  () => ({
+    BrandGeneralSettings: () => createElement("div", null, "General content"),
+  }),
 );
 
 vi.mock(
@@ -64,6 +71,23 @@ import { BrandSettingsEscrowPage } from "./brand-settings-escrow-page";
 import { BrandSettingsGeneralPage } from "./brand-settings-general-page";
 import { BrandSettingsIntegrationsPage } from "./brand-settings-integrations-page";
 
+const settingsCss = readFileSync(
+  resolve("src/features/settings/settings.css"),
+  "utf8",
+);
+const escrowCss = readFileSync(
+  resolve("src/features/brand-escrow/brand-escrow.css"),
+  "utf8",
+);
+const topUpDrawerSource = readFileSync(
+  resolve("src/features/brand-escrow/components/escrow-top-up-drawer.tsx"),
+  "utf8",
+);
+const brandReturnDrawerSource = readFileSync(
+  resolve("src/features/brand-escrow/components/brand-return-drawer.tsx"),
+  "utf8",
+);
+
 function renderSettingsRoute(pathname: string) {
   return render(
     createElement(
@@ -74,7 +98,10 @@ function renderSettingsRoute(pathname: string) {
         null,
         createElement(
           Route,
-          { path: BRAND_SETTINGS_ROUTES.root, element: createElement(SettingsShell) },
+          {
+            path: BRAND_SETTINGS_ROUTES.root,
+            element: createElement(SettingsShell),
+          },
           createElement(Route, {
             index: true,
             element: createElement(Navigate, { to: "general", replace: true }),
@@ -103,20 +130,69 @@ function renderSettingsRoute(pathname: string) {
 
 afterEach(cleanup);
 
+const commandOverview = (surface: "SETTINGS" | "PAYOUTS") => ({
+  as_of: "2026-09-05T12:00:00.000Z",
+  viewer: { role: "BRAND_OWNER", projection_scope: "FULL_FINANCIAL" },
+  sections: [
+    {
+      available_actions: [
+        {
+          action:
+            surface === "SETTINGS" ? "OPEN_SETTINGS_ADD_FUNDS" : "ADD_FUNDS",
+          authorized_as_of: "2026-09-05T12:00:00.000Z",
+        },
+      ],
+    },
+  ],
+});
+
+beforeEach(() => {
+  payoutMocks.fetchOverview.mockReset();
+  payoutMocks.fetchOverview.mockResolvedValue(commandOverview("SETTINGS"));
+});
+
 describe("FE-E Brand Settings routing and composition", () => {
+  it("keeps active navigation, compatibility actions, and escrow outline actions contrast-safe", () => {
+    expect(settingsCss).toMatch(
+      /\.brand-settings__tab--active\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(settingsCss).toMatch(
+      /\.settings-team__action-link\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(escrowCss).toMatch(
+      /\.brand-escrow-card \.aurora-button--outline:not\(:disabled\)\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+  });
+
+  it("keeps active Treasury drawer ghost actions contrast-safe", () => {
+    expect(escrowCss).toMatch(
+      /\.brand-escrow-drawer-footer \.aurora-button--ghost:not\(:disabled\)\s*\{[^}]*color:\s*#006c4b/iu,
+    );
+    expect(topUpDrawerSource).toContain(
+      'className="settings-drawer-footer brand-escrow-drawer-footer"',
+    );
+    expect(brandReturnDrawerSource).toContain(
+      'className="settings-drawer-footer brand-escrow-drawer-footer"',
+    );
+  });
+
   it("redirects the Settings root deterministically to General", async () => {
     renderSettingsRoute(BRAND_SETTINGS_ROUTES.root);
     expect(await screen.findByText("General content")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "General" }).getAttribute("aria-current")).toBe(
-      "page",
-    );
+    expect(
+      screen
+        .getByRole("link", { name: "General" })
+        .getAttribute("aria-current"),
+    ).toBe("page");
   });
 
   it("loads the Integrations route directly with the correct active tab", () => {
     renderSettingsRoute(BRAND_SETTINGS_ROUTES.integrations);
     expect(screen.getByText("Integrations content")).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: "Integrations" }).getAttribute("aria-current"),
+      screen
+        .getByRole("link", { name: "Integrations" })
+        .getAttribute("aria-current"),
     ).toBe("page");
     expect(screen.queryByLabelText("Finance sub-sections")).toBeNull();
   });
@@ -127,35 +203,65 @@ describe("FE-E Brand Settings routing and composition", () => {
     expect(screen.getByText("Billing profile and notifications")).toBeTruthy();
     expect(screen.queryByTestId("secure-escrow-workspace")).toBeNull();
     expect(
-      screen.getByRole("link", { name: "Finance & Escrow" }).getAttribute("aria-current"),
+      screen
+        .getByRole("link", { name: "Finance & Escrow" })
+        .getAttribute("aria-current"),
     ).toBe("page");
     expect(
-      screen.getByRole("link", { name: "Billing overview" }).getAttribute("aria-current"),
+      screen
+        .getByRole("link", { name: "Billing overview" })
+        .getAttribute("aria-current"),
     ).toBe("page");
   });
 
-  it("mounts the complete Treasury workspace only on Secure escrow", () => {
+  it("mounts the complete Treasury workspace only on Secure escrow during rollback", async () => {
     renderSettingsRoute(BRAND_SETTINGS_ROUTES.escrow);
-    expect(screen.getByTestId("secure-escrow-workspace").getAttribute("data-ledger-inline")).toBe(
-      "true",
-    );
+    expect(
+      (await screen.findByTestId("secure-escrow-workspace")).getAttribute(
+        "data-ledger-inline",
+      ),
+    ).toBe("true");
     expect(screen.queryByText("Subscription and invoices")).toBeNull();
     expect(screen.queryByText("Billing profile and notifications")).toBeNull();
     expect(
-      screen.getByRole("link", { name: "Finance & Escrow" }).getAttribute("aria-current"),
+      screen
+        .getByRole("link", { name: "Finance & Escrow" })
+        .getAttribute("aria-current"),
     ).toBe("page");
     expect(
-      screen.getByRole("link", { name: "Secure escrow" }).getAttribute("aria-current"),
+      screen
+        .getByRole("link", { name: "Secure escrow" })
+        .getAttribute("aria-current"),
     ).toBe("page");
+  });
+
+  it("turns Settings into a compatibility deep link when Payouts is active", async () => {
+    payoutMocks.fetchOverview.mockResolvedValue(commandOverview("PAYOUTS"));
+    renderSettingsRoute(BRAND_SETTINGS_ROUTES.escrow);
+    const link = await screen.findByRole("link", { name: "Open Payouts" });
+    expect(link.getAttribute("href")).toBe("/brand/payouts");
+    expect(screen.queryByTestId("secure-escrow-workspace")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add funds" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Return unused funds" }),
+    ).toBeNull();
   });
 
   it("matches only canonical Finance route boundaries", () => {
     expect(isBrandFinanceRoute(BRAND_SETTINGS_ROUTES.billing)).toBe(true);
-    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.billing}/history`)).toBe(true);
+    expect(
+      isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.billing}/history`),
+    ).toBe(true);
     expect(isBrandFinanceRoute(BRAND_SETTINGS_ROUTES.escrow)).toBe(true);
-    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.escrow}/ledger`)).toBe(true);
-    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.billing}-legacy`)).toBe(false);
-    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.escrow}-legacy`)).toBe(false);
+    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.escrow}/ledger`)).toBe(
+      true,
+    );
+    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.billing}-legacy`)).toBe(
+      false,
+    );
+    expect(isBrandFinanceRoute(`${BRAND_SETTINGS_ROUTES.escrow}-legacy`)).toBe(
+      false,
+    );
   });
 
   it("uses canonical Settings context titles in the application shell", () => {

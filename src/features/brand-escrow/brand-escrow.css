@@ -15,6 +15,14 @@
   opacity: 0.85;
 }
 
+.brand-escrow-card .aurora-button--outline:not(:disabled) {
+  color: #006c4b;
+}
+
+.brand-escrow-drawer-footer .aurora-button--ghost:not(:disabled) {
+  color: #006c4b;
+}
+
 .brand-escrow-card__glow {
   position: absolute;
   top: -6rem;
@@ -417,7 +425,8 @@
 
 .brand-escrow-amount-input:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .brand-escrow-amount-input__symbol {
@@ -681,7 +690,8 @@
 }
 
 .brand-escrow-notice {
-  border: 1px solid color-mix(in srgb, var(--status-success) 35%, var(--border-default));
+  border: 1px solid
+    color-mix(in srgb, var(--status-success) 35%, var(--border-default));
   border-radius: var(--radius-input);
   background: color-mix(in srgb, var(--status-success) 7%, var(--surface-card));
   color: var(--text-high);

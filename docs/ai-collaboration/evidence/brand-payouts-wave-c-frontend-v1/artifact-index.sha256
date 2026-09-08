@@ -1,0 +1,11 @@
+e8c4f578d6a234a0f228d75705ce5410f9c4930be191ee6fdfb1bcef955e6e07  docs/ai-collaboration/brand-payouts-wave-c-frontend-handoff.md
+bbe698a1042c2f60f6f79342dae70149ab5085ed594cce8a670d9cad4da8f647  docs/ai-collaboration/evidence/brand-payouts-wave-c-frontend-v1/decision-register.json
+b57435db9a36d373fb3ed307a8c4f90491e49fdf2bc5c62aefba70d00a764d38  docs/ai-collaboration/evidence/brand-payouts-wave-c-frontend-v1/preflight-proof.json
+263df20a1ed2eb57e119a664390b139ec8b53a8c0917ecc53213d6125c5ad2a0  src/features/brand-payouts/api/brand-payouts-client.ts
+20c21e0009444e7d27e7e4bbae216270538b4092099b6f51430524dcf98b0572  src/features/brand-payouts/brand-payouts-p2.test.ts
+3a674be03a8b9f5d0076a121eb30639a5dadd8cb5fe7d2f4b25fff2f4c492946  src/features/brand-payouts/brand-payouts-wave-c.test.ts
+f0ba855f85b2e3fe8b2579612fe99b6656a5ce0fedabee730c7672b9e185727d  src/features/brand-payouts/brand-payouts.css
+2d663fe8e700662cc5f92087fca4488f3d41d08ce67d437c6d2a1bfea4e997e3  src/features/brand-payouts/components/BrandPayoutsWorkspace.tsx
+414e3220a4c180fc2e2c8fe60ef08665e8d7f715979c595a549a858ec0a8e313  src/features/brand-payouts/components/PayoutReserveRequests.tsx
+63e31f14f76e186db0b7d81e01e752781ea8f1d111ada8f1187a98b25cf26951  src/features/brand-payouts/contracts/brand-payouts.contracts.ts
+c269cf6b17e06e0fd9ccc9ac8b349e50a0406937c01e900c147ada905095851e  src/features/brand-payouts/hooks/use-brand-payouts-workspace.ts

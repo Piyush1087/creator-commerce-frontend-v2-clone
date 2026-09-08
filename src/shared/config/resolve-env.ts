@@ -39,13 +39,18 @@ function productionApiOrigin(value: string | undefined): string {
   return configured.replace(/\/$/, "");
 }
 
-export function resolvePublicRuntimeEnv(input: PublicRuntimeEnvInput): PublicRuntimeEnv {
+export function resolvePublicRuntimeEnv(
+  input: PublicRuntimeEnvInput,
+): PublicRuntimeEnv {
   const configured = input.apiUrl?.trim().replace(/\/$/, "");
-  const apiUrl = input.dev ? (configured || "") : productionApiOrigin(configured);
+  const isLocalRuntime = input.dev || input.stage === "local";
+  const apiUrl = isLocalRuntime
+    ? configured || ""
+    : productionApiOrigin(configured);
 
   return {
     apiUrl,
-    socketUrl: input.dev ? (configured || LOCAL_API_ORIGIN) : apiUrl,
+    socketUrl: isLocalRuntime ? configured || LOCAL_API_ORIGIN : apiUrl,
     stage: input.stage || "local",
     razorpayKeyId: input.razorpayKeyId?.trim() || "",
     publicAppUrl: input.publicAppUrl?.trim().replace(/\/$/, "") || "",

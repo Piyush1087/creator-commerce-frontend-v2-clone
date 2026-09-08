@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Alert, Button, SideDrawer, TextField } from "../../../design-system/aurora";
 import {
+  Alert,
+  Button,
+  SideDrawer,
+  TextField,
+} from "../../../design-system/aurora";
+import {
+  type BrandFinancialCommandSurface,
   createEscrowTopUpIntent,
   EscrowApiError,
 } from "../api/brand-escrow-client";
@@ -19,6 +25,7 @@ type EscrowTopUpDrawerProps = {
   onClose: () => void;
   onRefresh?: () => Promise<void>;
   onNotice?: (message: string) => void;
+  commandSurface: BrandFinancialCommandSurface;
 };
 
 export function EscrowTopUpDrawer({
@@ -27,6 +34,7 @@ export function EscrowTopUpDrawer({
   onClose,
   onRefresh,
   onNotice,
+  commandSurface,
 }: EscrowTopUpDrawerProps) {
   const [amountInput, setAmountInput] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState("");
@@ -63,6 +71,7 @@ export function EscrowTopUpDrawer({
   };
 
   const handleProceed = async () => {
+    if (submitting || outcomeUnknown) return;
     setSubmitError(null);
     if (!amount || validationError || !idempotencyKey) return;
     setSubmitting(true);
@@ -70,6 +79,7 @@ export function EscrowTopUpDrawer({
       const intent = await createEscrowTopUpIntent({
         targetAllocation: amount.majorAmount,
         idempotencyKey,
+        commandSurface,
       });
       try {
         await openRazorpayCheckout({
@@ -120,13 +130,14 @@ export function EscrowTopUpDrawer({
       subtitle="Open checkout for this Brand vault."
       width="480px"
       footer={
-        <div className="settings-drawer-footer">
+        <div className="settings-drawer-footer brand-escrow-drawer-footer">
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
           <Button
             onClick={() => void handleProceed()}
-            disabled={Boolean(validationError) || submitting || outcomeUnknown}
+            disabled={Boolean(validationError)}
+            aria-disabled={submitting || outcomeUnknown ? true : undefined}
           >
             {submitting ? "Opening checkout…" : "Continue to provider"}
           </Button>
@@ -135,7 +146,12 @@ export function EscrowTopUpDrawer({
     >
       <div className="settings-drawer-body">
         {submitError ? (
-          <Alert tone="error" title={outcomeUnknown ? "Status must be refreshed" : "Top-up unavailable"}>
+          <Alert
+            tone="error"
+            title={
+              outcomeUnknown ? "Status must be refreshed" : "Top-up unavailable"
+            }
+          >
             {submitError}
           </Alert>
         ) : null}
@@ -146,13 +162,14 @@ export function EscrowTopUpDrawer({
           inputMode="decimal"
           autoComplete="off"
           placeholder="0.00"
-          error={amountInput ? validationError ?? undefined : undefined}
+          error={amountInput ? (validationError ?? undefined) : undefined}
         />
         <div className="brand-escrow-explainer">
           <strong>Confirmed funding only</strong>
           <p>
-            Checkout success does not immediately update Available balance. Funding remains
-            unavailable while Pending and becomes usable only after payment confirmation.
+            Checkout success does not immediately update Available balance.
+            Funding remains unavailable while Pending and becomes usable only
+            after payment confirmation.
           </p>
           {vault.currency === "INR" ? (
             <p>India minimum top-up: ₹5,000.</p>
