@@ -109,17 +109,29 @@
 
 .cp-bank-card--warning {
   background: var(--status-warning, #fff6f6);
-  border-color: color-mix(in srgb, var(--status-error) 12%, var(--border-default));
+  border-color: color-mix(
+    in srgb,
+    var(--status-error) 12%,
+    var(--border-default)
+  );
 }
 
 .cp-bank-card--verified {
   background: var(--surface-card);
-  border-color: color-mix(in srgb, var(--color-primary) 25%, var(--border-default));
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 25%,
+    var(--border-default)
+  );
 }
 
 .cp-bank-card--error {
   background: #fff1f2;
-  border-color: color-mix(in srgb, var(--status-error) 20%, var(--border-default));
+  border-color: color-mix(
+    in srgb,
+    var(--status-error) 20%,
+    var(--border-default)
+  );
 }
 
 .cp-bank-card__title {
