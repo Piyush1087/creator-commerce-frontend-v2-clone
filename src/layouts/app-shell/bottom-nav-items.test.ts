@@ -9,16 +9,15 @@ describe("Creator mobile bottom navigation", () => {
       "Home",
       "Campaigns",
       "Collaborations",
-      "Creator Center",
+      "Settings",
     ]);
     expect(
       creatorBottomNavItems.find((item) => item.label === "Collaborations")
         ?.path,
     ).toBe(AUTH_ROUTES.creatorCollaborations);
     expect(
-      creatorBottomNavItems.find((item) => item.label === "Creator Center")
-        ?.path,
-    ).toBe(AUTH_ROUTES.creatorCentre);
+      creatorBottomNavItems.find((item) => item.label === "Settings")?.path,
+    ).toBe(AUTH_ROUTES.creatorSettings);
     expect(
       creatorBottomNavItems.some((item) => item.label === "Insights"),
     ).toBe(false);

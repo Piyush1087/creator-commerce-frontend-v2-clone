@@ -41,12 +41,8 @@ import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage"
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
-import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
-import { CreatorCentrePage } from "../pages/creator/centre/creator-centre-page";
-import { CreatorAnalyticsPage } from "../pages/creator/centre/creator-analytics-page";
-import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
-import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
+import { CreatorWorkspaceEntryPage } from "../pages/creator/home/creator-workspace-entry-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/MarketplaceGuestLayout";
@@ -79,6 +75,7 @@ export function AppRoutes() {
         element={<CreatorTeamInvitationAcceptance />}
       />
       <Route path={PUBLIC_ROUTES.campaign} element={<PublicCampaignPage />} />
+      {/* COMPATIBILITY_RECONCILIATION_ONLY: Marketplace is OUT_OF_MVP */}
       <Route
         path={PUBLIC_ROUTES.marketplace}
         element={<CampaignUnavailable />}
@@ -149,7 +146,10 @@ export function AppRoutes() {
             </CollaborationRouteGuard>
           }
         />
-        <Route path={AUTH_ROUTES.brandPayouts} element={<BrandPayoutsPage />} />
+        <Route
+          path={AUTH_ROUTES.brandPayouts}
+          element={<Navigate to={AUTH_ROUTES.brandSettingsBilling} replace />}
+        />
         <Route
           path={AUTH_ROUTES.brandSettings}
           element={<BrandSettingsLayout />}
@@ -243,22 +243,22 @@ export function AppRoutes() {
           </Route>
         </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
+          {/* C-05 workspace entry. Accepted C-02A Home is deferred. */}
           <Route
             path={AUTH_ROUTES.creatorHome}
-            element={<CreatorCentrePage />}
+            element={<CreatorWorkspaceEntryPage />}
           />
-          {/* CREATOR_WORKSPACE_ENTRY technical mount. C-02 owns final Home/Center content. */}
           <Route
             path={AUTH_ROUTES.creatorCentre}
-            element={<CreatorCentrePage />}
+            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
           <Route
             path={AUTH_ROUTES.creatorAnalytics}
-            element={<CreatorAnalyticsPage />}
+            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
           <Route
             path={AUTH_ROUTES.creatorMediaKit}
-            element={<CreatorMediaKitPage />}
+            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
           <Route
             path={AUTH_ROUTES.creatorDashboard}
@@ -266,7 +266,9 @@ export function AppRoutes() {
           />
           <Route
             path={AUTH_ROUTES.creatorPayouts}
-            element={<CreatorPayoutsPage />}
+            element={
+              <Navigate to={AUTH_ROUTES.creatorSettingsPayouts} replace />
+            }
           />
         </Route>
       </Route>

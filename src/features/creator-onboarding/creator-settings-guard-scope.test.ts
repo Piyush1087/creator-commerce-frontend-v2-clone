@@ -224,7 +224,7 @@ describe("Creator Settings guard-scope correction", () => {
     expect(await screen.findByText("Creator Settings Account")).toBeTruthy();
   });
 
-  it("mounts Creator Center distinctly without equating it to Media Kit", async () => {
+  it("redirects Creator Center to the deferred workspace entry", async () => {
     mocks.fetchState.mockResolvedValue({
       accountContext: "CREATOR_READY",
       onboardingStatus: "COMPLETE",
@@ -238,7 +238,7 @@ describe("Creator Settings guard-scope correction", () => {
       },
     });
     renderPath(AUTH_ROUTES.creatorCentre);
-    expect(await screen.findByText("Creator Home")).toBeTruthy();
+    expect(await screen.findByText("Creator Home is deferred")).toBeTruthy();
     expect(screen.queryByText("Creator Media Kit")).toBeNull();
   });
 

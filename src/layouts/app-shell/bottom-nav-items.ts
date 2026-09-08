@@ -1,4 +1,4 @@
-import { Megaphone, MessageCircle, Home, Store } from "lucide-react";
+import { Megaphone, MessageCircle, Home, Settings, Store } from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -15,6 +15,7 @@ export type BottomNavItem = {
   availability?: "AVAILABLE" | "UNAVAILABLE";
   unavailableReason?: string;
   requiresCreatorWorkspace?: boolean;
+  alwaysAvailableInRecovery?: boolean;
 };
 
 export const brandBottomNavItems: BottomNavItem[] = [
@@ -40,7 +41,7 @@ export const brandBottomNavItems: BottomNavItem[] = [
   },
 ];
 
-/** C-05 MVP: Home · Campaigns · Collaborations · Creator Center. */
+/** Freeze MVP: Home · Campaigns · Collaborations · Settings. Centre/Payouts hubs hidden. */
 export const creatorBottomNavItems: BottomNavItem[] = [
   {
     label: "Home",
@@ -61,10 +62,10 @@ export const creatorBottomNavItems: BottomNavItem[] = [
     requiresCreatorWorkspace: true,
   },
   {
-    label: "Creator Center",
-    icon: Store,
-    path: AUTH_ROUTES.creatorCentre,
-    requiresCreatorWorkspace: true,
+    label: "Settings",
+    icon: Settings,
+    path: AUTH_ROUTES.creatorSettings,
+    alwaysAvailableInRecovery: true,
   },
 ];
 
@@ -93,6 +94,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.creatorCentre,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorCollaborations,
+  AUTH_ROUTES.creatorSettings,
 ] as const;
 
 export function isBottomNavItemActive(

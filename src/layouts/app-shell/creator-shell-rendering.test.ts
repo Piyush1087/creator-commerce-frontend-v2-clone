@@ -33,7 +33,7 @@ const ready = {
 };
 
 describe("Creator shell rendering", () => {
-  it("renders exactly six expanded Creator destinations without upgrade or Marketplace", () => {
+  it("renders the freeze Creator destinations without Centre, Payouts hub, or Marketplace", () => {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -42,22 +42,22 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(7);
+    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(5);
     for (const label of [
       "Home",
       "Campaigns",
       "Collaborations",
-      "Creator Center",
-      "Payouts",
       "Settings",
     ]) {
       expect(html).toContain(`>${label}</span>`);
     }
+    expect(html).not.toContain("Creator Center");
+    expect(html).not.toContain(">Payouts</span>");
     expect(html).not.toContain("Marketplace");
     expect(html).not.toContain("Upgrade");
   });
 
-  it("renders four non-link mobile recovery destinations with accessible reasons", () => {
+  it("renders three non-link mobile recovery destinations plus Settings", () => {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -66,7 +66,7 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aria-disabled="true"/g) ?? []).length).toBe(4);
+    expect((html.match(/aria-disabled="true"/g) ?? []).length).toBe(3);
     expect(html).not.toContain("/creator/marketplace");
     expect(html).toContain("Creator workspace provisioning is incomplete.");
   });

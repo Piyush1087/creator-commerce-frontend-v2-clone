@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Settings,
   Store,
-  Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -98,15 +97,6 @@ const brandSidebarNavItems: SidebarNavItem[] = [
     mainVariant: "flush",
   },
   {
-    label: "Payouts",
-    icon: Wallet,
-    path: AUTH_ROUTES.brandPayouts,
-    roles: ["BRAND"],
-    breadcrumb: "Payouts",
-    headerTitle: "Billing, Escrow & Compliance Hub",
-    mainVariant: "flush",
-  },
-  {
     label: "Settings",
     icon: Settings,
     path: AUTH_ROUTES.brandSettings,
@@ -147,27 +137,6 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     headerTitle: "Collaborations",
     mainVariant: "flush",
     requiresCreatorWorkspace: true,
-  },
-  {
-    label: "Creator Center",
-    icon: Store,
-    path: AUTH_ROUTES.creatorCentre,
-    roles: ["CREATOR"],
-    breadcrumb: "Creator Center",
-    headerTitle: "Creator Center",
-    mainVariant: "flush",
-    requiresCreatorWorkspace: true,
-  },
-  {
-    label: "Payouts",
-    icon: Wallet,
-    path: AUTH_ROUTES.creatorPayouts,
-    roles: ["CREATOR"],
-    breadcrumb: "Payouts",
-    headerTitle: "Earnings & Payouts Hub",
-    mainVariant: "flush",
-    requiresCreatorWorkspace: true,
-    requiredCreatorAction: "PAYOUT_SETTINGS_READ",
   },
   {
     label: "Settings",

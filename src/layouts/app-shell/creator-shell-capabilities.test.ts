@@ -38,15 +38,15 @@ const manager: CreatorWorkspaceActorContext = {
 describe("Creator shell capability projection", () => {
   it("treats an unresolved integrated shell as loading and non-actionable", () => {
     const items = getSidebarNavItemsForRole("CREATOR");
-    expect(items.find((item) => item.label === "Payouts")).toMatchObject({
+    expect(items.find((item) => item.label === "Home")).toMatchObject({
       availability: "UNAVAILABLE",
       unavailableReason: "Loading creator workspace access…",
     });
     expect(
-      getBottomNavItemsForRole("CREATOR").every(
-        (item) => item.availability === "UNAVAILABLE",
-      ),
-    ).toBe(true);
+      getBottomNavItemsForRole("CREATOR").find((item) => item.label === "Home"),
+    ).toMatchObject({
+      availability: "UNAVAILABLE",
+    });
   });
 
   it("exposes the exact expanded MVP navigation and no Marketplace", () => {
@@ -59,8 +59,6 @@ describe("Creator shell capability projection", () => {
       "Home",
       "Campaigns",
       "Collaborations",
-      "Creator Center",
-      "Payouts",
       "Settings",
     ]);
     expect(labels).not.toContain("Marketplace");
@@ -73,7 +71,7 @@ describe("Creator shell capability projection", () => {
         status: "READY",
         actorContext: manager,
       }).map((item) => item.label),
-    ).toEqual(["Home", "Campaigns", "Collaborations", "Creator Center"]);
+    ).toEqual(["Home", "Campaigns", "Collaborations", "Settings"]);
   });
 
   it("hides payout navigation when the actor lacks payout read authority", () => {
@@ -97,7 +95,7 @@ describe("Creator shell capability projection", () => {
       actorContext: null,
     });
 
-    expect(items.find((item) => item.label === "Payouts")).toMatchObject({
+    expect(items.find((item) => item.label === "Home")).toMatchObject({
       availability: "UNAVAILABLE",
       unavailableReason: "Loading creator workspace access…",
     });
@@ -122,10 +120,17 @@ describe("Creator shell capability projection", () => {
       unavailableReason: "Creator workspace provisioning is incomplete.",
     });
     expect(
-      getBottomNavItemsForRole("CREATOR", recovery).every(
-        (item) => item.availability === "UNAVAILABLE",
+      getBottomNavItemsForRole("CREATOR", recovery).find(
+        (item) => item.label === "Home",
       ),
-    ).toBe(true);
+    ).toMatchObject({
+      availability: "UNAVAILABLE",
+    });
+    expect(
+      getBottomNavItemsForRole("CREATOR", recovery).find(
+        (item) => item.label === "Settings",
+      )?.availability,
+    ).toBe("AVAILABLE");
   });
 
   it("does not mutate the frozen navigation definitions", () => {
@@ -139,10 +144,10 @@ describe("Creator shell capability projection", () => {
     );
   });
 
-  it("uses shared Settings and Creator Center header language", () => {
-    expect(resolveHeaderMeta("/creator/centre", "CREATOR")).toEqual({
-      breadcrumb: "Creator Center",
-      title: "Creator Center",
+  it("uses shared Settings header language", () => {
+    expect(resolveHeaderMeta("/creator/home", "CREATOR")).toEqual({
+      breadcrumb: "Home",
+      title: "Daily Briefing",
     });
     expect(resolveHeaderMeta("/creator/settings/account", "CREATOR")).toEqual({
       breadcrumb: "Settings",
