@@ -43,7 +43,7 @@ export type SidebarFooterNavItem = {
 };
 
 export type SidebarUtilityItem = {
-  action: "help" | "logout";
+  action: "logout";
   icon: ElementType;
   label: string;
   path?: string;
@@ -154,7 +154,7 @@ const brandSidebarFooterNavItems: SidebarFooterNavItem[] = [
   {
     label: "Support",
     icon: HelpCircle,
-    path: "/help",
+    path: AUTH_ROUTES.help,
     roles: ["BRAND"],
   },
 ];
@@ -168,14 +168,16 @@ const brandSidebarUtilityItems: SidebarUtilityItem[] = [
   },
 ];
 
-const creatorSidebarUtilityItems: SidebarUtilityItem[] = [
+const creatorSidebarFooterNavItems: SidebarFooterNavItem[] = [
   {
     label: "Help",
     icon: HelpCircle,
-    path: "/help",
-    action: "help",
+    path: AUTH_ROUTES.help,
     roles: ["CREATOR"],
   },
+];
+
+const creatorSidebarUtilityItems: SidebarUtilityItem[] = [
   {
     label: "Logout",
     icon: LogOut,
@@ -192,7 +194,7 @@ const sidebarNavByRole: Record<UserRole, SidebarNavItem[]> = {
 
 const sidebarFooterNavByRole: Record<UserRole, SidebarFooterNavItem[]> = {
   BRAND: brandSidebarFooterNavItems,
-  CREATOR: [],
+  CREATOR: creatorSidebarFooterNavItems,
   ADMIN: [],
 };
 
@@ -325,6 +327,10 @@ export function resolveHeaderMeta(
     pathname.startsWith(`${AUTH_ROUTES.creatorHome}/`)
   ) {
     return { breadcrumb: "Home", title: "Daily Briefing" };
+  }
+
+  if (pathname === AUTH_ROUTES.help) {
+    return { breadcrumb: "Help", title: "Help" };
   }
 
   const match = findSidebarNavItemByPath(pathname, role);

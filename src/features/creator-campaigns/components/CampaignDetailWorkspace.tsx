@@ -10,7 +10,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 
 import { Alert, Badge, Button, Chip } from "../../../design-system/aurora";
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES, publicCampaignPath } from "../../auth/constants";
 import {
   claimMarketplaceInvitation,
   fetchMarketplaceAlternatives,
@@ -64,7 +64,7 @@ export function CampaignDetailWorkspace({
   const isGuest = mode === "guest" || detail.is_authenticated === false;
   const listPath =
     marketplacePath ??
-    (isGuest ? PUBLIC_ROUTES.marketplace : AUTH_ROUTES.creatorMarketplace);
+    (isGuest ? "/" : AUTH_ROUTES.creatorOpportunities);
 
   const uiState = detail.ui_access_state;
   const campaign = detail.campaign;
@@ -105,7 +105,7 @@ export function CampaignDetailWorkspace({
 
   const handleShare = async () => {
     if (isGuest) {
-      const url = `${window.location.origin}${PUBLIC_ROUTES.marketplace}/${campaign.campaign_id}`;
+      const url = `${window.location.origin}${publicCampaignPath(campaign.campaign_id)}`;
       await navigator.clipboard.writeText(url);
       setShareMessage("Public link copied to clipboard.");
       return;
@@ -167,13 +167,11 @@ export function CampaignDetailWorkspace({
 
   const handlePrimaryCta = async () => {
     if (isGuest) {
-      const campaignPath = `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(campaign.campaign_id)}`;
-      const returnPath = resolveSafeInternalPath(
-        inviteToken
-          ? `${campaignPath}?invite_token=${encodeURIComponent(inviteToken)}`
-          : campaignPath,
-        PUBLIC_ROUTES.marketplace,
+      const campaignPath = publicCampaignPath(
+        campaign.campaign_id,
+        inviteToken,
       );
+      const returnPath = resolveSafeInternalPath(campaignPath, "/");
       if (inviteToken) {
         navigate(AUTH_ROUTES.login, { state: { from: returnPath } });
         return;
@@ -242,7 +240,7 @@ export function CampaignDetailWorkspace({
       ) : null}
 
       <p className="cc-muted" style={{ marginBottom: 16 }}>
-        <Link to={listPath}>Marketplace</Link>
+        <Link to={listPath}>{isGuest ? "Home" : "Campaigns"}</Link>
         {" / "}
         {displayValue(campaign.campaign_name)}
       </p>
@@ -498,7 +496,7 @@ export function CampaignDetailWorkspace({
           <CrossSellTray
             campaigns={alternatives}
             loading={alternativesLoading}
-            campaignBasePath={AUTH_ROUTES.creatorMarketplace}
+            campaignBasePath={AUTH_ROUTES.creatorOpportunities}
           />
         </section>
       ) : null}

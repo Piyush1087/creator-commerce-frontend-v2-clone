@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { Alert, Button, Card, TextField } from "../../../design-system/aurora";
 import { GoogleSignInButton } from "../../auth/components/google-sign-in-button";
-import { AUTH_ROUTES } from "../../auth/constants";
-import { PUBLIC_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES, creatorOpportunityPath } from "../../auth/constants";
 import { logoutCurrentSession } from "../../auth/api/auth-client";
 import { isApiRequestError } from "../../../shared/api/parse-api-error";
 import { useAuthSession } from "../../../shared/auth/use-auth-session";
@@ -78,7 +77,8 @@ function describeError(error: unknown): EntryError {
     },
     CREATOR_ENTRY_CONTINUATION_NOT_FOUND: {
       title: "Campaign setup link is unavailable",
-      message: "Return to Marketplace or the campaign and choose Apply again.",
+      message:
+        "This campaign setup link is unavailable. Return to Campaigns and choose Apply again.",
       code,
     },
     CREATOR_ENTRY_CONTINUATION_IDENTITY_CONFLICT: {
@@ -126,7 +126,7 @@ export function CreatorEntryView() {
           const resolution = await resolveCampaignApplyContinuation();
           if (resolution.status === "READY_TO_RETURN") {
             navigate(
-              `/creator/marketplace/${encodeURIComponent(resolution.campaign.campaignId)}`,
+              creatorOpportunityPath(resolution.campaign.campaignId),
               { replace: true },
             );
             return;
@@ -442,8 +442,10 @@ export function CreatorEntryView() {
                 Sign out and use the correct account
               </Button>
             ) : (
-              <Button onClick={() => navigate(PUBLIC_ROUTES.marketplace)}>
-                Return to Marketplace
+              <Button
+                onClick={() => navigate(AUTH_ROUTES.creatorOpportunities)}
+              >
+                Back to campaigns
               </Button>
             )}
           </div>

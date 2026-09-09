@@ -4,7 +4,7 @@ const SAFE_SEGMENT = "[A-Za-z0-9][A-Za-z0-9_-]{0,127}";
 
 const SUPPORTED_PATHS = [
   /^\/$/u,
-  /^\/(?:login|forgot-password|reset-password|terms|privacy)$/u,
+  /^\/(?:login|forgot-password|reset-password|terms|privacy|help)$/u,
   /^\/brand\/team-invitations\/accept$/u,
   new RegExp(`^/brand/${SAFE_SEGMENT}$`, "u"),
   /^\/brand\/(?:dashboard|collaborations|collaboration-page|payouts)$/u,
@@ -14,6 +14,10 @@ const SUPPORTED_PATHS = [
   /^\/brand\/onboarding\/(?:scan|core-identity|intelligence-scan|dna|catalogue|competitors|verification|pricing|social-sync|sync-verify|sync-complete)$/u,
   new RegExp(`^/brand-centre(?:/offerings(?:/${SAFE_SEGMENT})?)?$`, "u"),
   /^\/creator\/(?:dashboard|home|centre|analytics|media-kit|campaigns|campaigns\/history|collaborations|payouts)$/u,
+  new RegExp(
+    `^/creator/campaigns/(?:opportunities|applications)(?:/${SAFE_SEGMENT})?$`,
+    "u",
+  ),
   new RegExp(`^/creator/marketplace(?:/${SAFE_SEGMENT})?$`, "u"),
   /^\/creator\/settings(?:\/(?:account|profile|team|instagram|social|payouts))?$/u,
   /^\/creator\/team-invitations\/accept$/u,
@@ -23,6 +27,7 @@ const SUPPORTED_PATHS = [
   /^\/marketplace$/u,
   new RegExp(`^/marketplace/${SAFE_SEGMENT}$`, "u"),
   new RegExp(`^/marketplace/invite/${SAFE_SEGMENT}$`, "u"),
+  new RegExp(`^/campaigns/${SAFE_SEGMENT}$`, "u"),
 ] as const;
 
 function hasEncodedSeparator(value: string): boolean {

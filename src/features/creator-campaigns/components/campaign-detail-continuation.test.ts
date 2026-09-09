@@ -124,7 +124,7 @@ describe("public Campaign Creator Entry continuation", () => {
     );
     expect(
       await screen.findByText(
-        "Shared login return: /marketplace/campaign-1?invite_token=invite-token",
+        "Shared login return: /campaigns/campaign-1?invite_token=invite-token",
       ),
     ).toBeTruthy();
     expect(mocks.issue).not.toHaveBeenCalled();

@@ -1,6 +1,5 @@
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 
-import { PUBLIC_ROUTES } from "../../../features/auth/constants";
 import { CampaignDetailWorkspace } from "../../../features/creator-campaigns/components/CampaignDetailWorkspace";
 import { useCreatorCampaignDetail } from "../../../features/creator-campaigns/hooks/use-creator-campaign-detail";
 import "../../../features/creator-campaigns/creator-campaigns.css";
@@ -16,7 +15,7 @@ export function PublicCampaignDetailPage() {
   });
 
   if (!campaignId) {
-    return <Navigate to={PUBLIC_ROUTES.marketplace} replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (!loading && !detail && error) {

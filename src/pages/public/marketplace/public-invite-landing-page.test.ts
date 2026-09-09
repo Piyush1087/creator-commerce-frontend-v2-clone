@@ -39,7 +39,11 @@ function mount(token = "safe_token-123") {
           element: createElement(PublicInviteLandingPage),
         }),
         createElement(Route, {
-          path: "/marketplace/*",
+          path: "/campaigns/:campaignId",
+          element: createElement(LocationTarget),
+        }),
+        createElement(Route, {
+          path: "/",
           element: createElement(LocationTarget),
         }),
       ),
@@ -65,12 +69,12 @@ describe("public invitation navigation", () => {
     mount();
     expect(
       await screen.findByText(
-        "Destination: /marketplace/11111111-1111-4111-8111-111111111111?invite_token=safe_token-123",
+        "Destination: /campaigns/11111111-1111-4111-8111-111111111111?invite_token=safe_token-123",
       ),
     ).toBeTruthy();
   });
 
-  it("falls back to Marketplace when the resolved identifier is unsafe", async () => {
+  it("falls back to home when the resolved identifier is unsafe", async () => {
     vi.mocked(resolvePublicInvitation).mockResolvedValueOnce({
       invitation_token: "safe_token-123",
       collaboration_id: "collaboration-1",
@@ -82,7 +86,7 @@ describe("public invitation navigation", () => {
       is_claimable: true,
     });
     mount();
-    expect(await screen.findByText("Destination: /marketplace")).toBeTruthy();
+    expect(await screen.findByText("Destination: /")).toBeTruthy();
     expect(window.location.href).not.toContain("evil.example");
   });
 });

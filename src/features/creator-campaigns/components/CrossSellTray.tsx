@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { Button } from "../../../design-system/aurora";
-import { PUBLIC_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES } from "../../auth/constants";
 import type { MarketplaceCampaignRow } from "../contracts/creator-campaigns.contracts";
 import { displayValue } from "../utils/display-value";
 import { formatCompensationTeaser } from "../utils/format-campaign-display";
@@ -18,7 +18,7 @@ type CrossSellTrayProps = {
 export function CrossSellTray({
   campaigns,
   loading = false,
-  campaignBasePath = PUBLIC_ROUTES.marketplace,
+  campaignBasePath = AUTH_ROUTES.creatorOpportunities,
 }: CrossSellTrayProps) {
   if (loading) {
     return <p className="cc-muted">Loading alternative campaigns…</p>;
@@ -27,8 +27,7 @@ export function CrossSellTray({
   if (campaigns.length === 0) {
     return (
       <p className="cc-muted">
-        No alternative eligible campaigns found right now. Check back after updating your profile
-        or browse the marketplace.
+        No alternative eligible campaigns found right now. Check back after updating your profile.
       </p>
     );
   }
@@ -64,7 +63,7 @@ export function CrossSellTray({
       })}
       <Link to={campaignBasePath}>
         <Button variant="outline" fullWidthOnMobile>
-          Browse full marketplace
+          Browse campaigns
         </Button>
       </Link>
     </div>

@@ -1,4 +1,4 @@
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES } from "../../auth/constants";
 
 const LAST_BRAND_SLUG_KEY = "cc_last_brand_slug";
 
@@ -24,12 +24,11 @@ export function publicBrandPath(slug: string): string {
   return `/brand/${encodeURIComponent(slug)}`;
 }
 
-/** Guest Marketplace filter; signed Creators converge on the MVP Campaigns mount. */
+/** Signed Creators open Campaigns. Guests do not enter Marketplace browse. */
 export function brandMarketplacePath(
-  slug: string,
+  _slug: string,
   authenticated: boolean,
 ): string {
   if (authenticated) return AUTH_ROUTES.creatorCampaigns;
-  const params = new URLSearchParams({ brand_slug: slug });
-  return `${PUBLIC_ROUTES.marketplace}?${params.toString()}`;
+  return AUTH_ROUTES.login;
 }

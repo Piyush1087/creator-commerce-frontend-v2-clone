@@ -22,13 +22,13 @@ const KNOWN_APP_PATH_PREFIXES = [
   AUTH_ROUTES.creatorCollaborations,
   AUTH_ROUTES.creatorSettings,
   AUTH_ROUTES.login,
+  AUTH_ROUTES.help,
   PUBLIC_ROUTES.marketplace,
   PUBLIC_ROUTES.brandLanding,
   CREATOR_ONBOARDING_ROUTES.instagramCallback,
   "/creator/onboarding",
   "/brand/onboarding",
   "/brand/intelligence",
-  "/help",
 ] as const;
 
 /** Guest funnels that stay reachable while cookie-backed bootstrap resolves. */

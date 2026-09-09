@@ -97,11 +97,11 @@ function renderEntry() {
           element: createElement("p", null, "Creator home rendered"),
         }),
         createElement(Route, {
-          path: "/marketplace",
-          element: createElement("p", null, "Marketplace rendered"),
+          path: "/creator/campaigns/opportunities",
+          element: createElement("p", null, "Campaigns rendered"),
         }),
         createElement(Route, {
-          path: "/creator/marketplace/:campaignId",
+          path: "/creator/campaigns/opportunities/:campaignId",
           element: createElement(
             "p",
             null,
@@ -339,7 +339,7 @@ describe("Creator Entry state surface", () => {
     expect(mocks.resolve).toHaveBeenCalledWith();
   });
 
-  it("uses backend-cleared expired continuation and provides Marketplace recovery", async () => {
+  it("uses backend-cleared expired continuation and provides Campaigns recovery", async () => {
     mocks.session.mockReturnValue(creator);
     mocks.continuationStatus.mockResolvedValue({ present: true });
     mocks.fetchState.mockResolvedValue(incomplete);
@@ -355,7 +355,7 @@ describe("Creator Entry state surface", () => {
       /campaign setup link expired/i,
     );
     expect(
-      screen.getByRole("button", { name: "Return to Marketplace" }),
+      screen.getByRole("button", { name: "Back to campaigns" }),
     ).toBeTruthy();
   });
 

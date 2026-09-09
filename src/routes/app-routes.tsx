@@ -56,6 +56,7 @@ import { RequireCreatorPlatformAccess } from "../features/creator-onboarding/com
 import { CreatorSettingsActionGuard } from "../features/settings/components/creator-settings-action-guard";
 import { CreatorTeamInvitationAcceptance } from "../features/settings/components/creator/creator-team-invitation-acceptance";
 import { CreatorInstagramOAuthCallbackRoute } from "../pages/creator/onboarding/creator-instagram-oauth-callback-route";
+import { HelpPage } from "../pages/public/help-page";
 
 export function AppRoutes() {
   return (
@@ -109,6 +110,10 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
+        <Route
+          path={AUTH_ROUTES.help}
+          element={<HelpPage />}
+        />
         <Route
           path={AUTH_ROUTES.brandDashboard}
           element={<BrandDashboardPage />}

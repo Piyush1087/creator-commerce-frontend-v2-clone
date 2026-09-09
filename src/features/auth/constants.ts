@@ -42,6 +42,7 @@ export const AUTH_ROUTES = {
   creatorSettingsSocial: "/creator/settings/social",
   creatorSettingsPayouts: "/creator/settings/payouts",
   creatorTeamInvitationAccept: "/creator/team-invitations/accept",
+  help: "/help",
 } as const;
 
 /** Public guest marketplace (no auth required). */
@@ -52,6 +53,36 @@ export const PUBLIC_ROUTES = {
   marketplaceInvite: "/marketplace/invite/:token",
   brandLanding: "/brand/:slug",
 } as const;
+
+function withOptionalInvite(
+  path: string,
+  inviteToken?: string | null,
+): string {
+  if (!inviteToken) return path;
+  return `${path}?invite_token=${encodeURIComponent(inviteToken)}`;
+}
+
+/** Canonical guest Campaign URL. Do not generate Marketplace browse links. */
+export function publicCampaignPath(
+  campaignId: string,
+  inviteToken?: string | null,
+): string {
+  return withOptionalInvite(
+    `/campaigns/${encodeURIComponent(campaignId)}`,
+    inviteToken,
+  );
+}
+
+/** Canonical Creator Campaign opportunity URL. */
+export function creatorOpportunityPath(
+  campaignId: string,
+  inviteToken?: string | null,
+): string {
+  return withOptionalInvite(
+    `${AUTH_ROUTES.creatorOpportunities}/${encodeURIComponent(campaignId)}`,
+    inviteToken,
+  );
+}
 
 export function getHomeRouteForRole(role: UserRole | null): string {
   switch (role) {

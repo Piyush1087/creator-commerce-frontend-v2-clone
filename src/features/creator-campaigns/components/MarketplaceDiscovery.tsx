@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 
 import { Alert, Badge, Button } from "../../../design-system/aurora";
 import { Toggle } from "../../../design-system/aurora/components/Toggle";
-import { AUTH_ROUTES, PUBLIC_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES } from "../../auth/constants";
 import type { MarketplaceCampaignRow } from "../contracts/creator-campaigns.contracts";
 import { displayValue } from "../utils/display-value";
 import {
@@ -133,7 +133,7 @@ export function MarketplaceDiscovery({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const location = useLocation();
   const isGuest = mode === "guest";
-  const basePath = campaignBasePath ?? (isGuest ? PUBLIC_ROUTES.marketplace : AUTH_ROUTES.creatorMarketplace);
+  const basePath = campaignBasePath ?? (isGuest ? "/campaigns" : AUTH_ROUTES.creatorOpportunities);
   const advancedCount = countActiveFilters(advancedFilters);
   const activeFilterCount =
     (searchQuery.trim() ? 1 : 0) +

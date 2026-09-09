@@ -16,7 +16,7 @@ export function CreatorCampaignDetailPage() {
   });
 
   if (!campaignId) {
-    return <Navigate to={AUTH_ROUTES.creatorMarketplace} replace />;
+    return <Navigate to={AUTH_ROUTES.creatorOpportunities} replace />;
   }
 
   if (!loading && !detail && error) {

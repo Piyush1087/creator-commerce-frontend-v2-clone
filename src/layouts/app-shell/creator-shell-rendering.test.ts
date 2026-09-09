@@ -42,7 +42,7 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(5);
+    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(6);
     for (const label of [
       "Home",
       "Campaigns",
@@ -54,6 +54,7 @@ describe("Creator shell rendering", () => {
     expect(html).not.toContain("Creator Center");
     expect(html).not.toContain(">Payouts</span>");
     expect(html).not.toContain("Marketplace");
+    expect(html).toContain('href="/help"');
     expect(html).not.toContain("Upgrade");
   });
 

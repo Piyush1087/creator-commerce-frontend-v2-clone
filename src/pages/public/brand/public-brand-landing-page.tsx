@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { Navigate, useParams } from "react-router-dom";
 
 import { Alert } from "../../../design-system/aurora";
-import { PUBLIC_ROUTES } from "../../../features/auth/constants";
 import { PublicBrandLandingWorkspace } from "../../../features/public-brand/components/PublicBrandLandingWorkspace";
 import { usePublicBrandLanding } from "../../../features/public-brand/hooks/use-public-brand-landing";
 import { rememberBrandSlug } from "../../../features/public-brand/utils/brand-page-session";
@@ -25,7 +24,7 @@ export function PublicBrandLandingPage() {
   }, [slug]);
 
   if (!slug) {
-    return <Navigate to={PUBLIC_ROUTES.marketplace} replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (!loading && error && !landing) {

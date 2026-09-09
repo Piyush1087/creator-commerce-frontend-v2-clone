@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 
 import { Alert } from "../../../design-system/aurora";
-import { PUBLIC_ROUTES } from "../../../features/auth/constants";
+import { publicCampaignPath } from "../../../features/auth/constants";
 import { resolvePublicInvitation } from "../../../features/creator-campaigns/api/public-marketplace-client";
 import { resolveSafeInternalPath } from "../../../shared/navigation/safe-internal-path";
 import "../../../features/creator-campaigns/creator-campaigns.css";
@@ -24,8 +24,8 @@ export function PublicInviteLandingPage() {
         if (cancelled) return;
         setRedirectTo(
           resolveSafeInternalPath(
-            `${PUBLIC_ROUTES.marketplace}/${encodeURIComponent(resolved.campaign_id)}?invite_token=${encodeURIComponent(token)}`,
-            PUBLIC_ROUTES.marketplace,
+            publicCampaignPath(resolved.campaign_id, token),
+            "/",
           ),
         );
       })

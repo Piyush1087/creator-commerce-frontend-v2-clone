@@ -3,7 +3,7 @@ import { History } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Alert, Button } from "../../../design-system/aurora";
-import { AUTH_ROUTES } from "../../auth/constants";
+import { AUTH_ROUTES, creatorOpportunityPath } from "../../auth/constants";
 import type {
   ActiveCollaborationRow,
   PendingCollaborationRowApi,
@@ -24,11 +24,10 @@ function collaborationHref(workflowId: string | null): string {
 }
 
 function pendingCampaignHref(row: PendingCollaborationRowApi): string {
-  const base = `${AUTH_ROUTES.creatorMarketplace}/${row.campaign_id}`;
-  if (row.kind === "invitation" && row.invitation_token) {
-    return `${base}?invite_token=${encodeURIComponent(row.invitation_token)}`;
-  }
-  return base;
+  return creatorOpportunityPath(
+    row.campaign_id,
+    row.kind === "invitation" ? row.invitation_token : undefined,
+  );
 }
 
 function ProductionTable({ rows }: { rows: ActiveCollaborationRow[] }) {
@@ -288,7 +287,7 @@ export function CommandCenterWorkspace() {
                 <Link
                   to={
                     alert.campaign_id
-                      ? `${AUTH_ROUTES.creatorMarketplace}/${alert.campaign_id}`
+                      ? creatorOpportunityPath(alert.campaign_id)
                       : AUTH_ROUTES.creatorCampaigns
                   }
                 >
