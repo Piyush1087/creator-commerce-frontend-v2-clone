@@ -122,6 +122,25 @@ async function loginAndEnterBrandCentre(browser, fixture, viewport) {
   return { context, page, externalHosts };
 }
 
+async function enterOfferings(page) {
+  const offeringsResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/v1/brand-centre/offerings") &&
+      response.request().method() === "GET",
+  );
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/brand-centre/offerings");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  const offeringsResponse = await offeringsResponsePromise;
+  assert(offeringsResponse.status() === 200, "Offering discovery failed");
+  await page.getByRole("heading", { name: "Offerings", exact: true }).waitFor();
+  assert(
+    (await page.getByText("Could not load Offerings").count()) === 0,
+    "Authenticated Offerings projection was rejected",
+  );
+}
+
 async function keyboardAndStructure(page, width) {
   const navigationLinks = await page.locator("nav a:visible").count();
   assert(navigationLinks > 0, "No usable visible navigation links");
@@ -200,6 +219,7 @@ async function main() {
   const result = {
     roles: [],
     viewports: [],
+    mandatoryFailures: [],
     providerCalls: 0,
     credentials: "SYNTHETIC_NOT_REPORTED",
   };
@@ -214,7 +234,9 @@ async function main() {
         role: fixture.role,
         authenticatedBrandContext: "PRIMARY_ONLY",
         suppliedSecondTenantSelector: "IGNORED",
+        renderedRoutes: ["Brand", "Offerings"],
       });
+      await enterOfferings(page);
       result.providerCalls += [...externalHosts].filter((host) =>
         /instagram|facebook|fbcdn|meta/iu.test(host),
       ).length;
@@ -239,8 +261,22 @@ async function main() {
       const axe = await new AxeBuilder({ page }).analyze();
       const serious = axe.violations.filter((item) => item.impact === "serious");
       const critical = axe.violations.filter((item) => item.impact === "critical");
-      assert(serious.length === 0, `Serious Axe violations at ${viewport.label}`);
-      assert(critical.length === 0, `Critical Axe violations at ${viewport.label}`);
+      if (serious.length || critical.length)
+        console.error(
+          "A3_AXE_BLOCKERS",
+          JSON.stringify([...serious, ...critical].map(({ id, impact, nodes }) => ({
+            id,
+            impact,
+            targets: nodes.map((node) => node.target),
+          }))),
+        );
+      if (serious.length || critical.length)
+        result.mandatoryFailures.push({
+          route: "Brand",
+          width: viewport.width,
+          serious: serious.length,
+          critical: critical.length,
+        });
       const lesser = Object.fromEntries(
         ["minor", "moderate"].map((impact) => [
           impact,
@@ -250,6 +286,7 @@ async function main() {
       const screenshot = join(EVIDENCE_DIR, `brand-centre-${viewport.label}.png`);
       await page.screenshot({ path: screenshot, fullPage: true });
       result.viewports.push({
+        route: "Brand",
         width: viewport.width,
         label: viewport.label,
         overflow: "PASS",
@@ -257,8 +294,74 @@ async function main() {
         focusReturn: keyboard.focusReturn,
         visibleNavigationLinks: keyboard.navigationLinks,
         headingLevels: keyboard.headingLevels,
-        axe: { serious: 0, critical: 0, lesser },
+        axe: {
+          serious: serious.length,
+          critical: critical.length,
+          lesser,
+        },
         screenshot: `brand-centre-${viewport.label}.png`,
+      });
+      await enterOfferings(page);
+      const offeringsOverflow = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+      assert(
+        offeringsOverflow.scrollWidth <= offeringsOverflow.clientWidth,
+        `Offerings horizontal overflow at ${viewport.label}`,
+      );
+      const offeringsKeyboard = await keyboardAndStructure(page, viewport.width);
+      const offeringsAxe = await new AxeBuilder({ page }).analyze();
+      const offeringsSerious = offeringsAxe.violations.filter(
+        (item) => item.impact === "serious",
+      );
+      const offeringsCritical = offeringsAxe.violations.filter(
+        (item) => item.impact === "critical",
+      );
+      if (offeringsSerious.length || offeringsCritical.length)
+        console.error(
+          "A3_OFFERINGS_AXE_BLOCKERS",
+          JSON.stringify([...offeringsSerious, ...offeringsCritical].map(
+            ({ id, impact, nodes }) => ({
+              id,
+              impact,
+              targets: nodes.map((node) => node.target),
+            }),
+          )),
+        );
+      if (offeringsSerious.length || offeringsCritical.length)
+        result.mandatoryFailures.push({
+          route: "Offerings",
+          width: viewport.width,
+          serious: offeringsSerious.length,
+          critical: offeringsCritical.length,
+        });
+      const offeringsLesser = Object.fromEntries(
+        ["minor", "moderate"].map((impact) => [
+          impact,
+          offeringsAxe.violations.filter((item) => item.impact === impact).length,
+        ]),
+      );
+      const offeringsScreenshot = join(
+        EVIDENCE_DIR,
+        `brand-centre-offerings-${viewport.label}.png`,
+      );
+      await page.screenshot({ path: offeringsScreenshot, fullPage: true });
+      result.viewports.push({
+        route: "Offerings",
+        width: viewport.width,
+        label: viewport.label,
+        overflow: "PASS",
+        keyboard: "PASS",
+        focusReturn: offeringsKeyboard.focusReturn,
+        visibleNavigationLinks: offeringsKeyboard.navigationLinks,
+        headingLevels: offeringsKeyboard.headingLevels,
+        axe: {
+          serious: offeringsSerious.length,
+          critical: offeringsCritical.length,
+          lesser: offeringsLesser,
+        },
+        screenshot: `brand-centre-offerings-${viewport.label}.png`,
       });
       result.providerCalls += [...externalHosts].filter((host) =>
         /instagram|facebook|fbcdn|meta/iu.test(host),
@@ -270,6 +373,10 @@ async function main() {
   }
   assert(result.providerCalls === 0, "Provider request count is non-zero");
   console.log(JSON.stringify(result, null, 2));
+  assert(
+    result.mandatoryFailures.length === 0,
+    "Serious or critical Axe violations remain",
+  );
 }
 
 await main();

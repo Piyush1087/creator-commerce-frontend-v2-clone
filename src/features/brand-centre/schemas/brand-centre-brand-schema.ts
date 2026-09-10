@@ -11,6 +11,9 @@ import {
 import * as domain from "./brand-consumer-domains";
 import { brandProcessorRuntime } from "./brand-processor-runtime";
 
+const compatibleIntelligenceField = <T extends z.ZodTypeAny>(value: T) =>
+  intelligenceField(value).strip();
+
 const details = z
   .object({
     industry: field(z.string()),
@@ -59,29 +62,29 @@ export const brandCentreBrandSchema = z
             referenceImages: field(uniqueItems(domain.visualAsset, "id")),
           })
           .strict(),
-        style: intelligenceField(domain.visualStyle),
+        style: compatibleIntelligenceField(domain.visualStyle),
       })
       .strict(),
     brandIdentity: z
       .object({
-        description: intelligenceField(z.string()),
-        positioning: intelligenceField(z.string()),
-        valueProposition: intelligenceField(z.string()),
-        values: intelligenceField(domain.brandValues),
-        personality: intelligenceField(domain.personality),
-        differentiation: intelligenceField(domain.differentiation),
-        communication: intelligenceField(domain.communication),
+        description: compatibleIntelligenceField(z.string()),
+        positioning: compatibleIntelligenceField(z.string()),
+        valueProposition: compatibleIntelligenceField(z.string()),
+        values: compatibleIntelligenceField(domain.brandValues),
+        personality: compatibleIntelligenceField(domain.personality),
+        differentiation: compatibleIntelligenceField(domain.differentiation),
+        communication: compatibleIntelligenceField(domain.communication),
       })
       .strict(),
     audience: z
       .object({
-        state: intelligenceField(domain.personas),
+        state: compatibleIntelligenceField(domain.personas),
         personas: domain.personas,
       })
       .strict(),
     locations: uniqueItems(domain.location, "locationId"),
     serviceability: z
-      .object({ state: intelligenceField(domain.serviceability) })
+      .object({ state: compatibleIntelligenceField(domain.serviceability) })
       .strict(),
   })
   .strict()
