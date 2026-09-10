@@ -8,7 +8,6 @@ import {
   acceptProposedFee,
   approveDeliverable,
   authorizePublishing,
-  cancelCollaborationByCreator,
   CollaborationCommandError,
   confirmFulfillment,
   counterOffer,
@@ -31,18 +30,30 @@ import {
   type ProvideFulfillmentPayload,
   type ReportFulfillmentIssuePayload,
 } from "../api/collaboration-client";
+import { submitCreatorProposal } from "../api/collaboration-client";
+import {
+  confirmDefaultDestination,
+  overrideDestination,
+} from "../api/collaboration-client";
 import type { CollaborationDetailResponse } from "../contracts/collaboration.contracts";
-import { collaborationCapabilities } from "../utils/collaboration-capabilities";
-import { actionRequiredLabel, collaborationLifecycleLabel, collaborationStageLabel } from "../utils/stage-labels";
+import {
+  collaborationLifecycleLabel,
+  collaborationStageLabel,
+  actionRequiredLabel,
+} from "../utils/stage-labels";
 import { BlockingCard } from "./execution/BlockingCard";
 import { CompletedPanel } from "./execution/CompletedPanel";
-import { CreatorCancellationCard } from "./execution/CreatorCancellationCard";
 import { FulfillmentPanel } from "./execution/FulfillmentPanel";
-import { NegotiationPanel, type NegotiationAction } from "./execution/NegotiationPanel";
+import {
+  NegotiationPanel,
+  type NegotiationAction,
+} from "./execution/NegotiationPanel";
 import { ProductionPanel } from "./execution/ProductionPanel";
 import { PublishingSettlementPanel } from "./execution/PublishingSettlementPanel";
 import { ResolutionCard } from "./execution/ResolutionCard";
 import { SecurementPanel } from "./execution/SecurementPanel";
+import { PhysicalDestinationPanel } from "./execution/PhysicalDestinationPanel";
+import { CollaborationBriefPanel } from "./execution/CollaborationBriefPanel";
 
 type Props = {
   role: UserRole;
@@ -66,14 +77,17 @@ export function CollaborationExecutionHub({
   const navigate = useNavigate();
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  if (!collaborationId || !detail) {
-    return <div className="collab-empty">Select a thread to view execution actions.</div>;
-  }
+  if (!collaborationId || !detail)
+    return (
+      <div className="collab-empty">
+        Select a thread to view execution actions.
+      </div>
+    );
 
-  const capabilities = collaborationCapabilities(detail);
-  const showCreatorCancel = role === "CREATOR" && capabilities.has("cancel");
-
-  const run = async (actionKey: string, action: () => Promise<CollaborationDetailResponse>) => {
+  const run = async (
+    actionKey: string,
+    action: () => Promise<CollaborationDetailResponse>,
+  ) => {
     setBusyAction(actionKey);
     setActionError(null);
     onError("");
@@ -86,21 +100,31 @@ export function CollaborationExecutionHub({
         onStale?.();
         await onRefresh();
       } else {
-        const message = error instanceof Error ? error.message : "Action failed.";
+        const message =
+          error instanceof Error ? error.message : "Action failed.";
         setActionError(message);
-        onError(message);
       }
     } finally {
       setBusyAction(null);
     }
   };
-
   const commandEnvelope = () => envelope(detail.workflow.aggregateVersion);
   const negotiationAction = (action: NegotiationAction) => {
-    if (action === "accept-proposal") return run(action, () => acceptProposedFee(collaborationId, commandEnvelope()));
-    if (action === "accept-counter") return run(action, () => acceptCounterOffer(collaborationId, commandEnvelope()));
-    if (action === "end") return run(action, () => endCollaborationByBrand(collaborationId, commandEnvelope()));
-    return run(action, () => declineNegotiation(collaborationId, commandEnvelope()));
+    if (action === "accept-proposal")
+      return run(action, () =>
+        acceptProposedFee(collaborationId, commandEnvelope()),
+      );
+    if (action === "accept-counter")
+      return run(action, () =>
+        acceptCounterOffer(collaborationId, commandEnvelope()),
+      );
+    if (action === "end")
+      return run(action, () =>
+        endCollaborationByBrand(collaborationId, commandEnvelope()),
+      );
+    return run(action, () =>
+      declineNegotiation(collaborationId, commandEnvelope()),
+    );
   };
 
   let panel: JSX.Element;
@@ -111,7 +135,21 @@ export function CollaborationExecutionHub({
           detail={detail}
           role={role}
           busyAction={busyAction}
-          onCounter={(amount) => void run("counter", () => counterOffer(collaborationId, commandEnvelope(), amount))}
+          onProposal={(amount) =>
+            void run("creator-proposal", () =>
+              submitCreatorProposal(
+                collaborationId,
+                commandEnvelope(),
+                amount,
+                detail.commercial?.currency ?? "INR",
+              ),
+            )
+          }
+          onCounter={(amount) =>
+            void run("counter", () =>
+              counterOffer(collaborationId, commandEnvelope(), amount),
+            )
+          }
           onAction={(action) => void negotiationAction(action)}
         />
       );
@@ -122,8 +160,14 @@ export function CollaborationExecutionHub({
           detail={detail}
           role={role}
           busyAction={busyAction}
-          onFund={() => void run("fund-escrow", () => requestEscrowFunding(collaborationId, commandEnvelope()))}
-          onManagePayoutDetails={() => navigate(AUTH_ROUTES.creatorSettingsPayouts)}
+          onFund={() =>
+            void run("fund-escrow", () =>
+              requestEscrowFunding(collaborationId, commandEnvelope()),
+            )
+          }
+          onManagePayoutDetails={() =>
+            navigate(AUTH_ROUTES.creatorSettingsPayouts)
+          }
         />
       );
       break;
@@ -134,15 +178,31 @@ export function CollaborationExecutionHub({
           role={role}
           busyAction={busyAction}
           onProvide={(payload: ProvideFulfillmentPayload) =>
-            void run("provide-fulfillment", () => provideFulfillment(collaborationId, commandEnvelope(), payload))
+            void run("provide-fulfillment", () =>
+              provideFulfillment(collaborationId, commandEnvelope(), payload),
+            )
           }
-          onConfirm={() => void run("confirm-fulfillment", () => confirmFulfillment(collaborationId, commandEnvelope()))}
+          onConfirm={() =>
+            void run("confirm-fulfillment", () =>
+              confirmFulfillment(collaborationId, commandEnvelope()),
+            )
+          }
           onReportIssue={(payload: ReportFulfillmentIssuePayload) =>
-            void run("report-fulfillment-issue", () => reportFulfillmentIssue(collaborationId, commandEnvelope(), payload))
+            void run("report-fulfillment-issue", () =>
+              reportFulfillmentIssue(
+                collaborationId,
+                commandEnvelope(),
+                payload,
+              ),
+            )
           }
           onRemediate={(evidenceRef) =>
             void run("remediate-fulfillment", () =>
-              provideFulfillmentRemediation(collaborationId, commandEnvelope(), evidenceRef),
+              provideFulfillmentRemediation(
+                collaborationId,
+                commandEnvelope(),
+                evidenceRef,
+              ),
             )
           }
         />
@@ -164,26 +224,45 @@ export function CollaborationExecutionHub({
             )
           }
           onApprove={(deliverableExecutionId, submissionVersionId) =>
-            void run(`approve:${deliverableExecutionId}:${submissionVersionId}`, () =>
-              approveDeliverable(collaborationId, commandEnvelope(), deliverableExecutionId, submissionVersionId),
+            void run(
+              `approve:${deliverableExecutionId}:${submissionVersionId}`,
+              () =>
+                approveDeliverable(
+                  collaborationId,
+                  commandEnvelope(),
+                  deliverableExecutionId,
+                  submissionVersionId,
+                ),
             )
           }
-          onRequestRevision={(deliverableExecutionId, submissionVersionId, brandFeedback) =>
-            void run(`revision:${deliverableExecutionId}:${submissionVersionId}`, () =>
-              requestDeliverableRevision(collaborationId, commandEnvelope(), {
-                deliverableExecutionId,
-                submissionVersionId,
-                brandFeedback,
-              }),
+          onRequestRevision={(
+            deliverableExecutionId,
+            submissionVersionId,
+            brandFeedback,
+          ) =>
+            void run(
+              `revision:${deliverableExecutionId}:${submissionVersionId}`,
+              () =>
+                requestDeliverableRevision(collaborationId, commandEnvelope(), {
+                  deliverableExecutionId,
+                  submissionVersionId,
+                  brandFeedback,
+                }),
             )
           }
-          onRejectFinal={(deliverableExecutionId, submissionVersionId, brandFeedback) =>
-            void run(`reject:${deliverableExecutionId}:${submissionVersionId}`, () =>
-              rejectFinalDeliverable(collaborationId, commandEnvelope(), {
-                deliverableExecutionId,
-                submissionVersionId,
-                brandFeedback,
-              }),
+          onRejectFinal={(
+            deliverableExecutionId,
+            submissionVersionId,
+            brandFeedback,
+          ) =>
+            void run(
+              `reject:${deliverableExecutionId}:${submissionVersionId}`,
+              () =>
+                rejectFinalDeliverable(collaborationId, commandEnvelope(), {
+                  deliverableExecutionId,
+                  submissionVersionId,
+                  brandFeedback,
+                }),
             )
           }
         />
@@ -197,15 +276,28 @@ export function CollaborationExecutionHub({
           busyAction={busyAction}
           onAuthorize={(deliverableExecutionId) =>
             void run(`authorize:${deliverableExecutionId}`, () =>
-              authorizePublishing(collaborationId, commandEnvelope(), deliverableExecutionId),
+              authorizePublishing(
+                collaborationId,
+                commandEnvelope(),
+                deliverableExecutionId,
+              ),
             )
           }
           onDecline={(deliverableExecutionId) =>
             void run(`decline:${deliverableExecutionId}`, () =>
-              declinePublishing(collaborationId, commandEnvelope(), deliverableExecutionId),
+              declinePublishing(
+                collaborationId,
+                commandEnvelope(),
+                deliverableExecutionId,
+              ),
             )
           }
-          onSubmitEvidence={(deliverableExecutionId, evidenceRef, platform, creatorNote) =>
+          onSubmitEvidence={(
+            deliverableExecutionId,
+            evidenceRef,
+            platform,
+            creatorNote,
+          ) =>
             void run(`submit-evidence:${deliverableExecutionId}`, () =>
               submitPublishingEvidence(collaborationId, commandEnvelope(), {
                 deliverableExecutionId,
@@ -215,34 +307,54 @@ export function CollaborationExecutionHub({
               }),
             )
           }
-          onSubmitCorrection={(deliverableExecutionId, evidenceRef, platform, creatorNote) =>
+          onSubmitCorrection={(
+            deliverableExecutionId,
+            evidenceRef,
+            platform,
+            creatorNote,
+          ) =>
             void run(`submit-correction:${deliverableExecutionId}`, () =>
-              submitCorrectedPublishingEvidence(collaborationId, commandEnvelope(), {
-                deliverableExecutionId,
-                evidenceRef,
-                platform,
-                creatorNote,
-              }),
-            )
-          }
-          onVerify={(deliverableExecutionId, publishingEvidenceId, complianceEvidenceRef) =>
-            void run(`verify:${deliverableExecutionId}:${publishingEvidenceId}`, () =>
-              verifyPublishing(
+              submitCorrectedPublishingEvidence(
                 collaborationId,
                 commandEnvelope(),
-                deliverableExecutionId,
-                publishingEvidenceId,
-                complianceEvidenceRef,
+                { deliverableExecutionId, evidenceRef, platform, creatorNote },
               ),
             )
           }
-          onRequestCorrection={(deliverableExecutionId, publishingEvidenceId, correctionReason) =>
-            void run(`correct:${deliverableExecutionId}:${publishingEvidenceId}`, () =>
-              requestPublishingCorrection(collaborationId, commandEnvelope(), {
-                deliverableExecutionId,
-                publishingEvidenceId,
-                correctionReason,
-              }),
+          onVerify={(
+            deliverableExecutionId,
+            publishingEvidenceId,
+            complianceEvidenceRef,
+          ) =>
+            void run(
+              `verify:${deliverableExecutionId}:${publishingEvidenceId}`,
+              () =>
+                verifyPublishing(
+                  collaborationId,
+                  commandEnvelope(),
+                  deliverableExecutionId,
+                  publishingEvidenceId,
+                  complianceEvidenceRef,
+                ),
+            )
+          }
+          onRequestCorrection={(
+            deliverableExecutionId,
+            publishingEvidenceId,
+            correctionReason,
+          ) =>
+            void run(
+              `correct:${deliverableExecutionId}:${publishingEvidenceId}`,
+              () =>
+                requestPublishingCorrection(
+                  collaborationId,
+                  commandEnvelope(),
+                  {
+                    deliverableExecutionId,
+                    publishingEvidenceId,
+                    correctionReason,
+                  },
+                ),
             )
           }
         />
@@ -250,21 +362,50 @@ export function CollaborationExecutionHub({
       break;
   }
 
-  const terminal = detail.lifecycle.state === "CANCELLED" || detail.lifecycle.state === "TERMINATED";
+  const terminal =
+    detail.lifecycle.state === "CANCELLED" ||
+    detail.lifecycle.state === "TERMINATED";
   const completed = detail.lifecycle.state === "COMPLETED";
   const paused = detail.lifecycle.state === "PAUSED";
-
   return (
     <div className="collab-pane__scroll collab-pane__scroll--execution">
-      {!terminal && !completed ? <header className="collab-exec-card collab-exec-card--summary">
+      <header className="collab-exec-card collab-exec-card--summary">
         <p className="collab-exec-card__kicker">
           {collaborationLifecycleLabel(detail.lifecycle.state)}
-          {` · ${collaborationStageLabel(detail.workflow.stage)}`}
+          {!terminal && !completed
+            ? ` · ${collaborationStageLabel(detail.workflow.stage)}`
+            : ""}
         </p>
-        <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p>
-      </header> : null}
-      {!terminal && !completed && !paused ? <BlockingCard detail={detail} /> : null}
-      {actionError && !completed && busyAction !== "cancel" ? (
+        {!terminal && !completed ? (
+          <p>{actionRequiredLabel(detail.workflow.actionRequiredBy)}</p>
+        ) : (
+          <p>No execution action required</p>
+        )}
+      </header>
+      <CollaborationBriefPanel collaborationId={collaborationId} />
+      <PhysicalDestinationPanel
+        detail={detail}
+        busy={busyAction === "destination"}
+        onConfirmDefault={(contact) =>
+          void run("destination", () =>
+            confirmDefaultDestination(
+              collaborationId,
+              commandEnvelope(),
+              contact.contact_id,
+              contact.updated_at,
+            ),
+          )
+        }
+        onOverride={(payload) =>
+          void run("destination", () =>
+            overrideDestination(collaborationId, commandEnvelope(), payload),
+          )
+        }
+      />
+      {!terminal && !completed && !paused ? (
+        <BlockingCard detail={detail} />
+      ) : null}
+      {actionError && !completed ? (
         <Alert tone="error" title="Action could not be completed">
           {actionError}
         </Alert>
@@ -278,7 +419,12 @@ export function CollaborationExecutionHub({
           feedbackError={busyAction === null ? actionError : null}
           onSubmitFeedback={(rating, reviewText) =>
             void run("submit-feedback", () =>
-              submitCollaborationFeedback(collaborationId, commandEnvelope(), rating, reviewText),
+              submitCollaborationFeedback(
+                collaborationId,
+                commandEnvelope(),
+                rating,
+                reviewText,
+              ),
             )
           }
         />
@@ -290,15 +436,6 @@ export function CollaborationExecutionHub({
       ) : (
         panel
       )}
-      {showCreatorCancel && !terminal && !completed ? (
-        <CreatorCancellationCard
-          busy={busyAction === "cancel"}
-          actionError={busyAction === null || busyAction === "cancel" ? actionError : null}
-          onCancel={() =>
-            void run("cancel", () => cancelCollaborationByCreator(collaborationId, commandEnvelope()))
-          }
-        />
-      ) : null}
     </div>
   );
 }

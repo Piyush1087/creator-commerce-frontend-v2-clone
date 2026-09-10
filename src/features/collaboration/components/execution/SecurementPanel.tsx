@@ -1,10 +1,8 @@
-import { ShieldCheck } from "lucide-react";
 import { Button } from "../../../../design-system/aurora";
 import type { UserRole } from "../../../../shared/auth/user-role";
 import type { CollaborationDetailResponse } from "../../contracts/collaboration.contracts";
 import { collaborationCapabilities } from "../../utils/collaboration-capabilities";
 import { formatCommercialAmount } from "../../utils/collaboration-commercial-display";
-import { actionRequiredLabel } from "../../utils/stage-labels";
 
 type Props = {
   detail: CollaborationDetailResponse;
@@ -41,51 +39,19 @@ export function SecurementPanel({
           : "Waiting for the Creator to add payout details.";
       case "COMPLETED":
         return "Funds secured. The collaboration can now proceed.";
-      case "PAYMENT_DISPUTED":
       case "BLOCKED":
         return "Securement is under review. Follow the action guidance above.";
-      case "AWAITING_BRAND_PAYMENT":
-      case "AWAITING_CREATOR_CONFIRMATION":
-        return "Payment confirmation is pending.";
       default:
         return "No cash securement required.";
     }
   })();
-  const amountToSecure = zeroCash
-    ? "None"
-    : formatCommercialAmount(
-        securement?.requiredSecuredAmount,
-        securement?.currency,
-      );
-
   return (
     <section
-      className="collab-exec-card collab-stage-card collab-securement"
+      className="collab-exec-card"
       aria-labelledby="collab-securement-title"
     >
-      <header className="collab-stage-card__header">
-        <span className="collab-stage-card__icon" aria-hidden="true">
-          <ShieldCheck size={20} />
-        </span>
-        <div>
-          <p className="collab-stage-card__eyebrow">Protected funding</p>
-          <h4 id="collab-securement-title">Securement</h4>
-        </div>
-        <span className="collab-stage-card__status">
-          {actionRequiredLabel(detail.workflow.actionRequiredBy)}
-        </span>
-      </header>
-
-      <p className="collab-stage-card__lead" role="status">
-        {stateCopy}
-      </p>
-
-      <section className="collab-amount-card" aria-label="Amount to secure">
-        <span>Amount to secure</span>
-        <strong>{amountToSecure}</strong>
-      </section>
-
-      <dl className="collab-facts collab-facts--stage">
+      <h4 id="collab-securement-title">Securement</h4>
+      <dl className="collab-facts">
         <div>
           <dt>Agreed Creator fee</dt>
           <dd>
@@ -95,12 +61,21 @@ export function SecurementPanel({
             )}
           </dd>
         </div>
-        {commercial?.advancePercentage != null ? (
-          <div>
-            <dt>Advance protection</dt>
-            <dd>{commercial.advancePercentage}%</dd>
-          </div>
-        ) : null}
+        <div>
+          <dt>Amount to secure</dt>
+          <dd>
+            {zeroCash
+              ? "None"
+              : formatCommercialAmount(
+                  securement?.requiredSecuredAmount,
+                  securement?.currency,
+                )}
+          </dd>
+        </div>
+        <div>
+          <dt>Advance protection</dt>
+          <dd>{commercial?.advancePercentage ?? 0}%</dd>
+        </div>
         {commercial?.platformCommissionAmount != null ? (
           <div>
             <dt>Platform commission</dt>
@@ -124,16 +99,12 @@ export function SecurementPanel({
           </div>
         ) : null}
       </dl>
-
-      <div
-        className="collab-exec-actions collab-stage-actions"
-        aria-busy={busyAction !== null}
-      >
+      <p role="status">{stateCopy}</p>
+      <div className="collab-exec-actions" aria-busy={busyAction !== null}>
         {capabilities.has("fund-escrow") &&
         securement?.paymentRail === "PLATFORM_ESCROW" &&
         !zeroCash ? (
           <Button
-            className="collab-stage-actions__primary"
             disabled={busyAction !== null}
             onClick={onFund}
             fullWidthOnMobile
@@ -144,17 +115,14 @@ export function SecurementPanel({
           </Button>
         ) : null}
         {state === "AWAITING_PAYOUT_DETAILS" && role === "CREATOR" ? (
-          <div className="collab-stage-prerequisite">
-            <p>Your payout details are managed in Settings.</p>
-            <Button
-              variant="secondary"
-              disabled={busyAction !== null}
-              onClick={onManagePayoutDetails}
-              fullWidthOnMobile
-            >
-              Manage payout details
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            disabled={busyAction !== null}
+            onClick={onManagePayoutDetails}
+            fullWidthOnMobile
+          >
+            Manage payout details
+          </Button>
         ) : null}
       </div>
     </section>

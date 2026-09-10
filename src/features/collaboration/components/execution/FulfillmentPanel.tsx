@@ -1,6 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { PackageCheck } from "lucide-react";
-import { Alert, Button, TextField } from "../../../../design-system/aurora";
+import {
+  Alert,
+  Button,
+  SelectField,
+  TextField,
+} from "../../../../design-system/aurora";
 import type { UserRole } from "../../../../shared/auth/user-role";
 import type {
   ProvideFulfillmentPayload,
@@ -11,13 +15,6 @@ import type {
   CollaborationDetailResponse,
 } from "../../contracts/collaboration.contracts";
 import { collaborationCapabilities } from "../../utils/collaboration-capabilities";
-import { formatCommercialAmount } from "../../utils/collaboration-commercial-display";
-import {
-  buildFulfillmentIssuePayload,
-  FULFILLMENT_ISSUE_DESCRIPTION_MAX,
-} from "../../utils/collaboration-fulfillment-issue";
-import { actionRequiredLabel } from "../../utils/stage-labels";
-import { FulfillmentHistory } from "./FulfillmentHistory";
 import { FulfillmentIssueHistory } from "./FulfillmentIssueHistory";
 
 type Props = {
@@ -80,20 +77,6 @@ const supportCopy: Record<
 };
 const trimmed = (value: string) => value.trim() || undefined;
 
-const FULFILLMENT_STATE_LABELS: Record<
-  NonNullable<CollaborationDetailResponse["fulfillment"]>["state"],
-  string
-> = {
-  NOT_STARTED: "Not started",
-  AWAITING_BRAND_FULFILLMENT: "Waiting for Brand",
-  AWAITING_CREATOR_CONFIRMATION: "Waiting for Creator",
-  REMEDIATION_REQUIRED: "Remediation required",
-  COMPLETED: "Confirmed",
-  SKIPPED: "Not required",
-  HARD_STOP: "Could not be completed",
-  BLOCKED: "Under review",
-};
-
 export function FulfillmentPanel({
   detail,
   role,
@@ -131,16 +114,8 @@ export function FulfillmentPanel({
     fulfillment.state === "SKIPPED"
   ) {
     return (
-      <section className="collab-exec-card collab-stage-card collab-fulfillment">
-        <header className="collab-stage-card__header">
-          <span className="collab-stage-card__icon" aria-hidden="true">
-            <PackageCheck size={20} />
-          </span>
-          <div>
-            <p className="collab-stage-card__eyebrow">Brand support</p>
-            <h4>Fulfillment</h4>
-          </div>
-        </header>
+      <section className="collab-exec-card">
+        <h4>Fulfillment</h4>
         <Alert tone="success" title="No fulfillment required">
           This collaboration does not require Brand-provided support.
         </Alert>
@@ -204,13 +179,16 @@ export function FulfillmentPanel({
   };
   const submitIssue = (event: FormEvent) => {
     event.preventDefault();
-    const built = buildFulfillmentIssuePayload(issueDescription, issueEvidence);
-    if (!built.ok) {
-      setIssueError(built.error);
+    if (issueDescription.trim().length < 3) {
+      setIssueError("Describe what needs attention.");
       return;
     }
     setIssueError(undefined);
-    onReportIssue(built.payload);
+    onReportIssue({
+      issueCode: "FULFILLMENT_NOT_AS_EXPECTED",
+      description: issueDescription.trim(),
+      evidenceRef: trimmed(issueEvidence),
+    });
   };
   const submitRemediation = (event: FormEvent) => {
     event.preventDefault();
@@ -223,11 +201,6 @@ export function FulfillmentPanel({
   };
 
   const evidence = fulfillment.evidence;
-  const assetName = detail.sourceContext.campaignAsset?.name;
-  const supportName =
-    typeof assetName === "string" && assetName.trim()
-      ? assetName.trim()
-      : (copy?.label ?? "Brand support");
   const stateCopy = (() => {
     switch (fulfillment.state) {
       case "AWAITING_BRAND_FULFILLMENT":
@@ -254,112 +227,70 @@ export function FulfillmentPanel({
   })();
   return (
     <section
-      className="collab-exec-card collab-stage-card collab-fulfillment"
+      className="collab-exec-card"
       aria-labelledby="collab-fulfillment-title"
     >
-      <header className="collab-stage-card__header">
-        <span className="collab-stage-card__icon" aria-hidden="true">
-          <PackageCheck size={20} />
-        </span>
-        <div>
-          <p className="collab-stage-card__eyebrow">Brand support</p>
-          <h4 id="collab-fulfillment-title">Fulfillment</h4>
-        </div>
-        <span className="collab-stage-card__status">
-          {actionRequiredLabel(detail.workflow.actionRequiredBy)}
-        </span>
-      </header>
-      <p className="collab-stage-card__lead" role="status">
-        {stateCopy}
-      </p>
-
-      <section className="collab-support-card" aria-label="Fulfillment details">
-        <header>
-          <div>
-            <span>{copy?.label ?? "Brand support"}</span>
-            <strong>{supportName}</strong>
-          </div>
-          <span className="collab-support-card__status">
-            {FULFILLMENT_STATE_LABELS[fulfillment.state]}
-          </span>
-        </header>
-        {evidence.brandFulfilledAt ? (
-          <dl className="collab-facts collab-facts--stage">
-            {fulfillment.brandSupportEstimatedValue != null ? (
-              <div>
-                <dt>Estimated support value</dt>
-                <dd>
-                  {formatCommercialAmount(
-                    fulfillment.brandSupportEstimatedValue,
-                    detail.commercial?.currency,
-                  )}
-                </dd>
-              </div>
-            ) : null}
-            {evidence.courierName ? (
-              <div>
-                <dt>Courier</dt>
-                <dd>{evidence.courierName}</dd>
-              </div>
-            ) : null}
-            {evidence.shipmentTrackingRef ? (
-              <div>
-                <dt>Tracking reference</dt>
-                <dd className="collab-evidence-ref">
-                  {evidence.shipmentTrackingRef}
-                </dd>
-              </div>
-            ) : null}
-            {evidence.accessEvidenceRef ? (
-              <div>
-                <dt>Access evidence</dt>
-                <dd className="collab-evidence-ref">
-                  {evidence.accessEvidenceRef}
-                </dd>
-              </div>
-            ) : null}
-            {evidence.redemptionCode ? (
-              <div>
-                <dt>Redemption code</dt>
-                <dd className="collab-evidence-ref">
-                  {evidence.redemptionCode}
-                </dd>
-              </div>
-            ) : null}
-            {evidence.serviceEvidenceRef ? (
-              <div>
-                <dt>Fulfillment evidence</dt>
-                <dd className="collab-evidence-ref">
-                  {evidence.serviceEvidenceRef}
-                </dd>
-              </div>
-            ) : null}
-            {evidence.genericFulfillmentEvidence?.description ? (
-              <div>
-                <dt>Details</dt>
-                <dd>{evidence.genericFulfillmentEvidence.description}</dd>
-              </div>
-            ) : null}
-            {evidence.genericFulfillmentEvidence?.evidenceRef ? (
-              <div>
-                <dt>Evidence reference</dt>
-                <dd className="collab-evidence-ref">
-                  {evidence.genericFulfillmentEvidence.evidenceRef}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-      </section>
-
-      <FulfillmentHistory
-        fulfillment={fulfillment}
-        supportLabel={supportName}
-      />
+      <h4 id="collab-fulfillment-title">Fulfillment</h4>
+      <p>{copy?.label ?? "Brand support"}</p>
+      <p role="status">{stateCopy}</p>
+      {evidence.brandFulfilledAt ? (
+        <dl className="collab-facts">
+          {evidence.courierName ? (
+            <div>
+              <dt>Courier</dt>
+              <dd>{evidence.courierName}</dd>
+            </div>
+          ) : null}
+          {evidence.shipmentTrackingRef ? (
+            <div>
+              <dt>Tracking reference</dt>
+              <dd className="collab-evidence-ref">
+                {evidence.shipmentTrackingRef}
+              </dd>
+            </div>
+          ) : null}
+          {evidence.accessEvidenceRef ? (
+            <div>
+              <dt>Access evidence</dt>
+              <dd className="collab-evidence-ref">
+                {evidence.accessEvidenceRef}
+              </dd>
+            </div>
+          ) : null}
+          {evidence.redemptionCode ? (
+            <div>
+              <dt>Redemption code</dt>
+              <dd className="collab-evidence-ref">{evidence.redemptionCode}</dd>
+            </div>
+          ) : null}
+          {evidence.serviceEvidenceRef ? (
+            <div>
+              <dt>Fulfillment evidence</dt>
+              <dd className="collab-evidence-ref">
+                {evidence.serviceEvidenceRef}
+              </dd>
+            </div>
+          ) : null}
+          {evidence.genericFulfillmentEvidence?.description ? (
+            <div>
+              <dt>Details</dt>
+              <dd>{evidence.genericFulfillmentEvidence.description}</dd>
+            </div>
+          ) : null}
+          {evidence.genericFulfillmentEvidence?.evidenceRef ? (
+            <div>
+              <dt>Evidence reference</dt>
+              <dd className="collab-evidence-ref">
+                {evidence.genericFulfillmentEvidence.evidenceRef}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
 
       {capabilities.has("provide-fulfillment") && type ? (
         <form
-          className="collab-command-form collab-command-form--stage"
+          className="collab-command-form"
           onSubmit={submitProvision}
           aria-busy={busyAction === "provide-fulfillment"}
         >
@@ -464,12 +395,11 @@ export function FulfillmentPanel({
 
       {capabilities.has("confirm-fulfillment") ? (
         <div
-          className="collab-exec-actions collab-stage-actions"
+          className="collab-exec-actions"
           aria-busy={busyAction === "confirm-fulfillment"}
         >
           <p>Review the details above before confirming.</p>
           <Button
-            className="collab-stage-actions__primary"
             disabled={busyAction !== null}
             onClick={onConfirm}
             fullWidthOnMobile
@@ -483,13 +413,24 @@ export function FulfillmentPanel({
 
       {capabilities.has("report-fulfillment-issue") ? (
         <form
-          className="collab-command-form collab-command-form--stage collab-command-form--secondary"
+          className="collab-command-form"
           onSubmit={submitIssue}
           aria-busy={busyAction === "report-fulfillment-issue"}
         >
-          <h5>Report fulfillment issue</h5>
+          <h5>Report an issue</h5>
+          <SelectField
+            label="Issue type"
+            value="FULFILLMENT_NOT_AS_EXPECTED"
+            options={[
+              {
+                value: "FULFILLMENT_NOT_AS_EXPECTED",
+                label: "Fulfillment not as expected",
+              },
+            ]}
+            disabled
+          />
           <TextField
-            label="Describe the issue"
+            label="What needs attention?"
             multiline
             value={issueDescription}
             onChange={(event) => {
@@ -498,8 +439,6 @@ export function FulfillmentPanel({
             }}
             error={issueError}
             disabled={busyAction !== null}
-            maxLength={FULFILLMENT_ISSUE_DESCRIPTION_MAX}
-            helperText="Describe what needs attention. Evidence is optional."
           />
           <TextField
             label="Evidence reference (optional)"
@@ -515,7 +454,7 @@ export function FulfillmentPanel({
           >
             {busyAction === "report-fulfillment-issue"
               ? "Reporting…"
-              : "Report fulfillment issue"}
+              : "Report issue"}
           </Button>
         </form>
       ) : null}
@@ -528,7 +467,7 @@ export function FulfillmentPanel({
       ) : null}
       {capabilities.has("remediate-fulfillment") ? (
         <form
-          className="collab-command-form collab-command-form--stage"
+          className="collab-command-form"
           onSubmit={submitRemediation}
           aria-busy={busyAction === "remediate-fulfillment"}
         >

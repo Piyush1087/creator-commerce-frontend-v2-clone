@@ -4,6 +4,7 @@ import type {
   CollaborationDetailResponse,
   CollaborationMessageRow,
   CollaborationThreadRow,
+  CollaborationBriefPackV1,
   CommandEnvelope,
 } from "../contracts/collaboration.contracts";
 import {
@@ -130,6 +131,49 @@ export const envelope = (
 ): CommandEnvelope => ({ commandId, expectedAggregateVersion });
 export const acceptProposedFee = (id: string, e: CommandEnvelope) =>
   command(id, "negotiation/accept-proposed-fee", e);
+export const submitCreatorProposal = (
+  id: string,
+  e: CommandEnvelope,
+  proposedFee: number,
+  currency: string,
+) =>
+  command(id, "negotiation/creator-proposal", { ...e, proposedFee, currency });
+export const confirmDefaultDestination = (
+  id: string,
+  e: CommandEnvelope,
+  sourceContactId: string,
+  sourceContactUpdatedAt: string,
+) =>
+  command(id, "destination/confirm-default", {
+    ...e,
+    sourceContactId,
+    sourceContactUpdatedAt,
+  });
+export type CollaborationDestinationOverride = {
+  recipientName: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  stateRegion?: string | null;
+  postalCode: string;
+  countryCode: string;
+  phoneCountryCallingCode?: string | null;
+  phoneNationalNumber?: string | null;
+  phoneE164?: string | null;
+  deliveryInstructions?: string | null;
+};
+export const overrideDestination = (
+  id: string,
+  e: CommandEnvelope,
+  payload: CollaborationDestinationOverride,
+) => command(id, "destination/override", { ...e, ...payload });
+export async function fetchCollaborationBriefPack(
+  id: string,
+): Promise<CollaborationBriefPackV1> {
+  return (await readJsonOrThrow(
+    await fetch(`${BASE}/threads/${id}/brief`, { headers: authHeaders() }),
+  )) as CollaborationBriefPackV1;
+}
 export const counterOffer = (
   id: string,
   e: CommandEnvelope,
