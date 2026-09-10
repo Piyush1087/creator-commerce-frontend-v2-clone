@@ -1,4 +1,4 @@
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import { env } from "../../../shared/config/env";
 import {
   BrandConsumerContractError,
@@ -15,12 +15,15 @@ export class BrandConsumerRequestError extends Error {
 
 /** Ownership is resolved by the authenticated backend. Never send a Brand selector. */
 export async function fetchBrandCentreBrand(signal?: AbortSignal) {
-  const response = await fetch(`${env.apiUrl}/api/v1/brand-centre/brand`, {
-    method: "GET",
-    headers: { Accept: "application/json", ...authAuthorizationHeader() },
-    signal,
-    cache: "no-store",
-  });
+  const response = await authenticatedFetch(
+    `${env.apiUrl}/api/v1/brand-centre/brand`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal,
+      cache: "no-store",
+    },
+  );
   if (!response.ok) throw new BrandConsumerRequestError(response.status);
   let json: unknown;
   try {

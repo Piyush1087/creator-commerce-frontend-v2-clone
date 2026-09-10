@@ -86,12 +86,6 @@ export function getAccessToken(): string | null {
   return snapshot.accessToken;
 }
 
-/** Compatibility for origin API clients; prefer authenticatedFetch for new work. */
-export function authAuthorizationHeader(): Record<string, string> {
-  const token = getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 export function adoptAuthSession(session: AuthSession): void {
   removeLegacySession();
   publish({

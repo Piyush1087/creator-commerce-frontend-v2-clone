@@ -1,14 +1,10 @@
 import { env } from "../../../shared/config/env";
-import { authAuthorizationHeader } from "../../../shared/auth/auth-session";
+import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import type { CampaignShellResponse } from "../contracts/brand-uce.contracts";
 import type { CanonicalCampaignWizardPayload } from "../schemas/canonical-campaign-wizard-schema";
 
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 const BASE = `${env.apiUrl}/api/v1/brand-uce`;
-
-function authHeaders(): Record<string, string> {
-  return { ...JSON_HEADERS, ...authAuthorizationHeader() };
-}
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -110,9 +106,9 @@ export type CanonicalDraftEnvelope = {
 };
 
 export async function createCanonicalCampaignDraft(): Promise<CanonicalDraftEnvelope> {
-  const response = await fetch(`${BASE}/campaigns/canonical-drafts`, {
+  const response = await authenticatedFetch(`${BASE}/campaigns/canonical-drafts`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: JSON_HEADERS,
   });
   return (await readJsonOrThrow(response)) as CanonicalDraftEnvelope;
 }
@@ -120,9 +116,9 @@ export async function createCanonicalCampaignDraft(): Promise<CanonicalDraftEnve
 export async function fetchCanonicalCampaignDraft(
   campaignId: string,
 ): Promise<CanonicalDraftEnvelope> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}`,
-    { method: "GET", headers: authHeaders() },
+    { method: "GET", headers: JSON_HEADERS },
   );
   return (await readJsonOrThrow(response)) as CanonicalDraftEnvelope;
 }
@@ -132,9 +128,9 @@ export async function fetchCanonicalCampaignReadiness(
 ): Promise<CanonicalCampaignReadinessResponse> {
   let response: Response;
   try {
-    response = await fetch(
+    response = await authenticatedFetch(
       `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/readiness`,
-      { method: "GET", headers: authHeaders() },
+      { method: "GET", headers: JSON_HEADERS },
     );
   } catch {
     throw new CanonicalDraftRequestError(
@@ -152,11 +148,11 @@ export async function autosaveCanonicalCampaignField(
   path: CanonicalCampaignDraftPath,
   value: unknown,
 ): Promise<{ campaignId: string; savedPath: string; savedAt: string }> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/field`,
     {
       method: "PATCH",
-      headers: authHeaders(),
+      headers: JSON_HEADERS,
       body: JSON.stringify({ path, value }),
     },
   );
@@ -171,11 +167,11 @@ export async function publishCanonicalCampaignDraft(
   campaignId: string,
   payload: CanonicalCampaignWizardPayload,
 ): Promise<CampaignShellResponse> {
-  const response = await fetch(
+  const response = await authenticatedFetch(
     `${BASE}/campaigns/canonical-drafts/${encodeURIComponent(campaignId)}/publish`,
     {
       method: "POST",
-      headers: authHeaders(),
+      headers: JSON_HEADERS,
       body: JSON.stringify(payload),
     },
   );

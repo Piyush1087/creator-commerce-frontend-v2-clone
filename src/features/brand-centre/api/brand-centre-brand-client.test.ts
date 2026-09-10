@@ -2,13 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { consumerFixture } from "../testing/brand-consumer-fixtures";
 import { fetchBrandCentreBrand } from "./brand-centre-brand-client";
 
-vi.mock("../../../shared/auth/auth-session", () => ({
-  authAuthorizationHeader: () => ({ Authorization: "Bearer test-only-token" }),
-}));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("authenticated Brand consumer client", () => {
-  it("uses only the bounded route, existing authorization, abort and no Brand selector", async () => {
+  it("uses only the bounded route, abort and no Brand selector", async () => {
     const fetcher = vi
       .fn()
       .mockResolvedValue(new Response(JSON.stringify(consumerFixture())));
@@ -19,15 +16,14 @@ describe("authenticated Brand consumer client", () => {
     expect(fetcher.mock.calls[0][0]).toMatch(
       /\/api\/v1\/brand-centre\/brand$/u,
     );
-    expect(fetcher.mock.calls[0][1]).toEqual({
+    expect(fetcher.mock.calls[0][1]).toMatchObject({
       method: "GET",
-      headers: {
-        Accept: "application/json",
-        Authorization: "Bearer test-only-token",
-      },
       signal,
       cache: "no-store",
     });
+    expect(
+      new Headers(fetcher.mock.calls[0][1]?.headers).get("Accept"),
+    ).toBe("application/json");
   });
   it.each(["{", JSON.stringify({ legacyDna: true })])(
     "returns MALFORMED_RESPONSE for invalid success body",
