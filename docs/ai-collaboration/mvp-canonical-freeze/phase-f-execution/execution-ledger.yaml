@@ -175,3 +175,17 @@ runs:
       Seed creates a legacy brief-linked Collaboration (source_application_id
       null, brief_id set). C-03 canonical handoff proof stays on INV-07
       postgres. Page files for identity-test kept; inbound redirects to Home.
+  - id: RUN11_POSTMARK_OTP_LIVE_SEND
+    date: "2026-09-10"
+    intent: >
+      Record local Postmark OTP template live send PASS to Parent-confirmed
+      inboxes. RUN 4/5 send failure was invalid TemplateId 1 (422/1101).
+      INV-10 remains PARTIAL (live IG/Razorpay NOT_RUN). Not freeze PASS.
+    prisma_drop: NOT_THIS_CHECKPOINT
+    pass_declared: false
+    checkpoints:
+      frontend: 2bdf08b426244085a57080253272313a7fea79fb
+      backend: 0c683e41b17aabdd8a3eb4d80981ffcccbccc827
+    notes: |
+      Dummy delivery OTP only; codes not recorded. AWS-dev still needs the same
+      token/templates on ECS. Invite/notification templates not re-proven.
