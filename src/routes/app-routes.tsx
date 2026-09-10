@@ -41,8 +41,8 @@ import { BrandUceCampaignsPage } from "../pages/brand/uce/BrandUceCampaignsPage"
 import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignCreatePage";
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
+import { CreatorHomePage } from "../pages/creator/centre/creator-home-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
-import { CreatorWorkspaceEntryPage } from "../pages/creator/home/creator-workspace-entry-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/MarketplaceGuestLayout";
@@ -248,11 +248,7 @@ export function AppRoutes() {
           </Route>
         </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
-          {/* C-05 workspace entry. Accepted C-02A Home is deferred. */}
-          <Route
-            path={AUTH_ROUTES.creatorHome}
-            element={<CreatorWorkspaceEntryPage />}
-          />
+          <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           <Route
             path={AUTH_ROUTES.creatorCentre}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}

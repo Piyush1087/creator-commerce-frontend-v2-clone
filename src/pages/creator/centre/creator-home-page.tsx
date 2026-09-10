@@ -1,20 +1,6 @@
-import { CreatorCentreShell } from "../../../features/creator-centre/components/creator-centre-shell";
-import { HomeBriefingWorkspace } from "../../../features/creator-centre/components/home-briefing-workspace";
-import { CreatorAssistantPanel } from "../../../features/creator-centre/components/creator-assistant/creator-assistant-panel";
-import "../../../features/creator-centre/creator-centre.css";
+import { CreatorHomeWorkspace } from "../../../features/creator-home/components/creator-home-workspace";
+import "../../../features/creator-home/creator-home.css";
 
-/** @deprecated Prefer CreatorCentrePage — same Home shell. */
 export function CreatorHomePage() {
-  return (
-    <CreatorCentreShell>
-      <div className="cctr-home-split">
-        <div className="cctr-home-split__main">
-          <HomeBriefingWorkspace />
-        </div>
-        <div className="cctr-home-split__assistant">
-          <CreatorAssistantPanel variant="desktop" />
-        </div>
-      </div>
-    </CreatorCentreShell>
-  );
+  return <CreatorHomeWorkspace />;
 }
