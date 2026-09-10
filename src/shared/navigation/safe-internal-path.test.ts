@@ -51,6 +51,7 @@ describe("safe internal navigation", () => {
     "/%E0%A4%A",
     "/creator/home\n/evil.example",
     "/unsupported/internal/route",
+    "/brand/intelligence/identity-test",
     "",
   ])("rejects the untrusted destination %s", (path) => {
     expect(isSupportedInternalPath(path)).toBe(false);

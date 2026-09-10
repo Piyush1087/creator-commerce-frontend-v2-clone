@@ -10,7 +10,6 @@ const SUPPORTED_PATHS = [
   /^\/brand\/(?:dashboard|collaborations|collaboration-page|payouts)$/u,
   /^\/brand\/settings(?:\/(?:general|integrations|billing|escrow))?$/u,
   new RegExp(`^/brand/uce/campaigns(?:/(?:create|${SAFE_SEGMENT}))?$`, "u"),
-  /^\/brand\/intelligence\/identity-test$/u,
   /^\/brand\/onboarding\/(?:scan|core-identity|intelligence-scan|dna|catalogue|competitors|verification|pricing|social-sync|sync-verify|sync-complete)$/u,
   new RegExp(`^/brand-centre(?:/offerings(?:/${SAFE_SEGMENT})?)?$`, "u"),
   /^\/creator\/(?:dashboard|home|centre|analytics|media-kit|campaigns|campaigns\/history|collaborations|payouts)$/u,

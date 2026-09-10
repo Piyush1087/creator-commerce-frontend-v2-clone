@@ -562,12 +562,80 @@
   }
 
   .operations-tab__table-card {
-    padding: 0;
-    overflow: hidden;
+    padding: var(--space-md);
+    overflow: visible;
+  }
+
+  .uce-table-scroll {
+    overflow: visible;
+  }
+
+  .performance-matrix,
+  .performance-matrix thead,
+  .performance-matrix tbody,
+  .performance-matrix th,
+  .performance-matrix td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .performance-matrix thead {
+    display: none;
+  }
+
+  .performance-matrix tbody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .performance-matrix tbody tr {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-card-standard);
+    background: var(--surface-card);
+    padding: var(--space-md);
+  }
+
+  .performance-matrix tbody tr.campaign-row-clickable:hover,
+  .performance-matrix tbody tr.campaign-row-clickable.is-selected {
+    background: var(--surface-workflow);
+  }
+
+  .performance-matrix td {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--space-sm);
+    align-items: start;
+    padding: var(--space-xs) 0;
+    border-bottom: none;
+  }
+
+  .performance-matrix td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: var(--size-body);
+  }
+
+  .performance-matrix td.ops-td-check,
+  .performance-matrix td.operations-empty-row {
+    display: block;
+  }
+
+  .performance-matrix td.ops-td-check::before,
+  .performance-matrix td.operations-empty-row::before {
+    content: none;
+  }
+
+  .ops-pipeline-cell,
+  .ops-budget-cell {
+    min-width: 0;
   }
 
   .campaign-name strong {
-    font-size: 14px;
+    font-size: var(--size-body);
   }
 
   .actions button {

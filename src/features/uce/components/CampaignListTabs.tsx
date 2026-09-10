@@ -230,7 +230,7 @@ function OperationsTab() {
               <tbody>
                 {visibleCampaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="operations-empty-row">
+                    <td colSpan={6} className="operations-empty-row" data-label="">
                       No {showArchived ? "completed" : "active"} campaigns in this view.
                     </td>
                   </tr>
@@ -260,6 +260,7 @@ function OperationsTab() {
                       >
                         <td
                           className="ops-td-check"
+                          data-label="Select"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
@@ -269,7 +270,7 @@ function OperationsTab() {
                             onChange={() => toggleRowSelected(campaign.campaign_id)}
                           />
                         </td>
-                        <td className="campaign-name">
+                        <td className="campaign-name" data-label="Campaign Context">
                           <div className="campaign-context-cell">
                             <div>
                               <strong>{displayField(campaign.campaign_name)}</strong>
@@ -285,7 +286,7 @@ function OperationsTab() {
                             </div>
                           </div>
                         </td>
-                        <td onClick={(e) => e.stopPropagation()}>
+                        <td data-label="Status Toggle" onClick={(e) => e.stopPropagation()}>
                           <div className="status-toggle-cell">
                             {campaign.current_status === "COMPLETED" ||
                             campaign.current_status === "ARCHIVED" ||
@@ -302,7 +303,7 @@ function OperationsTab() {
                             )}
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Influencer Pipeline">
                           <div className="ops-pipeline-cell">
                             <div
                               className="ops-mini-bar ops-mini-bar--pipeline"
@@ -335,7 +336,7 @@ function OperationsTab() {
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td data-label="Budget Consumption">
                           <div className="ops-budget-cell">
                             <div className="ops-mini-bar ops-mini-bar--budget">
                               <span style={{ width: `${pct}%` }} />
@@ -349,7 +350,7 @@ function OperationsTab() {
                             </small>
                           </div>
                         </td>
-                        <td className="actions" onClick={(e) => e.stopPropagation()}>
+                        <td className="actions" data-label="Actions" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             title="Open campaign workspace"

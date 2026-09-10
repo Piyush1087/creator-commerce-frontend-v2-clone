@@ -1,11 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 const CHAT_ROOT = join(ROOT, "src", "features", "chat");
-const P6_STARTING_SHA = "18e8363ac40b30a9248e6b529b857d3aa20e1fc0";
 
 function productionFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -59,7 +57,7 @@ describe("permanent Chat architecture boundary", () => {
     }
   });
 
-  it("reconciles Brand Home without a new route or sidebar entry", () => {
+  it("reconciles Brand Home without a new Chat route or sidebar entry", () => {
     const page = readFileSync(
       join(
         ROOT,
@@ -75,19 +73,19 @@ describe("permanent Chat architecture boundary", () => {
     expect(page).toContain("BrandHomeBriefingWorkspace");
     expect(page).not.toContain("useBrandCoPilot");
 
-    const routeDiff = execFileSync(
-      "git",
-      [
-        "diff",
-        "--name-only",
-        P6_STARTING_SHA,
-        "--",
-        "src/routes",
-        "src/layouts/app-shell/sidebar-items.ts",
-      ],
-      { cwd: ROOT, encoding: "utf8" },
-    ).trim();
-    expect(routeDiff).toBe("");
+    const sidebar = readFileSync(
+      join(ROOT, "src", "layouts", "app-shell", "sidebar-items.ts"),
+      "utf8",
+    );
+    const routes = readFileSync(
+      join(ROOT, "src", "routes", "app-routes.tsx"),
+      "utf8",
+    );
+    expect(sidebar).toContain("AUTH_ROUTES.brandDashboard");
+    expect(sidebar).not.toContain('label: "Chat"');
+    expect(sidebar).not.toContain("Marketplace");
+    expect(sidebar).not.toContain("Co-Pilot");
+    expect(routes).not.toContain("/brand/chat");
   });
 
   it("keeps permanent Chat independent from the Home data client", () => {

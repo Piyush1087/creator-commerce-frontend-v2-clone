@@ -33,6 +33,15 @@ describe("post-login redirect policy", () => {
     "/brand-centre/offerings",
     "/brand/settings/integrations?tab=instagram",
     "/brand/onboarding/verification",
+  ])("does not resume Brand app chrome for a Creator return %s", (from) => {
+    expect(resolvePostLoginPath("CREATOR", from)).toBe("/creator/home");
+  });
+
+  it.each([
+    "/brand/dashboard",
+    "/brand-centre/offerings",
+    "/brand/settings/integrations?tab=instagram",
+    "/brand/onboarding/verification",
   ])("preserves the supported Brand return %s", (from) => {
     expect(resolvePostLoginPath("BRAND", from)).toBe(from);
   });

@@ -51,18 +51,8 @@
     width: 100%;
   }
 
-  .uce-table-scroll {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .performance-matrix {
-    min-width: 900px;
-  }
-
   .ledger-table {
-    min-width: 560px;
+    min-width: 0;
   }
 
   /* —— Campaign list (financial) —— */
