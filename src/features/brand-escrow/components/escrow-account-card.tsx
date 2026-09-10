@@ -36,7 +36,10 @@ export function EscrowAccountCard({
 
   if (status === "loading" && !vault) {
     return (
-      <section className="brand-escrow-card brand-escrow-card--loading" aria-busy="true">
+      <section
+        className="brand-escrow-card brand-escrow-card--loading"
+        aria-busy="true"
+      >
         <Loader2 size={28} className="brand-escrow-spin" aria-hidden />
         <p>Loading Secure escrow…</p>
       </section>
@@ -67,8 +70,8 @@ export function EscrowAccountCard({
             <div>
               <h2 className="brand-escrow-card__title">Secure escrow</h2>
               <p className="brand-escrow-card__desc">
-                Review available, locked, and pending balances, add funds, and return
-                eligible unused funds.
+                Review available, locked, and pending balances, add funds, and
+                return eligible unused funds.
               </p>
             </div>
           </div>
@@ -103,16 +106,16 @@ export function EscrowAccountCard({
           <div className="brand-escrow-explainer">
             <strong>Protected commitments</strong>
             <p>
-              Locked campaign funds and active return commitments cannot be released from
-              Settings. They remain protected until the corresponding Collaboration or
-              return workflow completes.
+              Locked campaign funds and active return commitments cannot be
+              released from Settings. They remain protected until the
+              corresponding Collaboration or return workflow completes.
             </p>
           </div>
           <div className="brand-escrow-explainer">
             <strong>Creator payouts stay operational</strong>
             <p>
-              Settings does not approve entitlement, release creator funds, reverse payouts,
-              or expose a provider dashboard.
+              Settings does not approve entitlement, release creator funds,
+              reverse payouts, or expose a provider dashboard.
             </p>
           </div>
         </div>
@@ -121,8 +124,8 @@ export function EscrowAccountCard({
           <div>
             <strong>Add funds</strong>
             <p>
-              Checkout creates Pending funding. Available balance changes only after
-              payment confirmation.
+              Checkout creates Pending funding. Available balance changes only
+              after payment confirmation.
             </p>
           </div>
           {mutable ? (
@@ -136,8 +139,9 @@ export function EscrowAccountCard({
               <div>
                 <strong>Return unused funds</strong>
                 <p>
-                  Eligible available money is returned to original payment source(s),
-                  selected automatically. You cannot choose a destination or source.
+                  Eligible available money is returned to original payment
+                  source(s), selected automatically. You cannot choose a
+                  destination or source.
                 </p>
               </div>
               {mutable ? (
@@ -184,14 +188,15 @@ export function EscrowAccountCard({
             </dl>
             {returnSummary.currency === null ? (
               <p className="brand-escrow-return-panel__guidance">
-                Return currency is currently unavailable. Refresh Treasury status before
-                requesting a return.
+                Return currency is currently unavailable. Refresh Treasury
+                status before requesting a return.
               </p>
             ) : null}
             {returnSummary.source_reconciliation_required_amount > 0 ? (
               <p className="brand-escrow-return-panel__guidance">
-                Some available money lacks eligible source evidence for self-service return.
-                It remains visible and is not treated as lost or automatically returnable.
+                Some available money lacks eligible source evidence for
+                self-service return. It remains visible and is not treated as
+                lost or automatically returnable.
               </p>
             ) : null}
           </div>
@@ -199,8 +204,8 @@ export function EscrowAccountCard({
 
         {!mutable ? (
           <Alert tone="warning" title="Campaign Manager read-only access">
-            You can review Treasury state and Brand Return lifecycle. Brand Owner or Finance
-            Admin authority is required to add or return funds.
+            You can review Treasury state and Brand Return lifecycle. Brand
+            Owner or Finance Admin authority is required to add or return funds.
           </Alert>
         ) : null}
 
@@ -208,7 +213,10 @@ export function EscrowAccountCard({
 
         <div className="brand-escrow-ledger-toggle">
           {!showLedgerInline ? (
-            <Button variant="ghost" onClick={() => setLedgerOpen((open) => !open)}>
+            <Button
+              variant="ghost"
+              onClick={() => setLedgerOpen((open) => !open)}
+            >
               {ledgerOpen ? "Hide financial ledger" : "View financial ledger"}
             </Button>
           ) : null}
@@ -219,6 +227,7 @@ export function EscrowAccountCard({
       <EscrowTopUpDrawer
         open={topUpOpen}
         vault={vault}
+        commandSurface="SETTINGS"
         onClose={() => setTopUpOpen(false)}
         onRefresh={() => reload(true)}
         onNotice={setNotice}
@@ -227,6 +236,7 @@ export function EscrowAccountCard({
         <BrandReturnDrawer
           open={returnOpen}
           summary={returnSummary}
+          commandSurface="SETTINGS"
           onClose={() => setReturnOpen(false)}
           onRefresh={() => reload(true)}
           onNotice={setNotice}

@@ -57,6 +57,8 @@ import { CreatorSettingsActionGuard } from "../features/settings/components/crea
 import { CreatorTeamInvitationAcceptance } from "../features/settings/components/creator/creator-team-invitation-acceptance";
 import { CreatorInstagramOAuthCallbackRoute } from "../pages/creator/onboarding/creator-instagram-oauth-callback-route";
 import { HelpPage } from "../pages/public/help-page";
+import { BrandPayoutsRouteGuard } from "../features/brand-payouts/components/BrandPayoutsRouteGuard";
+import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
 
 export function AppRoutes() {
   return (
@@ -153,7 +155,11 @@ export function AppRoutes() {
         />
         <Route
           path={AUTH_ROUTES.brandPayouts}
-          element={<Navigate to={AUTH_ROUTES.brandSettingsBilling} replace />}
+          element={
+            <BrandPayoutsRouteGuard>
+              <BrandPayoutsPage />
+            </BrandPayoutsRouteGuard>
+          }
         />
         <Route
           path={AUTH_ROUTES.brandSettings}

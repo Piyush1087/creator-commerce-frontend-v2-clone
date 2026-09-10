@@ -1,0 +1,31 @@
+{
+  "schema_version": "2.0",
+  "status": "PASS",
+  "checks": {
+    "exact_bases_and_remote_fetch_back": "PASS",
+    "backend_reserve_read_contract": "PASS",
+    "backend_focused_tests": "PASS_28_OF_28",
+    "backend_fresh_postgresql_0_to_86": "PASS",
+    "frontend_focused_tests": "PASS_63_OF_63",
+    "frontend_full_suite": "PASS_895_OF_895",
+    "corrected_production_build": "PASS_2111_MODULES",
+    "owner_finance_exact_id_approval": "PASS_2_OF_2",
+    "database_exactly_one_effect": "PASS_2_OF_2",
+    "campaign_manager_fail_closed": "PASS",
+    "unauthenticated_redirect": "PASS",
+    "responsive_overflow_390_767_768_1440": "PASS_4_OF_4",
+    "axe_serious": 0,
+    "axe_critical": 0,
+    "axe_moderate_inherited_landmarks": 3,
+    "corrected_build_console_errors_or_warnings": 0,
+    "payout_provider_actions": 0
+  },
+  "disclosures": [
+    "Initial bundle lacked VITE_API_URL and rendered blank; corrected explicitly-local build was used for the browser matrix.",
+    "A pre-acceptance startup made rejected Postmark notification requests with an invalid token; no payout-provider action occurred.",
+    "CUA supplied live screenshots and AX/DOM snapshots but no repository-safe screenshot sink."
+  ],
+  "non_disposable_database_mutation": "NONE",
+  "migration_files_changed": "NONE",
+  "provider_actions": "NONE"
+}

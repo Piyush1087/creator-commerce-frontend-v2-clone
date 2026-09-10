@@ -15,6 +15,9 @@ import {
 
 const BASE = `${env.apiUrl}/api/v1/escrow`;
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
+const COMMAND_SURFACE_HEADER = "X-Brand-Financial-Command-Surface";
+
+export type BrandFinancialCommandSurface = "SETTINGS" | "PAYOUTS";
 
 export class EscrowApiError extends Error {
   constructor(
@@ -78,11 +81,18 @@ async function readJsonOrThrow(response: Response): Promise<unknown> {
   return body;
 }
 
-async function mutationFetch(url: string, body: unknown): Promise<Response> {
+async function mutationFetch(
+  url: string,
+  body: unknown,
+  commandSurface: BrandFinancialCommandSurface,
+): Promise<Response> {
   try {
     return await fetch(url, {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        [COMMAND_SURFACE_HEADER]: commandSurface,
+      },
       body: JSON.stringify(body),
     });
   } catch (error) {
@@ -131,11 +141,16 @@ export async function fetchEscrowLedger(
 export async function createEscrowTopUpIntent(input: {
   targetAllocation: number;
   idempotencyKey: string;
+  commandSurface: BrandFinancialCommandSurface;
 }): Promise<EscrowTopUpIntentApiResponse> {
-  const response = await mutationFetch(`${BASE}/topup-intent`, {
-    target_allocation: input.targetAllocation,
-    idempotency_key: input.idempotencyKey,
-  });
+  const response = await mutationFetch(
+    `${BASE}/topup-intent`,
+    {
+      target_allocation: input.targetAllocation,
+      idempotency_key: input.idempotencyKey,
+    },
+    input.commandSurface,
+  );
   const parsed = escrowTopUpIntentSchema.safeParse(
     await readJsonOrThrow(response),
   );
@@ -189,11 +204,16 @@ export async function fetchBrandReturnRequest(
 export async function createBrandReturn(input: {
   amount: number;
   idempotencyIdentity: string;
+  commandSurface: BrandFinancialCommandSurface;
 }): Promise<BrandReturnRequestApiResponse> {
-  const response = await mutationFetch(`${BASE}/brand-returns`, {
-    amount: input.amount,
-    idempotency_identity: input.idempotencyIdentity,
-  });
+  const response = await mutationFetch(
+    `${BASE}/brand-returns`,
+    {
+      amount: input.amount,
+      idempotency_identity: input.idempotencyIdentity,
+    },
+    input.commandSurface,
+  );
   const parsed = brandReturnRequestSchema.safeParse(
     await readJsonOrThrow(response),
   );
