@@ -226,4 +226,18 @@ runs:
       Evidence commits are the amendment product/docs change. A ledger-record
       commit may sit on top; pushed freeze-branch tips are the immutable pair
       for this amendment. C-06 remains OUT.
+  - id: RUN14_INV09_SECURITY_CHECKPOINT
+    date: "2026-09-11"
+    intent: >
+      Record INV-09 destination consumption and creator-dev security declaration.
+      Not freeze PASS.
+    prisma_drop: NOT_THIS_CHECKPOINT
+    pass_declared: false
+    targeted_tests: |
+      Parent 16:50 FE c04-frontend 6/6. BE counts in backend-v2 07-targeted-tests.
+    checkpoints:
+      frontend: 628eb6da3fdac4add93a3188fee1764fd9c06c74
+      backend: bae19de915cb2235ab21cb7cd8afb908bdee1f10
+    notes: |
+      Product pair named above. C-06 remains OUT. INV-10 live IG/Razorpay later.
 
