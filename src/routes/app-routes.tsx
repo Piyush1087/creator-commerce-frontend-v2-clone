@@ -23,6 +23,7 @@ import { ResetPasswordPage } from "../pages/auth/reset-password-page";
 import { TeamInvitationPage } from "../pages/public/brand/team-invitation-page";
 import { BrandDashboardPage } from "../pages/brand/dashboard/brand-dashboard-page";
 import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
+import { BrandCentreInstagramPage } from "../pages/brand/brand-centre/brand-centre-instagram-page";
 import { BrandCentreOfferingsPage } from "../pages/brand/brand-centre/brand-centre-offerings-page";
 import { BrandCentreOfferingDetailPage } from "../pages/brand/brand-centre/brand-centre-offering-detail-page";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
@@ -119,6 +120,10 @@ export function AppRoutes() {
           element={<BrandDashboardPage />}
         />
         <Route path={AUTH_ROUTES.brandCentre} element={<BrandCentrePage />} />
+        <Route
+          path={AUTH_ROUTES.brandCentreInstagram}
+          element={<BrandCentreInstagramPage />}
+        />
         <Route
           path={AUTH_ROUTES.brandCentreOfferings}
           element={<BrandCentreOfferingsPage />}

@@ -6,6 +6,7 @@ export const AUTH_ROUTES = {
   resetPassword: "/reset-password",
   brandDashboard: "/brand/dashboard",
   brandCentre: "/brand-centre",
+  brandCentreInstagram: "/brand-centre/instagram",
   brandCentreOfferings: "/brand-centre/offerings",
   brandCentreOfferingDetail: "/brand-centre/offerings/:offeringId",
   brandUceCampaigns: "/brand/uce/campaigns",
