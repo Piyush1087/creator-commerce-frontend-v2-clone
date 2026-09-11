@@ -57,4 +57,14 @@ Tests       51 passed (51)
 
 Full `npm test` suites were not re-run (prior vitest hang risk). Module acceptance suites: `NOT_RE_RUN` on freeze tip.
 
+## Parent reconfirm — C-04 frontend destination — 2026-09-11 16:50
+
+```text
+npx vitest run --config vitest.config.ts src/features/collaboration/c04-frontend.test.ts
+Test Files  1 passed (1)
+Tests       6 passed (6)
+```
+
+INV-09 FE destination proof. Canonical BE counts are in backend-v2 `18-validation/07-targeted-tests.md`.
+
 Per-INV mapping: `11-invariant-results.md`.

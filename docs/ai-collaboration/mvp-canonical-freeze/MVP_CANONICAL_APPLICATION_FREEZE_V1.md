@@ -96,7 +96,7 @@ INV-05 PASS (unit + smoke; Chat architecture test retargeted RUN 9)
 INV-06 PASS postgres (fresh c03_p14_handoff 34/34 serial, 2026-09-09)
 INV-07 PASS postgres handoff; local collab seed leftover closed RUN 9 (legacy fixture)
 INV-08 PARTIAL (C-05 payout boundary unit)
-INV-09 PARTIAL (C-05 Settings contact proven; fulfillment does not consume that address)
+INV-09 PASS classified (leftover collab shipping 410; C-04 destination snapshots CreatorShippingAddress)
 INV-10 PARTIAL (Postmark OTP live send PASS 2026-09-10; live IG/Razorpay NOT_RUN)
 INV-11 PARTIAL (Brand Home fail-closed for Creator session)
 INV-12 PASS (unit + postgres 11/11 on bs07_freeze_auth + browser)
@@ -140,17 +140,15 @@ Local smoke RUN 4: Postmark send failed (invalid TemplateId `1`); OTP still issu
 Canonical: `15-security/security-release-check.md`
 
 ```text
-NO_KNOWN_DEPLOYABLE_SECURITY_BYPASS  = NOT DECLARED THIS FREEZE
+NO_KNOWN_DEPLOYABLE_SECURITY_BYPASS  = DECLARED 2026-09-11
+  bound = freeze source + live creator-dev ECS env
+  not freeze PASS
+  not creator-prod
 ```
 
-**Parent 2026-09-09:** residuals accepted as **AWS-dev / production gates**, not this-freeze unwind.
+Canonical evidence: backend-v2 `15-security/security-release-check.md`. Live creator-dev `STAGE=dev`, named apply-bypass `test@creator.com`, `[OTP]` logs present (codes not recorded). Empty apply-bypass / prod OTP silence remain future prod-deploy gates.
 
-1. Production `CREATOR_APPLY_BYPASS_EMAILS` empty (or security authority named list) — **AWS / prod worker**.
-2. OTP codes never logged when `STAGE=prod` — **AWS worker must prove**.
-3. OUT APIs remain in tree with auth required; hidden from product chrome. Explicitly accepted as non-product until a later amendment. **Do not unwire in this freeze.**
-4. §18 auth/RBAC/cross-tenant postgres INV-01/04/12 PASS.
-
-This freeze still does **not** declare `NO_KNOWN_DEPLOYABLE_SECURITY_BYPASS` or `PASS — MVP_CANONICAL_APPLICATION_FREEZE_V1`.
+This freeze still does **not** declare `PASS — MVP_CANONICAL_APPLICATION_FREEZE_V1`.
 
 ---
 

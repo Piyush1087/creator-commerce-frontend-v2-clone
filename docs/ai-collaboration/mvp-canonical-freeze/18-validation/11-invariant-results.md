@@ -16,7 +16,7 @@ OTP codes and secrets are not recorded here.
 | INV-06 | **PASS** postgres (2026-09-09 retry) | Fresh `c03_p14_handoff` 34/34 serial `--testTimeout=30000` | Prior 5s timeouts + dirty-DB count drift were `ENVIRONMENT_BLOCKED`, not product red |
 | INV-07 | **PASS** postgres handoff; local seed leftover closed RUN 9 | Same suite: approval commits `Collaboration` | `scripts/seed-dev-collaboration.ts` now seeds a **legacy** brief-linked fixture (`source_application_id` null). Canonical handoff remains this suite |
 | INV-08 | PARTIAL | C-05 P2 architecture | Brand Payouts v1 / C-06 out |
-| INV-09 | PARTIAL | C-05 Settings contact/shipping unit+architecture PASS (BE 24/24 isolated; Parent reconfirm 2026-09-09 BE contact-phone 8/8 + FE 6/6). Brand Collab fulfillment does **not** read `CreatorShippingAddress`; it stores Brand-entered evidence. Collab `POST creator/shipping-address` is a second writer. C-05 P2 forbids Collaboration business deps. Cross-module *consumption* not proven; not a Brand Payouts pull. | Settings half proven; consumption not in tree |
+| INV-09 | PASS classified | Settings contact proven. Leftover collab shipping writer `410`. C-04 destination snapshot. Parent 2026-09-11 16:50: FE `c04-frontend` **6/6**. |
 | INV-10 | PARTIAL | Postmark OTP template live send **PASS** 2026-09-10 (Parent-confirmed inboxes). RUN 4/postgres “send failed” was invalid TemplateId `1` (422/1101); off-prod OTP still issued from log. | Live IG/Razorpay NOT_RUN |
 | INV-11 | PARTIAL | Browser Brand Home fail-closed for Creator | |
 | INV-12 | PASS (unit + postgres 11/11 + browser) | `brand-workspace-authorization.postgres.test.ts` on `bs07_freeze_auth` | |
