@@ -32,5 +32,7 @@ describe("Creator Home frontend boundary", () => {
     expect(css).toContain("env(safe-area-inset-bottom)");
     expect(css).toContain("@media (max-width: 767px)");
     expect(css).not.toContain("100vw");
+    expect(css).toContain("padding: var(--space-lg)");
+    expect(css).toContain("padding: var(--space-md) var(--space-sm)");
   });
 });

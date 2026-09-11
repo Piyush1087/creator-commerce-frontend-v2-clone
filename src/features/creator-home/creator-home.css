@@ -4,6 +4,10 @@
   min-width: 0;
   display: grid;
   gap: var(--space-lg);
+  box-sizing: border-box;
+  /* Flush shell has no inset. Match Brand Home canvas + Aurora page padding:
+     desktop --space-lg (32px), mobile --space-md / --space-sm (24px / 16px). */
+  padding: var(--space-lg);
   padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
 }
 .creator-home-header {
@@ -136,9 +140,10 @@
 }
 @media (max-width: 767px) {
   .creator-home {
-    padding-bottom: calc(
-      var(--height-bottom-nav) + var(--space-xl) + env(safe-area-inset-bottom)
-    );
+    padding: var(--space-md) var(--space-sm)
+      calc(
+        var(--height-bottom-nav) + var(--space-xl) + env(safe-area-inset-bottom)
+      );
   }
   .creator-home-header {
     display: grid;
