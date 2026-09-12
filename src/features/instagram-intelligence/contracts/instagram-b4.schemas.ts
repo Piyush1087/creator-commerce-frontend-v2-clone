@@ -407,6 +407,118 @@ export const InstagramRefreshErrorSchema = z
   })
   .strict();
 
+const boundedSemanticValue = z
+  .object({
+    semanticId: z.string().min(1),
+    label: z.string().min(1),
+    confidence: z.enum(["LOW", "MEDIUM"]),
+    evidenceRefs: evidenceRefs.min(1),
+  })
+  .strict();
+
+const presence = z
+  .object({
+    state: z.enum(["PRESENT", "POSSIBLE", "NOT_OBSERVED", "UNKNOWN"]),
+    reasonCodes: z.array(reasonCode),
+    evidenceRefs,
+  })
+  .strict();
+
+export const InstagramMediaDetailSchema = z
+  .object({
+    contractVersion: z.literal("1.0"),
+    mediaId: z.string().min(1),
+    mediaType: z.enum(["IMAGE", "CAROUSEL_ALBUM", "REELS", "VIDEO"]),
+    publishedAt: InstagramSourceValueSchema,
+    permalink: InstagramSourceValueSchema,
+    caption: InstagramSourceValueSchema,
+    hashtags: z.array(z.string().min(1)),
+    mentions: z.array(z.string().min(1)),
+    themes: z.array(boundedSemanticValue),
+    captionPatterns: z.array(boundedSemanticValue),
+    creativeStructures: z.array(boundedSemanticValue),
+    visualExecutions: z.array(boundedSemanticValue),
+    creatorPresence: presence,
+    offeringPresence: presence
+      .extend({
+        canonicalOfferingId: z.string().uuid().nullable(),
+        canonicalOfferingMatch: z.enum(["EXACT_PREEXISTING", "NONE"]),
+      })
+      .superRefine((value, context) => {
+        if (value.state !== "PRESENT" && value.canonicalOfferingId !== null)
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["canonicalOfferingId"],
+            message: "Only observed presence may carry an exact identity",
+          });
+        if (
+          (value.canonicalOfferingMatch === "EXACT_PREEXISTING") !==
+          (value.canonicalOfferingId !== null)
+        )
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["canonicalOfferingMatch"],
+            message: "Exact identity fields must agree",
+          });
+      }),
+    likelyCollab: InstagramLikelyCollabSchema,
+    metrics: z.array(InstagramObservedMetricSchema),
+    inspection: z
+      .object({
+        depth: z.enum([
+          "LIGHT_ONLY",
+          "DEEP_SELECTED",
+          "COVER_ONLY",
+          "PARTIAL_DEEP",
+          "NOT_INSPECTED",
+        ]),
+        selectedForDeepAnalysis: z.boolean(),
+        selectionReasons: z.array(
+          z.enum([
+            "RECENT_FORMAT_COVERAGE",
+            "TOP_PERFORMANCE_BAND",
+            "MIDDLE_PERFORMANCE_BAND",
+            "LOW_PERFORMANCE_BAND",
+            "LIKELY_CREATOR_CUE",
+            "BRAND_ONLY_BASELINE_CUE",
+            "OFFERING_DIVERSITY_CUE",
+            "THEME_DIVERSITY_CUE",
+            "TIME_BUCKET_COVERAGE",
+            "STABLE_FILL",
+          ]),
+        ),
+        inspectedChildCount: z.number().int().nonnegative(),
+        availableChildCount: z.number().int().nonnegative(),
+        inspectedFrameCount: z.number().int().nonnegative(),
+        reasonCodes: z.array(reasonCode),
+      })
+      .strict(),
+    coverage: z
+      .object({
+        sourceEvidenceCount: z.number().int().positive(),
+        limitations: z.array(z.string().min(1)),
+      })
+      .strict(),
+    evidence: z
+      .object({
+        refs: evidenceRefs.min(1),
+        capturedAt: timestamp,
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      value.inspection.inspectedChildCount >
+      value.inspection.availableChildCount
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["inspection", "inspectedChildCount"],
+        message: "Inspected children cannot exceed available children",
+      });
+  });
+
 export type InstagramB4Response = z.infer<typeof InstagramB4ResponseSchema>;
 export type InstagramIntelligenceObject = z.infer<
   typeof InstagramIntelligenceObjectSchema
@@ -415,3 +527,4 @@ export type InstagramSourceValue = z.infer<typeof InstagramSourceValueSchema>;
 export type InstagramRefreshResponse = z.infer<
   typeof InstagramRefreshResponseSchema
 >;
+export type InstagramMediaDetail = z.infer<typeof InstagramMediaDetailSchema>;

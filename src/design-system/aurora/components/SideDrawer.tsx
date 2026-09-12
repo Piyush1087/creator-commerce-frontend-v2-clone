@@ -12,6 +12,9 @@ type SideDrawerProps = PropsWithChildren<{
   width?: string;
   closeLabel?: string;
   initialFocusRef?: RefObject<HTMLElement>;
+  restoreFocusRef?: RefObject<HTMLElement>;
+  className?: string;
+  contentClassName?: string;
 }>;
 
 export function SideDrawer({
@@ -24,9 +27,12 @@ export function SideDrawer({
   width = "600px",
   closeLabel,
   initialFocusRef,
+  restoreFocusRef,
+  className,
+  contentClassName,
 }: SideDrawerProps) {
   const titleId = useId();
-  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const onCloseRef = useRef(onClose);
 
@@ -38,6 +44,7 @@ export function SideDrawer({
     if (!isOpen) return;
     const previousOverflow = document.body.style.overflow;
     const previousFocus = document.activeElement;
+    const requestedRestoreTarget = restoreFocusRef?.current;
     const background = Array.from(document.body.children)
       .filter(
         (element): element is HTMLElement =>
@@ -81,17 +88,19 @@ export function SideDrawer({
       background.forEach(({ element, inert }) => {
         element.inert = inert;
       });
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+      const restoreTarget = requestedRestoreTarget ?? previousFocus;
+      if (restoreTarget instanceof HTMLElement && restoreTarget.isConnected)
+        restoreTarget.focus({ preventScroll: true });
     };
-  }, [isOpen, initialFocusRef]);
+  }, [isOpen, initialFocusRef, restoreFocusRef]);
 
   if (!isOpen) return null;
 
   return createPortal(
     <div className="aurora-sidedrawer-overlay" onClick={onClose}>
-      <aside
+      <div
         ref={drawerRef}
-        className="aurora-sidedrawer"
+        className={`aurora-sidedrawer${className ? ` ${className}` : ""}`}
         style={{ width }}
         role="dialog"
         aria-modal="true"
@@ -118,12 +127,17 @@ export function SideDrawer({
           </button>
         </header>
 
-        <main className="aurora-sidedrawer__content">{children}</main>
+        <div
+          className={`aurora-sidedrawer__content${contentClassName ? ` ${contentClassName}` : ""}`}
+          tabIndex={0}
+        >
+          {children}
+        </div>
 
         {footer && (
           <footer className="aurora-sidedrawer__footer">{footer}</footer>
         )}
-      </aside>
+      </div>
     </div>,
     document.body,
   );

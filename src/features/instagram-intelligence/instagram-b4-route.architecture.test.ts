@@ -22,7 +22,7 @@ describe("Instagram Intelligence E2/E3 authenticated workspace boundary", () => 
     expect(shell).not.toContain("brandCentreInstagram");
   });
 
-  it("keeps hidden Brand and E4 detail surfaces outside the mounted workspace", () => {
+  it("keeps hidden Brand and unsafe detail fields outside the mounted workspace", () => {
     const workspace = readFileSync(
       join(
         process.cwd(),
@@ -45,11 +45,11 @@ describe("Instagram Intelligence E2/E3 authenticated workspace boundary", () => 
       "latest-successful-by-source",
       "merge/ignore",
       "AI Match",
-      "View details",
+      "raw provider",
     ]) {
       expect(workspace).not.toContain(forbidden);
     }
-    expect(client).not.toContain("/media/");
+    expect(client).toContain("/media");
     expect(workspace).not.toContain('role="tab"');
     expect(workspace).not.toContain('role="tablist"');
   });

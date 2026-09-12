@@ -3,15 +3,21 @@ import { authenticatedFetch } from "../../shared/api/authenticated-fetch";
 import { env } from "../../shared/config/env";
 import {
   getInstagramB4,
+  getInstagramMediaDetail,
   INSTAGRAM_B4_PATH,
+  INSTAGRAM_MEDIA_PATH,
   INSTAGRAM_REFRESH_PATH,
   refreshInstagram,
 } from "./api/instagram-b4-client";
 import {
   InstagramB4ResponseSchema,
+  InstagramMediaDetailSchema,
   InstagramSourceValueSchema,
 } from "./contracts/instagram-b4.schemas";
-import { instagramB4Fixture } from "./testing/instagram-b4-fixture";
+import {
+  instagramB4Fixture,
+  instagramMediaDetailFixture,
+} from "./testing/instagram-b4-fixture";
 
 vi.mock("../../shared/api/authenticated-fetch", () => ({
   authenticatedFetch: vi.fn(),
@@ -126,5 +132,92 @@ describe("Instagram Intelligence E2/E3 consumer contract", () => {
     );
     fetchMock.mockResolvedValueOnce(new Response("{}", { status: 403 }));
     await expect(getInstagramB4()).rejects.toThrow("temporarily unavailable");
+  });
+
+  it("strictly parses the 1.0 media detail while preserving zero and absence", () => {
+    const detail = InstagramMediaDetailSchema.parse(
+      instagramMediaDetailFixture(),
+    );
+    expect(detail.metrics[0]).toMatchObject({
+      availability: "OBSERVED_ZERO",
+      value: 0,
+    });
+    expect(detail.metrics[1]).toMatchObject({ availability: "UNAVAILABLE" });
+    expect(
+      InstagramMediaDetailSchema.safeParse({
+        ...detail,
+        contractVersion: "2.0",
+      }).success,
+    ).toBe(false);
+    expect(
+      InstagramMediaDetailSchema.safeParse({ ...detail, rawProvider: {} })
+        .success,
+    ).toBe(false);
+    expect(
+      InstagramMediaDetailSchema.safeParse({
+        ...detail,
+        inspection: {
+          ...detail.inspection,
+          depth: "FULL_VIDEO_ANALYSIS",
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("uses one authenticated, encoded media-detail GET and supports cancellation", async () => {
+    const detail = instagramMediaDetailFixture();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(detail), { status: 200 }),
+    );
+    const controller = new AbortController();
+    await expect(
+      getInstagramMediaDetail("post/with unsafe space", controller.signal),
+    ).resolves.toEqual(detail);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${env.apiUrl}${INSTAGRAM_MEDIA_PATH}/post%2Fwith%20unsafe%20space`,
+      {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      },
+    );
+  });
+
+  it.each([
+    [401, "UNAUTHORIZED"],
+    [403, "FORBIDDEN"],
+    [404, "NOT_FOUND"],
+    [409, "STALE_OR_CHANGED_GENERATION"],
+    [410, "REMOVED_AFTER_REFRESH"],
+    [503, "TRANSIENT_ERROR"],
+  ] as const)(
+    "maps media-detail HTTP %s without exposing response content",
+    async (status, kind) => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "sensitive server detail" }), {
+          status,
+        }),
+      );
+      await expect(
+        getInstagramMediaDetail("synthetic-media"),
+      ).rejects.toMatchObject({ kind });
+    },
+  );
+
+  it("fails closed on malformed media-detail JSON or shape", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("not-json", { status: 200 }));
+    await expect(
+      getInstagramMediaDetail("synthetic-media"),
+    ).rejects.toMatchObject({
+      kind: "INVALID_RESPONSE",
+    });
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ contractVersion: "1.0" }), { status: 200 }),
+    );
+    await expect(
+      getInstagramMediaDetail("synthetic-media"),
+    ).rejects.toMatchObject({
+      kind: "INVALID_RESPONSE",
+    });
   });
 });

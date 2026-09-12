@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
 import { Badge, Button } from "../../../design-system/aurora";
 import type {
   InstagramB4Response,
@@ -12,6 +13,12 @@ type Props = {
   announcement: string;
   cooldownEndsAt: string | null;
   onRefresh: () => Promise<void>;
+  onOpenMediaDetail: (mediaId: string) => void;
+  registerMediaAction: (
+    mediaId: string,
+    element: HTMLButtonElement | null,
+  ) => void;
+  representativePostsHeadingRef: RefObject<HTMLHeadingElement>;
 };
 
 const connectionCopy: Record<
@@ -163,6 +170,9 @@ export function InstagramWorkspace({
   announcement,
   cooldownEndsAt,
   onRefresh,
+  onOpenMediaDetail,
+  registerMediaAction,
+  representativePostsHeadingRef,
 }: Props) {
   const announcementRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
@@ -515,7 +525,13 @@ export function InstagramWorkspace({
         <p className="instagram-workspace__section-number">7</p>
         <div className="instagram-workspace__section-heading">
           <div>
-            <h2 id="instagram-posts-title">Representative posts</h2>
+            <h2
+              ref={representativePostsHeadingRef}
+              id="instagram-posts-title"
+              tabIndex={-1}
+            >
+              Representative posts
+            </h2>
             <p>Bounded post summaries supporting the current understanding.</p>
           </div>
         </div>
@@ -551,6 +567,23 @@ export function InstagramWorkspace({
                       </div>
                     ))}
                   </dl>
+                  <Button
+                    ref={(element) =>
+                      registerMediaAction(media.mediaId, element)
+                    }
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    aria-label={`View post details for ${label(media.mediaType)} published ${
+                      media.publishedAt.state === "AVAILABLE" &&
+                      typeof media.publishedAt.value === "string"
+                        ? formatDate(media.publishedAt.value)
+                        : "on an unavailable date"
+                    }`}
+                    onClick={() => onOpenMediaDetail(media.mediaId)}
+                  >
+                    View post details
+                  </Button>
                 </div>
               </li>
             ))}

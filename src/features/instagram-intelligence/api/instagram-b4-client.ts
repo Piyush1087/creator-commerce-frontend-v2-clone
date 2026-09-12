@@ -2,14 +2,67 @@ import { authenticatedFetch } from "../../../shared/api/authenticated-fetch";
 import { env } from "../../../shared/config/env";
 import {
   InstagramB4ResponseSchema,
+  InstagramMediaDetailSchema,
   InstagramRefreshErrorSchema,
   InstagramRefreshResponseSchema,
   type InstagramB4Response,
+  type InstagramMediaDetail,
   type InstagramRefreshResponse,
 } from "../contracts/instagram-b4.schemas";
 
 export const INSTAGRAM_B4_PATH = "/api/v1/brand-centre/instagram";
 export const INSTAGRAM_REFRESH_PATH = `${INSTAGRAM_B4_PATH}/refresh`;
+export const INSTAGRAM_MEDIA_PATH = `${INSTAGRAM_B4_PATH}/media`;
+
+export type InstagramMediaDetailErrorKind =
+  | "INVALID_RESPONSE"
+  | "NOT_FOUND"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "STALE_OR_CHANGED_GENERATION"
+  | "REMOVED_AFTER_REFRESH"
+  | "TRANSIENT_ERROR";
+
+export class InstagramMediaDetailError extends Error {
+  constructor(readonly kind: InstagramMediaDetailErrorKind) {
+    super("Instagram post detail is unavailable.");
+    this.name = "InstagramMediaDetailError";
+  }
+}
+
+export async function getInstagramMediaDetail(
+  mediaId: string,
+  signal?: AbortSignal,
+): Promise<InstagramMediaDetail> {
+  const response = await authenticatedFetch(
+    `${env.apiUrl}${INSTAGRAM_MEDIA_PATH}/${encodeURIComponent(mediaId)}`,
+    { method: "GET", headers: { Accept: "application/json" }, signal },
+  );
+  if (!response.ok) {
+    const kind: InstagramMediaDetailErrorKind =
+      response.status === 401
+        ? "UNAUTHORIZED"
+        : response.status === 403
+          ? "FORBIDDEN"
+          : response.status === 404
+            ? "NOT_FOUND"
+            : response.status === 409
+              ? "STALE_OR_CHANGED_GENERATION"
+              : response.status === 410
+                ? "REMOVED_AFTER_REFRESH"
+                : "TRANSIENT_ERROR";
+    throw new InstagramMediaDetailError(kind);
+  }
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new InstagramMediaDetailError("INVALID_RESPONSE");
+  }
+  const parsed = InstagramMediaDetailSchema.safeParse(body);
+  if (!parsed.success) throw new InstagramMediaDetailError("INVALID_RESPONSE");
+  return parsed.data;
+}
 
 export class InstagramRefreshError extends Error {
   constructor(

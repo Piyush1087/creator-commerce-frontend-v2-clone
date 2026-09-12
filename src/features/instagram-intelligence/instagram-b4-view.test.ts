@@ -15,6 +15,9 @@ function renderWorkspace(overrides = {}) {
       announcement: "",
       cooldownEndsAt: null,
       onRefresh: vi.fn().mockResolvedValue(undefined),
+      onOpenMediaDetail: vi.fn(),
+      registerMediaAction: vi.fn(),
+      representativePostsHeadingRef: { current: null },
       ...overrides,
     }),
   );
@@ -101,6 +104,9 @@ describe("Instagram Intelligence E2/E3 workspace", () => {
         announcement: "",
         cooldownEndsAt: null,
         onRefresh: vi.fn(),
+        onOpenMediaDetail: vi.fn(),
+        registerMediaAction: vi.fn(),
+        representativePostsHeadingRef: { current: null },
       }),
     );
     expect(
@@ -132,12 +138,18 @@ describe("Instagram Intelligence E2/E3 workspace", () => {
     expect(screen.queryByText(/^0$/)).toBeNull();
   });
 
-  it("keeps representative posts bounded with no E4 detail interaction", () => {
-    renderWorkspace();
+  it("adds one bounded, distinguishable representative-post detail action", () => {
+    const openDetail = vi.fn();
+    renderWorkspace({ onOpenMediaDetail: openDetail });
     expect(
       screen.getByRole("heading", { name: "Representative posts" }),
     ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /view details/i })).toBeNull();
+    const action = screen.getByRole("button", {
+      name: /View post details for Reels published/i,
+    });
+    expect(action.textContent).toBe("View post details");
+    fireEvent.click(action);
+    expect(openDetail).toHaveBeenCalledWith("synthetic-media-1");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText("synthetic-media-1")).toBeNull();
   });

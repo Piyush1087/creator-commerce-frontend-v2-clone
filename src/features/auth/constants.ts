@@ -59,10 +59,7 @@ export const PUBLIC_ROUTES = {
   brandLanding: "/brand/:slug",
 } as const;
 
-function withOptionalInvite(
-  path: string,
-  inviteToken?: string | null,
-): string {
+function withOptionalInvite(path: string, inviteToken?: string | null): string {
   if (!inviteToken) return path;
   return `${path}?invite_token=${encodeURIComponent(inviteToken)}`;
 }
@@ -87,6 +84,10 @@ export function creatorOpportunityPath(
     `${AUTH_ROUTES.creatorOpportunities}/${encodeURIComponent(campaignId)}`,
     inviteToken,
   );
+}
+
+export function instagramMediaDetailPath(mediaId: string): string {
+  return `${AUTH_ROUTES.brandCentreInstagram}/media/${encodeURIComponent(mediaId)}`;
 }
 
 export function getHomeRouteForRole(role: UserRole | null): string {

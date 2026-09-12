@@ -1,6 +1,8 @@
 import {
   InstagramB4ResponseSchema,
+  InstagramMediaDetailSchema,
   type InstagramB4Response,
+  type InstagramMediaDetail,
 } from "../contracts/instagram-b4.schemas";
 
 const window = {
@@ -282,6 +284,116 @@ export function instagramB4Fixture(): InstagramB4Response {
     actions: {
       manualRefresh: { state: "ALLOWED", cooldownEndsAt: null },
       settingsRecoveryPath: "/brand/settings/integrations?tab=instagram",
+    },
+  });
+}
+
+export function instagramMediaDetailFixture(): InstagramMediaDetail {
+  return InstagramMediaDetailSchema.parse({
+    contractVersion: "1.0",
+    mediaId: "synthetic-media-1",
+    mediaType: "CAROUSEL_ALBUM",
+    publishedAt: available("2026-09-09T09:00:00.000Z"),
+    permalink: available("https://www.instagram.com/p/synthetic-post/"),
+    caption: available(
+      "A practical product demonstration <script>alert(1)</script>",
+    ),
+    hashtags: ["#PracticalDemo"],
+    mentions: ["@example_creator"],
+    themes: [
+      {
+        semanticId: "theme-1",
+        label: "Product education",
+        confidence: "MEDIUM",
+        evidenceRefs: ["synthetic-support-1"],
+      },
+    ],
+    captionPatterns: [
+      {
+        semanticId: "caption-1",
+        label: "Benefit-led opening",
+        confidence: "LOW",
+        evidenceRefs: ["synthetic-support-1"],
+      },
+    ],
+    creativeStructures: [
+      {
+        semanticId: "structure-1",
+        label: "Demonstration",
+        confidence: "MEDIUM",
+        evidenceRefs: ["synthetic-support-1"],
+      },
+    ],
+    visualExecutions: [
+      {
+        semanticId: "visual-1",
+        label: "Product close-up",
+        confidence: "LOW",
+        evidenceRefs: ["synthetic-support-1"],
+      },
+    ],
+    creatorPresence: {
+      state: "POSSIBLE",
+      reasonCodes: [],
+      evidenceRefs: ["synthetic-support-1"],
+    },
+    offeringPresence: {
+      state: "PRESENT",
+      canonicalOfferingId: "11111111-1111-4111-8111-111111111111",
+      canonicalOfferingMatch: "EXACT_PREEXISTING",
+      reasonCodes: [],
+      evidenceRefs: ["synthetic-support-1"],
+    },
+    likelyCollab: {
+      state: "POSSIBLE_COLLAB",
+      confidence: "LOW",
+      signalClasses: ["MENTION_ONLY"],
+      canonicalCreatorId: null,
+      canonicalCreatorMatch: "NONE",
+      canonicalCollaborationId: null,
+      canonicalCollaborationMatch: "NONE",
+      reasonCodes: [],
+      evidenceRefs: ["synthetic-support-1"],
+      negativeEvidence: {
+        captionInspected: true,
+        requiredSelectedMediaInspected: true,
+      },
+    },
+    metrics: [
+      {
+        availability: "OBSERVED_ZERO",
+        metricId: "comments",
+        value: 0,
+        unit: "COUNT",
+        denominator: {
+          state: "EXPLICIT_NULL",
+          reasonCode: "INTENTIONAL_ABSENCE",
+        },
+        evidenceRefs: ["synthetic-support-1"],
+      },
+      {
+        availability: "UNAVAILABLE",
+        metricId: "shares",
+        reasonCode: "METRIC_NOT_RETURNED",
+        evidenceRefs: [],
+      },
+    ],
+    inspection: {
+      depth: "PARTIAL_DEEP",
+      selectedForDeepAnalysis: true,
+      selectionReasons: ["LIKELY_CREATOR_CUE"],
+      inspectedChildCount: 2,
+      availableChildCount: 3,
+      inspectedFrameCount: 0,
+      reasonCodes: ["CAROUSEL_CHILD_UNAVAILABLE"],
+    },
+    coverage: {
+      sourceEvidenceCount: 1,
+      limitations: ["CAROUSEL_CHILD_UNAVAILABLE"],
+    },
+    evidence: {
+      refs: ["synthetic-support-1"],
+      capturedAt: "2026-09-10T09:00:00.000Z",
     },
   });
 }
