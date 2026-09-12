@@ -171,8 +171,6 @@ BE lint FAIL 712 prettier  PREEXISTING_ACCEPTED_DEBT
 postgres INV-01/02/03/04/12/06/07 PASS (INV-03 29/29 RUN 7)
 FE npm ci clone typecheck/lint/build PASS
 BE npm ci clone validate PASS; build requires prisma generate
-full FE npm test RUN 5 FAIL 3/1060; named files closed (auth static RUN 12 isolated PASS; chat RUN 9; billing types amended). Full farm not re-run
-full BE npm test FAIL 18/7170 classified; CORS/brief-pack/Gatekeeper isolated PASS (farm load)
 ```
 
 ---

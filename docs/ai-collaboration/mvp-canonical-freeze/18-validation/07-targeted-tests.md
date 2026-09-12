@@ -55,7 +55,7 @@ Test Files  6 passed (6)
 Tests       51 passed (51)
 ```
 
-Full `npm test` suites were not re-run (prior vitest hang risk). Module acceptance suites: `NOT_RE_RUN` on freeze tip.
+Module-wise suites for this amendment are recorded in backend-v2 `07-targeted-tests.md`. Do not treat a whole-repo run as remaining work.
 
 ## Parent reconfirm — C-04 frontend destination — 2026-09-11 16:50
 

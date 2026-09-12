@@ -46,8 +46,10 @@ describe("C-05 frontend convergence architecture", () => {
   it("hides Creator Center from the freeze shell and does not treat it as Home", () => {
     const routes = read("src/routes/app-routes.tsx");
     const sidebar = read("src/layouts/app-shell/sidebar-items.ts");
-    expect(routes).toContain("CreatorWorkspaceEntryPage");
+    expect(routes).toContain("CreatorHomePage");
+    expect(routes).not.toContain("CreatorWorkspaceEntryPage");
     expect(routes).toContain("AUTH_ROUTES.creatorCentre");
+    expect(routes).toContain("to={AUTH_ROUTES.creatorHome}");
     expect(sidebar).not.toContain('label: "Creator Center"');
     expect(routes).not.toMatch(
       /path=\{AUTH_ROUTES\.creatorHome\}\s+element=\{<CreatorCentrePage/,

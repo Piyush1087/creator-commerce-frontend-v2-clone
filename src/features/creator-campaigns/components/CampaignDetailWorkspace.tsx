@@ -132,7 +132,7 @@ export function CampaignDetailWorkspace({
   const handleShareBrandPage = async () => {
     const slug = campaign.brand_slug;
     if (slug) {
-      const url = `${window.location.origin}${PUBLIC_ROUTES.brandLanding.replace(":slug", slug)}`;
+      const url = `${window.location.origin}${publicBrandPath(slug)}`;
       await navigator.clipboard.writeText(url);
       setShareMessage("Brand collaboration page link copied.");
       return;

@@ -28,8 +28,11 @@ vi.mock("../../layouts/app-shell/AppShellLayout", () => ({
 vi.mock("../../pages/auth/login-page", () => ({
   LoginPage: () => "Shared login",
 }));
+vi.mock("../../pages/creator/centre/creator-home-page", () => ({
+  CreatorHomePage: () => "C-02A Creator Home",
+}));
 vi.mock("../../pages/creator/centre/creator-centre-page", () => ({
-  CreatorCentrePage: () => "Creator Home",
+  CreatorCentrePage: () => "Creator Centre product",
 }));
 vi.mock("../../pages/creator/marketplace/creator-marketplace-page", () => ({
   CreatorMarketplacePage: () => "Creator Marketplace",
@@ -224,7 +227,7 @@ describe("Creator Settings guard-scope correction", () => {
     expect(await screen.findByText("Creator Settings Account")).toBeTruthy();
   });
 
-  it("redirects Creator Center to the deferred workspace entry", async () => {
+  it("redirects Creator Center to C-02A Home, not Centre product", async () => {
     mocks.fetchState.mockResolvedValue({
       accountContext: "CREATOR_READY",
       onboardingStatus: "COMPLETE",
@@ -238,8 +241,10 @@ describe("Creator Settings guard-scope correction", () => {
       },
     });
     renderPath(AUTH_ROUTES.creatorCentre);
-    expect(await screen.findByText("Creator Home is deferred")).toBeTruthy();
+    expect(await screen.findByText("C-02A Creator Home")).toBeTruthy();
+    expect(screen.queryByText("Creator Centre product")).toBeNull();
     expect(screen.queryByText("Creator Media Kit")).toBeNull();
+    expect(screen.queryByText("Creator Home is deferred")).toBeNull();
   });
 
   it("mounts the Team-admission and OAuth callback compatibility routes", async () => {
