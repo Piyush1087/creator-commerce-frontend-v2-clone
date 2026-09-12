@@ -19,14 +19,14 @@ Do not declare `PASS — MVP_CANONICAL_APPLICATION_FREEZE_V1` until remaining ga
 | fresh disposable database migration | PASS 87/87 | `thecreatorshop` not touched | `08-fresh-db-migrate.md` |
 | Prisma/schema validation | PASS | | `02-prisma-validate.md` |
 | backend boot + health | PASS on freeze DB | | `09-backend-boot-health.md` |
-| frontend ↔ backend smoke | PARTIAL PASS | OTP + shell hide + Brand Home + Creator Campaigns/Settings | `12-frontend-backend-smoke.md` |
+| frontend ↔ backend smoke | PASS | Parent confirm 2026-09-11 (C-02A Home, not deferred) | `12-frontend-backend-smoke.md` |
 | auth/session regression | PASS postgres INV-01 | plus static/unit | `13-postgres-invariants.md` |
 | RBAC / actor-subject / cross-tenant | PASS postgres INV-04 + INV-12 | | `13-postgres-invariants.md` |
 | responsive shell/navigation smoke | PASS | RUN 8 Parent confirm: UCE cards + Creator viewport | `16-viewport-smoke.md` |
 | provider-unavailable recovery | PARTIAL | Postmark OTP live send PASS 2026-09-10; IG/Razorpay NOT_RUN | `12-frontend-backend-smoke.md` |
 | compiled/deployable artifact | PASS | FE `dist/`, BE `dist/main.js` | `03` + `05` |
 | clean worktrees | NOT_CLAIMED | do not commit `tmp-*` | |
-| local/remote checkpoint equality | Parent asked origin+piyush push of RUN 12 | freeze branch; not development/main |
+| local/remote checkpoint equality | dual-push product pair BE `bae19de` / FE `628eb6d`; package BE `47011cad` / FE `bc3f251` | freeze branch; not development/main |
 
 ## Failure classification vocabulary
 

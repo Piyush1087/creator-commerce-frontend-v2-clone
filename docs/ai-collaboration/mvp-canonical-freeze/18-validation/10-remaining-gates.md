@@ -16,7 +16,7 @@
 | frontend lint | PASS | RUN 4 + clone |
 | backend lint | PASS classified | prettier 712 **accepted** this freeze (do not `--fix`). Canonical: backend-v2 `10-remaining-gates.md` |
 | clean worktrees | NOT_CLAIMED | do not commit `tmp-*` / OTP logs |
-| local/remote checkpoint equality | dual-push product pair BE `bae19de` / FE `628eb6d`; freeze branch only; not `development`/`main` |
+| local/remote checkpoint equality | dual-push product pair BE `bae19de` / FE `628eb6d`; amendment package BE `47011cad` / FE `bc3f251`; freeze branch only; not `development`/`main` |
 
 `PASS — MVP_CANONICAL_APPLICATION_FREEZE_V1` is still forbidden.
 

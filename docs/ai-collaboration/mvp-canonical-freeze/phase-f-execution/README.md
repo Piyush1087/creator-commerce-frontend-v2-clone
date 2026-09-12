@@ -1,6 +1,6 @@
 # Phase F — Execution policy and ledger (§13)
 
-**Status:** ACTIVE — ledger current through RUN 12 authAuthorizationHeader cutover; **not** freeze PASS  
+**Status:** ACTIVE — ledger current through RUN 15 (amendment package for Parent review); **not** freeze PASS  
 **Date:** 2026-09-08; ledger audit 2026-09-10
 
 ## Files in this folder
@@ -21,8 +21,8 @@ AWS is not started. `development`/`main` are not updated.
 | RUN 2 canonical convergence | **Skipped as a pull** — IN already in lineage; RUN 2 is docs |
 | RUN 3 whole-app acceptance | Split across RUN 3–5 (build/migrate; lint/invariants/smoke; postgres/npm ci/full test) |
 | RUN 4 freeze preparation | Artifact written in RUN 4; still not PASS |
-| Ledger + checkpoint SHA every material run | YES RUN 1–9 and RUN 11–12; evidence SHAs recorded; ledger-record commit sits on top |
-| Runner does not reconcile conflicting accepted sources | YES — C-02A / C-04 / Payouts stay deferred |
+| Ledger + checkpoint SHA every material run | YES RUN 1–15; product pair BE `bae19de` / FE `628eb6d`; package BE `47011cad` / FE `bc3f251` |
+| Runner does not reconcile conflicting accepted sources | YES — C-06 stays OUT; C-02A / C-04 / Payouts pulled this amendment |
 
 ## RUN 6 (2026-09-09)
 
@@ -48,9 +48,17 @@ Local Postmark OTP template live send **PASS** (Parent-confirmed inboxes). Prior
 
 Brand Centre / UCE clients switched to `authenticatedFetch`; `authAuthorizationHeader` removed. Isolated FE vitest **5 files / 24 passed** including `auth-security-static.test.ts`. Named RUN 5 FE files closed. Evidence FE `8c1362af…` / BE `eea4e716…`. Not freeze PASS.
 
+## RUN 13 (2026-09-10 / 2026-09-11)
+
+Converge C-04 / C-02A / Brand Payouts v1. Canonical writer proof lives on backend-v2. Not freeze PASS.
+
+## RUN 14 (2026-09-11)
+
+INV-09 destination consumption PASS classified. Product pair BE `bae19de…` / FE `628eb6d…`. Not freeze PASS.
+
 ## RUN 15 (2026-09-12)
 
-Amendment package for Parent review (module-wise gates, C-02A Home tests). Canonical leftover-schema register is on backend-v2. Product pair unchanged. Not freeze PASS.
+Amendment package for Parent review (module-wise remaining gates, C-02A Home tests). Canonical leftover-schema register is on backend-v2. Product pair unchanged. Package BE `47011cad…` / FE `bc3f251…`. Not freeze PASS.
 
 ## Leftovers
 
