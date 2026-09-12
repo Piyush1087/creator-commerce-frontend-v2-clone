@@ -106,6 +106,9 @@ async function axe(page) {
     lesser: result.violations.filter((item) =>
       ["minor", "moderate"].includes(item.impact ?? ""),
     ).length,
+    lesserIds: result.violations
+      .filter((item) => ["minor", "moderate"].includes(item.impact ?? ""))
+      .map((item) => item.id),
     blockerIds: result.violations
       .filter((item) => ["serious", "critical"].includes(item.impact ?? ""))
       .flatMap((item) =>
