@@ -1,30 +1,85 @@
 import { z } from "zod";
 
-const processing = z
+const sourceValue = z.discriminatedUnion("state", [
+  z.object({ state: z.literal("AVAILABLE"), value: z.unknown() }).strict(),
+  z
+    .object({ state: z.literal("EXPLICIT_NULL"), reasonCode: z.string() })
+    .strict(),
+  z.object({ state: z.literal("UNKNOWN"), reasonCode: z.string() }).strict(),
+  z
+    .object({ state: z.literal("NOT_INSPECTED"), reasonCode: z.string() })
+    .strict(),
+  z
+    .object({
+      state: z.literal("INTENTIONALLY_ABSENT"),
+      reasonCode: z.string(),
+    })
+    .strict(),
+]);
+
+const coverage = z
   .object({
-    state: z.enum(["NOT_RUN", "HEALTHY", "DEGRADED", "IN_PROGRESS"]),
-    reasonCode: z.string().min(1).nullable(),
+    state: z.enum(["COMPLETE", "PARTIAL", "UNAVAILABLE"]),
+    eligibleCount: z.number().int().nonnegative(),
+    observedCount: z.number().int().nonnegative(),
+    coveragePercent: z.number().min(0).max(100).nullable(),
+    reasonCodes: z.array(z.string()),
+  })
+  .strict();
+
+const intelligenceObject = z
+  .object({
+    semanticId: z.enum([
+      "instagram_content_behavior",
+      "instagram_audience_profile",
+      "instagram_organic_performance_profile",
+    ]),
+    objectContractVersion: z.literal("1.0"),
+    outputContractVersion: z.literal("1.0"),
+    sourceScope: z.literal("INSTAGRAM_OWNED"),
+    state: z.enum(["NO_CURRENT", "PARTIAL_CURRENT", "CURRENT"]),
+    readiness: z.enum(["NOT_READY", "PARTIAL", "READY"]),
+    freshness: z.enum(["UNKNOWN", "CURRENT", "STALE"]),
+    currentPreserved: z.boolean(),
+    generatedAt: z.string().datetime().nullable(),
+    window: z
+      .object({
+        start: z.string().datetime(),
+        end: z.string().datetime(),
+        days: z.literal(30),
+      })
+      .strict(),
+    results: z.array(z.unknown()),
+    signals: z.array(z.unknown()),
+    learnings: z.array(z.unknown()),
+    components: z.record(sourceValue),
+    coverage,
+    evidenceRefs: z.array(z.string()),
   })
   .strict();
 
 export const InstagramB4ResponseSchema = z
   .object({
-    contractVersion: z.literal("b4-proof-1.0"),
+    contractVersion: z.literal("1.0"),
     connection: z
       .object({
         state: z.enum([
-          "CONNECTED",
-          "DEGRADED",
-          "REAUTH_REQUIRED",
           "NOT_CONNECTED",
+          "CONNECTING",
+          "CONNECTED",
+          "PARTIAL_CAPABILITY",
+          "UNKNOWN_CAPABILITY",
+          "REAUTH_REQUIRED",
+          "AUTHORIZATION_DEGRADED",
+          "SAME_ACCOUNT_RECONNECTING",
+          "DIFFERENT_ACCOUNT_CONFLICT",
+          "TRANSIENT_PROVIDER_FAILURE",
+          "DISCONNECTED",
+          "DELETE_IN_PROGRESS",
         ]),
-        account: z
-          .object({
-            providerAccountId: z.string().min(1),
-            handle: z.string().min(1).nullable(),
-          })
-          .strict()
-          .nullable(),
+        providerAccountId: z.string().nullable(),
+        handle: z.string().nullable(),
+        reasonCodes: z.array(z.string()),
       })
       .strict(),
     window: z
@@ -33,58 +88,64 @@ export const InstagramB4ResponseSchema = z
         end: z.string().datetime(),
         days: z.literal(30),
       })
-      .strict()
-      .nullable(),
-    contentBehavior: z
+      .strict(),
+    accountFacts: z.array(z.unknown()),
+    accountPerformance: z.array(z.unknown()),
+    objects: z.array(intelligenceObject).length(3),
+    representativeMedia: z.array(z.unknown()),
+    coverage: z
       .object({
-        semanticId: z.literal("instagram_content_behavior"),
-        objectContractVersion: z.literal("1.0"),
-        outputContractVersion: z.literal("1.0"),
-        objectState: z.literal("PARTIAL_CURRENT"),
-        readiness: z.literal("PARTIAL"),
-        freshness: z.enum(["CURRENT", "STALE"]),
-        authority: z.literal("CREATOR_SHOP_DERIVED"),
-        sourceClass: z.literal("INSTAGRAM_OWNED"),
-        protection: z.literal("UNPROTECTED"),
-        generatedAt: z.string().datetime(),
+        inventory: coverage,
+        metrics: coverage,
+        lightSemantic: coverage,
+        deepMultimodal: coverage,
+        audience: coverage,
+      })
+      .strict(),
+    sync: z
+      .object({
+        state: z.enum([
+          "IDLE",
+          "INITIALIZING",
+          "REFRESHING",
+          "BACKOFF",
+          "BLOCKED",
+        ]),
+        lastAttemptAt: z.string().datetime().nullable(),
+        lastSuccessAt: z.string().datetime().nullable(),
+        nextDueAt: z.string().datetime().nullable(),
         currentPreserved: z.boolean(),
-        latestProcessing: processing
-          .omit({ state: true })
-          .extend({ state: z.enum(["HEALTHY", "DEGRADED", "IN_PROGRESS"]) })
-          .strict(),
-        observedImage: z
-          .object({
-            format: z.literal("IMAGE"),
-            description: z.string().min(1).max(500),
-            visibleElements: z.array(z.string().min(1).max(120)).max(16),
-            dominantColors: z.array(z.string().min(1).max(80)).max(12),
-            composition: z.string().min(1).max(300),
-          })
-          .strict(),
-        coverage: z
-          .object({
-            eligibleCount: z.literal(1),
-            observedCount: z.literal(1),
-            deepInspectedCount: z.literal(1),
-          })
-          .strict(),
-        evidence: z
-          .object({
-            count: z.number().int().positive().max(8),
-            refs: z.array(z.string().min(1).max(255)).min(1).max(8),
-          })
-          .strict(),
-        limitation: z.literal(
-          "Not enough posts to identify patterns or learnings",
+        reasonCodes: z.array(z.string()),
+      })
+      .strict(),
+    actions: z
+      .object({
+        manualRefresh: z.union([
+          z
+            .object({
+              state: z.literal("ALLOWED"),
+              cooldownEndsAt: z.string().datetime().nullable(),
+            })
+            .strict(),
+          z
+            .object({ state: z.literal("DENIED"), reasonCode: z.string() })
+            .strict(),
+        ]),
+        settingsRecoveryPath: z.literal(
+          "/brand/settings/integrations?tab=instagram",
         ),
       })
-      .strict()
-      .nullable(),
-    latestProcessing: processing,
-    settingsRecoveryPath: z.literal(
-      "/brand/settings/integrations?tab=instagram",
-    ),
+      .strict(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (new Set(value.objects.map((item) => item.semanticId)).size !== 3) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["objects"],
+        message: "Three unique Instagram Objects are required",
+      });
+    }
+  });
 
 export type InstagramB4Response = z.infer<typeof InstagramB4ResponseSchema>;

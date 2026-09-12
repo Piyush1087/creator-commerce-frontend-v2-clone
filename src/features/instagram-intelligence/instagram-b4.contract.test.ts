@@ -12,10 +12,10 @@ const fetchMock = vi.mocked(authenticatedFetch);
 beforeEach(() => fetchMock.mockReset());
 
 describe("Instagram Intelligence B4 consumer contract", () => {
-  it("accepts only the narrow partial-current proof", () => {
+  it("accepts only the complete three-Object workspace contract", () => {
     expect(
-      InstagramB4ResponseSchema.parse(instagramB4Fixture()).contentBehavior
-        ?.readiness,
+      InstagramB4ResponseSchema.parse(instagramB4Fixture()).objects[0]
+        .readiness,
     ).toBe("PARTIAL");
     expect(
       InstagramB4ResponseSchema.safeParse({

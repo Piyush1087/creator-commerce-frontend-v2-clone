@@ -15,10 +15,10 @@ describe("Instagram Intelligence B4 page", () => {
       screen.getByRole("heading", { level: 1, name: "Instagram Intelligence" }),
     ).toBeTruthy();
     expect(
-      screen.getByText("Observed format:").parentElement?.textContent,
-    ).toContain("IMAGE");
+      screen.getByRole("heading", { name: "Content behavior" }),
+    ).toBeTruthy();
     expect(
-      screen.getByText("Not enough posts to identify patterns or learnings"),
+      screen.getByText(/Patterns and learnings remain unavailable/),
     ).toBeTruthy();
     expect(
       screen.getByText(/last successful current insight is preserved/i),
@@ -30,7 +30,16 @@ describe("Instagram Intelligence B4 page", () => {
     const fixture = instagramB4Fixture();
     render(
       createElement(InstagramB4Content, {
-        data: { ...fixture, contentBehavior: null, window: null },
+        data: {
+          ...fixture,
+          objects: fixture.objects.map((item) => ({
+            ...item,
+            state: "NO_CURRENT" as const,
+            readiness: "NOT_READY" as const,
+            freshness: "UNKNOWN" as const,
+            generatedAt: null,
+          })),
+        },
       }),
     );
     expect(
@@ -40,6 +49,6 @@ describe("Instagram Intelligence B4 page", () => {
       screen
         .getByRole("link", { name: /Open Instagram settings/ })
         .getAttribute("href"),
-    ).toBe(fixture.settingsRecoveryPath);
+    ).toBe(fixture.actions.settingsRecoveryPath);
   });
 });
