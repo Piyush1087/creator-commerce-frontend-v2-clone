@@ -1,54 +1,212 @@
 // @vitest-environment jsdom
 import { createElement } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
-import { InstagramB4Content } from "./components/instagram-b4-view";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { InstagramWorkspace } from "./components/instagram-workspace";
 import { instagramB4Fixture } from "./testing/instagram-b4-fixture";
 
 afterEach(cleanup);
-describe("Instagram Intelligence B4 page", () => {
-  it("renders the bounded observation and preserved-current truth", () => {
-    const { container } = render(
-      createElement(InstagramB4Content, { data: instagramB4Fixture() }),
-    );
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Instagram Intelligence" }),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { name: "Content behavior" }),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(/Patterns and learnings remain unavailable/),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(/last successful current insight is preserved/i),
-    ).toBeTruthy();
-    expect(container.textContent).not.toContain("accessToken");
-    expect(container.textContent).not.toContain("Pattern detected");
+
+function renderWorkspace(overrides = {}) {
+  return render(
+    createElement(InstagramWorkspace, {
+      data: instagramB4Fixture(),
+      isRefreshing: false,
+      announcement: "",
+      cooldownEndsAt: null,
+      onRefresh: vi.fn().mockResolvedValue(undefined),
+      ...overrides,
+    }),
+  );
+}
+
+describe("Instagram Intelligence E2/E3 workspace", () => {
+  it.each([
+    "NOT_CONNECTED",
+    "CONNECTING",
+    "CONNECTED",
+    "PARTIAL_CAPABILITY",
+    "UNKNOWN_CAPABILITY",
+    "REAUTH_REQUIRED",
+    "AUTHORIZATION_DEGRADED",
+    "SAME_ACCOUNT_RECONNECTING",
+    "DIFFERENT_ACCOUNT_CONFLICT",
+    "TRANSIENT_PROVIDER_FAILURE",
+    "DISCONNECTED",
+    "DELETE_IN_PROGRESS",
+  ] as const)(
+    "renders the %s connection lifecycle without fabricating values",
+    (state) => {
+      const fixture = instagramB4Fixture();
+      const { container } = renderWorkspace({
+        data: {
+          ...fixture,
+          connection: { ...fixture.connection, state },
+        },
+      });
+      expect(
+        screen.getByRole("heading", { name: "Instagram Intelligence" }),
+      ).toBeTruthy();
+      expect(container.textContent).not.toContain("undefined");
+    },
+  );
+
+  it("renders the frozen singular hierarchy in order without inner tabs", () => {
+    const { container } = renderWorkspace();
+    const headings = screen
+      .getAllByRole("heading")
+      .map((node) => node.textContent);
+    expect(headings).toEqual([
+      "Instagram Intelligence",
+      "Account and connection context",
+      "Account performance",
+      "What is working",
+      "Content behavior",
+      "Audience response",
+      "Creator and collaboration signals",
+      "Representative posts",
+      "Coverage and freshness",
+    ]);
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(container.querySelectorAll("main")).toHaveLength(1);
   });
-  it("renders a truthful no-current recovery state", () => {
+
+  it("keeps performance near the top and exposes only the fixed 30-day window", () => {
+    renderWorkspace();
+    expect(screen.getByText(/Last 30 days/)).toBeTruthy();
+    expect(screen.getByText("4,310")).toBeTruthy();
+    expect(screen.queryByText(/7-day|14-day|custom date/i)).toBeNull();
+    expect(screen.queryByRole("combobox", { name: /window|date/i })).toBeNull();
+  });
+
+  it("shows supported signal-learning evidence and bounded insufficient state", () => {
+    const { rerender } = renderWorkspace();
+    expect(
+      screen.getByText(/Short product demonstrations repeatedly/),
+    ).toBeTruthy();
+    expect(screen.getByText(/Concise demonstrations appear/)).toBeTruthy();
     const fixture = instagramB4Fixture();
-    render(
-      createElement(InstagramB4Content, {
+    rerender(
+      createElement(InstagramWorkspace, {
         data: {
           ...fixture,
           objects: fixture.objects.map((item) => ({
             ...item,
-            state: "NO_CURRENT" as const,
-            readiness: "NOT_READY" as const,
-            freshness: "UNKNOWN" as const,
-            generatedAt: null,
+            signals: [],
+            learnings: [],
           })),
         },
+        isRefreshing: false,
+        announcement: "",
+        cooldownEndsAt: null,
+        onRefresh: vi.fn(),
       }),
     );
     expect(
-      screen.getByRole("heading", { name: "No current insight" }),
+      screen.getAllByText(/Not enough repeated evidence yet/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("preserves partial, unavailable and likely-collab language without canonical claims", () => {
+    const { container } = renderWorkspace();
+    expect(screen.getByText("Possible Collab")).toBeTruthy();
+    expect(
+      screen.getByText(
+        /not confirmed Creator, Collaboration or Campaign records/i,
+      ),
     ).toBeTruthy();
+    expect(container.textContent).not.toMatch(
+      /confirmed collaboration|paid partnership|Creator Shop creator/i,
+    );
+    expect(container.textContent).not.toMatch(
+      /brand persona|brand meaning|brand character|AI Match/i,
+    );
+
+    cleanup();
+    const fixture = instagramB4Fixture();
+    renderWorkspace({ data: { ...fixture, accountPerformance: [] } });
+    expect(
+      screen.getByText(/missing results are not treated as zero/i),
+    ).toBeTruthy();
+    expect(screen.queryByText(/^0$/)).toBeNull();
+  });
+
+  it("keeps representative posts bounded with no E4 detail interaction", () => {
+    renderWorkspace();
+    expect(
+      screen.getByRole("heading", { name: "Representative posts" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /view details/i })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText("synthetic-media-1")).toBeNull();
+  });
+
+  it("uses server action authority for refresh and Settings-only recovery", () => {
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    renderWorkspace({ onRefresh: refresh });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh Instagram" }));
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    const fixture = instagramB4Fixture();
+    renderWorkspace({
+      data: {
+        ...fixture,
+        connection: {
+          ...fixture.connection,
+          state: "REAUTH_REQUIRED",
+          reasonCodes: ["REAUTH_REQUIRED"],
+        },
+        actions: {
+          ...fixture.actions,
+          manualRefresh: {
+            state: "DENIED",
+            reasonCode: "REFRESH_NOT_AUTHORIZED",
+          },
+        },
+      },
+    });
+    expect(
+      screen.queryByRole("button", { name: /Refresh Instagram/ }),
+    ).toBeNull();
+    expect(screen.getByText(/unavailable for your role/i)).toBeTruthy();
     expect(
       screen
-        .getByRole("link", { name: /Open Instagram settings/ })
+        .getByRole("link", { name: /Manage connection in Settings/ })
         .getAttribute("href"),
-    ).toBe(fixture.actions.settingsRecoveryPath);
+    ).toBe("/brand/settings/integrations?tab=instagram");
+  });
+
+  it("preserves current content during degradation and communicates cooldown", () => {
+    const fixture = instagramB4Fixture();
+    renderWorkspace({
+      data: {
+        ...fixture,
+        connection: {
+          ...fixture.connection,
+          state: "TRANSIENT_PROVIDER_FAILURE",
+          reasonCodes: ["PROVIDER_TRANSIENT_FAILURE"],
+        },
+        sync: {
+          ...fixture.sync,
+          state: "BACKOFF",
+          currentPreserved: true,
+          reasonCodes: ["CURRENT_PRESERVED_AFTER_FAILURE"],
+        },
+      },
+      cooldownEndsAt: "2099-09-12T09:15:00.000Z",
+      announcement: "Refresh is cooling down.",
+    });
+    expect(screen.getByText(/Current intelligence is preserved/)).toBeTruthy();
+    expect(screen.getByText("4,310")).toBeTruthy();
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Refresh cooling down",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    expect(screen.getByText("Refresh is cooling down.")).toBeTruthy();
   });
 });
