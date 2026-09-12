@@ -5,6 +5,7 @@ import { AUTH_ROUTES } from "../../features/auth/constants";
 import { useAuthSession } from "../../shared/auth/use-auth-session";
 import { normalizeUserRole } from "../../shared/auth/user-role";
 import { resolveHeaderMeta } from "./sidebar-items";
+import { resolveBrandCentreWorkspace } from "../../features/brand-centre/navigation/brand-centre-workspaces";
 
 export const UCE_BRIEF_WIZARD_HEADER_EVENT = "uce-brief-wizard-header";
 
@@ -45,7 +46,7 @@ export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
   if (isBrandCentre) {
     return {
       breadcrumb: "Brand Centre",
-      title: "Brand",
+      title: resolveBrandCentreWorkspace(location.pathname)?.label ?? "Brand",
     };
   }
 

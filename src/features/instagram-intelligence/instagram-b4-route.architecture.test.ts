@@ -10,8 +10,9 @@ describe("Instagram Intelligence B4 authenticated route", () => {
       "utf8",
     );
     expect(AUTH_ROUTES.brandCentreInstagram).toBe("/brand-centre/instagram");
-    expect(routes).toContain("path={AUTH_ROUTES.brandCentreInstagram}");
-    expect(routes.lastIndexOf("brandCentreInstagram")).toBeGreaterThan(
+    expect(routes).toContain('path="instagram/*"');
+    expect(routes).toContain("BrandCentreWorkspaceShell");
+    expect(routes.lastIndexOf('path="instagram/*"')).toBeGreaterThan(
       routes.indexOf("<RequireAuth>"),
     );
     const shell = readFileSync(

@@ -26,6 +26,8 @@ import { BrandCentrePage } from "../pages/brand/brand-centre/brand-centre-page";
 import { BrandCentreInstagramPage } from "../pages/brand/brand-centre/brand-centre-instagram-page";
 import { BrandCentreOfferingsPage } from "../pages/brand/brand-centre/brand-centre-offerings-page";
 import { BrandCentreOfferingDetailPage } from "../pages/brand/brand-centre/brand-centre-offering-detail-page";
+import { BrandCentreWorkspaceShell } from "../features/brand-centre/components/workspace-shell/BrandCentreWorkspaceShell";
+import { BrandCentreUnavailableWorkspace } from "../features/brand-centre/components/workspace-shell/BrandCentreUnavailableWorkspace";
 import { BrandCollaborationsPage } from "../pages/brand/collaborations/brand-collaborations-page";
 import { BrandSettingsIntegrationsPage } from "../pages/brand/settings/brand-settings-integrations-page";
 import { BrandSettingsGeneralPage } from "../pages/brand/settings/brand-settings-general-page";
@@ -119,19 +121,38 @@ export function AppRoutes() {
           path={AUTH_ROUTES.brandDashboard}
           element={<BrandDashboardPage />}
         />
-        <Route path={AUTH_ROUTES.brandCentre} element={<BrandCentrePage />} />
         <Route
-          path={AUTH_ROUTES.brandCentreInstagram}
-          element={<BrandCentreInstagramPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.brandCentreOfferings}
-          element={<BrandCentreOfferingsPage />}
-        />
-        <Route
-          path={AUTH_ROUTES.brandCentreOfferingDetail}
-          element={<BrandCentreOfferingDetailPage />}
-        />
+          path={AUTH_ROUTES.brandCentre}
+          element={<BrandCentreWorkspaceShell />}
+        >
+          <Route index element={<BrandCentrePage />} />
+          <Route
+            path="overview/*"
+            element={<BrandCentreUnavailableWorkspace title="Overview" />}
+          />
+          <Route
+            path="offerings"
+            element={<BrandCentreOfferingsPage />}
+          />
+          <Route
+            path="offerings/:offeringId"
+            element={<BrandCentreOfferingDetailPage />}
+          />
+          <Route
+            path="instagram/*"
+            element={<BrandCentreInstagramPage />}
+          />
+          <Route
+            path="market/*"
+            element={<BrandCentreUnavailableWorkspace title="Market" />}
+          />
+          <Route
+            path="recommendations/*"
+            element={
+              <BrandCentreUnavailableWorkspace title="Recommendations" />
+            }
+          />
+        </Route>
         <Route
           path={AUTH_ROUTES.brandUceCampaigns}
           element={<BrandUceCampaignsPage />}

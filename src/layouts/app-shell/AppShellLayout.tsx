@@ -52,7 +52,9 @@ export function AppShellLayout() {
       <AppShellLayoutContent
         mainVariant={mainVariant}
         brandWorkspace={
-          location.pathname === "/brand-centre" && role === "BRAND"
+          (location.pathname === "/brand-centre" ||
+            location.pathname.startsWith("/brand-centre/")) &&
+          role === "BRAND"
         }
       />
     </CreatorWorkspaceActorProvider>
