@@ -55,7 +55,7 @@ async function login(page, fixture, errors) {
 }
 
 async function openWorkspace(page) {
-  const response = page.waitForResponse((item) => item.url().endsWith("/api/v1/brand-centre/instagram") && item.request().method() === "GET");
+  const response = page.waitForResponse((item) => new URL(item.url()).pathname === "/api/v1/brand-centre/instagram" && item.request().method() === "GET");
   await page.goto(`${frontend}/brand-centre/instagram`, { waitUntil: "domcontentloaded" });
   assert((await response).status() === 200, "Aggregate request failed");
   await page.getByRole("heading", { name: "Instagram Intelligence", exact: true }).waitFor();
@@ -194,12 +194,16 @@ try {
   await direct.context.close();
 
   for (const [role, fixture] of [["BRAND_OWNER", owner], ["CAMPAIGN_MANAGER", roles.manager], ["FINANCE_ADMIN", roles.finance]]) {
-    const run = await pageFor(browser, 1440);
-    await login(run.page, fixture, run.errors);
-    await openWorkspace(run.page);
-    await openDetailFromAction(run.page);
-    output.roles.push({ role, activeBrandRead: "REAL_BACKEND_PASS", detailRead: "REAL_BACKEND_PASS" });
-    await run.context.close();
+    const roleWidths = role === "BRAND_OWNER" ? [1440] : [390, 1440];
+    for (const width of roleWidths) {
+      const run = await pageFor(browser, width);
+      await login(run.page, fixture, run.errors);
+      await openWorkspace(run.page);
+      await openDetailFromAction(run.page);
+      await assertNoOverflow(run.page, width);
+      output.roles.push({ role, width, activeBrandRead: "REAL_BACKEND_PASS", detailRead: "REAL_BACKEND_PASS", overflow: "PASS" });
+      await run.context.close();
+    }
   }
 
   for (const [kind, fixture] of [["INACTIVE_MEMBERSHIP", roles.inactive], ["NON_MEMBER", roles.nonmember], ["SECOND_TENANT", roles.secondTenant]]) {
