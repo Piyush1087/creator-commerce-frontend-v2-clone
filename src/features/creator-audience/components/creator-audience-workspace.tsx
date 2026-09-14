@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Alert, Badge, Button, Card } from "../../../design-system/aurora";
 import type { CreatorAudienceCohort } from "../contracts/creator-audience.schema";
 import { useCreatorAudience } from "../hooks/use-creator-audience";
+import { CreatorInsightsNav } from "../../creator-content/components/creator-insights-nav";
 
 const DIMENSION_LABELS = {
   AGE: "Age",
@@ -159,6 +160,7 @@ export function CreatorAudienceWorkspace() {
 
   return (
     <section className="creator-audience" aria-labelledby="audience-title">
+      <CreatorInsightsNav current="audience" />
       <header className="creator-audience-header">
         <div>
           <p className="creator-audience-eyebrow">Creator Insights</p>

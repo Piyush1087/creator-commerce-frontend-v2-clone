@@ -40,6 +40,7 @@ export const AUTH_ROUTES = {
   creatorCollaborations: "/creator/collaborations",
   creatorInsights: "/creator/insights",
   creatorAudience: "/creator/insights/audience",
+  creatorContent: "/creator/insights/content",
   creatorPayouts: "/creator/payouts",
   creatorSettings: "/creator/settings",
   creatorSettingsAccount: "/creator/settings/account",

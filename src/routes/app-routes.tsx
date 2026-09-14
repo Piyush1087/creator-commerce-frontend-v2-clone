@@ -46,6 +46,7 @@ import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignD
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
 import { CreatorHomePage } from "../pages/creator/centre/creator-home-page";
 import { CreatorAudiencePage } from "../pages/creator/insights/creator-audience-page";
+import { CreatorContentPage } from "../pages/creator/insights/creator-content-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
@@ -282,6 +283,14 @@ export function AppRoutes() {
             element={
               <CreatorSettingsActionGuard requiredAction="INSIGHTS_AUDIENCE_READ">
                 <CreatorAudiencePage />
+              </CreatorSettingsActionGuard>
+            }
+          />
+          <Route
+            path={AUTH_ROUTES.creatorContent}
+            element={
+              <CreatorSettingsActionGuard requiredAction="INSIGHTS_CONTENT_READ">
+                <CreatorContentPage />
               </CreatorSettingsActionGuard>
             }
           />
