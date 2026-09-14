@@ -1,6 +1,5 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { consumerFixture } from "../../testing/brand-consumer-fixtures";
 import {
@@ -8,7 +7,6 @@ import {
   mapBrandWorkspace,
 } from "../../adapters/map-brand-workspace";
 import { BrandWorkspaceView } from "./BrandWorkspaceView";
-import { BrandWorkspaceNavigation } from "./BrandWorkspaceNavigation";
 
 function render(p = consumerFixture()) {
   return renderToStaticMarkup(
@@ -105,25 +103,5 @@ describe("functional Brand workspace", () => {
     expect(html).toContain(
       'data-location-id="20000000-0000-4000-8000-000000000001"',
     );
-  });
-  it("Brand and canonical Offerings have destinations; unavailable workspaces are natively disabled", () => {
-    const html = renderToStaticMarkup(
-      createElement(
-        MemoryRouter,
-        null,
-        createElement(BrandWorkspaceNavigation),
-      ),
-    );
-    expect([...html.matchAll(/href="([^"]+)"/gu)].map((m) => m[1])).toEqual([
-      "/brand-centre", "/brand-centre/offerings",
-      "/brand-centre", "/brand-centre/offerings",
-    ]);
-    expect([...html.matchAll(/disabled=""/gu)]).toHaveLength(6);
-    for (const legacy of [
-      "Brand DNA",
-      "Intelligence &amp; Gaps",
-      "Campaign Planner",
-    ])
-      expect(html).not.toContain(legacy);
   });
 });

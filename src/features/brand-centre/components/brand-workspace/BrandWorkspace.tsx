@@ -1,7 +1,6 @@
 import { Alert } from "../../../../design-system/aurora";
 import { useBrandCentreBrand } from "../../queries/use-brand-centre-brand";
 import type { BrandWorkspaceRequestState } from "../../queries/brand-workspace-cache";
-import { BrandWorkspaceNavigation } from "./BrandWorkspaceNavigation";
 import { BrandWorkspaceView } from "./BrandWorkspaceView";
 import "./brand-workspace.css";
 
@@ -56,7 +55,6 @@ export function BrandWorkspace() {
   const state = useBrandCentreBrand();
   return (
     <div className="brand-workspace">
-      <BrandWorkspaceNavigation />
       <div className="brand-workspace__body">
         <div className="brand-workspace__heading">
           <h1>Brand</h1>

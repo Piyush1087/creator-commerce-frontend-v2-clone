@@ -1,0 +1,111 @@
+.brand-centre-workspace-shell,
+.brand-centre-workspace-shell__content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.brand-centre-workspace-navigation {
+  position: sticky;
+  top: 0;
+  z-index: 140;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-heading);
+}
+
+.brand-centre-workspace-navigation__desktop {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  min-height: 52px;
+  padding: 0 var(--space-md);
+}
+
+.brand-centre-workspace-navigation__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 10px;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-centre-workspace-navigation__link:hover {
+  color: var(--surface-card);
+}
+
+.brand-centre-workspace-navigation__link--active,
+.brand-centre-workspace-navigation__link[aria-current="page"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.brand-centre-workspace-navigation__link:focus-visible,
+.brand-centre-workspace-navigation__mobile select:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
+}
+
+.brand-centre-workspace-navigation__mobile {
+  display: none;
+}
+
+.brand-centre-unavailable-workspace {
+  width: 100%;
+  max-width: 1152px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.brand-centre-unavailable-workspace h1 {
+  margin-top: 0;
+}
+
+.brand-centre-unavailable-workspace p {
+  color: var(--text-muted);
+}
+
+@media (max-width: 767px) {
+  .brand-centre-workspace-navigation__desktop {
+    display: none;
+  }
+
+  .brand-centre-workspace-navigation__mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--space-sm) var(--space-md);
+    color: var(--surface-card);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .brand-centre-workspace-navigation__mobile select {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 36px 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: var(--radius-md);
+    background: var(--bg-sidebar);
+    color: var(--surface-card);
+    font: inherit;
+  }
+
+  .brand-centre-unavailable-workspace {
+    padding: var(--space-lg) var(--space-md);
+    padding-bottom: calc(var(--height-bottom-nav) + var(--space-xl));
+  }
+}
