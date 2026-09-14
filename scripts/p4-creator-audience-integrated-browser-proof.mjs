@@ -88,7 +88,23 @@ try {
     assert(response.status() === 200, `Audience API failed at ${width}`);
     const body = await response.json();
     assert(body.contractVersion === "creator_audience_v0.1", "Wrong contract");
-    assert(body.status === "READY", "Fixture current was not ready");
+    assert(body.status === "READY", "Preserved fixture current was not ready");
+    assert(
+      body.freshness.state === "STALE",
+      "Inclusive 192h stale boundary was not exposed",
+    );
+    assert(
+      body.processingState === "FAILED",
+      "Latest provider failure was not exposed",
+    );
+    assert(
+      body.currentPreserved === true,
+      "Last-good current was not marked preserved",
+    );
+    assert(
+      body.sourceStatus === "PROVIDER_FAILURE",
+      "Provider failure source truth was lost",
+    );
     assert(body.cohorts.length === 2, "Both fixture cohorts were not returned");
     assert(body.highlights.length <= 3, "Highlight cap exceeded");
     assert(
@@ -98,6 +114,17 @@ try {
       "Consumer exposed an internal or mutable field",
     );
     await page.getByRole("heading", { level: 1, name: "Audience" }).waitFor();
+    await page
+      .getByText("Showing the last good Audience snapshot", { exact: true })
+      .waitFor();
+    assert(
+      (await page.getByText("Failed", { exact: true }).count()) > 0,
+      `Failed processing truth was not rendered at ${width}`,
+    );
+    assert(
+      (await page.getByText("Stale", { exact: true }).count()) > 0,
+      `Stale freshness truth was not rendered at ${width}`,
+    );
     // The unauthenticated bootstrap refresh intentionally returns 401 before
     // password login. Only errors attributable to the authenticated route are
     // acceptance failures.
