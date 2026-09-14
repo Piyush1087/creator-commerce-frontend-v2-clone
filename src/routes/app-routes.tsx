@@ -45,6 +45,7 @@ import { BrandUceCampaignCreatePage } from "../pages/brand/uce/BrandUceCampaignC
 import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignDetailPage";
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
 import { CreatorHomePage } from "../pages/creator/centre/creator-home-page";
+import { CreatorAudiencePage } from "../pages/creator/insights/creator-audience-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
@@ -115,10 +116,7 @@ export function AppRoutes() {
           </RequireAuth>
         }
       >
-        <Route
-          path={AUTH_ROUTES.help}
-          element={<HelpPage />}
-        />
+        <Route path={AUTH_ROUTES.help} element={<HelpPage />} />
         <Route
           path={AUTH_ROUTES.brandDashboard}
           element={<BrandDashboardPage />}
@@ -132,18 +130,12 @@ export function AppRoutes() {
             path="overview/*"
             element={<BrandCentreUnavailableWorkspace title="Overview" />}
           />
-          <Route
-            path="offerings"
-            element={<BrandCentreOfferingsPage />}
-          />
+          <Route path="offerings" element={<BrandCentreOfferingsPage />} />
           <Route
             path="offerings/:offeringId"
             element={<BrandCentreOfferingDetailPage />}
           />
-          <Route
-            path="instagram/*"
-            element={<BrandCentreInstagramPage />}
-          />
+          <Route path="instagram/*" element={<BrandCentreInstagramPage />} />
           <Route
             path="market/*"
             element={<BrandCentreUnavailableWorkspace title="Market" />}
@@ -281,6 +273,18 @@ export function AppRoutes() {
         </Route>
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
+          <Route
+            path={AUTH_ROUTES.creatorInsights}
+            element={<Navigate to={AUTH_ROUTES.creatorAudience} replace />}
+          />
+          <Route
+            path={AUTH_ROUTES.creatorAudience}
+            element={
+              <CreatorSettingsActionGuard requiredAction="INSIGHTS_AUDIENCE_READ">
+                <CreatorAudiencePage />
+              </CreatorSettingsActionGuard>
+            }
+          />
           <Route
             path={AUTH_ROUTES.creatorCentre}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}

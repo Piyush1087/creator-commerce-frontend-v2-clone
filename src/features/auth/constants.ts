@@ -38,6 +38,8 @@ export const AUTH_ROUTES = {
   creatorApplication: "/creator/campaigns/applications/:applicationId",
   creatorCampaignsHistory: "/creator/campaigns/history",
   creatorCollaborations: "/creator/collaborations",
+  creatorInsights: "/creator/insights",
+  creatorAudience: "/creator/insights/audience",
   creatorPayouts: "/creator/payouts",
   creatorSettings: "/creator/settings",
   creatorSettingsAccount: "/creator/settings/account",

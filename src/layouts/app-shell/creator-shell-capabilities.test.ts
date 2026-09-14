@@ -28,6 +28,7 @@ const manager: CreatorWorkspaceActorContext = {
     "TEAM_MANAGE",
     "INSTAGRAM_SETTINGS_READ",
     "INSTAGRAM_SETTINGS_MANAGE",
+    "INSIGHTS_AUDIENCE_READ",
     "PAYOUT_SETTINGS_READ",
     "PAYOUT_SETTINGS_MANAGE",
     "LEGAL_PROFILE_READ",
@@ -57,21 +58,22 @@ describe("Creator shell capability projection", () => {
 
     expect(labels).toEqual([
       "Home",
+      "Insights",
       "Campaigns",
       "Collaborations",
       "Settings",
     ]);
     expect(labels).not.toContain("Marketplace");
-    expect(labels).not.toContain("Insights");
+    expect(labels).toContain("Insights");
   });
 
-  it("keeps the exact four mobile destinations", () => {
+  it("adds Audience Insights as the fifth active mobile destination", () => {
     expect(
       getBottomNavItemsForRole("CREATOR", {
         status: "READY",
         actorContext: manager,
       }).map((item) => item.label),
-    ).toEqual(["Home", "Campaigns", "Collaborations", "Settings"]);
+    ).toEqual(["Home", "Insights", "Campaigns", "Collaborations", "Settings"]);
   });
 
   it("hides payout navigation when the actor lacks payout read authority", () => {
@@ -148,6 +150,10 @@ describe("Creator shell capability projection", () => {
     expect(resolveHeaderMeta("/creator/home", "CREATOR")).toEqual({
       breadcrumb: "Home",
       title: "Daily Briefing",
+    });
+    expect(resolveHeaderMeta("/creator/insights/audience", "CREATOR")).toEqual({
+      breadcrumb: "Insights",
+      title: "Audience",
     });
     expect(resolveHeaderMeta("/creator/settings/account", "CREATOR")).toEqual({
       breadcrumb: "Settings",

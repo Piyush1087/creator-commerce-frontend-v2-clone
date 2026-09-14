@@ -4,9 +4,10 @@ import { AUTH_ROUTES } from "../../features/auth/constants";
 import { creatorBottomNavItems } from "./bottom-nav-items";
 
 describe("Creator mobile bottom navigation", () => {
-  it("uses the frozen four-slot Creator navigation", () => {
+  it("uses the accepted Creator navigation with Audience Insights", () => {
     expect(creatorBottomNavItems.map((item) => item.label)).toEqual([
       "Home",
+      "Insights",
       "Campaigns",
       "Collaborations",
       "Settings",
@@ -19,8 +20,8 @@ describe("Creator mobile bottom navigation", () => {
       creatorBottomNavItems.find((item) => item.label === "Settings")?.path,
     ).toBe(AUTH_ROUTES.creatorSettings);
     expect(
-      creatorBottomNavItems.some((item) => item.label === "Insights"),
-    ).toBe(false);
+      creatorBottomNavItems.find((item) => item.label === "Insights")?.path,
+    ).toBe(AUTH_ROUTES.creatorAudience);
     expect(
       creatorBottomNavItems.some((item) => item.label === "Marketplace"),
     ).toBe(false);

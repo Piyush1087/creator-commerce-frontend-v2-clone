@@ -5,6 +5,7 @@ import {
   LogOut,
   Megaphone,
   MessageCircle,
+  PieChart,
   Settings,
   Store,
 } from "lucide-react";
@@ -117,6 +118,17 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     headerTitle: "Daily Briefing",
     mainVariant: "flush",
     requiresCreatorWorkspace: true,
+  },
+  {
+    label: "Insights",
+    icon: PieChart,
+    path: AUTH_ROUTES.creatorAudience,
+    roles: ["CREATOR"],
+    breadcrumb: "Insights",
+    headerTitle: "Audience",
+    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
+    requiredCreatorAction: "INSIGHTS_AUDIENCE_READ",
   },
   {
     label: "Campaigns",
@@ -248,6 +260,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.creatorAnalytics,
   AUTH_ROUTES.creatorMediaKit,
   AUTH_ROUTES.creatorCentre,
+  AUTH_ROUTES.creatorInsights,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorPayouts,
   AUTH_ROUTES.creatorCollaborations,

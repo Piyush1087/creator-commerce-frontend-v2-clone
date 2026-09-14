@@ -1,4 +1,11 @@
-import { Megaphone, MessageCircle, Home, Settings, Store } from "lucide-react";
+import {
+  Megaphone,
+  MessageCircle,
+  Home,
+  PieChart,
+  Settings,
+  Store,
+} from "lucide-react";
 import type { ElementType } from "react";
 
 import { AUTH_ROUTES } from "../../features/auth/constants";
@@ -16,6 +23,7 @@ export type BottomNavItem = {
   unavailableReason?: string;
   requiresCreatorWorkspace?: boolean;
   alwaysAvailableInRecovery?: boolean;
+  requiredCreatorAction?: import("../../shared/creator/creator-workspace-actor.contract").CreatorWorkspaceAction;
 };
 
 export const brandBottomNavItems: BottomNavItem[] = [
@@ -48,6 +56,13 @@ export const creatorBottomNavItems: BottomNavItem[] = [
     icon: Home,
     path: AUTH_ROUTES.creatorHome,
     requiresCreatorWorkspace: true,
+  },
+  {
+    label: "Insights",
+    icon: PieChart,
+    path: AUTH_ROUTES.creatorAudience,
+    requiresCreatorWorkspace: true,
+    requiredCreatorAction: "INSIGHTS_AUDIENCE_READ",
   },
   {
     label: "Campaigns",
@@ -92,6 +107,7 @@ const PREFIX_MATCH_PATHS = [
   AUTH_ROUTES.creatorAnalytics,
   AUTH_ROUTES.creatorMediaKit,
   AUTH_ROUTES.creatorCentre,
+  AUTH_ROUTES.creatorInsights,
   AUTH_ROUTES.creatorCampaigns,
   AUTH_ROUTES.creatorCollaborations,
   AUTH_ROUTES.creatorSettings,

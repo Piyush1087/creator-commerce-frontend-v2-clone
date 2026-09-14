@@ -28,7 +28,7 @@ const ready = {
     organizationId: "organization-1",
     subjectCreatorProfileId: "profile-1",
     subjectOwnerUserId: "owner-user",
-    allowedActions: ["PAYOUT_SETTINGS_READ"] as const,
+    allowedActions: ["PAYOUT_SETTINGS_READ", "INSIGHTS_AUDIENCE_READ"] as const,
   },
 };
 
@@ -42,9 +42,10 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(6);
+    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(7);
     for (const label of [
       "Home",
+      "Insights",
       "Campaigns",
       "Collaborations",
       "Settings",
@@ -58,7 +59,7 @@ describe("Creator shell rendering", () => {
     expect(html).not.toContain("Upgrade");
   });
 
-  it("renders three non-link mobile recovery destinations plus Settings", () => {
+  it("renders four non-link mobile recovery destinations plus Settings", () => {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -67,7 +68,7 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aria-disabled="true"/g) ?? []).length).toBe(3);
+    expect((html.match(/aria-disabled="true"/g) ?? []).length).toBe(4);
     expect(html).not.toContain("/creator/marketplace");
     expect(html).toContain("Creator workspace provisioning is incomplete.");
   });
