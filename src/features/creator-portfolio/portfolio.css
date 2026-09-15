@@ -1,0 +1,100 @@
+.creator-portfolio {
+  min-width: 0;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  color: var(--aurora-text-primary, #171717);
+}
+.creator-portfolio p,
+.creator-portfolio li {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.creator-portfolio__filters,
+.creator-portfolio__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.creator-portfolio__summary {
+  margin: 24px 0;
+}
+.creator-portfolio__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 24px 0;
+}
+.creator-portfolio__item,
+.creator-portfolio__item article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.creator-portfolio__item h3 {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.creator-portfolio__sources {
+  padding-left: 20px;
+}
+.creator-portfolio a {
+  color: #3730a3;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.creator-portfolio__announcement:empty {
+  margin: 0;
+}
+.creator-portfolio__form {
+  display: grid;
+  gap: 20px;
+  font-size: 14px;
+}
+.creator-portfolio__form fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.creator-portfolio__form label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+.creator-portfolio__form input,
+.creator-portfolio__form select,
+.creator-portfolio__form textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #737373;
+  border-radius: 8px;
+  background: white;
+  color: #171717;
+  font: inherit;
+}
+.creator-portfolio :focus-visible,
+.creator-portfolio__drawer :focus-visible {
+  outline: 3px solid #3730a3;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .creator-portfolio__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .creator-portfolio__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .creator-portfolio__actions .aurora-button {
+    width: 100%;
+  }
+  .creator-portfolio__drawer.aurora-sidedrawer {
+    width: 100% !important;
+    max-width: 100%;
+  }
+}

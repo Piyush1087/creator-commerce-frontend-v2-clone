@@ -153,6 +153,17 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     requiredCreatorAction: "COMMERCIAL_SETUP_READ",
   },
   {
+    label: "Portfolio",
+    icon: Store,
+    path: AUTH_ROUTES.creatorPortfolio,
+    roles: ["CREATOR"],
+    breadcrumb: "Portfolio",
+    headerTitle: "Portfolio",
+    mainVariant: "default",
+    requiresCreatorWorkspace: true,
+    requiredCreatorAction: "PORTFOLIO_READ",
+  },
+  {
     label: "Campaigns",
     icon: Megaphone,
     path: AUTH_ROUTES.creatorCampaigns,

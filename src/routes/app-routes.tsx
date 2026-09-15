@@ -16,6 +16,7 @@ import {
 } from "../pages/creator/campaigns/c03-pages";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { CreatorBrandPage } from "../pages/creator/brand/creator-brand-page";
+import { CreatorPortfolioPage } from "../pages/creator/portfolio/creator-portfolio-page";
 import { CreatorCommercialSetupPage } from "../pages/creator/commercial-setup/creator-commercial-setup-page";
 import { CommercialRouteGuard } from "../features/creator-commercial-setup/components/commercial-route-guard";
 import { CreatorBrandRouteGuard } from "../features/creator-brand/components/creator-brand-route-guard";
@@ -283,6 +284,10 @@ export function AppRoutes() {
               <CreatorBrandPage />
             </CreatorBrandRouteGuard>
           }
+        />
+        <Route
+          path={AUTH_ROUTES.creatorPortfolio}
+          element={<CreatorPortfolioPage />}
         />
         <Route
           path={AUTH_ROUTES.creatorCommercialSetup}
