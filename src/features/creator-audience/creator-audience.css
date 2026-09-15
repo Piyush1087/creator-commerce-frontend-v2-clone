@@ -87,9 +87,17 @@
   justify-content: space-between;
   gap: var(--space-sm);
 }
-.creator-audience-dimension h3 {
+.creator-audience-dimension h4 {
   margin: 0;
   font: 600 var(--size-body) var(--font-heading);
+}
+.creator-audience .aurora-card,
+.creator-audience-context {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.creator-audience-size {
+  flex-wrap: wrap;
 }
 .creator-audience-buckets {
   list-style: none;

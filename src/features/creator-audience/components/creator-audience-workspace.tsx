@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Alert, Badge, Button, Card } from "../../../design-system/aurora";
-import type { CreatorAudienceCohort } from "../contracts/creator-audience.schema";
+import type {
+  CreatorAudience,
+  CreatorAudienceCohort,
+} from "../contracts/creator-audience.schema";
 import { useCreatorAudience } from "../hooks/use-creator-audience";
 import { CreatorInsightsNav } from "../../creator-content/components/creator-insights-nav";
 
@@ -21,16 +24,42 @@ function friendly(value: string) {
     .join(" ");
 }
 
-function CohortView({ cohort }: { cohort: CreatorAudienceCohort }) {
+function CohortView({
+  cohort,
+  profile,
+}: {
+  cohort: CreatorAudienceCohort;
+  profile?: CreatorAudience["profiles"][number];
+}) {
   return (
-    <Card
+    <section
       className="creator-audience-cohort"
-      title={`${friendly(cohort.id)} audience`}
+      aria-label={`${friendly(cohort.id)} audience`}
     >
-      {cohort.size !== null && (
+      <h3>{friendly(cohort.id)} audience</h3>
+      {profile && profile.facts.length > 0 && (
+        <ul>
+          {profile.facts.map((fact) => (
+            <li key={`${fact.dimension}-${fact.bucket}`}>
+              {DIMENSION_LABELS[fact.dimension]}: {fact.bucket}
+              {fact.percentage === null
+                ? " · Percentage unavailable"
+                : ` · ${fact.percentage}%`}
+            </li>
+          ))}
+        </ul>
+      )}
+      {profile && (
+        <p>
+          {profile.coverage.availableDimensions} of{" "}
+          {profile.coverage.requiredDimensions} demographic dimensions
+          available.
+        </p>
+      )}
+      {profile?.cohortSize != null && (
         <p className="creator-audience-size">
-          <strong>{cohort.size.toLocaleString()}</strong>
-          <span>Audience size</span>
+          <strong>{profile.cohortSize.toLocaleString()}</strong>
+          <span>Provider demographic denominator</span>
         </p>
       )}
       <div className="creator-audience-dimensions">
@@ -41,9 +70,9 @@ function CohortView({ cohort }: { cohort: CreatorAudienceCohort }) {
             aria-labelledby={`dimension-${dimension.id.toLowerCase()}`}
           >
             <div className="creator-audience-dimension__heading">
-              <h3 id={`dimension-${dimension.id.toLowerCase()}`}>
+              <h4 id={`dimension-${dimension.id.toLowerCase()}`}>
                 {DIMENSION_LABELS[dimension.id]}
-              </h3>
+              </h4>
               <Badge
                 tone={
                   dimension.state === "AVAILABLE"
@@ -85,7 +114,7 @@ function CohortView({ cohort }: { cohort: CreatorAudienceCohort }) {
           </section>
         ))}
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -114,6 +143,8 @@ export function CreatorAudienceWorkspace() {
         aria-label="Audience"
         aria-busy="true"
       >
+        <h1>Audience</h1>
+        <p role="status">Loading Audience…</p>
         <div className="creator-audience-skeleton" />
         <div className="creator-audience-skeleton" />
       </section>
@@ -193,6 +224,29 @@ export function CreatorAudienceWorkspace() {
             "The visible facts are preserved while source freshness or processing recovers."}
         </Alert>
       )}
+      <Card title="Overview">
+        <p className="creator-audience-size">
+          <strong>
+            {data.overview.accountFollowerCount === null
+              ? "Unavailable"
+              : data.overview.accountFollowerCount.toLocaleString()}
+          </strong>
+          <span>Instagram account followers</span>
+        </p>
+        {data.overview.facts.length > 0 && (
+          <ul>
+            {data.overview.facts.map((fact) => (
+              <li key={`${fact.cohort}-${fact.dimension}-${fact.bucket}`}>
+                {friendly(fact.cohort)} · {DIMENSION_LABELS[fact.dimension]}:{" "}
+                {fact.bucket}
+                {fact.percentage === null
+                  ? " · Percentage unavailable"
+                  : ` · ${fact.percentage}%`}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       {data.highlights.length > 0 && (
         <Card
           title="Audience Highlights"
@@ -205,76 +259,122 @@ export function CreatorAudienceWorkspace() {
           </ul>
         </Card>
       )}
-      {usable.length === 2 && (
-        <div
-          className="creator-audience-tabs"
-          role="tablist"
-          aria-label="Audience cohort"
-        >
-          <button
-            type="button"
-            role="tab"
-            id="audience-tab-followers"
-            aria-controls="audience-cohort-panel"
-            aria-selected={selected === "FOLLOWERS"}
-            className={
-              selected === "FOLLOWERS"
-                ? "aurora-tab aurora-tab--active"
-                : "aurora-tab"
-            }
-            tabIndex={selected === "FOLLOWERS" ? 0 : -1}
-            onClick={() => chooseCohort("FOLLOWERS")}
-            onKeyDown={handleCohortKeyDown}
+      <Card title="Audience Profiles">
+        {usable.length === 2 && (
+          <div
+            className="creator-audience-tabs"
+            role="tablist"
+            aria-label="Audience cohort"
           >
-            Followers
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="audience-tab-engaged"
-            aria-controls="audience-cohort-panel"
-            aria-selected={selected === "ENGAGED"}
-            className={
-              selected === "ENGAGED"
-                ? "aurora-tab aurora-tab--active"
-                : "aurora-tab"
-            }
-            tabIndex={selected === "ENGAGED" ? 0 : -1}
-            onClick={() => chooseCohort("ENGAGED")}
-            onKeyDown={handleCohortKeyDown}
-          >
-            Engaged
-          </button>
-        </div>
-      )}
-      {cohort ? (
-        <div
-          id="audience-cohort-panel"
-          role={usable.length === 2 ? "tabpanel" : undefined}
-          aria-labelledby={
-            usable.length === 2
-              ? `audience-tab-${cohort.id.toLowerCase()}`
-              : undefined
-          }
-        >
-          <CohortView cohort={cohort} />
-        </div>
-      ) : (
-        <Card title="Audience data">
-          <p className="creator-audience-empty">
-            No demographic cohort is currently usable. Missing or suppressed
-            data is not shown as zero.
-          </p>
-          {recovery && (
-            <Link
-              className="creator-audience-settings-link"
-              to={data.settingsRecoveryRoute}
+            <button
+              type="button"
+              role="tab"
+              id="audience-tab-followers"
+              aria-controls="audience-cohort-panel"
+              aria-selected={selected === "FOLLOWERS"}
+              className={
+                selected === "FOLLOWERS"
+                  ? "aurora-tab aurora-tab--active"
+                  : "aurora-tab"
+              }
+              tabIndex={selected === "FOLLOWERS" ? 0 : -1}
+              onClick={() => chooseCohort("FOLLOWERS")}
+              onKeyDown={handleCohortKeyDown}
             >
-              Review Instagram settings
-            </Link>
-          )}
+              Followers
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="audience-tab-engaged"
+              aria-controls="audience-cohort-panel"
+              aria-selected={selected === "ENGAGED"}
+              className={
+                selected === "ENGAGED"
+                  ? "aurora-tab aurora-tab--active"
+                  : "aurora-tab"
+              }
+              tabIndex={selected === "ENGAGED" ? 0 : -1}
+              onClick={() => chooseCohort("ENGAGED")}
+              onKeyDown={handleCohortKeyDown}
+            >
+              Engaged
+            </button>
+          </div>
+        )}
+        {cohort ? (
+          <div
+            id="audience-cohort-panel"
+            role={usable.length === 2 ? "tabpanel" : undefined}
+            aria-labelledby={
+              usable.length === 2
+                ? `audience-tab-${cohort.id.toLowerCase()}`
+                : undefined
+            }
+          >
+            <CohortView
+              cohort={cohort}
+              profile={data.profiles.find((row) => row.cohort === cohort.id)}
+            />
+          </div>
+        ) : (
+          <div>
+            <p className="creator-audience-empty">
+              No demographic cohort is currently usable. Missing or suppressed
+              data is not shown as zero.
+            </p>
+            {recovery && (
+              <Link
+                className="creator-audience-settings-link"
+                to={data.settingsRecoveryRoute}
+              >
+                Review Instagram settings
+              </Link>
+            )}
+          </div>
+        )}
+      </Card>
+      {data.contentContext.length > 0 && (
+        <Card title="Audience & Content Context">
+          <p>
+            Separate source facts; these do not establish audience preference.
+          </p>
+          {data.contentContext.map((item, index) => (
+            <div className="creator-audience-context" key={index}>
+              <p>
+                <strong>Audience fact:</strong>{" "}
+                {friendly(item.audienceFact.cohort)} ·{" "}
+                {DIMENSION_LABELS[item.audienceFact.dimension]}:{" "}
+                {item.audienceFact.bucket}
+                {item.audienceFact.percentage === null
+                  ? ""
+                  : ` · ${item.audienceFact.percentage}%`}
+              </p>
+              <p>
+                <strong>Content fact:</strong> {item.contentFact.text}
+              </p>
+            </div>
+          ))}
         </Card>
       )}
+      {data.change.state === "AVAILABLE" &&
+        data.change.observations.length > 0 && (
+          <Card title="Change Over Time">
+            <ul>
+              {data.change.observations.map((item) => (
+                <li key={`${item.cohort}-${item.dimension}-${item.bucket}`}>
+                  {friendly(item.cohort)} · {DIMENSION_LABELS[item.dimension]} ·{" "}
+                  {item.bucket}: {item.priorPercentage}% →{" "}
+                  {item.latestPercentage}% (
+                  {item.percentagePointDelta > 0 ? "+" : ""}
+                  {item.percentagePointDelta} percentage points).{" "}
+                  {item.snapshotCount} comparable snapshots over{" "}
+                  {item.elapsedDays} days.
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       <Card
         title="Data status & limitations"
         className="creator-audience-status"
@@ -291,6 +391,18 @@ export function CreatorAudienceWorkspace() {
           <div>
             <dt>Status</dt>
             <dd>{friendly(data.status)}</dd>
+          </div>
+          <div>
+            <dt>Audience Intelligence</dt>
+            <dd>
+              {data.change.state === "NOT_PROCESSED"
+                ? "Not processed — source facts only"
+                : "Processed"}
+            </dd>
+          </div>
+          <div>
+            <dt>History</dt>
+            <dd>{friendly(data.change.state)}</dd>
           </div>
         </dl>
         {data.limitations.length > 0 ? (

@@ -292,20 +292,20 @@ export function AppRoutes() {
             </CommercialRouteGuard>
           }
         />
+        <Route
+          path={AUTH_ROUTES.creatorInsights}
+          element={<Navigate to={AUTH_ROUTES.creatorAudience} replace />}
+        />
+        <Route
+          path={AUTH_ROUTES.creatorAudience}
+          element={
+            <CreatorSettingsActionGuard requiredAction="INSIGHTS_AUDIENCE_READ">
+              <CreatorAudiencePage />
+            </CreatorSettingsActionGuard>
+          }
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
-          <Route
-            path={AUTH_ROUTES.creatorInsights}
-            element={<Navigate to={AUTH_ROUTES.creatorAudience} replace />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorAudience}
-            element={
-              <CreatorSettingsActionGuard requiredAction="INSIGHTS_AUDIENCE_READ">
-                <CreatorAudiencePage />
-              </CreatorSettingsActionGuard>
-            }
-          />
           <Route
             path={AUTH_ROUTES.creatorContent}
             element={

@@ -31,7 +31,15 @@ function cohort(id: "FOLLOWERS" | "ENGAGED", percentage: number | null = 60) {
 
 function fixture(overrides: Partial<CreatorAudience> = {}): CreatorAudience {
   return {
-    contractVersion: "creator_audience_v0.1",
+    contractVersion: "creator_audience_v1.1",
+    overview: {
+      accountFollowerCount:
+        overrides.cohorts?.find((row) => row.id === "FOLLOWERS")?.size ?? 100,
+      facts: [],
+    },
+    profiles: [],
+    contentContext: [],
+    change: { state: "NOT_PROCESSED", observations: [] },
     generatedAt: "2026-09-14T10:00:00.000Z",
     status: "READY",
     context: { role: "OWNER" },
@@ -72,6 +80,126 @@ beforeEach(() =>
 afterEach(cleanup);
 
 describe("Creator Audience workspace truth states", () => {
+  it.each(["OWNER", "MANAGER", "ASSISTANT"] as const)(
+    "renders read-only %s access without approximating unprocessed intelligence",
+    (role) => {
+      useAudience.mockReturnValue({
+        data: fixture({
+          context: { role },
+          overview: { accountFollowerCount: 1000, facts: [] },
+        }),
+        loading: false,
+        error: null,
+        preservingLastGood: false,
+        retry: vi.fn(),
+      });
+      render(
+        <MemoryRouter>
+          <CreatorAudienceWorkspace />
+        </MemoryRouter>,
+      );
+      expect(screen.getByText("1,000")).toBeTruthy();
+      expect(
+        screen.getByText("Not processed — source facts only"),
+      ).toBeTruthy();
+      expect(screen.queryByText("Audience & Content Context")).toBeNull();
+      expect(screen.queryByText("Change Over Time")).toBeNull();
+      expect(
+        screen.queryByRole("button", {
+          name: /refresh|generate|connect|publish/i,
+        }),
+      ).toBeNull();
+    },
+  );
+  it("renders supported history and explicitly separate Content context in the frozen order", () => {
+    const fact = {
+      cohort: "FOLLOWERS" as const,
+      dimension: "AGE" as const,
+      bucket: "18-24",
+      count: 60,
+      percentage: 60,
+      evidenceRefs: ["audience-fact"],
+    };
+    useAudience.mockReturnValue({
+      data: fixture({
+        contentContext: [
+          {
+            audienceFact: fact,
+            contentFact: {
+              text: "Still images recur across three posts.",
+              evidenceRefs: ["content-fact"],
+              capturedAt: "2026-09-14T10:00:00.000Z",
+            },
+            interpretation: "SEPARATE_SOURCE_FACTS_NOT_AUDIENCE_PREFERENCE",
+          },
+        ],
+        change: {
+          state: "AVAILABLE",
+          observations: [
+            {
+              cohort: "FOLLOWERS",
+              dimension: "AGE",
+              bucket: "18-24",
+              priorPercentage: 50,
+              latestPercentage: 60,
+              percentagePointDelta: 10,
+              snapshotCount: 3,
+              elapsedDays: 14,
+              priorCapturedAt: "2026-08-31T10:00:00.000Z",
+              latestCapturedAt: "2026-09-14T10:00:00.000Z",
+              evidenceRefs: ["a", "b", "c"],
+            },
+          ],
+        },
+      }),
+      loading: false,
+      error: null,
+      preservingLastGood: false,
+      retry: vi.fn(),
+    });
+    render(
+      <MemoryRouter>
+        <CreatorAudienceWorkspace />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText(/these do not establish audience preference/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/3 comparable snapshots over 14 days/),
+    ).toBeTruthy();
+    const headings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(headings).toEqual([
+      "Overview",
+      "Audience Highlights",
+      "Audience Profiles",
+      "Audience & Content Context",
+      "Change Over Time",
+      "Data status & limitations",
+    ]);
+  });
+  it.each([
+    "INSUFFICIENT_COMPARABLE_HISTORY",
+    "SERIES_BREAK",
+    "NO_MATERIAL_CHANGE",
+    "NOT_PROCESSED",
+  ] as const)("omits empty history visualization for %s", (state) => {
+    useAudience.mockReturnValue({
+      data: fixture({ change: { state, observations: [] } }),
+      loading: false,
+      error: null,
+      preservingLastGood: false,
+      retry: vi.fn(),
+    });
+    render(
+      <MemoryRouter>
+        <CreatorAudienceWorkspace />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText("Change Over Time")).toBeNull();
+  });
   it("renders bounded loading and retryable read-error states", () => {
     const retry = vi.fn();
     useAudience.mockReturnValueOnce({

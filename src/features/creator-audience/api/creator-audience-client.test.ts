@@ -8,7 +8,11 @@ vi.mock("../../../shared/api/authenticated-fetch", () => ({
 }));
 
 const valid = {
-  contractVersion: "creator_audience_v0.1",
+  contractVersion: "creator_audience_v1.1",
+  overview: { accountFollowerCount: null, facts: [] },
+  profiles: [],
+  contentContext: [],
+  change: { state: "NOT_PROCESSED", observations: [] },
   generatedAt: "2026-09-14T10:00:00.000Z",
   status: "UNAVAILABLE",
   context: { role: "MANAGER" },

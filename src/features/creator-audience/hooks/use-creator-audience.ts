@@ -17,6 +17,7 @@ export function useCreatorAudience() {
     setError(null);
     try {
       const value = await fetchCreatorAudience(next.signal);
+      if (next.signal.aborted) return;
       setData(value);
       setPreservingLastGood(false);
     } catch (caught) {
