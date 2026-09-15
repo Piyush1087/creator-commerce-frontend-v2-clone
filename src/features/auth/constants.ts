@@ -41,6 +41,7 @@ export const AUTH_ROUTES = {
   creatorInsights: "/creator/insights",
   creatorAudience: "/creator/insights/audience",
   creatorContent: "/creator/insights/content",
+  creatorBrand: "/creator/brand",
   creatorPayouts: "/creator/payouts",
   creatorSettings: "/creator/settings",
   creatorSettingsAccount: "/creator/settings/account",

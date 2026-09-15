@@ -15,6 +15,8 @@ import {
   PublicCampaignPage,
 } from "../pages/creator/campaigns/c03-pages";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { CreatorBrandPage } from "../pages/creator/brand/creator-brand-page";
+import { CreatorBrandRouteGuard } from "../features/creator-brand/components/creator-brand-route-guard";
 
 import { AUTH_ROUTES, PUBLIC_ROUTES } from "../features/auth/constants";
 import { LoginPage } from "../pages/auth/login-page";
@@ -272,6 +274,14 @@ export function AppRoutes() {
             />
           </Route>
         </Route>
+        <Route
+          path={AUTH_ROUTES.creatorBrand}
+          element={
+            <CreatorBrandRouteGuard>
+              <CreatorBrandPage />
+            </CreatorBrandRouteGuard>
+          }
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           <Route

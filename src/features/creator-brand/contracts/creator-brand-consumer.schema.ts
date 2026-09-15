@@ -1,0 +1,45 @@
+import { z } from "zod";
+import { CreatorBrandSuggestionProjectionSchema } from "./creator-brand-suggestions.schema";
+import {
+  CreatorBrandProfileInputSchema,
+  CreatorBrandMutationRequestSchema,
+  CreatorBrandActionSchema,
+} from "./creator-brand-profile.contract";
+
+export const CreatorBrandManualRequestSchema =
+  CreatorBrandMutationRequestSchema.options[0];
+export const CreatorBrandConsumerSchema = z
+  .object({
+    contractVersion: z.literal("creator-brand-v0.1"),
+    identity: z
+      .object({
+        creatorName: z.string().nullable(),
+        avatarImageReference: z.string().nullable(),
+        primaryInstagramHandle: z.string().nullable(),
+      })
+      .strict(),
+    state: z.enum(["UNCONFIGURED", "CONFIGURED"]),
+    profile: CreatorBrandProfileInputSchema.nullable(),
+    currentRevision: z.number().int().nonnegative(),
+    context: z
+      .object({
+        role: z.enum(["OWNER", "MANAGER", "ASSISTANT"]),
+        allowedActions: z.array(CreatorBrandActionSchema),
+        manualFirst: z.literal(true),
+        sourceIndependent: z.literal(true),
+      })
+      .strict(),
+    suggestions: CreatorBrandSuggestionProjectionSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      (value.currentRevision === 0) !== (value.profile === null) ||
+      (value.profile === null) !== (value.state === "UNCONFIGURED")
+    )
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Canonical configuration/revision mismatch",
+      });
+  });
+export type CreatorBrandConsumer = z.infer<typeof CreatorBrandConsumerSchema>;
