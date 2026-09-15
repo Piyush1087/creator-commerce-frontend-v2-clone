@@ -187,6 +187,17 @@ function PortfolioResults({
               that collaboration was absent.
             </Alert>
           )}
+          {!model.error &&
+            ["PARTIAL", "UNAVAILABLE"].includes(data.discovery) && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={model.pending}
+                onClick={() => void model.reload()}
+              >
+                Retry saved-work view
+              </Button>
+            )}
           <p>
             Work opens at its original source. Access may require sign-in or
             permission. Previews and Story discovery are not available here.

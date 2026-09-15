@@ -43,6 +43,11 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.creator-portfolio .aurora-button--outline:not(:disabled),
+.creator-portfolio__drawer .aurora-button--outline:not(:disabled) {
+  color: var(--color-text-primary, #171717);
+  border-color: var(--color-border, #737373);
+}
 .creator-portfolio__announcement:empty {
   margin: 0;
 }

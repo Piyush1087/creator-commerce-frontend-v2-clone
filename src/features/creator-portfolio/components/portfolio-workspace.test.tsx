@@ -201,4 +201,19 @@ describe("Portfolio frozen view and actions", () => {
     );
     expect(usePortfolio).not.toHaveBeenCalled();
   });
+  it.each(["OWNER", "MANAGER", "ASSISTANT"] as const)(
+    "%s source-error retry reads saved work only",
+    (role) => {
+      model.data = {
+        ...portfolioFixture(role, [manualItem()]),
+        discovery: "UNAVAILABLE",
+      };
+      workspace(role);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Retry saved-work view" }),
+      );
+      expect(model.reload).toHaveBeenCalledOnce();
+      expect(model.submit).not.toHaveBeenCalled();
+    },
+  );
 });
