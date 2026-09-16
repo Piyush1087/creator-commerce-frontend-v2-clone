@@ -69,6 +69,9 @@ import { CreatorInstagramOAuthCallbackRoute } from "../pages/creator/onboarding/
 import { HelpPage } from "../pages/public/help-page";
 import { BrandPayoutsRouteGuard } from "../features/brand-payouts/components/BrandPayoutsRouteGuard";
 import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
+import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
+import { PublicCreatorMediaKitPage } from "../pages/public/creator-media-kit-page";
+import { BrandCreatorMediaKitViewPage } from "../pages/brand/creator-media-kit-view-page";
 
 export function AppRoutes() {
   return (
@@ -88,6 +91,10 @@ export function AppRoutes() {
         element={<CreatorTeamInvitationAcceptance />}
       />
       <Route path={PUBLIC_ROUTES.campaign} element={<PublicCampaignPage />} />
+      <Route
+        path="/media-kit/:publicId"
+        element={<PublicCreatorMediaKitPage />}
+      />
       {/* COMPATIBILITY_RECONCILIATION_ONLY: Marketplace is OUT_OF_MVP */}
       <Route
         path={PUBLIC_ROUTES.marketplace}
@@ -309,6 +316,18 @@ export function AppRoutes() {
             </CreatorSettingsActionGuard>
           }
         />
+        <Route
+          path={AUTH_ROUTES.creatorMediaKit}
+          element={
+            <CreatorSettingsActionGuard requiredAction="MEDIA_KIT_READ">
+              <CreatorMediaKitPage />
+            </CreatorSettingsActionGuard>
+          }
+        />
+        <Route
+          path="/brand/media-kits/:publicId"
+          element={<BrandCreatorMediaKitViewPage />}
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           <Route
@@ -325,10 +344,6 @@ export function AppRoutes() {
           />
           <Route
             path={AUTH_ROUTES.creatorAnalytics}
-            element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorMediaKit}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
           />
           <Route

@@ -46,7 +46,9 @@ export function CreatorAssistantMobile() {
           .filter(Boolean)
           .join(" ")}
         aria-label={
-          showThinking ? "Assistant drafting — open creator assistant" : "Open creator assistant"
+          showThinking
+            ? "Assistant drafting — open creator assistant"
+            : "Open creator assistant"
         }
         onClick={open}
       >
@@ -72,8 +74,9 @@ export function CreatorAssistantMobile() {
       <div
         className={`cctr-assistant-sheet${isOpen ? " cctr-assistant-sheet--open" : ""}`}
         role="dialog"
-        aria-modal="true"
+        aria-modal={isOpen ? true : undefined}
         aria-hidden={!isOpen}
+        {...(!isOpen ? { inert: "" } : {})}
       >
         <div className="cctr-assistant-sheet__handle" aria-hidden="true" />
         <CreatorAssistantPanel variant="sheet" />
