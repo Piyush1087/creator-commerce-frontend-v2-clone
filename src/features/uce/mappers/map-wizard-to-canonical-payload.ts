@@ -28,7 +28,7 @@ export function mapWizardToCanonicalPayload(
         data.publishingSchedule === "SCHEDULED"
           ? dateInputToIso(data.publishUntil, true)
           : null,
-      core_objective: data.objective,
+      objective: data.objective,
       platforms: ["INSTAGRAM"],
       campaign_visibility: data.visibility,
     },

@@ -1,5 +1,5 @@
 export type PublishingSchedule = "EVERGREEN" | "SCHEDULED";
-export type CampaignObjective = "PULSE" | "PROOF" | "PRODUCTION" | "PUSH";
+export type CampaignObjective = "AWARENESS" | "TRUST" | "ASSETS" | "ACTION";
 export type CampaignVisibility = "PUBLIC" | "ELIGIBLE_CREATORS_ONLY" | "INVITE_ONLY";
 export type AudienceGender = "ALL" | "FEMALE" | "MALE";
 export type CompensationModel = "FIXED" | "NEGOTIABLE";

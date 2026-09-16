@@ -11,7 +11,7 @@ import type { WizardData, WizardFieldErrors, WizardFieldKey } from "../types/cam
 
 const API_PATH_TO_FIELD: Record<string, WizardFieldKey> = {
   campaign_name: "name",
-  core_objective: "objective",
+  objective: "objective",
   publishing_schedule: "publishingSchedule",
   publish_from: "publishFrom",
   publish_until: "publishUntil",
@@ -166,7 +166,7 @@ function strategyInput(data: WizardData) {
       data.publishingSchedule === "SCHEDULED" && data.publishUntil
         ? new Date(`${data.publishUntil}T23:59:59.999Z`).toISOString()
         : null,
-    core_objective: data.objective,
+    objective: data.objective,
     platforms: ["INSTAGRAM"],
     campaign_visibility: data.visibility,
   };

@@ -39,7 +39,11 @@ export function CampaignFeatureHeader({
         <dl className="canonical-campaign-page__feature-context">
           <div>
             <dt>Objective</dt>
-            <dd>{view.details?.objective ?? "Not supplied"}</dd>
+            <dd>
+              {view.details?.objectiveConfigurationState === "CAMPAIGN_OBJECTIVE_REAUTHOR_REQUIRED"
+                ? "Objective unavailable"
+                : (view.details?.objective ?? "Not supplied")}
+            </dd>
           </div>
           <div>
             <dt>Created from</dt>

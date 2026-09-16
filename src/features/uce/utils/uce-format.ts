@@ -11,9 +11,10 @@ export function buildCampaignDetailPath(campaignId: string): string {
 }
 
 const OBJECTIVE_LABELS: Record<UceCampaignObjective, string> = {
-  BRAND_AWARENESS: "Brand Awareness",
-  TRAFFIC_CLICKS: "Traffic & Clicks",
-  SALES_CONVERSIONS: "Sales & Conversions",
+  AWARENESS: "Awareness",
+  TRUST: "Trust",
+  ASSETS: "Assets",
+  ACTION: "Action",
 };
 
 const STATUS_LABELS: Record<UceCampaignStatus, string> = {
@@ -26,10 +27,10 @@ const STATUS_LABELS: Record<UceCampaignStatus, string> = {
 };
 
 export function formatObjective(
-  value: UceCampaignObjective | null | undefined,
+  value: string | null | undefined,
 ): string {
   if (!value) return EMPTY_FIELD;
-  return OBJECTIVE_LABELS[value] ?? value;
+  return OBJECTIVE_LABELS[value as UceCampaignObjective] ?? "Objective unavailable";
 }
 
 export function formatStatus(value: UceCampaignStatus | null | undefined): string {
