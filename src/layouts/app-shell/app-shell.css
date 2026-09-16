@@ -584,7 +584,7 @@ button.aurora-sidebar__link:hover {
 }
 
 .aurora-bottom-nav__item--active {
-  color: var(--color-primary);
+  color: var(--color-secondary);
 }
 
 @media (max-width: 640px) {

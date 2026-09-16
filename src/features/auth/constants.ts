@@ -6,8 +6,13 @@ export const AUTH_ROUTES = {
   resetPassword: "/reset-password",
   brandDashboard: "/brand/dashboard",
   brandCentre: "/brand-centre",
+  brandCentreOverview: "/brand-centre/overview",
+  brandCentreBrand: "/brand-centre",
+  brandCentreInstagram: "/brand-centre/instagram",
   brandCentreOfferings: "/brand-centre/offerings",
   brandCentreOfferingDetail: "/brand-centre/offerings/:offeringId",
+  brandCentreMarket: "/brand-centre/market",
+  brandCentreRecommendations: "/brand-centre/recommendations",
   brandUceCampaigns: "/brand/uce/campaigns",
   brandUceCampaignCreate: "/brand/uce/campaigns/create",
   brandUceCampaignDetail: "/brand/uce/campaigns/:id",
@@ -54,10 +59,7 @@ export const PUBLIC_ROUTES = {
   brandLanding: "/brand/:slug",
 } as const;
 
-function withOptionalInvite(
-  path: string,
-  inviteToken?: string | null,
-): string {
+function withOptionalInvite(path: string, inviteToken?: string | null): string {
   if (!inviteToken) return path;
   return `${path}?invite_token=${encodeURIComponent(inviteToken)}`;
 }
@@ -82,6 +84,10 @@ export function creatorOpportunityPath(
     `${AUTH_ROUTES.creatorOpportunities}/${encodeURIComponent(campaignId)}`,
     inviteToken,
   );
+}
+
+export function instagramMediaDetailPath(mediaId: string): string {
+  return `${AUTH_ROUTES.brandCentreInstagram}/media/${encodeURIComponent(mediaId)}`;
 }
 
 export function getHomeRouteForRole(role: UserRole | null): string {

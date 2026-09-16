@@ -14,6 +14,72 @@ describe("strict accepted Brand consumer", () => {
     const fixture = consumerFixture(3);
     expect(parseBrandCentreBrand(fixture)).toEqual(fixture);
   });
+  it("strips additive backend metadata only at intelligence-field boundaries", () => {
+    const fixture = consumerFixture();
+    const additive = { objectState: "CURRENT", changedAt: null };
+    const input = {
+      ...fixture,
+      visualIdentity: {
+        ...fixture.visualIdentity,
+        style: { ...fixture.visualIdentity.style, ...additive },
+      },
+      brandIdentity: Object.fromEntries(
+        Object.entries(fixture.brandIdentity).map(([key, value]) => [
+          key,
+          { ...value, ...additive },
+        ]),
+      ),
+      audience: {
+        ...fixture.audience,
+        state: { ...fixture.audience.state, ...additive },
+      },
+      serviceability: {
+        state: { ...fixture.serviceability.state, ...additive },
+      },
+    };
+
+    const parsed = parseBrandCentreBrand(input);
+    for (const field of [
+      parsed.visualIdentity.style,
+      ...Object.values(parsed.brandIdentity),
+      parsed.audience.state,
+      parsed.serviceability.state,
+    ]) {
+      expect(field).not.toHaveProperty("objectState");
+      expect(field).not.toHaveProperty("changedAt");
+    }
+  });
+  it("still rejects malformed recognized intelligence-field values", () => {
+    const fixture = consumerFixture();
+    expect(() =>
+      parseBrandCentreBrand({
+        ...fixture,
+        brandIdentity: {
+          ...fixture.brandIdentity,
+          description: {
+            ...fixture.brandIdentity.description,
+            objectState: "CURRENT",
+            changedAt: null,
+            readiness: "READY_ENOUGH",
+          },
+        },
+      }),
+    ).toThrow(BrandConsumerContractError);
+    expect(() =>
+      parseBrandCentreBrand({
+        ...fixture,
+        visualIdentity: {
+          ...fixture.visualIdentity,
+          style: {
+            ...fixture.visualIdentity.style,
+            objectState: "CURRENT",
+            changedAt: null,
+            current: { kind: "VALUE", value: { summary: 42 } },
+          },
+        },
+      }),
+    ).toThrow(BrandConsumerContractError);
+  });
   it("requires exactly seven processor runtime entries", () => {
     const fixture = consumerFixture();
     expect(Object.keys(fixture.processorRuntime)).toEqual(BRAND_PROCESSOR_IDS);
