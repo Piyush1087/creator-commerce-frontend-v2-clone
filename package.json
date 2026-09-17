@@ -10,6 +10,10 @@
     "lint": "eslint .",
     "test": "vitest run --config vitest.config.ts",
     "test:campaign-autosave": "vitest run --config vitest.config.ts src/features/uce/autosave",
+    "test:final-gate-harness": "vitest run --config vitest.final-gate.config.ts",
+    "final-gate:list": "playwright test --config playwright.final-gate.config.ts --list",
+    "final-gate:smoke:public": "playwright test --config playwright.final-gate.config.ts --grep \"B01 anonymous .390.$\"",
+    "final-gate:smoke:authenticated": "playwright test --config playwright.final-gate.config.ts --grep \"B02 verified .1440.$\"",
     "preview": "vite preview"
   },
   "dependencies": {
