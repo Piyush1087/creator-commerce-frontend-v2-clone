@@ -72,6 +72,7 @@ import { BrandPayoutsPage } from "../pages/brand/payouts/brand-payouts-page";
 import { CreatorMediaKitPage } from "../pages/creator/centre/creator-media-kit-page";
 import { PublicCreatorMediaKitPage } from "../pages/public/creator-media-kit-page";
 import { BrandCreatorMediaKitViewPage } from "../pages/brand/creator-media-kit-view-page";
+import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 
 export function AppRoutes() {
   return (
@@ -328,6 +329,10 @@ export function AppRoutes() {
           path="/brand/media-kits/:publicId"
           element={<BrandCreatorMediaKitViewPage />}
         />
+        <Route
+          path={AUTH_ROUTES.creatorPayouts}
+          element={<CreatorPayoutsPage />}
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           <Route
@@ -349,12 +354,6 @@ export function AppRoutes() {
           <Route
             path={AUTH_ROUTES.creatorDashboard}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorPayouts}
-            element={
-              <Navigate to={AUTH_ROUTES.creatorSettingsPayouts} replace />
-            }
           />
         </Route>
       </Route>
