@@ -57,7 +57,11 @@ export function CampaignDetailsDrawer({
             <dl className="canonical-campaign-drawer__details">
               <div>
                 <dt>Objective</dt>
-                <dd>{details.objective ?? "—"}</dd>
+                <dd>
+                  {details.objectiveConfigurationState === "CAMPAIGN_OBJECTIVE_REAUTHOR_REQUIRED"
+                    ? "Objective unavailable"
+                    : (details.objective ?? "—")}
+                </dd>
               </div>
               <div>
                 <dt>Timeline</dt>

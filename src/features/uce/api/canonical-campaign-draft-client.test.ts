@@ -23,12 +23,12 @@ describe("fetchCanonicalCampaignReadiness", () => {
       text: vi.fn().mockResolvedValue(
         JSON.stringify({
           campaignId: "campaign/1",
-          objective: "PULSE",
+          objective: "AWARENESS",
           status: "READY",
           currency: "INR",
           primaryKpi: "REACH",
           supportingKpis: ["IMPRESSIONS"],
-          revision: "objective:PULSE",
+          revision: "objective:AWARENESS",
         }),
       ),
     });

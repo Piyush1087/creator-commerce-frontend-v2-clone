@@ -53,7 +53,7 @@ export const CanonicalCampaignStrategySchema = z
     publishing_schedule: z.enum(["EVERGREEN", "SCHEDULED"]),
     publish_from: z.string().datetime().optional().nullable(),
     publish_until: z.string().datetime().optional().nullable(),
-    core_objective: z.enum(["PULSE", "PROOF", "PRODUCTION", "PUSH"]),
+    objective: z.enum(["AWARENESS", "TRUST", "ASSETS", "ACTION"]),
     platforms: z.array(z.literal("INSTAGRAM")).length(1),
     campaign_visibility: z.enum([
       "PUBLIC",

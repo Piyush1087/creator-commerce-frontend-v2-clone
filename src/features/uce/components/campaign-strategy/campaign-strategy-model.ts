@@ -7,10 +7,10 @@ export const CAMPAIGN_OBJECTIVES: ReadonlyArray<{
   outcome: string;
   description: string;
 }> = [
-  { value: "PULSE", name: "Pulse", outcome: "Awareness & Reach", description: "Maximize unique reach and visibility." },
-  { value: "PROOF", name: "Proof", outcome: "Trust & Validation", description: "Build credibility through meaningful engagement." },
-  { value: "PRODUCTION", name: "Production", outcome: "High-Quality Assets", description: "Generate reusable creator content." },
-  { value: "PUSH", name: "Push", outcome: "Direct Action", description: "Drive measurable action through Campaign links." },
+  { value: "AWARENESS", name: "Awareness", outcome: "Reach & Visibility", description: "Maximize unique reach and visibility." },
+  { value: "TRUST", name: "Trust", outcome: "Credibility & Validation", description: "Build credibility through meaningful engagement." },
+  { value: "ASSETS", name: "Assets", outcome: "Reusable Content", description: "Generate reusable creator content." },
+  { value: "ACTION", name: "Action", outcome: "Measurable Response", description: "Drive measurable action through Campaign links." },
 ];
 
 const KPI_LABELS: Record<string, string> = {

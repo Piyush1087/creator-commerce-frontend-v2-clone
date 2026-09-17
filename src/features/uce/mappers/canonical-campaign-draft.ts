@@ -7,7 +7,7 @@ import type {
 
 const FIELD_TO_PATH: Partial<Record<WizardFieldKey, CanonicalCampaignDraftPath>> = {
   name: "strategy.campaign_name",
-  objective: "strategy.core_objective",
+  objective: "strategy.objective",
   publishingSchedule: "strategy.publishing_schedule",
   publishFrom: "strategy.publish_from",
   publishUntil: "strategy.publish_until",
@@ -112,7 +112,7 @@ export function mergeCanonicalDraftIntoWizardData(
   return {
     ...base,
     name: typeof strategy.campaign_name === "string" ? strategy.campaign_name : base.name,
-    objective: typeof strategy.core_objective === "string" ? strategy.core_objective as WizardData["objective"] : base.objective,
+    objective: typeof strategy.objective === "string" ? strategy.objective as WizardData["objective"] : base.objective,
     publishingSchedule: typeof strategy.publishing_schedule === "string" ? strategy.publishing_schedule as WizardData["publishingSchedule"] : base.publishingSchedule,
     publishFrom: isoToDateInput(strategy.publish_from),
     publishUntil: isoToDateInput(strategy.publish_until),

@@ -98,8 +98,8 @@ describe("CanonicalCampaignAutosaveController", () => {
       undefined,
       accepted,
     );
-    controller.schedule("objective", "PULSE", true);
+    controller.schedule("objective", "AWARENESS", true);
     await controller.flush(["objective"]);
-    expect(accepted).toHaveBeenCalledWith("objective", "PULSE");
+    expect(accepted).toHaveBeenCalledWith("objective", "AWARENESS");
   });
 });

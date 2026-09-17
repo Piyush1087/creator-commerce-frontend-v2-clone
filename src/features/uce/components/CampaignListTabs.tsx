@@ -186,9 +186,10 @@ function OperationsTab() {
             onChange={(e) => setObjectiveFilter(e.target.value)}
           >
             <option value="">All Objectives</option>
-            <option value="BRAND_AWARENESS">Brand Awareness</option>
-            <option value="TRAFFIC_CLICKS">Traffic & Clicks</option>
-            <option value="SALES_CONVERSIONS">Sales & Conversions</option>
+            <option value="AWARENESS">Awareness</option>
+            <option value="TRUST">Trust</option>
+            <option value="ASSETS">Assets</option>
+            <option value="ACTION">Action</option>
           </select>
           <button
             type="button"
@@ -277,7 +278,9 @@ function OperationsTab() {
                             </div>
                             <div className="campaign-context-chips">
                               <span className="uce-objective-pill">
-                                {formatObjective(campaign.core_objective)}
+                                {campaign.objective_configuration_state === "AVAILABLE"
+                                  ? formatObjective(campaign.core_objective)
+                                  : "Objective unavailable"}
                               </span>
                               <span className="uce-products-chip">
                                 {campaign.product_count} Product

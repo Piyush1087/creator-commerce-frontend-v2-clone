@@ -39,10 +39,10 @@ export class CanonicalDraftRequestError extends Error {
 }
 
 export type CanonicalReadinessObjective =
-  | "PULSE"
-  | "PROOF"
-  | "PRODUCTION"
-  | "PUSH";
+  | "AWARENESS"
+  | "TRUST"
+  | "ASSETS"
+  | "ACTION";
 export type CanonicalReadinessCurrency = "INR" | "USD";
 
 export type CanonicalCampaignReadinessResponse =
@@ -75,7 +75,7 @@ export type CanonicalCampaignDraftPath =
   | "strategy.publishing_schedule"
   | "strategy.publish_from"
   | "strategy.publish_until"
-  | "strategy.core_objective"
+  | "strategy.objective"
   | "strategy.campaign_visibility"
   | "targeting.creator_archetypes"
   | "targeting.minimum_followers"

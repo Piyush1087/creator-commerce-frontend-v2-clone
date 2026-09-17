@@ -7,6 +7,12 @@ export type UceCampaignStatus =
   | "ARCHIVED";
 
 export type UceCampaignObjective =
+  | "AWARENESS"
+  | "TRUST"
+  | "ASSETS"
+  | "ACTION";
+
+export type LegacyUceCampaignObjective =
   | "BRAND_AWARENESS"
   | "TRAFFIC_CLICKS"
   | "SALES_CONVERSIONS";
@@ -23,6 +29,10 @@ export type CampaignListRow = {
   campaign_name: string;
   current_status: UceCampaignStatus;
   core_objective: UceCampaignObjective | null;
+  objective_configuration_state:
+    | "AVAILABLE"
+    | "CAMPAIGN_OBJECTIVE_REAUTHOR_REQUIRED"
+    | "CAMPAIGN_DEFINITION_INTEGRITY_INVALID";
   product_count: number;
   brief_count: number;
   prospects_count: number;
@@ -106,7 +116,7 @@ export type CampaignShellResponse = {
     fixed_start_date: string | null;
     fixed_end_date: string | null;
     dynamic_days_limit: number | null;
-    core_objective: UceCampaignObjective;
+    core_objective: UceCampaignObjective | LegacyUceCampaignObjective;
     platform_deliverables: unknown;
     budget_pool: number;
   } | null;

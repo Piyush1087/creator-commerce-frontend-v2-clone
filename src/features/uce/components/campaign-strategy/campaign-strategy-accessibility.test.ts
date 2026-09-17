@@ -8,7 +8,7 @@ import { CampaignStrategyStep } from "./CampaignStrategyStep";
 
 const data = {
   name: "Summer Collection",
-  objective: "PULSE",
+  objective: "AWARENESS",
   publishingSchedule: "SCHEDULED",
   publishFrom: "2026-09-15",
   publishUntil: "2026-10-15",

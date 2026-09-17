@@ -4,7 +4,7 @@ import { validateCampaignWizardStep } from "../../utils/validate-campaign-wizard
 import { CREATOR_ARCHETYPES, affinityResults, archetypeLabel, creatorStrategyCanContinue, creatorStrategySummary, filterArchetypes, formatInteger, geographyOptionSelected, parseGroupedInteger, providerFailureCopy, toggleCanonicalValue } from "./creator-strategy-model";
 
 const india: CampaignAudienceGeography = { scope: "COUNTRY", label: "India", country_code: "IN", locality: null, region: null, radius_km: null, is_primary: true };
-const data = { name: "Summer Collection — Creator Seeding", objective: "PULSE", archetypes: ["EDUCATOR", "PRODUCT_REVIEWER", "STORYTELLER"], minimumFollowers: 20000, maximumFollowers: 250000, audienceAgeMin: 24, audienceAgeMax: 34, audienceGender: "FEMALE", affinityIds: ["SKINCARE", "BEAUTY"], audienceGeographies: [india] } as WizardData;
+const data = { name: "Summer Collection — Creator Seeding", objective: "AWARENESS", archetypes: ["EDUCATOR", "PRODUCT_REVIEWER", "STORYTELLER"], minimumFollowers: 20000, maximumFollowers: 250000, audienceAgeMin: 24, audienceAgeMax: 34, audienceGender: "FEMALE", affinityIds: ["SKINCARE", "BEAUTY"], audienceGeographies: [india] } as WizardData;
 
 describe("Creator Strategy model", () => {
   it("exposes stable canonical archetype IDs and product labels", () => {
@@ -53,7 +53,7 @@ describe("Creator Strategy model", () => {
   it("derives the compact Step 2 Summary without speculative metrics", () => {
     expect(creatorStrategySummary(data)).toEqual([
       { label: "Campaign", value: "Summer Collection — Creator Seeding" },
-      { label: "Objective", value: "Pulse — Awareness & Reach" },
+      { label: "Objective", value: "Awareness — Reach & Visibility" },
       { label: "Archetypes", value: "3 selected" },
       { label: "Followers", value: "20,000 – 2,50,000" },
       { label: "Audience", value: "Female · 24–34" },

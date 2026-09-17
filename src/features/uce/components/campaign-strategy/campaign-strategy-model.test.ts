@@ -4,15 +4,15 @@ import type { WizardData } from "../../types/campaign-wizard";
 import { validateCampaignWizardStep } from "../../utils/validate-campaign-wizard";
 import { campaignReadinessPresentation, campaignStrategyNavigationBlocked, campaignStrategySummary, CAMPAIGN_OBJECTIVES, kpiDisplayLabel, radioNavigationIndex, scheduleSelectionPatch, showScheduledDates } from "./campaign-strategy-model";
 
-const data = { name: " Summer Collection ", objective: "PULSE", publishingSchedule: "SCHEDULED", publishFrom: "2026-09-15", publishUntil: "2026-10-15", visibility: "ELIGIBLE_CREATORS_ONLY" } as WizardData;
+const data = { name: " Summer Collection ", objective: "AWARENESS", publishingSchedule: "SCHEDULED", publishFrom: "2026-09-15", publishUntil: "2026-10-15", visibility: "ELIGIBLE_CREATORS_ONLY" } as WizardData;
 
 describe("Campaign Strategy presentation", () => {
   it("freezes the four canonical Objective cards", () => {
     expect(CAMPAIGN_OBJECTIVES.map(({ value, name, outcome }) => ({ value, name, outcome }))).toEqual([
-      { value: "PULSE", name: "Pulse", outcome: "Awareness & Reach" },
-      { value: "PROOF", name: "Proof", outcome: "Trust & Validation" },
-      { value: "PRODUCTION", name: "Production", outcome: "High-Quality Assets" },
-      { value: "PUSH", name: "Push", outcome: "Direct Action" },
+      { value: "AWARENESS", name: "Awareness", outcome: "Reach & Visibility" },
+      { value: "TRUST", name: "Trust", outcome: "Credibility & Validation" },
+      { value: "ASSETS", name: "Assets", outcome: "Reusable Content" },
+      { value: "ACTION", name: "Action", outcome: "Measurable Response" },
     ]);
   });
 
@@ -45,16 +45,16 @@ describe("Campaign Strategy presentation", () => {
   });
 
   it("derives resolving, ready and safe failure states", () => {
-    expect(campaignReadinessPresentation({ status: "resolving", campaignId: "c", objective: "PULSE" }).kind).toBe("resolving");
-    expect(campaignReadinessPresentation({ status: "ready", campaignId: "c", objective: "PULSE", currency: "INR", primaryKpi: "REACH", supportingKpis: ["IMPRESSIONS"], revision: "r" })).toEqual({ kind: "ready", primary: "Reach", supporting: ["Impressions"] });
-    expect(campaignReadinessPresentation({ status: "failed-retryable", campaignId: "c", objective: "PULSE", reason: "READINESS_TEMPORARILY_UNAVAILABLE", retryable: true })).toMatchObject({ kind: "retryable-failure", canRetry: true });
-    expect(campaignReadinessPresentation({ status: "failed-non-retryable", campaignId: "c", objective: "PULSE", reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE", retryable: false })).toMatchObject({ kind: "configuration-failure", canRetry: false });
+    expect(campaignReadinessPresentation({ status: "resolving", campaignId: "c", objective: "AWARENESS" }).kind).toBe("resolving");
+    expect(campaignReadinessPresentation({ status: "ready", campaignId: "c", objective: "AWARENESS", currency: "INR", primaryKpi: "REACH", supportingKpis: ["IMPRESSIONS"], revision: "r" })).toEqual({ kind: "ready", primary: "Reach", supporting: ["Impressions"] });
+    expect(campaignReadinessPresentation({ status: "failed-retryable", campaignId: "c", objective: "AWARENESS", reason: "READINESS_TEMPORARILY_UNAVAILABLE", retryable: true })).toMatchObject({ kind: "retryable-failure", canRetry: true });
+    expect(campaignReadinessPresentation({ status: "failed-non-retryable", campaignId: "c", objective: "AWARENESS", reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE", retryable: false })).toMatchObject({ kind: "configuration-failure", canRetry: false });
   });
 
   it("blocks navigation while resolving, failed or autosave-failed", () => {
-    const ready = { status: "ready", campaignId: "c", objective: "PULSE", currency: "INR", primaryKpi: "REACH", supportingKpis: ["IMPRESSIONS"], revision: "r" } as const;
-    expect(campaignStrategyNavigationBlocked({ status: "resolving", campaignId: "c", objective: "PULSE" }, false)).toBe(true);
-    expect(campaignStrategyNavigationBlocked({ status: "failed-retryable", campaignId: "c", objective: "PULSE", reason: "READINESS_TEMPORARILY_UNAVAILABLE", retryable: true }, false)).toBe(true);
+    const ready = { status: "ready", campaignId: "c", objective: "AWARENESS", currency: "INR", primaryKpi: "REACH", supportingKpis: ["IMPRESSIONS"], revision: "r" } as const;
+    expect(campaignStrategyNavigationBlocked({ status: "resolving", campaignId: "c", objective: "AWARENESS" }, false)).toBe(true);
+    expect(campaignStrategyNavigationBlocked({ status: "failed-retryable", campaignId: "c", objective: "AWARENESS", reason: "READINESS_TEMPORARILY_UNAVAILABLE", retryable: true }, false)).toBe(true);
     expect(campaignStrategyNavigationBlocked(ready, true)).toBe(true);
     expect(campaignStrategyNavigationBlocked(ready, false)).toBe(false);
   });
@@ -62,7 +62,7 @@ describe("Campaign Strategy presentation", () => {
   it("derives the compact authoritative Step 1 Summary", () => {
     expect(campaignStrategySummary(data)).toEqual([
       { label: "Name", value: "Summer Collection" },
-      { label: "Objective", value: "Pulse — Awareness & Reach" },
+      { label: "Objective", value: "Awareness — Reach & Visibility" },
       { label: "Schedule", value: "15 Sept 2026 – 15 Oct 2026" },
       { label: "Platform", value: "Instagram" },
       { label: "Visibility", value: "Eligible Creators Only" },

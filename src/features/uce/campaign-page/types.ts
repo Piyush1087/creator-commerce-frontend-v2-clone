@@ -15,6 +15,9 @@ export interface Capability {
 export interface CampaignDetailsView {
   state: SurfaceState;
   objective: string | null;
+  objectiveConfigurationState?:
+    | "AVAILABLE"
+    | "CAMPAIGN_OBJECTIVE_REAUTHOR_REQUIRED";
   platforms: unknown;
   visibilityScopes: string[];
   compensationType: string | null;

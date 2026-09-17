@@ -74,24 +74,24 @@ describe("CanonicalCampaignReadinessController", () => {
   it("requests exactly once when a saved Objective is hydrated", () => {
     const load = vi.fn().mockReturnValue(new Promise(() => undefined));
     const controller = new CanonicalCampaignReadinessController(load);
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     expect(load).toHaveBeenCalledOnce();
     expect(load).toHaveBeenCalledWith("campaign-1");
   });
 
   it("clears readiness immediately and waits for accepted persistence", async () => {
-    const load = vi.fn().mockResolvedValue(ready("PULSE"));
+    const load = vi.fn().mockResolvedValue(ready("AWARENESS"));
     const controller = new CanonicalCampaignReadinessController(load);
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.state().status).toBe("ready");
 
-    controller.objectiveChanged("campaign-1", "PROOF");
+    controller.objectiveChanged("campaign-1", "TRUST");
 
     expect(controller.state()).toEqual({
       status: "resolving",
       campaignId: "campaign-1",
-      objective: "PROOF",
+      objective: "TRUST",
     });
     expect(load).toHaveBeenCalledOnce();
   });
@@ -100,24 +100,24 @@ describe("CanonicalCampaignReadinessController", () => {
     const load = vi.fn().mockReturnValue(new Promise(() => undefined));
     const controller = new CanonicalCampaignReadinessController(load);
     controller.hydrate("campaign-1", null);
-    controller.objectiveChanged("campaign-1", "PULSE");
+    controller.objectiveChanged("campaign-1", "AWARENESS");
     expect(load).not.toHaveBeenCalled();
 
-    controller.objectiveAccepted("campaign-1", "PULSE");
+    controller.objectiveAccepted("campaign-1", "AWARENESS");
     expect(load).toHaveBeenCalledOnce();
   });
 
   it("accepts current readiness and retains server-derived currency", async () => {
     const controller = new CanonicalCampaignReadinessController(
-      vi.fn().mockResolvedValue(ready("PULSE")),
+      vi.fn().mockResolvedValue(ready("AWARENESS")),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.state()).toMatchObject({
       status: "ready",
-      objective: "PULSE",
+      objective: "AWARENESS",
       currency: "INR",
-      revision: "objective:PULSE",
+      revision: "objective:AWARENESS",
     });
   });
 
@@ -128,7 +128,7 @@ describe("CanonicalCampaignReadinessController", () => {
         request: ReturnType<
           typeof deferred<CanonicalCampaignReadinessResponse>
         >,
-      ) => request.resolve(ready("PULSE")),
+      ) => request.resolve(ready("AWARENESS")),
     ],
     [
       "domain failure",
@@ -139,11 +139,11 @@ describe("CanonicalCampaignReadinessController", () => {
       ) =>
         request.resolve({
           campaignId: "campaign-1",
-          objective: "PULSE",
+          objective: "AWARENESS",
           status: "FAILED",
           reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE",
           retryable: false,
-          revision: "objective:PULSE",
+          revision: "objective:AWARENESS",
         }),
     ],
     [
@@ -159,22 +159,22 @@ describe("CanonicalCampaignReadinessController", () => {
     const controller = new CanonicalCampaignReadinessController(
       vi.fn().mockReturnValue(request.promise),
     );
-    controller.hydrate("campaign-1", "PULSE");
-    controller.objectiveChanged("campaign-1", "PROOF");
+    controller.hydrate("campaign-1", "AWARENESS");
+    controller.objectiveChanged("campaign-1", "TRUST");
     complete(request);
     await settle();
     expect(controller.state()).toEqual({
       status: "resolving",
       campaignId: "campaign-1",
-      objective: "PROOF",
+      objective: "TRUST",
     });
   });
 
   it("ignores a response with a mismatched Objective or Draft ID", async () => {
     const controller = new CanonicalCampaignReadinessController(
-      vi.fn().mockResolvedValue(ready("PROOF", "campaign-other")),
+      vi.fn().mockResolvedValue(ready("TRUST", "campaign-other")),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.state().status).toBe("resolving");
   });
@@ -184,16 +184,16 @@ describe("CanonicalCampaignReadinessController", () => {
     const load = vi
       .fn()
       .mockReturnValueOnce(first.promise)
-      .mockResolvedValueOnce(ready("PROOF", "campaign-2"));
+      .mockResolvedValueOnce(ready("TRUST", "campaign-2"));
     const controller = new CanonicalCampaignReadinessController(load);
-    controller.hydrate("campaign-1", "PULSE");
-    controller.hydrate("campaign-2", "PROOF");
-    first.resolve(ready("PULSE"));
+    controller.hydrate("campaign-1", "AWARENESS");
+    controller.hydrate("campaign-2", "TRUST");
+    first.resolve(ready("AWARENESS"));
     await settle();
     expect(controller.state()).toMatchObject({
       status: "ready",
       campaignId: "campaign-2",
-      objective: "PROOF",
+      objective: "TRUST",
     });
   });
 
@@ -201,14 +201,14 @@ describe("CanonicalCampaignReadinessController", () => {
     const controller = new CanonicalCampaignReadinessController(
       vi.fn().mockResolvedValue({
         campaignId: "campaign-1",
-        objective: "PULSE",
+        objective: "AWARENESS",
         status: "FAILED",
         reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE",
         retryable: false,
-        revision: "objective:PULSE",
+        revision: "objective:AWARENESS",
       }),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.state()).toMatchObject({
       status: "failed-non-retryable",
@@ -223,7 +223,7 @@ describe("CanonicalCampaignReadinessController", () => {
     const controller = new CanonicalCampaignReadinessController(
       vi.fn().mockRejectedValue(error),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.state()).toMatchObject({
       status: "failed-retryable",
@@ -237,9 +237,9 @@ describe("CanonicalCampaignReadinessController", () => {
     const load = vi
       .fn()
       .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce(ready("PULSE"));
+      .mockResolvedValueOnce(ready("AWARENESS"));
     const controller = new CanonicalCampaignReadinessController(load);
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     const generation = controller.requestGeneration();
     controller.retry();
@@ -257,15 +257,15 @@ describe("CanonicalCampaignReadinessController", () => {
       .mockRejectedValueOnce(new Error("offline"))
       .mockReturnValueOnce(retry.promise);
     const controller = new CanonicalCampaignReadinessController(load);
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     controller.retry();
-    controller.objectiveChanged("campaign-1", "PROOF");
-    retry.resolve(ready("PULSE"));
+    controller.objectiveChanged("campaign-1", "TRUST");
+    retry.resolve(ready("AWARENESS"));
     await settle();
     expect(controller.state()).toMatchObject({
       status: "resolving",
-      objective: "PROOF",
+      objective: "TRUST",
     });
   });
 
@@ -274,9 +274,9 @@ describe("CanonicalCampaignReadinessController", () => {
     const controller = new CanonicalCampaignReadinessController(
       vi.fn().mockReturnValue(request.promise),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     controller.dispose();
-    request.resolve(ready("PULSE"));
+    request.resolve(ready("AWARENESS"));
     await settle();
     expect(controller.state().status).toBe("resolving");
   });
@@ -289,22 +289,22 @@ describe("CanonicalCampaignReadinessController", () => {
   ] as const)("blocks Step 1 while readiness is %s", async (expected) => {
     const load = vi.fn().mockReturnValue(new Promise(() => undefined));
     const controller = new CanonicalCampaignReadinessController(load);
-    if (expected === "resolving") controller.hydrate("campaign-1", "PULSE");
+    if (expected === "resolving") controller.hydrate("campaign-1", "AWARENESS");
     if (expected === "failed-retryable") {
       load.mockRejectedValue(new Error("offline"));
-      controller.hydrate("campaign-1", "PULSE");
+      controller.hydrate("campaign-1", "AWARENESS");
       await settle();
     }
     if (expected === "failed-non-retryable") {
       load.mockResolvedValue({
         campaignId: "campaign-1",
-        objective: "PULSE",
+        objective: "AWARENESS",
         status: "FAILED",
         reason: "SUPPORTING_KPI_CONFIGURATION_UNAVAILABLE",
         retryable: false,
-        revision: "objective:PULSE",
+        revision: "objective:AWARENESS",
       });
-      controller.hydrate("campaign-1", "PULSE");
+      controller.hydrate("campaign-1", "AWARENESS");
       await settle();
     }
     expect(controller.state().status).toBe(expected);
@@ -313,9 +313,9 @@ describe("CanonicalCampaignReadinessController", () => {
 
   it("allows Step 1 only for current ready state plus Stage 1 eligibility", async () => {
     const controller = new CanonicalCampaignReadinessController(
-      vi.fn().mockResolvedValue(ready("PULSE")),
+      vi.fn().mockResolvedValue(ready("AWARENESS")),
     );
-    controller.hydrate("campaign-1", "PULSE");
+    controller.hydrate("campaign-1", "AWARENESS");
     await settle();
     expect(controller.canContinue(false)).toBe(false);
     expect(controller.canContinue(true)).toBe(true);
