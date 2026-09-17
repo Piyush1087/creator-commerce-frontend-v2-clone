@@ -26,6 +26,7 @@ const response = {
     "TEAM_READ",
     "INSTAGRAM_SETTINGS_READ",
     "PAYOUT_SETTINGS_READ",
+    "PAYOUT_WORKSPACE_READ",
   ] as const,
 };
 
@@ -33,7 +34,12 @@ function ActorStateProbe() {
   const state = useCreatorWorkspaceActorState();
   return createElement(
     "output",
-    null,
+    {
+      "data-actions":
+        state?.status === "READY"
+          ? state.actorContext.allowedActions.join(",")
+          : "",
+    },
     state?.status === "READY"
       ? `READY:${state.actorContext.actorUserId}:${state.actorContext.actorRole}`
       : (state?.status ?? "DISABLED"),
@@ -71,8 +77,28 @@ describe("Creator workspace actor context convergence", () => {
     renderProvider();
 
     expect(screen.getByText("LOADING")).toBeTruthy();
-    expect(await screen.findByText("READY:manager-user:MANAGER")).toBeTruthy();
+    const ready = await screen.findByText("READY:manager-user:MANAGER");
+    expect(ready).toBeTruthy();
+    expect(ready.getAttribute("data-actions")).toContain(
+      "PAYOUT_WORKSPACE_READ",
+    );
     expect(mocks.fetchActor).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not infer payout workspace read authority for an Assistant", async () => {
+    mocks.fetchActor.mockResolvedValue({
+      ...response,
+      actor_user_id: "assistant-user",
+      actor_membership_id: "assistant-membership",
+      actor_role: "ASSISTANT",
+      allowed_actions: ["WORKSPACE_PROFILE_READ", "PAYOUT_SETTINGS_READ"],
+    });
+    renderProvider("assistant-user");
+
+    const ready = await screen.findByText("READY:assistant-user:ASSISTANT");
+    expect(ready.getAttribute("data-actions")).not.toContain(
+      "PAYOUT_WORKSPACE_READ",
+    );
   });
 
   it("fails a denied membership projection into RECOVERY", async () => {
