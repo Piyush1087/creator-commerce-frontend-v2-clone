@@ -10,11 +10,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 
 import { Alert, Badge, Button, Chip } from "../../../design-system/aurora";
-import {
-  AUTH_ROUTES,
-  PUBLIC_ROUTES,
-  publicCampaignPath,
-} from "../../auth/constants";
+import { AUTH_ROUTES, publicCampaignPath } from "../../auth/constants";
 import {
   claimMarketplaceInvitation,
   fetchMarketplaceAlternatives,
