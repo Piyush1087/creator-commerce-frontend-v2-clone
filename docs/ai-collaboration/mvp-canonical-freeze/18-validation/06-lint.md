@@ -28,3 +28,15 @@ rule: prettier/prettier (CRLF / wrapping), auto-fixable
 ```
 
 **Classification:** `PREEXISTING_ACCEPTED_DEBT` — **Parent-accepted 2026-09-09** (do not `--fix`).
+
+## C-06 overlay — 2026-09-17
+
+```text
+cwd: creator-commerce-frontend-v2
+branch: integration/c06-creator-payouts
+command: npm run lint
+exit_code: 0
+elapsed: ~564s
+```
+
+Backend overlay lint is recorded on backend-v2 `18-validation/06-lint.md`.

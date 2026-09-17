@@ -68,3 +68,29 @@ Tests       6 passed (6)
 INV-09 FE destination proof. Canonical BE counts are in backend-v2 `18-validation/07-targeted-tests.md`.
 
 Per-INV mapping: `11-invariant-results.md`.
+
+## C-06 overlay — 2026-09-17
+
+Does not rewrite RUN 1–12. Not freeze PASS. Canonical overlay charter lives on backend-v2.
+
+```text
+npx vitest run --config vitest.config.ts
+  src/features/creator-payouts
+  src/layouts/app-shell/bottom-nav-items.test.ts
+  src/layouts/app-shell/creator-shell-capabilities.test.ts
+  src/layouts/app-shell/creator-shell-rendering.test.ts
+  src/features/creator-onboarding/creator-settings-guard-scope.test.ts
+  src/features/creator-onboarding/creator-entry-architecture.test.ts
+  src/routes/c05-frontend-convergence.architecture.test.ts
+  src/routes/inv-11-backend-authority.architecture.test.ts
+  src/shared/auth/require-auth.test.ts
+  src/features/auth/post-login-redirect.test.ts
+  src/features/collaboration/utils/collaboration-route-access.test.ts
+  src/features/collaboration/utils/collaboration-g1c-bank-cutover.test.ts
+Test Files  13 passed (13)
+Tests       91 passed (91)
+
+npm run lint
+exit_code: 0
+elapsed: ~564s
+```

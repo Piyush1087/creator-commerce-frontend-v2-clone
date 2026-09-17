@@ -8,7 +8,7 @@ function read(relativePath: string): string {
   return readFileSync(join(root, relativePath), "utf8");
 }
 
-/** Accepted IN authenticated API clients. OUT Co-Pilot / Centre / C-06 hub excluded. */
+/** Accepted IN authenticated API clients. OUT Co-Pilot / Centre excluded. C-06 workspace is IN. */
 const IN_API_CLIENTS = [
   "src/features/auth/api/auth-client.ts",
   "src/features/creator-home/api/creator-home-client.ts",
@@ -25,6 +25,7 @@ const IN_API_CLIENTS = [
   "src/features/creator-campaigns/api/c03-client.ts",
   "src/features/creator-campaigns/api/creator-campaigns-client.ts",
   "src/features/creator-payout-settings/api/creator-payout-settings-client.ts",
+  "src/features/creator-payouts/api/creator-payouts-client.ts",
   "src/features/brand-centre/api/brand-centre-client.ts",
 ] as const;
 

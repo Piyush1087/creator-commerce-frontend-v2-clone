@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-10  
 **Runs:** RUN 4 (static/unit/smoke) + RUN 5 (postgres) + RUN 7 (INV-03 harness 29/29) + RUN 9 (local hygiene)  
+**Overlay:** C-06 2026-09-17 (does not rewrite RUN 1–12)  
 **Suite definition:** `../phase-d-invariants/cross-module-invariant-suite.md`
 
 OTP codes and secrets are not recorded here.
@@ -15,10 +16,10 @@ OTP codes and secrets are not recorded here.
 | INV-05 | PASS (unit + smoke) | Shell tests + browser hide | Chat architecture test retargeted RUN 9 (no P6 git-diff) |
 | INV-06 | **PASS** postgres (2026-09-09 retry) | Fresh `c03_p14_handoff` 34/34 serial `--testTimeout=30000` | Prior 5s timeouts + dirty-DB count drift were `ENVIRONMENT_BLOCKED`, not product red |
 | INV-07 | **PASS** postgres handoff; local seed leftover closed RUN 9 | Same suite: approval commits `Collaboration` | `scripts/seed-dev-collaboration.ts` now seeds a **legacy** brief-linked fixture (`source_application_id` null). Canonical handoff remains this suite |
-| INV-08 | PARTIAL | C-05 P2 architecture + Brand Payouts v1 pulled (provider-disabled). Wave B postgres **PASS 3/3**. C-06 still OUT — left for next |
+| INV-08 | PASS classified (C-06 overlay 2026-09-17) | Prior: C-05 P2 + Brand Payouts v1 + Wave B postgres **PASS 3/3**. Overlay: FE P4–P5 + shell (Payouts outside Instagram guard). Canonical BE P6: backend-v2 `13-postgres-invariants.md`. Live provider remains INV-10. |
 | INV-09 | PASS classified | Settings contact proven. Leftover collab shipping writer `410`. C-04 destination snapshot. Parent 2026-09-11 16:50: FE `c04-frontend` **6/6**. |
 | INV-10 | PARTIAL | Postmark OTP template live send **PASS** 2026-09-10. Fail-closed payouts/C-05 recovery **PASS classified** 2026-09-11. Live IG/Razorpay **NOT_RUN** |
-| INV-11 | PASS classified | Accepted IN feature API clients use `authenticatedFetch` → `/api/v1`. Brand Home / Creator Home aggregators only. Brand Home fail-closed for Creator (smoke). OUT Co-Pilot/Centre/C-06 hub excluded | |
+| INV-11 | PASS classified | Accepted IN feature API clients use `authenticatedFetch` → `/api/v1`. Brand Home / Creator Home aggregators only. Brand Home fail-closed for Creator (smoke). C-06 overlay 2026-09-17: `creator-payouts-client.ts` is **IN** (architecture test **3/3**; list file still uncommitted at record). OUT Co-Pilot/Centre excluded | |
 | INV-12 | PASS (unit + postgres 11/11 + browser) | `brand-workspace-authorization.postgres.test.ts` on `bs07_freeze_auth` | |
 | INV-13 | PASS classified (pairs 1–2 leftover journey writers retired) | Pair 1–2 leftover writers `410` on backend. Canonical C-03/C-04 still write `Collaboration` + `CollaborationCommercialAgreement`. Tables retained. **No Prisma drop.** Canonical: backend-v2 `phase-d-invariants/inv-13-competing-writers.md` | Writer proof closed; freeze itself is still not PASS |
 
