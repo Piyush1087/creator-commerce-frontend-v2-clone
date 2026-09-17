@@ -28,12 +28,12 @@ const ready = {
     organizationId: "organization-1",
     subjectCreatorProfileId: "profile-1",
     subjectOwnerUserId: "owner-user",
-    allowedActions: ["PAYOUT_SETTINGS_READ"] as const,
+    allowedActions: ["PAYOUT_SETTINGS_READ", "PAYOUT_WORKSPACE_READ"] as const,
   },
 };
 
 describe("Creator shell rendering", () => {
-  it("renders the freeze Creator destinations without Centre, Payouts hub, or Marketplace", () => {
+  it("renders Creator destinations including C-06 Payouts, without Centre or Marketplace", () => {
     const html = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -42,17 +42,17 @@ describe("Creator shell rendering", () => {
       ),
     );
 
-    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(6);
+    expect((html.match(/aurora-sidebar__link/g) ?? []).length).toBe(7);
     for (const label of [
       "Home",
       "Campaigns",
       "Collaborations",
+      "Payouts",
       "Settings",
     ]) {
       expect(html).toContain(`>${label}</span>`);
     }
     expect(html).not.toContain("Creator Center");
-    expect(html).not.toContain(">Payouts</span>");
     expect(html).not.toContain("Marketplace");
     expect(html).toContain('href="/help"');
     expect(html).not.toContain("Upgrade");

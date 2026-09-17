@@ -67,7 +67,7 @@ describe("C01 Creator Entry architecture", () => {
     expect(guardStart).toBeGreaterThan(routes.indexOf("brandSettings"));
     expect(routes.indexOf("creatorSettings")).toBeLessThan(guardStart);
     expect(routes.indexOf("creatorHome")).toBeGreaterThan(guardStart);
-    expect(routes.indexOf("creatorPayouts")).toBeGreaterThan(guardStart);
+    expect(routes.indexOf("creatorPayouts")).toBeLessThan(guardStart);
     expect(routes.indexOf('path="/creator/onboarding/*"')).toBeGreaterThan(
       guardStart,
     );

@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Settings,
   Store,
+  Wallet,
 } from "lucide-react";
 import type { ElementType } from "react";
 
@@ -137,6 +138,17 @@ const creatorSidebarNavItems: SidebarNavItem[] = [
     headerTitle: "Collaborations",
     mainVariant: "flush",
     requiresCreatorWorkspace: true,
+  },
+  {
+    label: "Payouts",
+    icon: Wallet,
+    path: AUTH_ROUTES.creatorPayouts,
+    roles: ["CREATOR"],
+    breadcrumb: "Payouts",
+    headerTitle: "Earnings & Payouts Hub",
+    mainVariant: "flush",
+    requiresCreatorWorkspace: true,
+    requiredCreatorAction: "PAYOUT_WORKSPACE_READ",
   },
   {
     label: "Settings",

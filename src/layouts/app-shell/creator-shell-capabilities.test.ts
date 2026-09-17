@@ -30,6 +30,7 @@ const manager: CreatorWorkspaceActorContext = {
     "INSTAGRAM_SETTINGS_MANAGE",
     "PAYOUT_SETTINGS_READ",
     "PAYOUT_SETTINGS_MANAGE",
+    "PAYOUT_WORKSPACE_READ",
     "LEGAL_PROFILE_READ",
     "LEGAL_PROFILE_MANAGE",
   ],
@@ -59,6 +60,7 @@ describe("Creator shell capability projection", () => {
       "Home",
       "Campaigns",
       "Collaborations",
+      "Payouts",
       "Settings",
     ]);
     expect(labels).not.toContain("Marketplace");

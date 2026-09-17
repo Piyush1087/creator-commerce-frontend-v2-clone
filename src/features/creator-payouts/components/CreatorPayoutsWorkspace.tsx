@@ -1,486 +1,606 @@
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle,
-  Building2,
-  CircleCheck,
-  Clock,
-  Download,
-  ExternalLink,
-  FileText,
-  Loader2,
-  Shield,
-  Wallet,
+  AlertCircle,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  RefreshCw,
+  WalletCards,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Alert, Badge, Button } from "../../../design-system/aurora";
 import { SideDrawer } from "../../../design-system/aurora/components/SideDrawer";
-import { AUTH_ROUTES } from "../../auth/constants";
 import {
-  displayCurrency,
-  displayText,
-  EMPTY_DISPLAY,
-} from "../../brand-escrow/utils/display-value";
+  fetchCreatorPayoutHistoryDetail,
+  fetchCreatorPayoutObligation,
+  fetchCreatorPayoutsHistory,
+  fetchCreatorPayoutsObligations,
+} from "../api/creator-payouts-client";
 import type {
-  CreatorClearedPayoutRow,
-  CreatorEscrowPipelineRow,
-  CreatorPayoutsLedgerTab,
+  CreatorPayoutHistory,
+  CreatorPayoutObligation,
 } from "../contracts/creator-payouts.contracts";
 import { useCreatorPayouts } from "../hooks/use-creator-payouts";
-import {
-  exportCreatorAnnualTaxFormPdf,
-  exportCreatorClearedReceiptPdf,
-  exportCreatorMonthlyStatementPdf,
-} from "../utils/payout-document-exports";
-import { CreatorBankDetailsDrawer } from "./CreatorBankDetailsDrawer";
 import "../creator-payouts.css";
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return EMPTY_DISPLAY;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return EMPTY_DISPLAY;
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-function brandInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
-type DrawerSelection =
-  | { kind: "escrow"; row: CreatorEscrowPipelineRow }
-  | { kind: "cleared"; row: CreatorClearedPayoutRow };
+type Selection =
+  | { kind: "obligation"; item: CreatorPayoutObligation }
+  | { kind: "history"; item: CreatorPayoutHistory };
+const familyLabels = {
+  UPCOMING: "Upcoming",
+  DUE_OR_ACTION_REQUIRED: "Due or action required",
+  PROCESSING: "Processing",
+  PAID_TO_DATE: "Paid to date",
+} as const;
+const familyIcons = {
+  UPCOMING: CalendarClock,
+  DUE_OR_ACTION_REQUIRED: AlertCircle,
+  PROCESSING: Clock3,
+  PAID_TO_DATE: CheckCircle2,
+} as const;
 
 export function CreatorPayoutsWorkspace() {
-  const { data, loading, error, reload } = useCreatorPayouts();
-  const [activeTab, setActiveTab] = useState<CreatorPayoutsLedgerTab>("escrow");
-  const [bankDrawerOpen, setBankDrawerOpen] = useState(false);
-  const [bankDrawerMode, setBankDrawerMode] = useState<"add" | "edit" | "fix">("add");
-  const [detailSelection, setDetailSelection] = useState<DrawerSelection | null>(null);
+  const resources = useCreatorPayouts();
+  const { overview, obligations, history, method, accessDenied, refresh } =
+    resources;
+  const [tab, setTab] = useState<"obligations" | "history">("obligations");
+  const [moreObligations, setMoreObligations] = useState<
+    CreatorPayoutObligation[]
+  >([]);
+  const [moreHistory, setMoreHistory] = useState<CreatorPayoutHistory[]>([]);
+  const [obligationCursor, setObligationCursor] = useState<string | null>(null);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [paging, setPaging] = useState(false);
+  const [pagingError, setPagingError] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const detailRequestId = useRef(0);
 
-  const summary = data?.summary;
-  const currency = summary?.currency ?? "INR";
-  const bank = data?.bank_method;
+  useEffect(() => {
+    setMoreObligations([]);
+    setObligationCursor(obligations.data?.page.next_cursor ?? null);
+  }, [obligations.data]);
+  useEffect(() => {
+    setMoreHistory([]);
+    setHistoryCursor(history.data?.page.next_cursor ?? null);
+  }, [history.data]);
 
-  const escrowCount = data?.counts.escrow_pipeline ?? 0;
-  const clearedCount = data?.counts.cleared_payouts ?? 0;
-
-  const bankCard = useMemo(() => {
-    if (!data) return null;
-    if (bank?.status === "suspended") {
-      return (
-        <div className="cp-bank-card cp-bank-card--error">
-          <h2 className="cp-bank-card__title">Payout method suspended</h2>
-          <p className="cp-bank-card__body">
-            Your connected payout method requires attention. Identity verification failed or
-            the routing details were rejected by the clearing network.
-          </p>
-          <Button
-            variant="primary"
-            onClick={() => {
-              setBankDrawerMode("fix");
-              setBankDrawerOpen(true);
-            }}
-          >
-            Fix payout details
-          </Button>
-        </div>
-      );
-    }
-    if (bank?.status === "verified") {
-      return (
-        <div className="cp-bank-card cp-bank-card--verified">
-          <h2 className="cp-bank-card__title">Active payout method</h2>
-          <div className="cp-bank-card__row">
-            <Building2 size={20} aria-hidden />
-            <span>{displayText(bank.bank_name)}</span>
-            <span>Account ending in •••• {displayText(bank.account_last_4)}</span>
-            <Badge tone="success">Verified</Badge>
-          </div>
-          <Button
-            variant="ghost"
-            className="cp-bank-card__edit-mobile"
-            onClick={() => {
-              setBankDrawerMode("edit");
-              setBankDrawerOpen(true);
-            }}
-          >
-            Edit or update bank account
-          </Button>
-        </div>
-      );
-    }
+  if (accessDenied)
     return (
-      <div className="cp-bank-card cp-bank-card--warning">
-        <h2 className="cp-bank-card__title">Bank account setup required</h2>
-        <p className="cp-bank-card__body">
-          You currently have {displayCurrency(summary?.total_escrow_balance, currency)} secured
-          in active contracts. Connect a verified bank account so funds route to you when milestones
-          are approved.
-        </p>
-        <Button
-          onClick={() => {
-            setBankDrawerMode("add");
-            setBankDrawerOpen(true);
-          }}
-        >
-          Add bank details
-        </Button>
-      </div>
+      <main className="cp-workspace">
+        <header>
+          <h1>Creator payouts</h1>
+        </header>
+        <Alert tone="warning" title="Payout workspace unavailable">
+          Your current Creator role does not permit access to payout
+          information.
+        </Alert>
+      </main>
     );
-  }, [bank, currency, data, summary?.total_escrow_balance]);
+  const initialLoading = [overview, obligations, history, method].some(
+    (resource) => resource.status === "INITIAL_LOADING",
+  );
+  const refreshing = [overview, obligations, history, method].some(
+    (resource) => resource.status === "REFRESHING",
+  );
+  const errors = [
+    overview.error,
+    obligations.error,
+    history.error,
+    method.error,
+  ].filter((value): value is string => Boolean(value));
+  const obligationRows = [
+    ...(obligations.data?.items ?? []),
+    ...moreObligations,
+  ];
+  const historyRows = [...(history.data?.items ?? []), ...moreHistory];
+
+  async function loadMore() {
+    setPaging(true);
+    setPagingError(null);
+    try {
+      if (tab === "obligations" && obligationCursor) {
+        const next = await fetchCreatorPayoutsObligations(obligationCursor);
+        if (next.as_of !== obligations.data?.as_of)
+          throw new Error("The payout snapshot changed. Refresh to continue.");
+        setMoreObligations((rows) => [...rows, ...next.items]);
+        setObligationCursor(next.page.next_cursor);
+      }
+      if (tab === "history" && historyCursor) {
+        const next = await fetchCreatorPayoutsHistory(historyCursor);
+        if (next.as_of !== history.data?.as_of)
+          throw new Error("The payout snapshot changed. Refresh to continue.");
+        setMoreHistory((rows) => [...rows, ...next.items]);
+        setHistoryCursor(next.page.next_cursor);
+      }
+    } catch {
+      setPagingError("The next page is unavailable. Refresh and try again.");
+    } finally {
+      setPaging(false);
+    }
+  }
+
+  async function openDetail(value: Selection) {
+    const requestId = ++detailRequestId.current;
+    setSelection(value);
+    setDetailLoading(true);
+    setDetailError(null);
+    try {
+      if (value.kind === "obligation") {
+        const response = await fetchCreatorPayoutObligation(
+          value.item.public_reference,
+        );
+        if (detailRequestId.current !== requestId) return;
+        setSelection({ kind: "obligation", item: response.obligation });
+      } else {
+        const response = await fetchCreatorPayoutHistoryDetail(
+          value.item.public_reference,
+        );
+        if (detailRequestId.current !== requestId) return;
+        setSelection({ kind: "history", item: response.history });
+      }
+    } catch {
+      if (detailRequestId.current !== requestId) return;
+      setDetailError(
+        "This payout record is unavailable for your current access.",
+      );
+    } finally {
+      if (detailRequestId.current === requestId) setDetailLoading(false);
+    }
+  }
+
+  function closeDetail() {
+    detailRequestId.current += 1;
+    setSelection(null);
+    setDetailLoading(false);
+  }
 
   return (
-    <div className="cp-workspace cc-workspace">
-      <header className="cp-workspace__header">
-        <h1 className="cp-workspace__title">Earnings &amp; Payouts Hub</h1>
-        <p className="cp-workspace__subtitle">
-          Track your secured escrow milestones, monitor upcoming bank transfers, and manage your
-          financial compliance documents.
-        </p>
+    <main className="cp-workspace" aria-busy={initialLoading || refreshing}>
+      <header className="cp-header">
+        <div>
+          <p className="cp-eyebrow">Creator workspace</p>
+          <h1>Creator payouts</h1>
+          <p>
+            Read-only payout truth from your Collaboration agreements and the
+            shared financial engine.
+          </p>
+        </div>
+        <Button variant="ghost" onClick={refresh} disabled={refreshing}>
+          <RefreshCw size={16} aria-hidden />{" "}
+          {refreshing ? "Refreshing" : "Refresh"}
+        </Button>
       </header>
-
-      {error ? (
-        <Alert tone="error" title="Could not load payouts">
-          {error}
+      <p className="cp-sr-status" role="status" aria-live="polite">
+        {initialLoading
+          ? "Loading payout information."
+          : refreshing
+            ? "Refreshing payout information."
+            : errors.length
+              ? "Some payout information is unavailable."
+              : "Payout information loaded."}
+      </p>
+      {errors.length ? (
+        <Alert tone="warning" title="Some payout information is unavailable">
+          Available sections remain visible. Refresh to try the unavailable
+          sections again.
         </Alert>
       ) : null}
 
-      <section className="cp-metrics" aria-label="Financial pipeline">
-        <article className="cp-metric-card cp-metric-card--secure">
-          <p className="cp-metric-card__label">Active escrow locks</p>
-          <p className="cp-metric-card__value">
-            {loading ? (
-              <Loader2 size={20} className="brand-escrow-spin" aria-hidden />
-            ) : (
-              displayCurrency(summary?.total_escrow_balance, currency)
-            )}
-          </p>
-          <p className="cp-metric-card__tag">
-            <Shield size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden />
-            Secured across {summary?.active_campaign_count ?? 0} active brief
-            {(summary?.active_campaign_count ?? 0) === 1 ? "" : "s"}
-          </p>
-        </article>
-
-        <article className="cp-metric-card cp-metric-card--processing">
-          <p className="cp-metric-card__label">Clearing in progress</p>
-          <p className="cp-metric-card__value">
-            {loading ? EMPTY_DISPLAY : displayCurrency(summary?.processing_balance, currency)}
-          </p>
-          <p className="cp-metric-card__tag">
-            <Clock size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden />
-            Est. arrival: {formatDate(summary?.next_payout_date)}
-          </p>
-        </article>
-
-        <article className="cp-metric-card cp-metric-card--lifetime">
-          <p className="cp-metric-card__label">Lifetime earnings</p>
-          <p className="cp-metric-card__value">
-            {loading ? EMPTY_DISPLAY : displayCurrency(summary?.lifetime_cleared_balance, currency)}
-          </p>
-          <p className="cp-metric-card__tag">
-            <Wallet size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden />
-            Since {summary?.account_creation_year ?? EMPTY_DISPLAY}
-          </p>
-        </article>
-      </section>
-
-      {bankCard}
-
-      <section className="cp-panel">
-        <h2 className="cp-metric-card__label" style={{ margin: 0 }}>
-          Transaction ledger
-        </h2>
-
-        <div className="cp-ledger-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            className={
-              activeTab === "escrow" ? "cp-ledger-tab cp-ledger-tab--active" : "cp-ledger-tab"
-            }
-            onClick={() => setActiveTab("escrow")}
-          >
-            Active escrow pipeline ({escrowCount})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={
-              activeTab === "cleared" ? "cp-ledger-tab cp-ledger-tab--active" : "cp-ledger-tab"
-            }
-            onClick={() => setActiveTab("cleared")}
-          >
-            <CircleCheck size={16} aria-hidden />
-            Cleared payouts ({clearedCount})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={
-              activeTab === "invoices" ? "cp-ledger-tab cp-ledger-tab--active" : "cp-ledger-tab"
-            }
-            onClick={() => setActiveTab("invoices")}
-          >
-            <FileText size={16} aria-hidden />
-            Invoices &amp; taxes
-          </button>
-        </div>
-
-        {activeTab === "invoices" ? (
-          <>
-            <p className="cc-muted" style={{ margin: 0 }}>
-              Download auto-generated invoices for your accounting and annual tax withholding
-              documents.
-            </p>
-            <div className="cp-invoice-row">
-              <span>Monthly statement</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => data && exportCreatorMonthlyStatementPdf(data)}
-                disabled={!data || data.cleared_payouts.length === 0}
-              >
-                Download PDF
-              </Button>
-            </div>
-            <div className="cp-invoice-row">
-              <span>Annual tax form (1099-NEC / Form 16A)</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  data &&
-                  exportCreatorAnnualTaxFormPdf(data.summary.account_creation_year, data)
-                }
-                disabled={!data}
-              >
-                Download PDF
-              </Button>
-            </div>
-          </>
-        ) : activeTab === "escrow" ? (
-          <>
-            <p className="cc-muted" style={{ margin: 0 }}>
-              Funds locked in platform escrow. Released automatically once deliverables are
-              approved.
-            </p>
-            <div className="cp-table-wrap cp-table-wrap--desktop">
-              <table className="cp-table">
-                <thead>
-                  <tr>
-                    <th>Brand / campaign</th>
-                    <th>Amount locked</th>
-                    <th>Milestone status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.escrow_pipeline ?? []).length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="cc-muted">
-                        {loading ? "Loading…" : "No active escrow pipeline entries."}
-                      </td>
-                    </tr>
-                  ) : (
-                    data?.escrow_pipeline.map((row) => (
-                      <tr key={row.collaboration_id}>
-                        <td>
-                          <strong>{row.brand_name}</strong>
-                          <div className="cc-muted">{row.campaign_name}</div>
-                        </td>
-                        <td className="cp-table__amount">
-                          {displayCurrency(row.amount_locked, currency)}
-                        </td>
-                        <td>{displayText(row.milestone_status)}</td>
-                        <td>
-                          <Link
-                            to={`${AUTH_ROUTES.creatorCollaborations}?collaboration=${encodeURIComponent(row.collaboration_id)}`}
-                          >
-                            <Button variant="outline" size="sm">
-                              View workflow
-                              <ExternalLink size={14} style={{ marginLeft: 6 }} aria-hidden />
-                            </Button>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="cp-mobile-list">
-              {(data?.escrow_pipeline ?? []).map((row) => (
-                <button
-                  key={row.collaboration_id}
-                  type="button"
-                  className="cp-mobile-row"
-                  onClick={() => setDetailSelection({ kind: "escrow", row })}
-                >
-                  <span className="cp-mobile-row__avatar">{brandInitials(row.brand_name)}</span>
-                  <span>
-                    <strong>{row.campaign_name}</strong>
-                    <div className="cc-muted">{row.brand_name}</div>
-                  </span>
-                  <Badge tone="pending">{displayCurrency(row.amount_locked, currency)}</Badge>
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="cc-muted" style={{ margin: 0 }}>
-              Historical ledger of funds transferred to your connected bank account.
-            </p>
-            <div className="cp-table-wrap cp-table-wrap--desktop">
-              <table className="cp-table">
-                <thead>
-                  <tr>
-                    <th>Date cleared</th>
-                    <th>Brand / campaign</th>
-                    <th>Net payout</th>
-                    <th>Status</th>
-                    <th>Receipt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.cleared_payouts ?? []).length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="cc-muted">
-                        {loading ? "Loading…" : "No cleared payouts yet."}
-                      </td>
-                    </tr>
-                  ) : (
-                    data?.cleared_payouts.map((row) => (
-                      <tr key={row.transaction_id ?? `${row.collaboration_id}-${row.cleared_at}`}>
-                        <td>{formatDate(row.cleared_at)}</td>
-                        <td>
-                          <strong>{row.brand_name}</strong>
-                          <div className="cc-muted">{row.campaign_name}</div>
-                        </td>
-                        <td className="cp-table__amount">
-                          {displayCurrency(row.net_payout, currency)}
-                        </td>
-                        <td>
-                          <Badge tone="success">{displayText(row.status)}</Badge>
-                        </td>
-                        <td>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => exportCreatorClearedReceiptPdf(row, currency)}
-                          >
-                            <Download size={16} aria-hidden />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="cp-mobile-list">
-              {(data?.cleared_payouts ?? []).map((row) => (
-                <button
-                  key={row.transaction_id ?? `${row.collaboration_id}-${row.cleared_at}`}
-                  type="button"
-                  className="cp-mobile-row"
-                  onClick={() => setDetailSelection({ kind: "cleared", row })}
-                >
-                  <span className="cp-mobile-row__avatar">{brandInitials(row.brand_name)}</span>
-                  <span>
-                    <strong>{row.campaign_name}</strong>
-                    <div className="cc-muted">{row.brand_name}</div>
-                  </span>
-                  <Badge tone="success">{displayCurrency(row.net_payout, currency)}</Badge>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      {bank?.status === "none" && (summary?.total_escrow_balance ?? 0) > 0 ? (
-        <div className="cp-bank-card cp-bank-card--warning" role="status">
-          <AlertTriangle size={18} aria-hidden />
-          <span className="cc-muted" style={{ marginLeft: 8 }}>
-            Connect a bank account to receive payouts when milestones clear.
-          </span>
-        </div>
-      ) : null}
-
-      <CreatorBankDetailsDrawer
-        open={bankDrawerOpen}
-        mode={bankDrawerMode}
-        onClose={() => setBankDrawerOpen(false)}
-        onSaved={() => void reload()}
+      <SummaryGrid
+        loading={initialLoading}
+        summaries={overview.data?.summaries ?? []}
+        coverage={overview.data?.section.coverage}
+      />
+      <MethodCard
+        value={method.data?.payout_method ?? null}
+        loading={method.status === "INITIAL_LOADING"}
       />
 
-      <SideDrawer
-        isOpen={detailSelection !== null}
-        onClose={() => setDetailSelection(null)}
-        title="Transaction details"
-      >
-        {detailSelection?.kind === "escrow" ? (
-          <>
-            <p className="cp-drawer-amount">
-              {displayCurrency(detailSelection.row.amount_locked, currency)}
+      <section className="cp-panel" aria-labelledby="cp-activity-title">
+        <div className="cp-panel-heading">
+          <div>
+            <h2 id="cp-activity-title">Payout records</h2>
+            <p>
+              Amounts and dates appear only when canonical lineage is proven.
             </p>
-            <p className="cp-drawer-meta">
-              {detailSelection.row.brand_name} · {detailSelection.row.campaign_name}
-            </p>
-            <p className="cp-drawer-meta">
-              Milestone: {detailSelection.row.milestone_status}
-            </p>
-            <p className="cp-drawer-meta">
-              Gross {displayCurrency(detailSelection.row.fee_breakdown.gross_quote, currency)} ·
-              Platform fee {displayCurrency(detailSelection.row.fee_breakdown.platform_fee, currency)}
-              · Net {displayCurrency(detailSelection.row.fee_breakdown.net_payout, currency)}
-            </p>
-            <p className="cp-drawer-meta">
-              Escrow status: {displayText(detailSelection.row.escrow_status)}
-            </p>
-            <Link
-              to={`${AUTH_ROUTES.creatorCollaborations}?collaboration=${encodeURIComponent(detailSelection.row.collaboration_id)}`}
+          </div>
+          <div className="cp-tabs" role="tablist" aria-label="Payout records">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "obligations"}
+              onClick={() => setTab("obligations")}
             >
-              <Button variant="primary" style={{ width: "100%" }}>
-                Go to collaboration workflow
-              </Button>
-            </Link>
-          </>
+              Obligations
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "history"}
+              onClick={() => setTab("history")}
+            >
+              History
+            </button>
+          </div>
+        </div>
+        {tab === "obligations" ? (
+          <Obligations
+            rows={obligationRows}
+            loading={obligations.status === "INITIAL_LOADING"}
+            coverage={obligations.data?.section.coverage}
+            onSelect={(item) => void openDetail({ kind: "obligation", item })}
+          />
+        ) : (
+          <History
+            rows={historyRows}
+            loading={history.status === "INITIAL_LOADING"}
+            onSelect={(item) => void openDetail({ kind: "history", item })}
+          />
+        )}
+        {pagingError ? (
+          <Alert tone="warning" title="Could not load the next page">
+            {pagingError}
+          </Alert>
         ) : null}
-        {detailSelection?.kind === "cleared" ? (
-          <>
-            <p className="cp-drawer-amount">
-              {displayCurrency(detailSelection.row.net_payout, currency)}
-            </p>
-            <p className="cp-drawer-meta">
-              {detailSelection.row.brand_name} · {detailSelection.row.campaign_name}
-            </p>
-            <p className="cp-drawer-meta">
-              Gross {displayCurrency(detailSelection.row.fee_breakdown.gross_quote, currency)} ·
-              Platform fee {displayCurrency(detailSelection.row.fee_breakdown.platform_fee, currency)}
-            </p>
-            <p className="cp-drawer-meta">
-              Net settled {displayCurrency(detailSelection.row.fee_breakdown.net_payout, currency)} ·
-              Status: {displayText(detailSelection.row.status)}
-            </p>
-            <p className="cp-drawer-meta">Cleared: {formatDate(detailSelection.row.cleared_at)}</p>
-            {detailSelection.row.transaction_id ? (
-              <p className="cp-drawer-meta">TXN {detailSelection.row.transaction_id}</p>
-            ) : null}
-          </>
+        {(tab === "obligations" ? obligationCursor : historyCursor) ? (
+          <Button
+            variant="ghost"
+            onClick={() => void loadMore()}
+            disabled={paging}
+          >
+            {paging ? "Loading more…" : "Load more"}
+          </Button>
+        ) : null}
+      </section>
+
+      <SideDrawer
+        isOpen={selection !== null}
+        onClose={closeDetail}
+        title={
+          selection?.kind === "obligation"
+            ? "Obligation detail"
+            : "History detail"
+        }
+        subtitle="Creator-safe payout record"
+      >
+        {detailLoading ? (
+          <p role="status">Loading detail…</p>
+        ) : detailError ? (
+          <Alert tone="warning" title="Detail unavailable">
+            {detailError}
+          </Alert>
+        ) : selection ? (
+          <Detail selection={selection} />
         ) : null}
       </SideDrawer>
+    </main>
+  );
+}
+
+function SummaryGrid({
+  loading,
+  summaries,
+  coverage,
+}: {
+  loading: boolean;
+  summaries: {
+    family: keyof typeof familyLabels;
+    value: { amount: string; currency: string };
+  }[];
+  coverage?: string;
+}) {
+  const currencies = [...new Set(summaries.map((item) => item.value.currency))];
+  if (loading)
+    return (
+      <section className="cp-summary" aria-label="Payout summary">
+        <article className="cp-card cp-skeleton">Loading summary…</article>
+      </section>
+    );
+  if (currencies.length === 0)
+    return (
+      <section className="cp-empty" aria-label="Payout summary">
+        <WalletCards aria-hidden />
+        <h2>No canonical payout totals yet</h2>
+        <p>
+          Totals will appear when an obligation has complete financial lineage.
+        </p>
+      </section>
+    );
+  return (
+    <section aria-label="Payout summary" className="cp-summary-groups">
+      {coverage === "PARTIAL" ? (
+        <p className="cp-limited">
+          Some unproven records are excluded from totals.
+        </p>
+      ) : null}
+      {currencies.map((currency) => (
+        <div key={currency}>
+          <h2>{currency} summary</h2>
+          <div className="cp-summary">
+            {Object.entries(familyLabels).map(([family, label]) => {
+              const value = summaries.find(
+                (item) =>
+                  item.family === family && item.value.currency === currency,
+              )?.value ?? { amount: "0.0000", currency };
+              const Icon = familyIcons[family as keyof typeof familyIcons];
+              return (
+                <article className="cp-card" key={family}>
+                  <Icon aria-hidden />
+                  <p>{label}</p>
+                  <strong>{formatMoney(value)}</strong>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function MethodCard({
+  value,
+  loading,
+}: {
+  value: {
+    status: string;
+    masked_display: string | null;
+    destination_type: string | null;
+    country_code: string | null;
+    currency_code: string | null;
+    safe_reason_code: string | null;
+    manage_settings_href: string | null;
+  } | null;
+  loading: boolean;
+}) {
+  return (
+    <section className="cp-card cp-method" aria-labelledby="cp-method-title">
+      <div>
+        <h2 id="cp-method-title">Payout method</h2>
+        {loading ? (
+          <p>Loading payout method…</p>
+        ) : value ? (
+          <>
+            <p>
+              <Badge tone={value.status === "CURRENT" ? "success" : "pending"}>
+                {readable(value.status)}
+              </Badge>
+            </p>
+            <p>{value.masked_display ?? "No displayable payout destination"}</p>
+            <p className="cp-muted">
+              {[value.destination_type, value.country_code, value.currency_code]
+                .filter((part): part is string => Boolean(part))
+                .map(readable)
+                .join(" · ") ||
+                readable(value.safe_reason_code ?? value.status)}
+            </p>
+          </>
+        ) : (
+          <p>Payout method unavailable.</p>
+        )}
+      </div>
+      {value?.manage_settings_href ? (
+        <Link className="cp-link" to={value.manage_settings_href}>
+          Manage in Settings
+        </Link>
+      ) : null}
+    </section>
+  );
+}
+
+function Obligations({
+  rows,
+  loading,
+  coverage,
+  onSelect,
+}: {
+  rows: CreatorPayoutObligation[];
+  loading: boolean;
+  coverage?: string;
+  onSelect: (item: CreatorPayoutObligation) => void;
+}) {
+  if (loading) return <p role="status">Loading obligations…</p>;
+  if (!rows.length)
+    return (
+      <div className="cp-empty">
+        <h3>No payout obligations</h3>
+        <p>There are no payout obligations available for this workspace.</p>
+      </div>
+    );
+  return (
+    <>
+      {coverage === "PARTIAL" ? (
+        <p className="cp-limited">
+          Limited rows with unproven money or dates are labeled and excluded
+          from totals.
+        </p>
+      ) : null}
+      <div className="cp-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Record</th>
+              <th>Status</th>
+              <th>Due</th>
+              <th>Outstanding</th>
+              <th>
+                <span className="cp-visually-hidden">Open</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((item) => (
+              <tr key={item.obligation_id}>
+                <td>
+                  {shortRef(item.public_reference)}
+                  {item.legacy ? (
+                    <span className="cp-legacy">Limited</span>
+                  ) : null}
+                </td>
+                <td>
+                  <Badge tone={tone(item.lifecycle)}>
+                    {readable(item.lifecycle)}
+                  </Badge>
+                  <small>{readable(item.effective_gate)}</small>
+                </td>
+                <td>{formatDate(item.payment_due_at)}</td>
+                <td>{formatMoney(item.outstanding_value)}</td>
+                <td>
+                  <button
+                    className="cp-row-action"
+                    type="button"
+                    onClick={() => onSelect(item)}
+                    aria-label={`View ${shortRef(item.public_reference)}`}
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="cp-mobile-list">
+        {rows.map((item) => (
+          <button
+            type="button"
+            className="cp-mobile-row"
+            key={item.obligation_id}
+            onClick={() => onSelect(item)}
+          >
+            <span>
+              <strong>{formatMoney(item.outstanding_value)}</strong>
+              <small>{shortRef(item.public_reference)}</small>
+            </span>
+            <span>
+              <Badge tone={tone(item.lifecycle)}>
+                {readable(item.lifecycle)}
+              </Badge>
+              <small>{formatDate(item.payment_due_at)}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function History({
+  rows,
+  loading,
+  onSelect,
+}: {
+  rows: CreatorPayoutHistory[];
+  loading: boolean;
+  onSelect: (item: CreatorPayoutHistory) => void;
+}) {
+  if (loading) return <p role="status">Loading payout history…</p>;
+  if (!rows.length)
+    return (
+      <div className="cp-empty">
+        <h3>No payout history</h3>
+        <p>Recorded payout activity will appear here.</p>
+      </div>
+    );
+  return (
+    <div className="cp-history">
+      {rows.map((item) => (
+        <button
+          type="button"
+          key={item.history_id}
+          className="cp-history-row"
+          onClick={() => onSelect(item)}
+        >
+          <span>
+            <strong>{readable(item.event_type)}</strong>
+            <small>{formatDate(item.recorded_at)}</small>
+          </span>
+          <span>
+            <strong>{formatMoney(item.value)}</strong>
+            <small>{readable(item.status)}</small>
+          </span>
+        </button>
+      ))}
     </div>
   );
+}
+
+function Detail({ selection }: { selection: Selection }) {
+  const entries =
+    selection.kind === "obligation"
+      ? [
+          ["Record", selection.item.public_reference],
+          ["Lifecycle", readable(selection.item.lifecycle)],
+          ["Gate", readable(selection.item.effective_gate)],
+          ["Entitlement", formatMoney(selection.item.entitlement_value)],
+          ["Settled", formatMoney(selection.item.settled_value)],
+          ["Outstanding", formatMoney(selection.item.outstanding_value)],
+          ["Payment due", formatDate(selection.item.payment_due_at)],
+          [
+            "Payment term",
+            readable(selection.item.payment_term ?? "Unavailable"),
+          ],
+          ["Collaboration", selection.item.collaboration_reference],
+        ]
+      : [
+          ["Event", readable(selection.item.event_type)],
+          ["Value", formatMoney(selection.item.value)],
+          ["Status", readable(selection.item.status)],
+          ["Recorded", formatDate(selection.item.recorded_at)],
+          ["Obligation", selection.item.obligation_reference],
+          ["Collaboration", selection.item.collaboration_reference],
+        ];
+  return (
+    <dl className="cp-detail">
+      {entries.map(([term, value]) => (
+        <div key={term}>
+          <dt>{term}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function formatMoney(
+  value: { amount: string; currency: string } | null,
+): string {
+  if (!value) return "Unavailable";
+  const [whole, fraction] = value.amount.split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/gu, ",");
+  return `${value.currency} ${grouped}${fraction ? `.${fraction}` : ""}`;
+}
+function formatDate(value: string | null): string {
+  if (!value) return "Unavailable";
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(value));
+}
+function readable(value: string): string {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+function shortRef(value: string): string {
+  return value.length <= 28 ? value : `${value.slice(0, 24)}…`;
+}
+function tone(value: string): "success" | "pending" | "error" | "neutral" {
+  return value === "SETTLED"
+    ? "success"
+    : value.includes("ACTION") ||
+        value.includes("FAILED") ||
+        value.includes("LEGACY")
+      ? "error"
+      : value.includes("PROCESS") ||
+          value.includes("SCHEDULED") ||
+          value.includes("READY")
+        ? "pending"
+        : "neutral";
 }

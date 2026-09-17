@@ -43,6 +43,7 @@ import { BrandUceCampaignDetailPage } from "../pages/brand/uce/BrandUceCampaignD
 import { BrandCollaborationPage } from "../pages/brand/collaboration/brand-collaboration-page";
 import { CreatorHomePage } from "../pages/creator/centre/creator-home-page";
 import { CreatorCollaborationsPage } from "../pages/creator/collaborations/creator-collaborations-page";
+import { CreatorPayoutsPage } from "../pages/creator/payouts/creator-payouts-page";
 import { PublicBrandLandingPage } from "../pages/public/brand/public-brand-landing-page";
 import { AppShellLayout } from "../layouts/app-shell/AppShellLayout";
 import { MarketplaceGuestLayout } from "../layouts/marketplace-guest/MarketplaceGuestLayout";
@@ -253,6 +254,10 @@ export function AppRoutes() {
             />
           </Route>
         </Route>
+        <Route
+          path={AUTH_ROUTES.creatorPayouts}
+          element={<CreatorPayoutsPage />}
+        />
         <Route element={<RequireCreatorPlatformAccess />}>
           <Route path={AUTH_ROUTES.creatorHome} element={<CreatorHomePage />} />
           <Route
@@ -270,12 +275,6 @@ export function AppRoutes() {
           <Route
             path={AUTH_ROUTES.creatorDashboard}
             element={<Navigate to={AUTH_ROUTES.creatorHome} replace />}
-          />
-          <Route
-            path={AUTH_ROUTES.creatorPayouts}
-            element={
-              <Navigate to={AUTH_ROUTES.creatorSettingsPayouts} replace />
-            }
           />
         </Route>
       </Route>
