@@ -120,6 +120,19 @@ const INITIAL_DATA: WizardData = {
   payoutTerms: "NET_30",
 };
 
+function deferControllerDisposal(
+  lifecycleRef: { current: number },
+  lifecycle: number,
+  autosaveRef: { current: CanonicalCampaignAutosaveController<WizardData> | null },
+  readinessRef: { current: CanonicalCampaignReadinessController | null },
+): void {
+  queueMicrotask(() => {
+    if (lifecycleRef.current !== lifecycle) return;
+    autosaveRef.current?.dispose();
+    readinessRef.current?.dispose();
+  });
+}
+
 export function CreateCampaignWizard() {
   const navigate = useNavigate();
   const initStarted = useRef(false);
@@ -127,6 +140,7 @@ export function CreateCampaignWizard() {
   const draftIdRef = useRef<string | null>(null);
   const autosaveRef = useRef<CanonicalCampaignAutosaveController<WizardData> | null>(null);
   const readinessRef = useRef<CanonicalCampaignReadinessController | null>(null);
+  const controllerLifecycle = useRef(0);
   const [, setAutosaveVersion] = useState(0);
   const [, setReadinessVersion] = useState(0);
   // Retained during the transition so the legacy unreachable branch remains type-safe.
@@ -173,9 +187,13 @@ export function CreateCampaignWizard() {
     draftIdRef.current = draftId;
   }, [draftId]);
 
-  useEffect(() => () => {
-    autosaveRef.current?.dispose();
-    readinessRef.current?.dispose();
+  useEffect(() => {
+    const lifecycle = ++controllerLifecycle.current;
+    return () => {
+      // Strict Mode immediately follows its development-only cleanup probe with
+      // another setup. Defer disposal so that probe cannot retire live refs.
+      deferControllerDisposal(controllerLifecycle, lifecycle, autosaveRef, readinessRef);
+    };
   }, []);
 
   useEffect(() => {

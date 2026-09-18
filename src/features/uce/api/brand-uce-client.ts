@@ -35,10 +35,15 @@ const JSON_HEADERS = {
 
 const BASE = `${env.apiUrl}/api/v1/brand-uce`;
 
-function authHeaders(): Record<string, string> {
+function authHeaders(additional: Record<string, string> = {}): Record<string, string> {
   return {
     ...JSON_HEADERS,
+    ...additional,
   };
+}
+
+function applicationDecisionHeaders(): Record<string, string> {
+  return authHeaders({ "Idempotency-Key": globalThis.crypto.randomUUID() });
 }
 
 async function readJsonOrThrow(response: Response): Promise<unknown> {
@@ -268,7 +273,7 @@ export async function approveCampaignApplication(
 ): Promise<unknown> {
   const response = await fetch(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/approve`,
-    { method: "POST", headers: authHeaders() },
+    { method: "POST", headers: applicationDecisionHeaders() },
   );
   return readJsonOrThrow(response);
 }
@@ -282,7 +287,7 @@ export async function rejectCampaignApplication(
     `${BASE}/campaigns/${encodeURIComponent(campaignId)}/applications/${encodeURIComponent(applicationId)}/reject`,
     {
       method: "POST",
-      headers: authHeaders(),
+      headers: applicationDecisionHeaders(),
       body: JSON.stringify({ reason }),
     },
   );

@@ -8,6 +8,7 @@ import {
   fetchCanonicalCampaignBriefs,
   fetchSelectableCampaignAssets,
   linkCanonicalCampaignAsset,
+  rejectCampaignApplication,
   updateCanonicalCampaignBrief,
 } from "./brand-uce-client";
 
@@ -27,7 +28,10 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("Campaign Page canonical API client", () => {
   it("consumes selectable and linked Campaign Assets without translating entities", async () => {
@@ -235,5 +239,23 @@ describe("Campaign Page canonical API client", () => {
       /campaigns\/campaign-1\/applications\/application-1\/approve$/,
     );
     expect(fetchMock.mock.calls[0][0]).not.toContain("/accept");
+  });
+
+  it("assigns a fresh idempotency key to each Application decision command", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(response({ status: "APPROVED" }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(globalThis.crypto, "randomUUID")
+      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222");
+
+    await approveCampaignApplication("campaign-1", "application-1");
+    await rejectCampaignApplication("campaign-1", "application-2", "Not aligned");
+
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("Idempotency-Key"))
+      .toBe("11111111-1111-4111-8111-111111111111");
+    expect(new Headers(fetchMock.mock.calls[1][1].headers).get("Idempotency-Key"))
+      .toBe("22222222-2222-4222-8222-222222222222");
   });
 });
