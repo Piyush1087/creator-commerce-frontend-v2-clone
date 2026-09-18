@@ -58,11 +58,11 @@ async function keyboardProof(page: Page) {
 async function b01(runtime: Runtime) {
   const { page } = await rolePage(runtime, "PUBLIC");
   await page.goto(`${runtime.baseURL}/campaigns/${AWARENESS}`);
-  await expect(page.getByText("Final Gate AWARENESS Campaign").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Final Gate AWARENESS Campaign", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /edit|approve|link campaign asset/i })).toHaveCount(0);
   await shellAxe(runtime, page, "B01-public-campaign");
   await page.goto(`${runtime.baseURL}/media-kit/${MEDIA_KIT}`);
-  await expect(page.getByText("Final Gate Creator").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Final Gate Creator", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /edit|publish/i })).toHaveCount(0);
   await keyboardProof(page);
   await shellAxe(runtime, page, "B01-public-media-kit");
@@ -70,9 +70,15 @@ async function b01(runtime: Runtime) {
 
 async function b02(runtime: Runtime) {
   const { page } = await rolePage(runtime, "BRAND_OWNER");
-  for (const [path, proof] of [["/brand/dashboard", /Final Gate|Brand Home/i], ["/brand-centre", /Final Gate Verified Brand|Brand Centre/i], ["/brand-centre/offerings", /Final Gate Unlinked Product|Offerings/i], [`/brand/media-kits/${MEDIA_KIT}`, /Final Gate Creator/i]] as const) {
+  const routes = [
+    ["/brand/dashboard", "Brand Home"],
+    ["/brand-centre", "Final Gate Verified Brand"],
+    ["/brand-centre/offerings", "Final Gate Unlinked Product"],
+    [`/brand/media-kits/${MEDIA_KIT}`, "Final Gate Creator"],
+  ] as const;
+  for (const [path, heading] of routes) {
     await page.goto(`${runtime.baseURL}${path}`);
-    await expect(page.getByText(proof).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
     await expect(page).not.toHaveURL(/\/login/);
   }
   await keyboardProof(page);
@@ -175,23 +181,33 @@ async function b06(runtime: Runtime) {
     await page.getByRole("tab", { name: new RegExp(`^${tab}\\b`) }).click();
     await expect(page.getByRole("tabpanel").getByRole("heading", { name: tab, exact: true })).toBeVisible();
   }
-  await page.getByRole("button", { name: "Link Campaign Asset" }).first().click();
-  await expect(page.getByText(/Select one explicit Brand Centre entity/)).toBeVisible();
-  await page.getByRole("button", { name: /Final Gate Unlinked Product/ }).click();
-  await page.getByRole("button", { name: "Link Asset" }).click();
-  const asset = page.locator("article").filter({ hasText: "Final Gate Unlinked Product" }).first();
+  const canonicalSetupHeading = page.getByRole("heading", {
+    name: "Campaign Asset → Brief",
+    exact: true,
+  });
+  await expect(canonicalSetupHeading).toHaveCount(1);
+  const canonicalSetup = canonicalSetupHeading.locator("xpath=ancestor::section[1]");
+  await expect(canonicalSetup).toHaveCount(1);
+  await canonicalSetup.getByRole("button", { name: "Link Campaign Asset", exact: true }).click();
+  const assetDrawer = page.getByRole("dialog", { name: "Link Campaign Asset", exact: true });
+  await expect(assetDrawer.getByText("Select one explicit Brand Centre entity. Legacy Campaign Products are never converted or linked automatically.", { exact: true })).toBeVisible();
+  await assetDrawer.getByRole("button", { name: /Final Gate Unlinked Product/ }).click();
+  await assetDrawer.getByRole("button", { name: "Link Asset", exact: true }).click();
+  const asset = page.locator("article").filter({ has: page.getByText("Final Gate Unlinked Product", { exact: true }) });
+  await expect(asset).toHaveCount(1);
   await expect(asset).toBeVisible(); await asset.getByRole("button", { name: "Create Brief" }).click();
-  await page.getByLabel("Brief title").fill("Final Gate Linked Brief");
-  await page.getByLabel("Creative requirements").fill("Create an accepted deterministic local validation asset.");
-  await page.getByLabel("Format").fill("REEL_VIDEO");
-  await page.getByLabel("Deliverable requirements").fill("One local validation reel");
-  await page.getByRole("button", { name: "Create Brief" }).last().click();
+  const briefDrawer = page.getByRole("dialog", { name: "Create Canonical Brief", exact: true });
+  await briefDrawer.getByLabel("Brief title").fill("Final Gate Linked Brief");
+  await briefDrawer.getByLabel("Creative requirements").fill("Create an accepted deterministic local validation asset.");
+  await briefDrawer.getByLabel("Format").fill("REEL_VIDEO");
+  await briefDrawer.getByLabel("Deliverable requirements").fill("One local validation reel");
+  await briefDrawer.getByRole("button", { name: "Create Brief", exact: true }).click();
   await expect(page.getByText("Final Gate Linked Brief")).toBeVisible();
   await keyboardProof(page); await shellAxe(runtime, page, "B06-campaign-asset-brief");
 }
 
-async function authenticatedApi(context: BrowserContext, method: "GET" | "POST", path: string) {
-  const login = await context.request.post(`${API}/api/v1/auth/login`, { data: { email: ROLE_EMAILS.BRAND_OWNER, password: process.env.FINAL_GATE_FIXTURE_PASSWORD! } });
+async function authenticatedApi(context: BrowserContext, method: "GET" | "POST", path: string, role: Exclude<FinalGateRole, "PUBLIC"> = "BRAND_OWNER") {
+  const login = await context.request.post(`${API}/api/v1/auth/login`, { data: { email: ROLE_EMAILS[role], password: process.env.FINAL_GATE_FIXTURE_PASSWORD! } });
   expect(login.status()).toBe(200);
   const body = await login.json() as { accessToken: string };
   return context.request.fetch(`${API}${path}`, { method, headers: { Authorization: `Bearer ${body.accessToken}` } });
@@ -200,7 +216,7 @@ async function authenticatedApi(context: BrowserContext, method: "GET" | "POST",
 async function b07(runtime: Runtime) {
   const { context, page } = await rolePage(runtime, "BRAND_OWNER");
   await page.goto(`${runtime.baseURL}/brand/uce/campaigns/${LEGACY}`);
-  await expect(page.getByText("Objective unavailable", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Objective unavailable", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /report|performance/i })).toHaveCount(0);
   await expect(page.getByText(/PULSE|PROOF|PRODUCTION|PUSH/)).toHaveCount(0);
   await expect(page.getByText(/impressions|click-through|engagement rate/i)).toHaveCount(0);
@@ -221,20 +237,32 @@ async function b08(runtime: Runtime) {
   await creator.page.getByRole("button", { name: "Apply to this Brief" }).click();
   await expect(creator.page.getByRole("heading", { name: "Review Application" })).toBeVisible();
   await creator.page.getByRole("button", { name: "Submit Application", exact: true }).click();
-  await expect(creator.page.getByText(/Application already submitted|Submitted/i).first()).toBeVisible();
+  const submittedState = creator.page.getByRole("main").getByRole("status").filter({
+    hasText: /^Application submitted\. Status: PENDING\.$/,
+  });
+  await expect(submittedState).toHaveCount(1);
+  await expect(submittedState).toBeVisible();
   const brand = await rolePage(runtime, "BRAND_OWNER");
   await brand.page.goto(`${runtime.baseURL}/brand/uce/campaigns/${AWARENESS}`);
   await brand.page.getByRole("tab", { name: /Applicants/ }).click();
   await brand.page.getByRole("button", { name: "Approve" }).click();
   await creator.page.goto(`${runtime.baseURL}/creator/collaborations`);
-  await expect(creator.page.getByText(/Final Gate AWARENESS Campaign|Collaboration/i).first()).toBeVisible();
+  await expect(creator.page.getByRole("heading", { name: "Inbox", exact: true })).toBeVisible();
+  const collaborationThread = creator.page.getByRole("button").filter({
+    has: creator.page.getByText(
+      "Final Gate AWARENESS Campaign · Collaboration brief",
+      { exact: true },
+    ),
+  });
+  await expect(collaborationThread).toHaveCount(1);
+  await expect(collaborationThread).toBeVisible();
   await keyboardProof(creator.page); await shellAxe(runtime, creator.page, "B08-c03-c04");
 }
 
 async function b09(runtime: Runtime) {
   for (const role of ["BRAND_OWNER", "FINANCE_ADMIN"] as const) {
     const { page } = await rolePage(runtime, role); await page.goto(`${runtime.baseURL}/brand/payouts`);
-    await expect(page.getByText(/Payout|Operational read-only|Financial commands unavailable/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Payouts", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /execute|retry payout|manual trigger/i })).toHaveCount(0);
     await shellAxe(runtime, page, `B09-${role}`);
   }
@@ -242,16 +270,44 @@ async function b09(runtime: Runtime) {
 
 async function b10(runtime: Runtime) {
   const { page } = await rolePage(runtime, "CAMPAIGN_MANAGER"); await page.goto(`${runtime.baseURL}/brand/payouts`);
-  await expect(page.getByText(/Operational read-only access|access unavailable/i).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payouts", exact: true })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Payouts command availability", exact: true }).getByText("Operational read-only access", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Add funds|Brand Return|execute/i })).toHaveCount(0);
   await keyboardProof(page); await shellAxe(runtime, page, "B10-campaign-manager-payout");
 }
 
 async function b11(runtime: Runtime) {
-  const { page } = await rolePage(runtime, "CREATOR_OWNER");
-  for (const path of ["/creator/home", "/creator/centre", "/creator/settings/account", "/creator/payouts"]) {
-    await page.goto(`${runtime.baseURL}${path}`); await expect(page.locator("body")).toContainText(/Creator|Payout|Settings|Home/i); await expect(page).not.toHaveURL(/\/login/); await expect(page.getByText("Creator access could not be verified.")).toHaveCount(0);
-  }
+  const { context, page } = await rolePage(runtime, "CREATOR_OWNER");
+  const entryState = await authenticatedApi(context, "GET", "/api/v1/creator-entry/state", "CREATOR_OWNER");
+  expect(entryState.status()).toBe(200);
+  expect(await entryState.json()).toMatchObject({
+    accountContext: "CREATOR_READY",
+    onboardingStatus: "COMPLETE",
+    canEnterCreatorPlatform: true,
+    nextAction: "CREATOR_WORKSPACE_ENTRY",
+  });
+
+  await page.goto(`${runtime.baseURL}/creator/home`);
+  await expect(page).toHaveURL(`${runtime.baseURL}/creator/home`);
+  await expect(page.getByRole("heading", { name: "Welcome back, Final Gate Creator", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Connect your professional Instagram", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Creator access could not be verified.")).toHaveCount(0);
+
+  await page.goto(`${runtime.baseURL}/creator/centre`);
+  await expect(page).toHaveURL(`${runtime.baseURL}/creator/home`);
+  await expect(page.getByRole("heading", { name: "Welcome back, Final Gate Creator", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Connect your professional Instagram", exact: true })).toHaveCount(0);
+
+  await page.goto(`${runtime.baseURL}/creator/settings/account`);
+  await expect(page.getByRole("heading", { name: "Account security", exact: true })).toBeVisible();
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page.getByText("Creator access could not be verified.")).toHaveCount(0);
+
+  await page.goto(`${runtime.baseURL}/creator/payouts`);
+  await expect(page.getByRole("heading", { name: "Creator payouts", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No canonical payout totals yet", exact: true })).toBeVisible();
+  await expect(page).not.toHaveURL(/\/login/);
+  await expect(page.getByText("Creator access could not be verified.")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /execute|retry payout|manual trigger/i })).toHaveCount(0);
   await keyboardProof(page); await shellAxe(runtime, page, "B11-creator-platform");
 }
@@ -274,7 +330,9 @@ async function b12(runtime: Runtime) {
   state = instagramState("PROVIDER_BLOCKED_RECOVERABLE"); await manager.page.reload(); await expect(manager.page.getByText("Instagram access is temporarily blocked")).toBeVisible();
   const assistant = await rolePage(runtime, "CREATOR_ASSISTANT"); await assistant.page.goto(`${runtime.baseURL}/creator/settings/account`); await expect(assistant.page).not.toHaveURL(/\/login/);
   await expect(assistant.page.getByText("Creator access could not be verified.")).toHaveCount(0);
-  await assistant.page.goto(`${runtime.baseURL}/creator/payouts`); await expect(assistant.page.getByText(/access|unavailable|not authorized/i).first()).toBeVisible();
+  await assistant.page.goto(`${runtime.baseURL}/creator/payouts`);
+  await expect(assistant.page.getByRole("heading", { name: "Creator payouts", exact: true })).toBeVisible();
+  await expect(assistant.page.getByText("Payout workspace unavailable", { exact: true })).toBeVisible();
   await keyboardProof(manager.page); await shellAxe(runtime, manager.page, "B12-instagram-states");
 }
 
