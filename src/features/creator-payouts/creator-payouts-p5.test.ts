@@ -49,6 +49,12 @@ describe("C06 P5 Creator payout workspace", () => {
     expect(css).not.toMatch(/min-width:\s*(?:5|6|7|8|9)\d{2}px/);
   });
 
+  it("applies Creator Home-style page padding inside the flush shell", () => {
+    expect(css).toContain("padding: var(--space-lg)");
+    expect(css).toContain("var(--height-bottom-nav)");
+    expect(css).toContain("env(safe-area-inset-bottom)");
+  });
+
   it("reuses the accepted accessible drawer behavior", () => {
     const drawer = readFileSync(
       "src/design-system/aurora/components/SideDrawer.tsx",

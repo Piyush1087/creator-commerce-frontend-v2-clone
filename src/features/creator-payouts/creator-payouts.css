@@ -1,8 +1,13 @@
 .cp-workspace {
   display: grid;
   gap: 1.25rem;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  padding-bottom: 2rem;
+  box-sizing: border-box;
+  /* Flush shell has no inset. Match Creator Home / Aurora page padding. */
+  padding: var(--space-lg);
+  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
   color: var(--text-high);
 }
 .cp-header {
@@ -247,6 +252,12 @@ td small {
   }
 }
 @media (max-width: 767px) {
+  .cp-workspace {
+    padding: var(--space-md) var(--space-sm)
+      calc(
+        var(--height-bottom-nav) + var(--space-xl) + env(safe-area-inset-bottom)
+      );
+  }
   .cp-header,
   .cp-panel-heading,
   .cp-method {
