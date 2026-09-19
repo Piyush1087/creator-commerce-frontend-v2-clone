@@ -43,9 +43,12 @@ export function useAppShellBreadcrumbs(): AppShellBreadcrumbMeta {
     location.pathname.startsWith(`${AUTH_ROUTES.brandCentre}/`);
 
   if (isBrandCentre) {
+    const isOfferings =
+      location.pathname === AUTH_ROUTES.brandCentreOfferings ||
+      location.pathname.startsWith(`${AUTH_ROUTES.brandCentreOfferings}/`);
     return {
       breadcrumb: "Brand Centre",
-      title: "Brand",
+      title: isOfferings ? "Offerings" : "Brand",
     };
   }
 

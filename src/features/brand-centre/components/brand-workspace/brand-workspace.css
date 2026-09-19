@@ -50,81 +50,7 @@
   white-space: nowrap;
   border: 0;
 }
-.brand-workspace-navigation {
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--border-default);
-  padding: var(--space-xs) var(--space-md);
-}
-.brand-workspace-navigation__desktop {
-  display: none;
-}
-.brand-workspace-navigation .aurora-button:disabled {
-  background: transparent;
-  box-shadow: none;
-}
-.brand-workspace-navigation a {
-  text-decoration: none;
-}
-.brand-workspace-navigation__mobile {
-  position: relative;
-  width: fit-content;
-  max-width: 100%;
-}
-.brand-workspace-navigation summary {
-  cursor: pointer;
-  min-height: var(--height-button);
-  padding: var(--space-xs) var(--space-sm);
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 16px;
-  background: var(--surface-workflow);
-  color: var(--color-secondary);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-button);
-  display: flex;
-  gap: var(--space-sm);
-  align-items: center;
-}
-.brand-workspace-navigation summary::-webkit-details-marker {
-  display: none;
-}
-.brand-workspace-navigation summary::after {
-  content: "⌄";
-}
-.brand-workspace-navigation details[open] summary::after {
-  content: "⌃";
-}
-.brand-workspace-navigation__options {
-  position: absolute;
-  top: calc(100% + var(--space-xs));
-  left: 0;
-  width: max-content;
-  max-width: calc(100vw - 2 * var(--space-md));
-  z-index: var(--z-header);
-  padding: var(--space-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-xs);
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-card-standard);
-  box-shadow: var(--shadow-card);
-}
-.brand-workspace-navigation__options p {
-  margin: 0;
-  color: var(--text-muted);
-}
-.brand-workspace-navigation a {
-  color: var(--text-high);
-  padding: var(--space-xs) var(--space-sm);
-  font-weight: 700;
-  min-height: var(--height-button);
-  display: flex;
-  align-items: center;
-}
-.brand-workspace a:focus-visible,
-.brand-workspace summary:focus-visible {
+.brand-workspace a:focus-visible {
   outline: 2px solid var(--color-secondary);
   outline-offset: 3px;
 }
@@ -486,33 +412,6 @@
   }
   .brand-workspace__heading {
     display: block;
-  }
-  .brand-workspace-navigation {
-    background: transparent;
-    border: 0;
-    padding: var(--space-lg) var(--space-lg) 0;
-    max-width: calc(var(--brand-content-width) + 2 * var(--space-lg));
-    margin: auto;
-  }
-  .brand-workspace-navigation__desktop {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    border-bottom: 1px solid var(--border-default);
-  }
-  .brand-workspace-navigation__desktop > * {
-    font-size: 16px;
-    padding-inline: 0;
-  }
-  .brand-workspace-navigation__desktop a {
-    border-bottom: 3px solid var(--color-primary);
-  }
-  .brand-workspace-navigation__desktop button:disabled {
-    opacity: 1;
-    color: var(--text-muted);
-  }
-  .brand-workspace-navigation__mobile {
-    display: none;
   }
   .brand-identity {
     flex-direction: row;

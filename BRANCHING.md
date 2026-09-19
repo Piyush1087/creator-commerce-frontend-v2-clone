@@ -39,13 +39,40 @@ git checkout main
 git merge development
 ```
 
-## Canonical freeze branch (do not merge into `development` until Parent says so)
+## Current deploy / promotion map (keep updated)
 
-| Work | Branch (BE + FE) | Status |
-|------|------------------|--------|
-| MVP Canonical Application Freeze V1 | `freeze/mvp-canonical-application-v1` | Active. Branched from `origin/development` after C-03 merge. Leave `development` untouched. |
+Snapshot date: **2026-09-19**. Exact branch names — do not invent aliases.
+Authoritative copy: backend `BRANCHING.md`.
 
-Registers: `docs/ai-collaboration/mvp-canonical-freeze/`.
+### Deploy pair — freeze (canonical **in**, C-06 **out**)
+
+| Repo | Exact branch | `origin` tip (2026-09-19) |
+|------|--------------|---------------------------|
+| Frontend | `freeze/mvp-canonical-application-v1` | `6ea628b` |
+| Backend | `freeze/mvp-canonical-application-v1` | `3b7f63f` |
+
+- **creator-dev:** already this FE+BE freeze pair.
+- **creator-prod next:** same freeze pair (paired; not one side alone).
+- Freeze already has MVP canonical data; **not** C-06.
+- Do **not** merge freeze into `development` / `main` until Parent says so.
+
+### Active side work — `docs/meta-app-review` (push to `origin`, not `development`)
+
+| Repo | Exact branch |
+|------|--------------|
+| Frontend | `docs/meta-app-review` |
+| Backend | `docs/meta-app-review` |
+
+Commit + push these to **`origin`**. Do not merge into `development` on this track. Environment deploys stay on freeze (above).
+
+### C-06 — parked
+
+| Repo | Exact branch | `origin` tip (2026-09-19) |
+|------|--------------|---------------------------|
+| Frontend | `integration/c06-creator-payouts` | `e9ba66d` |
+| Backend | `integration/c06-creator-payouts` | `11ce7f6` |
+
+Gate: product approve → reconcile → then `development` → then prod. Keep out of freeze / meta / creator-dev / creator-prod until then.
 
 ---
 

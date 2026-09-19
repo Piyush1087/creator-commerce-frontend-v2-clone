@@ -56,7 +56,7 @@ export function BrandWorkspace() {
   const state = useBrandCentreBrand();
   return (
     <div className="brand-workspace">
-      <BrandWorkspaceNavigation />
+      <BrandWorkspaceNavigation current="Brand" />
       <div className="brand-workspace__body">
         <div className="brand-workspace__heading">
           <h1>Brand</h1>

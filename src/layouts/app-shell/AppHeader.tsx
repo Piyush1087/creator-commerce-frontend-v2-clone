@@ -10,7 +10,6 @@ import { CreatorNotifications } from "../../features/creator-campaigns/component
 
 type AppHeaderProps = {
   onToggleMenu: () => void;
-  brandWorkspace?: boolean;
   menuOpen?: boolean;
 };
 
@@ -28,7 +27,6 @@ function userAvatarInitial(user: AuthUser | null): string {
 
 export function AppHeader({
   onToggleMenu,
-  brandWorkspace = false,
   menuOpen = false,
 }: AppHeaderProps) {
   const location = useLocation();
@@ -44,12 +42,6 @@ export function AppHeader({
         <div className="aurora-header__logo">
           <div className="aurora-header__logo-mark">T</div>
         </div>
-        {brandWorkspace ? (
-          <div className="aurora-header__brand-context">
-            <h1>Brand</h1>
-            <span>Brand Centre</span>
-          </div>
-        ) : null}
         <div className="aurora-header__breadcrumbs">
           <span>{breadcrumb}</span>
           <div className="aurora-header__separator">

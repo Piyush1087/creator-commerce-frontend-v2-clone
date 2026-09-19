@@ -115,14 +115,16 @@ describe("functional Brand workspace", () => {
       ),
     );
     expect([...html.matchAll(/href="([^"]+)"/gu)].map((m) => m[1])).toEqual([
-      "/brand-centre", "/brand-centre/offerings",
-      "/brand-centre", "/brand-centre/offerings",
+      "/brand-centre",
+      "/brand-centre/offerings",
     ]);
-    expect([...html.matchAll(/disabled=""/gu)]).toHaveLength(6);
+    expect([...html.matchAll(/aria-disabled="true"/gu)]).toHaveLength(2);
+    expect(html).toContain('class="product-nav"');
     for (const legacy of [
       "Brand DNA",
       "Intelligence &amp; Gaps",
       "Campaign Planner",
+      "Overview",
     ])
       expect(html).not.toContain(legacy);
   });

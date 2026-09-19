@@ -50,10 +50,9 @@ export function AppShell({
       >
         <AppHeader
           onToggleMenu={() => setIsMenuOpen(true)}
-          brandWorkspace={brandWorkspace}
           menuOpen={isMenuOpen}
         />
-        {!brandWorkspace ? <MobileShellNav /> : null}
+        <MobileShellNav />
         <main className={mainClassName}>{children}</main>
         <footer className="aurora-footer">
           <div
